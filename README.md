@@ -188,6 +188,109 @@ API keys are intended for automation, CI/CD, infrastructure tooling, and a futur
 
 **CLI roadmap:** authenticated retrieval/injection for approved environments, scoped automation, safe sync triggers, and CI/CD-friendly status checks. CLI design must preserve least privilege and must not encourage printing values to logs.
 
+## Complete product experience — 54 screens
+
+The following is the complete planned product surface. It is a screen specification for implementation and design; it does **not** mean every item is part of the MVP. Items marked **Roadmap** are future work. The product must feel like a DevSecOps control plane—dense but understandable operational information—not a generic password manager.
+
+### Access, onboarding, and global workspace
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 1 | Sign in | Email/password access; later OAuth choices. Clear error, loading, and account-recovery paths. | MVP |
+| 2 | Create account | Account creation and acceptance of required terms/policies. | MVP |
+| 3 | Onboarding | Create or select an organization, then guide the user to create a first project or connect a provider. | MVP |
+| 4 | Dashboard | Organization-wide security score, project/secret/platform counts, sync health, high-priority findings, quick actions, and recent activity. | MVP |
+| 5 | Organization switcher | Switch only among organizations the user is authorized to access; never expose unauthorized organization metadata. | MVP |
+| 6 | Project switcher | Quickly choose an authorized project and preserve environment context. | MVP |
+| 7 | Global search | Search authorized projects, secret metadata, integrations, audit events, and findings. Never search plaintext values. | MVP |
+| 8 | Command palette | Keyboard-first actions: create secret/project, connect provider, synchronize, open audit/security views, and future AI queries. | MVP |
+| 9 | Notification center | Display actionable alerts with severity, resource, and resolution path. | Roadmap |
+| 10 | Help and documentation | In-product guidance, provider setup explanation, security warnings, and support links. | MVP |
+
+### Project and environment management
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 11 | Projects | Searchable cards/table with project name, environments, secret count, integrations, health, and warnings. | MVP |
+| 12 | Create project | Name, description, and initial Development/Staging/Production environments. | MVP |
+| 13 | Project overview | Security score, secret/platform counts, last sync, environment navigation, connected providers, quick actions, and recent activity. | MVP |
+| 14 | Environment overview | Environment tabs, counts for secrets/platforms/drift, and actions to add, import, or synchronize secrets. | MVP |
+| 15 | Project health | Dedicated health view showing secrets, integration health, drift, security posture, and last synchronization. | Roadmap |
+
+### Secret management
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 16 | Secrets list | Filter/search by name, tag, environment, provider, risk, and status. Columns include name, type, version, last update, sync status, risk, and actions. Values remain masked. | MVP |
+| 17 | Create secret | Name, masked value entry, description, environment, tags, validation, and clear warning that value is not shown casually after submission. | MVP |
+| 18 | Import `.env` | Parse a selected `.env`, show detected names/metadata for confirmation, and import only after user review. Avoid presenting values unnecessarily. | MVP |
+| 19 | Secret details | Masked value, metadata, current version, platform states, risk, usage context, activity, and authorized actions: reveal, edit, rotate, delete. | MVP |
+| 20 | Reveal-secret confirmation | Re-authentication and MFA where configured; explain that revealing is temporary and audited. | MVP |
+| 21 | Edit secret / new version | Change value or authorized metadata; every value update creates a version rather than overwriting history. | MVP |
+| 22 | Secret versions | Current, prior, and archived versions with timestamps, actor, metadata, and safe rollback/compare actions. Never casually show historical plaintext. | MVP |
+| 23 | Rotation workflow | Generate or accept a replacement credential, create a new version, queue sync, show provider verification, and preserve an audit trail. | MVP |
+| 24 | Secret activity | Timeline of updates, reveals, sync attempts, retries, rotations, and other value-free events. | MVP |
+| 25 | Delete/revoke confirmation | High-friction confirmation for destructive action, affected providers, authorization check, and audit warning. | MVP |
+| 26 | Controlled export | Explicitly scoped export with elevated permissions and safety warning; broad production exports are not a default flow. | Roadmap |
+
+### Integrations and synchronization
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 27 | Integration marketplace | Provider cards grouped by hosting, cloud, CI/CD, and infrastructure; show connected state and supported capability. | MVP |
+| 28 | Connect provider | Select OAuth/API token/access-key approach as supported; display requested provider permissions before authorization. | MVP |
+| 29 | Provider details | Connection health, selected account, mapped projects, last sync, drift/issue summary, test connection, sync, and disconnect actions. | MVP |
+| 30 | Project/environment mapping | Map a SecretVault project and environment explicitly to the provider project/environment; no implicit mapping. | MVP |
+| 31 | Sync center | Organization-wide synchronization percentage, active/failed/completed jobs, filters, and per-job status. | MVP |
+| 32 | Sync job details | Job ID, project/environment/provider, progress, each secret’s safe status, retry information, and request correlation. | MVP |
+| 33 | Failed synchronizations | Failed jobs grouped by classified cause—authentication, permission, validation, rate limit, network, outage, or unknown—with reconnect/retry guidance. | MVP |
+| 34 | Drift detection | Central versus observable provider state, with `SYNCED`, `DRIFTED`, `MISSING`, or `UNKNOWN` and an authorized “sync latest” action. | MVP |
+
+### Security and audit
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 35 | Security overview | Score and breakdown for secret age, rotation, access control, sync health, and leak protection; prioritize critical/high findings. | Roadmap |
+| 36 | Risk center | Findings by severity with safe explanation: age, privilege, environment, access, exposure indicator, rotation state, or drift. | Roadmap |
+| 37 | Secret leaks | Potential exposures in authorized, connected sources; show repository/file/commit/line/classification/confidence without displaying credential values. | Roadmap |
+| 38 | Leak investigation | Evidence, severity, safe remediation sequence—revoke/rotate, remove exposure, synchronize, verify, resolve—and false-positive handling. | Roadmap |
+| 39 | Access anomalies | Baseline versus unusual behavior, environment, severity, evidence, and authorized investigation/session-revocation actions. | Roadmap |
+| 40 | Audit logs | Filterable, searchable event table by actor, action, project, environment, platform, date, and outcome. | MVP |
+| 41 | Audit-event details | Action, actor, resource, scope, timestamp, request ID, result, and redacted context. No value data. | MVP |
+
+### AI intelligence
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 42 | AI assistant | Authorized natural-language questions about risks, rotation, provider health, and drift; responses include evidence and related resources. | Roadmap |
+| 43 | AI security analysis | Security summary with prioritized issues, evidence, risk, and recommended actions based on metadata and sanitized operational signals. | Roadmap |
+| 44 | Deployment analysis / RCA | Correlate authorized deployment, sync, change, and provider events to explain likely cause and confidence. No automatic production change. | Roadmap |
+| 45 | AI recommendations | Reviewable rotation, access, MFA, integration, and drift recommendations. Applying any consequential action requires explicit authorization. | Roadmap |
+
+### Team, account, and organization administration
+
+| # | Screen | Purpose and required content | Release |
+|---:|---|---|---|
+| 46 | Team members | Member list, role, project/environment access, invitation state, and safe administration actions. | MVP |
+| 47 | Invite member | Email, initial role, project selection, environment selection, and clearly scoped invitation. | MVP |
+| 48 | Roles and permissions | Role matrix for project visibility, secret actions, reveal, integrations, audit, and organization management; supports later granular permissions. | MVP |
+| 49 | Organization settings | Organization profile, security policies, rotation-policy direction, and future MFA requirement settings. | MVP |
+| 50 | Account security | Profile, password, MFA, passkeys, and session-security entry points. MFA/passkeys are Roadmap until implemented. | MVP / Roadmap |
+| 51 | API keys | Create scoped, expiring automation keys; present full key exactly once; list created/last-used/status and support revocation. | Roadmap |
+| 52 | Active sessions | Current and other authorized sessions with device/location/time context and revocation. | Roadmap |
+| 53 | Notification settings | Choose security, sync, and team events; configure in-app/email and future Slack/webhook channels. | Roadmap |
+| 54 | Billing and danger zone | Future subscription/usage management plus high-friction project/organization deletion. Billing is Roadmap; destructive administration requires confirmation and re-authentication. | Roadmap |
+
+### Required states across every relevant screen
+
+Each primary screen must design and implement the following states, not only the happy path: loading/skeleton; empty/onboarding; validation error; system error with retry; permission denied; success confirmation; partial success (for example, 38 of 40 secrets synchronized); destructive confirmation; and long-running sync progress. These are component states within the 54-screen catalogue, not additional product screens.
+
+### Global navigation and reusable UI
+
+The main navigation is organized around **Workspace** (Dashboard, Projects, Secrets, Integrations, Sync Center), **Security** (Security, Risks, Leaks, Drift, Audit), **AI** (Assistant and Analysis), and **Organization** (Team and Settings). Reusable components include organization/project/environment switchers, search, notification center, breadcrumbs, data tables, a masked secret input, status/risk/provider badges, sync progress, activity timeline, confirmation and danger modals, empty/error/loading states, and toasts.
+
+The visual language should be professional, technical, minimal, and information-dense: clear status colors, readable tables, restrained cards, monospace treatment for key names, and responsive layouts that prioritize dashboard, alerts, secrets, sync state, AI, and notifications on mobile.
+
 ## Security architecture and non-negotiable rules
 
 SecretVault is a security product; its design must prioritize confidentiality, authorization, traceability, and safe failure.
@@ -205,6 +308,37 @@ SecretVault is a security product; its design must prioritize confidentiality, a
 - Redact secrets from error handling and test fixtures. Use synthetic values only.
 - Fail closed when authorization, scope, or integrity cannot be established.
 
+### Encryption boundary
+
+The planned design uses envelope encryption with authenticated encryption:
+
+```text
+KMS-managed master key
+          │ encrypts/wraps
+          ▼
+Per-secret or per-version data-encryption key
+          │ AES-256-GCM encrypts
+          ▼
+Secret plaintext ───────────────► ciphertext + IV + authentication tag
+                                      │
+                                      ▼
+PostgreSQL: ciphertext, encrypted data key, IV, tag, and safe metadata
+```
+
+Plaintext exists only for the minimum time required in authorized server-side processing or provider delivery. Encryption keys must not be co-located with plaintext values. Provider credentials follow the same protected-storage rule. This design must be reviewed and implemented with the selected KMS before production; no application-level shortcut replaces key-management controls.
+
+### Core domain entities
+
+```text
+User ── Membership ── Organization ── Project ── Environment ── Secret ── SecretVersion
+                                            │                         │
+                                            ├── Integration mapping   ├── SyncJob / SyncAttempt
+                                            ├── AuditEvent            └── Risk / drift evidence
+                                            └── ApiKey
+```
+
+The minimal secret shape is `id`, `environmentId`, `name`, `description`, `type`, `createdAt`, `updatedAt`, and `currentVersion`. A version retains the encrypted material—`ciphertext`, `encryptedDataKey`, `iv`, `authTag`, version number, creation time, and actor—not plaintext. Every tenant-owned resource must be associated with an organization, and the backend must verify the authenticated membership and permitted project/environment scope rather than trusting IDs submitted by a browser.
+
 ## Technology stack
 
 The established application stack is:
@@ -212,13 +346,36 @@ The established application stack is:
 | Area | Technology |
 |---|---|
 | Web application | React.js |
+| Frontend language and UI direction | TypeScript, Tailwind CSS, and shadcn/ui |
 | Core services | Spring Boot microservices |
+| Backend platform direction | Java, Spring Security, Spring Data JPA/Hibernate, REST/OpenAPI |
 | Operational/security & AI services | Python / FastAPI |
 | Relational data | PostgreSQL |
 | Caching and asynchronous-work support | Redis |
 | Local and deployable containers | Docker / Docker Compose |
 
-Specific library choices, service names, identity provider, cloud provider, ORM, queue implementation, and build tooling are intentionally not prescribed here until selected by the team.
+The planned production direction is AWS behind Cloudflare, with managed key-management and production infrastructure decisions documented before release. Redis-backed asynchronous work is the initial direction; Kafka is a later scaling option only when justified. Exact package-manager/build commands, identity-provider implementation, and infrastructure modules must be documented when chosen rather than guessed in this README.
+
+### Planned service boundaries
+
+Do not attempt to generate a large set of disconnected microservices on day one. Establish contracts and a working vertical slice first. The planned boundaries are:
+
+```text
+API Gateway
+├── Auth service
+├── Organization service
+├── Secret service
+├── Integration service
+├── Sync service / workers
+├── Audit service
+├── AI service (FastAPI)
+├── Notification service (Roadmap)
+└── Billing service (Roadmap)
+```
+
+The API gateway is the public entry point for authentication, routing, rate limiting, request IDs, API versioning, and CORS. Direct synchronous requests use REST through the gateway; asynchronous domain events such as `SecretCreated`, `SecretUpdated`, `SecretDeleted`, `SecretRotated`, `IntegrationConnected`, `SyncRequested`, `SyncCompleted`, and `SyncFailed` drive downstream synchronization and audit work.
+
+Every sync operation must be idempotent. A job carries an idempotency key, operation ID, and desired state so a retry does not create duplicate provider changes.
 
 ## Repository structure
 
@@ -241,8 +398,18 @@ secretvault/
 ├── apps/
 │   └── web/                 # React application
 ├── services/
-│   ├── ...spring-services/  # Spring Boot microservices, named when bounded contexts are chosen
-│   └── intelligence/        # FastAPI service(s), when implemented
+│   ├── api-gateway/
+│   ├── auth-service/
+│   ├── organization-service/
+│   ├── secret-service/
+│   ├── integration-service/
+│   ├── sync-service/
+│   ├── audit-service/
+│   └── ai-service/          # FastAPI
+├── packages/
+│   ├── api-contracts/
+│   ├── shared-types/
+│   └── frontend-ui/
 ├── infrastructure/
 │   └── docker/              # Compose and container configuration
 ├── tests/
