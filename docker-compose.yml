@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: secretvault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-secretvault_dev}
+      POSTGRES_USER: ${DB_USER:-vault_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vault_secure_password_dev_only}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vault_user} -d ${DB_NAME:-secretvault_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: secretvault-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: secretvault-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-secretvault_dev}
+      DB_USER: ${DB_USER:-vault_user}
+      DB_PASSWORD: ${DB_PASSWORD:-vault_secure_password_dev_only}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      VAULT_MASTER_KEY: ${VAULT_MASTER_KEY:-dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2Zvcl9sb2NhbF9kZXY=}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

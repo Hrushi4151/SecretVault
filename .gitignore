@@ -1,0 +1,77 @@
+# Target directories
+target/
+**/target/
+*.class
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+.npm
+.pnpm-store/
+dist/
+**/dist/
+build/
+**/build/
+.next/
+out/
+
+# Environment and Secrets (CRITICAL: NEVER COMMIT SECRETS)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.jks
+secretvault.db
+*.secret
+*.tfvars
+*.tfvars.json
+
+# IDE and Editors
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
+
+# Logs & Diagnostics
+logs/
+*.log
+*.hprof
+hs_err_pid*
+
+# OS and Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Python / AI service
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+.pytest_cache/
