@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#ffb4a8",
+          "on-error-container": "#ffdad6",
+          "on-primary": "#303030",
+          "on-primary-fixed": "#1b1b1b",
+          "primary": "#c6c6c6",
+          "secondary-fixed-dim": "#c6c6c7",
+          "error": "#ffb4ab",
+          "surface-container-high": "#5a0023",
+          "outline-variant": "#4c4546",
+          "surface-bright": "#760031",
+          "on-error": "#690005",
+          "surface-tint": "#c6c6c6",
+          "on-surface-variant": "#cfc4c5",
+          "on-tertiary": "#690001",
+          "surface-dim": "#30000f",
+          "secondary-fixed": "#e2e2e2",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-container": "#ec0005",
+          "on-primary-container": "#757575",
+          "background": "#30000f",
+          "inverse-on-surface": "#660029",
+          "surface-container-highest": "#6e002d",
+          "secondary-container": "#454747",
+          "inverse-primary": "#5e5e5e",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-secondary-container": "#b4b5b5",
+          "on-surface": "#ffd9df",
+          "surface-container-low": "#3f0016",
+          "on-secondary": "#2f3131",
+          "outline": "#988e90",
+          "tertiary-fixed": "#ffdad5",
+          "on-secondary-fixed-variant": "#454747",
+          "primary-fixed": "#e2e2e2",
+          "surface-variant": "#6e002d",
+          "surface-container": "#47001a",
+          "on-background": "#ffd9df",
+          "surface": "#30000f",
+          "surface-container-lowest": "#26000b",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-primary-fixed-variant": "#474747",
+          "secondary": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "on-tertiary-fixed-variant": "#930001",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full"><div class="h-16 px-5 flex items-center gap-3 bg-surface-container-lowest"><img alt="SecretVault logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><span class="text-base font-headline font-bold tracking-wider uppercase text-on-surface">SecretVault</span></div><div class="overflow-y-auto flex-1 px-3 py-4 space-y-6"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">WORKSPACE</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_open</span><span>Projects</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span>Sync Center</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">SECURITY</div><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">policy</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">radar</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span>Audit Logs</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">AI OPS</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>AI Analysis</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">ORGANIZATION</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Team</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span>Settings</span></a></nav></div><div class="p-3 bg-surface-container-lowest space-y-1"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help-support" href="#"><span class="material-symbols-outlined text-[20px]">support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_circle</span><span>User Profile</span></a></nav></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-4"><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-secondary">deployed_code</span><span>API Gateway</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold uppercase tracking-wider text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Production</span></div></div><div class="flex items-center gap-4"><button class="flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs text-on-surface-variant" type="button"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">search</span><span>Search resources, secrets, logs...</span></div><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-lowest text-outline">⌘K</kbd></button><div class="flex items-center gap-2"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-lg">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-lg">dark_mode</span></button></div><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="relative pt-16 min-h-screen bg-background w-full px-8 pb-12"><div class="flex flex-col w-full">
+<!-- Top Bar / Breadcrumb & Actions Section -->
+<div class="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-8">
+<div class="flex flex-col space-y-2">
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs font-mono tracking-wide text-on-surface-variant/80">
+<span class="hover:text-on-surface transition-colors cursor-pointer">SecretVault</span>
+<span class="text-outline">/</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Integrations</span>
+<span class="text-outline">/</span>
+<span class="text-tertiary font-medium">Slack &amp; Security Dispatcher</span>
+</div>
+<!-- Page Title -->
+<h1 class="text-3xl lg:text-4xl font-headline font-black tracking-tight text-on-surface uppercase flex items-center gap-3">
+<span>Slack Collaboration &amp; Incident Dispatcher</span>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-tertiary text-xs font-mono font-bold tracking-normal normal-case">v2.4.9-enterprise</span>
+</h1>
+<!-- Subtitle -->
+<p class="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+        Automate real-time DevSecOps incident routing, interactive 2-person approval quorums in Slack, and secret leak containment webhooks.
+      </p>
+</div>
+<!-- Header Actions -->
+<div class="flex flex-wrap items-center gap-3 self-start xl:self-end">
+<button class="group flex items-center gap-2 px-4 py-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold tracking-wide transition-all active:scale-95 shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm text-tertiary group-hover:rotate-12 transition-transform">send</span>
+<span>Send Test Alert</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold tracking-wide transition-all active:scale-95 shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm text-secondary">tune</span>
+<span>Configure Channels &amp; Escalate</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded bg-tertiary hover:bg-tertiary-fixed text-on-tertiary text-xs font-bold tracking-wide transition-all active:scale-95 shadow-md hover:shadow-lg" type="button">
+<span class="material-symbols-outlined text-sm font-bold">add_box</span>
+<span>+ Add Webhook Bot</span>
+</button>
+</div>
+</div>
+<!-- KPI Overview Grid (4 Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 pb-8">
+<!-- KPI 1 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-md group hover:shadow-xl transition-all">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-container-high/40 blur-xl group-hover:bg-surface-container-high/60 transition-colors"></div>
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant/80">Connected Workspaces</span>
+<span class="material-symbols-outlined text-tertiary text-lg">corporate_fare</span>
+</div>
+<div class="mt-3 text-2xl font-display font-black text-on-surface">3 Enterprise</div>
+<div class="mt-1 text-xs text-on-surface-variant font-mono truncate">Acme Main, SecOps, SRE 24/7</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between border-t border-surface-container/60 text-[11px] font-mono">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+          Cluster Latency
+        </span>
+<span class="text-tertiary font-semibold">42ms RTT</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-md group hover:shadow-xl transition-all">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-container-high/40 blur-xl group-hover:bg-surface-container-high/60 transition-colors"></div>
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant/80">24h Dispatched Alerts</span>
+<span class="material-symbols-outlined text-secondary text-lg">notifications_active</span>
+</div>
+<div class="mt-3 text-2xl font-display font-black text-on-surface flex items-baseline gap-2">
+<span>1,248</span>
+<span class="text-xs font-sans font-semibold text-tertiary flex items-center">
+<span class="material-symbols-outlined text-xs">arrow_drop_up</span>+12%
+          </span>
+</div>
+<div class="mt-1 text-xs text-on-surface-variant font-mono">0 dropped packets in buffer</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between border-t border-surface-container/60 text-[11px] font-mono">
+<span class="text-on-surface-variant">Delivery SLA</span>
+<span class="text-on-surface font-semibold tracking-wider">99.99% Guaranteed</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-md group hover:shadow-xl transition-all">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-container-high/40 blur-xl group-hover:bg-surface-container-high/60 transition-colors"></div>
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant/80">In-Channel Approvals</span>
+<span class="material-symbols-outlined text-tertiary text-lg">verified_user</span>
+</div>
+<div class="mt-3 text-2xl font-display font-black text-on-surface">84 Quorums</div>
+<div class="mt-1 text-xs text-on-surface-variant font-mono">Dual-SecOps WebAuthn Verified</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between border-t border-surface-container/60 text-[11px] font-mono">
+<span class="text-on-surface-variant">Avg Resolution Time</span>
+<span class="text-tertiary font-bold">48 seconds</span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-md group hover:shadow-xl transition-all">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-container-high/40 blur-xl group-hover:bg-surface-container-high/60 transition-colors"></div>
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant/80">Leak Auto-Paging</span>
+<span class="material-symbols-outlined text-error text-lg animate-pulse">crisis_alert</span>
+</div>
+<div class="mt-3 text-2xl font-display font-black text-error">Sev-0 / Sev-1</div>
+<div class="mt-1 text-xs text-on-surface-variant font-mono">PagerDuty &amp; Slack Sync Active</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between border-t border-surface-container/60 text-[11px] font-mono">
+<span class="text-on-surface-variant">Containment Trigger</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-bold text-[10px] uppercase">Instant Kill-Switch</span>
+</div>
+</div>
+</div>
+<!-- Main Asymmetric Content Layout (7:5 Split) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT COLUMN (7 / 12) -->
+<div class="lg:col-span-7 flex flex-col space-y-8 min-w-0">
+<!-- Section 1: Slack Incident Card Simulator -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-xl relative overflow-hidden">
+<!-- Accent indicator bar -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-error via-surface-bright to-tertiary"></div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 gap-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl">mark_chat_unread</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface uppercase tracking-wide">Interactive Slack Incident Card Preview</h2>
+<p class="text-xs text-on-surface-variant">Live simulator demonstrating Block Kit payload layout &amp; dual-quorum execution</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 self-start px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono text-tertiary">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+<span>SIMULATOR RUNNING</span>
+</div>
+</div>
+<!-- Slack Canvas Representation -->
+<div class="rounded-xl bg-surface-container-low p-5 space-y-4 shadow-inner">
+<!-- Slack Message Header / User Info -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container-highest flex items-center justify-center text-tertiary shadow-sm">
+<span class="material-symbols-outlined text-xl">security</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface">SecretVault Sentinel Bot</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container text-[10px] font-mono uppercase text-on-surface-variant">APP</span>
+<span class="text-xs text-outline">14:24</span>
+</div>
+<span class="text-xs text-on-surface-variant">Direct webhook relay • Slack Enterprise Grid</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/60 cursor-pointer hover:text-on-surface transition-colors">bookmark</span>
+</div>
+<!-- Inside Slack Message Container -->
+<div class="rounded-lg bg-surface p-4 border-l-4 border-error space-y-3 shadow-md">
+<!-- Severity & Title -->
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container text-xs font-mono font-bold uppercase tracking-wider">
+                Sev-0 CRITICAL
+              </span>
+<h3 class="text-sm font-bold text-on-surface">
+                Leaked STRIPE_SECRET_KEY Detected in Public PR #481
+              </h3>
+</div>
+<p class="text-xs text-on-surface-variant font-mono">
+              Reported by SecretVault AST Scanner • 2m ago • Destination: <span class="text-tertiary underline cursor-pointer">#secops-alerts</span>
+</p>
+<!-- Metadata Table -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+<div class="rounded bg-surface-container-low p-2.5">
+<span class="block text-[10px] font-mono text-outline uppercase">Repository</span>
+<span class="text-xs font-mono font-semibold text-on-surface truncate block">acme-corp/payments-api</span>
+</div>
+<div class="rounded bg-surface-container-low p-2.5">
+<span class="block text-[10px] font-mono text-outline uppercase">Author</span>
+<span class="text-xs font-mono font-semibold text-tertiary truncate block">@alex.m (Staff)</span>
+</div>
+<div class="rounded bg-surface-container-low p-2.5">
+<span class="block text-[10px] font-mono text-outline uppercase">Shannon Entropy</span>
+<span class="text-xs font-mono font-bold text-error">7.94 / 8.0</span>
+</div>
+<div class="rounded bg-surface-container-low p-2.5">
+<span class="block text-[10px] font-mono text-outline uppercase">Blast Radius</span>
+<span class="text-xs font-mono font-semibold text-on-surface">3 Microservices</span>
+</div>
+</div>
+<!-- Redacted Secret Display -->
+<div class="rounded bg-surface-container-lowest p-3 flex items-center justify-between font-mono text-xs">
+<div class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-sm text-error">key</span>
+<span class="text-on-surface-variant font-bold">MATCH:</span>
+<code class="text-tertiary">sk_live_51M0...94xR [AUTOMATICALLY REDACTED]</code>
+</div>
+<span class="text-[10px] text-outline uppercase">AST Matcher v4</span>
+</div>
+<!-- In-Channel Dual-Quorum Status -->
+<div class="rounded bg-surface-container p-3 space-y-2">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary">how_to_reg</span>
+                  Dual-SecOps Quorum State
+                </span>
+<span class="text-tertiary font-bold">1 / 2 Approved</span>
+</div>
+<!-- Progress bar -->
+<div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-1/2 rounded-full transition-all duration-500"></div>
+</div>
+<div class="space-y-1 pt-1 text-xs font-mono">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-xs text-secondary">check_circle</span>
+                    SecOps Sign-off 1/2: <strong class="text-on-surface font-semibold">@elena.r</strong>
+</span>
+<span class="text-[10px] text-outline">Approved via TouchID (WebAuthn)</span>
+</div>
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-xs text-tertiary animate-spin">progress_activity</span>
+                    SecOps Sign-off 2/2: <strong class="text-on-surface font-semibold">@marcus.v</strong>
+</span>
+<span class="text-[10px] text-error font-medium">Pending WebAuthn FIDO2 tap</span>
+</div>
+</div>
+</div>
+<!-- Slack Interactive Action Buttons -->
+<div class="pt-2 flex flex-wrap items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-highest hover:bg-surface-bright text-on-surface text-xs font-mono font-bold tracking-tight transition-all active:scale-95 shadow" type="button">
+<span class="material-symbols-outlined text-sm text-tertiary">bolt</span>
+<span>⚡ 1-Click Revoke &amp; Rotate</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container hover:bg-surface-container-high text-tertiary text-xs font-mono font-bold tracking-tight transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>Quarantine Repository</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant text-xs font-mono transition-all" type="button">
+<span class="material-symbols-outlined text-sm">timeline</span>
+<span>Forensics Timeline</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded text-outline hover:text-on-surface text-xs font-mono transition-all ml-auto" type="button">
+<span class="material-symbols-outlined text-sm">done_all</span>
+<span>Acknowledge Alert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Simulator Configuration Toggles -->
+<div class="mt-6 pt-5 border-t border-surface-container/60 space-y-4">
+<div class="text-xs font-mono uppercase tracking-widest text-on-surface-variant/80">Bot Interactive Configuration Panel</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<div class="rounded-lg bg-surface-container p-3 flex flex-col justify-between space-y-2">
+<span class="text-xs font-bold text-on-surface">Message Verbosity</span>
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 rounded bg-surface-container-high text-[11px] font-mono text-tertiary font-bold" type="button">Rich Block</button>
+<button class="px-2 py-1 rounded bg-transparent hover:bg-surface-container-low text-[11px] font-mono text-on-surface-variant" type="button">JSON</button>
+<button class="px-2 py-1 rounded bg-transparent hover:bg-surface-container-low text-[11px] font-mono text-on-surface-variant" type="button">Minimal</button>
+</div>
+</div>
+<div class="rounded-lg bg-surface-container p-3 flex flex-col justify-between space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-on-surface">Secret Masking</span>
+<span class="material-symbols-outlined text-sm text-tertiary">lock</span>
+</div>
+<span class="text-[11px] text-on-surface-variant">Mask plaintext secrets in Slack payload (Enforced)</span>
+</div>
+<div class="rounded-lg bg-surface-container p-3 flex flex-col justify-between space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-on-surface">War-Room Canvas</span>
+<div class="w-8 h-4 rounded-full bg-surface-bright relative cursor-pointer">
+<div class="absolute right-0.5 top-0.5 w-3 h-3 rounded-full bg-white transition-all"></div>
+</div>
+</div>
+<span class="text-[11px] text-on-surface-variant">Auto-create canvas thread for Sev-0 incidents</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Channel Routing & Severity Matrix -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-xl">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-5 gap-3">
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface uppercase tracking-wide">Channel Routing &amp; Severity Matrix</h2>
+<p class="text-xs text-on-surface-variant">Automated Slack hook web-dispatch bindings based on classification and entropy scores</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-xs font-mono text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-sm">filter_alt</span>
+<span>All Workspaces (3)</span>
+</button>
+</div>
+</div>
+<!-- Matrix Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-mono text-xs">
+<thead>
+<tr class="text-[11px] uppercase tracking-wider text-outline bg-surface-container-low">
+<th class="p-3 rounded-l-lg">Channel Target</th>
+<th class="p-3">Severity Trigger</th>
+<th class="p-3">Notification Mentions</th>
+<th class="p-3">Webhook Endpoint</th>
+<th class="p-3">Alert Tone</th>
+<th class="p-3 rounded-r-lg text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-3 font-bold text-on-surface flex items-center gap-2">
+<span class="text-tertiary">#</span>
+<span>secops-critical-alerts</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-bold text-[10px]">Sev-0 / Sev-1</span>
+</td>
+<td class="p-3 text-tertiary">@secops-lead, @sre-pager</td>
+<td class="p-3 text-outline truncate max-w-[140px]">.../T048A/B09A8Z</td>
+<td class="p-3 flex items-center gap-1.5 text-error">
+<span class="material-symbols-outlined text-xs">campaign</span>
+<span>Emergency Siren</span>
+</td>
+<td class="p-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-bold text-[10px] uppercase">Enforcing</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-3 font-bold text-on-surface flex items-center gap-2">
+<span class="text-tertiary">#</span>
+<span>dev-pipeline-warnings</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-semibold text-[10px]">Sev-2 / Sev-3</span>
+</td>
+<td class="p-3 text-on-surface-variant">Commit Author (Git)</td>
+<td class="p-3 text-outline truncate max-w-[140px]">.../T048A/B33LM0</td>
+<td class="p-3 flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-xs">volume_down</span>
+<span>Subtle Ding</span>
+</td>
+<td class="p-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-bold text-[10px] uppercase">Active</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-3 font-bold text-on-surface flex items-center gap-2">
+<span class="text-tertiary">#</span>
+<span>compliance-audit-feed</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px]">SOC 2 / ISO Digest</span>
+</td>
+<td class="p-3 text-on-surface-variant">@compliance-officers</td>
+<td class="p-3 text-outline truncate max-w-[140px]">.../T098P/B88XC9</td>
+<td class="p-3 flex items-center gap-1.5 text-outline">
+<span class="material-symbols-outlined text-xs">volume_mute</span>
+<span>Silent Batch</span>
+</td>
+<td class="p-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-bold text-[10px] uppercase">Active</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-3 font-bold text-on-surface flex items-center gap-2">
+<span class="text-tertiary">#</span>
+<span>secret-rotation-logs</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px]">Shadow Rotation Pass</span>
+</td>
+<td class="p-3 text-on-surface-variant">Channel Default</td>
+<td class="p-3 text-outline truncate max-w-[140px]">.../T048A/B51KK2</td>
+<td class="p-3 flex items-center gap-1.5 text-outline">
+<span class="material-symbols-outlined text-xs">volume_mute</span>
+<span>Silent Digest</span>
+</td>
+<td class="p-3 text-right">
+<span class="px-2 py-0.5 rounded bg-surface-container text-secondary font-bold text-[10px] uppercase">Active</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (5 / 12) -->
+<div class="lg:col-span-5 flex flex-col space-y-8 min-w-0">
+<!-- Section 1: Escalation Policies & PagerDuty/Opsgenie Bridge -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-xl relative overflow-hidden">
+<div class="flex items-center justify-between pb-5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl">alt_route</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface uppercase tracking-wide">Multi-Tier Escalation</h2>
+<p class="text-xs text-on-surface-variant">Slack-to-PagerDuty failover topology</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-on-surface cursor-pointer">settings</span>
+</div>
+<!-- Escalation Timeline Graphic -->
+<div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-highest">
+<!-- Node 1 -->
+<div class="relative group">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-tertiary border-2 border-surface-container-lowest ring-2 ring-surface-container-high"></span>
+<div class="rounded-xl bg-surface-container-low p-4 shadow-sm group-hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-tertiary font-bold">T + 0s</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] text-on-surface font-semibold">Immediate</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface mt-1">Slack Priority Push Broadcast</h4>
+<p class="text-xs text-on-surface-variant mt-1">
+                Dispatches interactive alert block with Dual-Quorum buttons directly to <code class="text-tertiary">#secops-critical-alerts</code>.
+              </p>
+</div>
+</div>
+<!-- Node 2 -->
+<div class="relative group">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-surface-bright border-2 border-surface-container-lowest"></span>
+<div class="rounded-xl bg-surface-container-low p-4 shadow-sm group-hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-tertiary font-bold">T + 60s</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] text-error font-semibold">On-Call Trigger</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface mt-1">PagerDuty / Opsgenie Incident Page</h4>
+<p class="text-xs text-on-surface-variant mt-1">
+                If unacknowledged in Slack, invokes high-urgency call &amp; SMS push to Primary SecOps On-Call engineer.
+              </p>
+</div>
+</div>
+<!-- Node 3 -->
+<div class="relative group">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-error border-2 border-surface-container-lowest animate-pulse"></span>
+<div class="rounded-xl bg-surface-container-low p-4 shadow-sm group-hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-error font-bold">T + 180s</span>
+<span class="px-2 py-0.5 rounded bg-error-container text-[10px] text-on-error-container font-bold">Emergency Auto-Lock</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface mt-1">Quarantine &amp; VP SecOps Escalation</h4>
+<p class="text-xs text-on-surface-variant mt-1">
+                Executes automated GitHub token revocation, issues commit revert, and pages Executive Incident Leads.
+              </p>
+</div>
+</div>
+</div>
+<!-- Redundancy status footer -->
+<div class="mt-6 pt-4 border-t border-surface-container/60 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>SMS &amp; Voice Carrier Redundancy: Normal</span>
+</span>
+<span class="text-tertiary font-semibold cursor-pointer hover:underline">Edit Flow</span>
+</div>
+</div>
+<!-- Section 2: Recent Dispatch Event Ledger (Live WebSocket Stream) -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-xl">
+<div class="flex items-center justify-between pb-5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl">cable</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface uppercase tracking-wide">Live WebSocket Stream</h2>
+<p class="text-xs text-on-surface-variant">Real-time Slack RTM gateway events</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary text-[10px] font-mono font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span>3ms ping</span>
+</div>
+</div>
+<!-- Stream Feed List -->
+<div class="space-y-3 font-mono text-xs">
+<!-- Stream Item 1 -->
+<div class="p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col space-y-1.5">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-error font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">crisis_alert</span>
+                Sev-0 Leak Alert
+              </span>
+<span class="text-outline">14:24:12 UTC</span>
+</div>
+<div class="text-on-surface truncate">Payload to <span class="text-tertiary">#secops-alerts</span> delivered</div>
+<div class="flex items-center justify-between text-[10px] text-outline pt-1">
+<span>Webhook Roundtrip: 28ms</span>
+<span class="text-secondary font-semibold">HTTP 200 OK</span>
+</div>
+</div>
+<!-- Stream Item 2 -->
+<div class="p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col space-y-1.5">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-tertiary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">verified</span>
+                JIT Access Quorum
+              </span>
+<span class="text-outline">14:18:05 UTC</span>
+</div>
+<div class="text-on-surface truncate">In-channel button click approval by <span class="text-on-surface font-semibold">@alex.m</span></div>
+<div class="flex items-center justify-between text-[10px] text-outline pt-1">
+<span>FIDO2 Passkey: WebAuthn Yubikey</span>
+<span class="text-secondary font-semibold">Verified</span>
+</div>
+</div>
+<!-- Stream Item 3 -->
+<div class="p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col space-y-1.5">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-secondary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">sync_problem</span>
+                Drift Detected
+              </span>
+<span class="text-outline">14:02:40 UTC</span>
+</div>
+<div class="text-on-surface truncate">ExternalSecrets CRD drift broadcast -&gt; <span class="text-tertiary">#k8s-infra</span></div>
+<div class="flex items-center justify-between text-[10px] text-outline pt-1">
+<span>Cluster: us-east-prod-eks</span>
+<span class="text-secondary font-semibold">Delivered</span>
+</div>
+</div>
+<!-- Stream Item 4 -->
+<div class="p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col space-y-1.5">
+<div class="flex items-center justify-between text-[11px]">
+<span class="text-on-surface-variant font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">rotate_right</span>
+                Rotation Canary
+              </span>
+<span class="text-outline">13:45:11 UTC</span>
+</div>
+<div class="text-on-surface truncate">90-day key rotation canary notice sent to <span class="text-tertiary">#backend-team</span></div>
+<div class="flex items-center justify-between text-[10px] text-outline pt-1">
+<span>TTL Remaining: 4d 12h</span>
+<span class="text-secondary font-semibold">Acknowledged</span>
+</div>
+</div>
+</div>
+<!-- Connection Diagnostics -->
+<div class="mt-4 pt-4 border-t border-surface-container/60 flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface-variant flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>Slack RTM Gateway: Synchronized</span>
+</span>
+<button class="text-tertiary hover:underline" type="button">Flush Logs</button>
+</div>
+</div>
+</div>
+</div>
+</div></main></div></body></html>

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<!-- Top Command & Hero Header -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-8 shadow-xl">
+<div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-surface-bright/20 blur-3xl pointer-events-none"></div>
+<div class="absolute right-96 bottom-0 h-48 w-48 rounded-full bg-tertiary/10 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+<div class="flex flex-col gap-2 max-w-2xl">
+<div class="flex items-center gap-2 text-xs font-mono tracking-wider uppercase text-on-surface-variant">
+<span>SecretVault</span>
+<span class="text-tertiary/40">/</span>
+<span>Developer</span>
+<span class="text-tertiary/40">/</span>
+<span class="text-tertiary font-semibold">Templates</span>
+</div>
+<div class="flex items-baseline gap-3">
+<h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-on-surface font-headline">
+            Secret Templates — Reusable Environment Schemas
+          </h1>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+          Standardize, enforce validation invariants, and distribute reusable secret blueprints across microservices with strict schema contracts.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<button class="inline-flex items-center gap-2 rounded-lg bg-surface-container px-4 py-2.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">file_upload</span>
+<span>Import Schema (.json)</span>
+</button>
+<button class="inline-flex items-center gap-2 rounded-lg bg-surface-bright px-4 py-2.5 text-xs font-bold tracking-wide uppercase text-on-surface hover:bg-surface-container-highest transition-all shadow-md active:scale-95">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Create Template</span>
+</button>
+</div>
+</div>
+<!-- Quick Stats Bar -->
+<div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+<div class="rounded-lg bg-surface-container-lowest/80 p-3 shadow-inner">
+<div class="text-[11px] font-mono text-on-surface-variant uppercase">Active Schemas</div>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-on-surface">14</span>
+<span class="text-[10px] text-tertiary font-medium">+2 this week</span>
+</div>
+</div>
+<div class="rounded-lg bg-surface-container-lowest/80 p-3 shadow-inner">
+<div class="text-[11px] font-mono text-on-surface-variant uppercase">Enforced Invariants</div>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-on-surface">100%</span>
+<span class="text-[10px] text-tertiary-fixed font-medium">OPA Rego strict</span>
+</div>
+</div>
+<div class="rounded-lg bg-surface-container-lowest/80 p-3 shadow-inner">
+<div class="text-[11px] font-mono text-on-surface-variant uppercase">Consuming Pods</div>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-on-surface">148</span>
+<span class="text-[10px] text-tertiary-fixed-dim font-medium">12 namespaces</span>
+</div>
+</div>
+<div class="rounded-lg bg-surface-container-lowest/80 p-3 shadow-inner">
+<div class="text-[11px] font-mono text-on-surface-variant uppercase">Drift Incidents</div>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="text-xl font-bold font-mono text-tertiary">0</span>
+<span class="text-[10px] text-on-surface-variant font-medium">Last sync 4m ago</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Search & Category Filter Section -->
+<div class="flex flex-col gap-4">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<!-- Search Input -->
+<div class="relative flex-1 max-w-xl">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">search</span>
+</div>
+<input class="w-full rounded-lg bg-surface-container-low py-2.5 pl-10 pr-16 text-xs text-on-surface placeholder:text-on-surface-variant/50 focus:bg-surface-container focus:outline-none shadow-sm transition-all" placeholder="Search templates by name, tags, or maintainer... (Cmd+K)" type="text"/>
+<div class="absolute inset-y-0 right-0 flex items-center pr-3">
+<kbd class="rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">⌘K</kbd>
+</div>
+</div>
+<!-- Sorting Selector -->
+<div class="flex items-center gap-2 self-end lg:self-auto">
+<span class="text-[11px] font-mono uppercase text-on-surface-variant">Sort:</span>
+<div class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-xs text-on-surface cursor-pointer hover:bg-surface-container shadow-sm transition-all">
+<span class="material-symbols-outlined text-[16px] text-tertiary">swap_vert</span>
+<span class="font-medium">Recently Updated</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Segmented Filter Pills -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-highest px-3.5 py-1.5 text-xs font-semibold text-on-surface shadow-sm">
+<span>All</span>
+<span class="rounded bg-surface-container-lowest/60 px-1.5 py-0.5 text-[10px] font-mono text-tertiary-fixed">14</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3.5 py-1.5 text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span>Application</span>
+<span class="rounded bg-surface-container-lowest/40 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">5</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3.5 py-1.5 text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span>Kubernetes</span>
+<span class="rounded bg-surface-container-lowest/40 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">3</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3.5 py-1.5 text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span>Infrastructure &amp; Cloud</span>
+<span class="rounded bg-surface-container-lowest/40 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">3</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3.5 py-1.5 text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span>CI/CD</span>
+<span class="rounded bg-surface-container-lowest/40 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">2</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3.5 py-1.5 text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span>Database</span>
+<span class="rounded bg-surface-container-lowest/40 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant">1</span>
+</button>
+</div>
+</div>
+<!-- Template Cards Grid (3 Columns) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+<!-- Card 1: Node.js & Next.js Production -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">javascript</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary">APPLICATION</span>
+<span class="text-[11px] font-mono text-on-surface-variant">12 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                Node.js &amp; Next.js Production
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          Standard blueprint for Next.js fullstack services with PostgreSQL, Redis, Auth.js, and Stripe integrations.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>DATABASE_URL</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>NEXTAUTH_SECRET</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>STRIPE_SECRET_KEY</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>REDIS_URL</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">SENTRY_DSN</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">ANALYTICS_ID</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">+1</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-mono text-on-surface">@alex.dev</span>
+</span>
+<span>Updated 2h ago</span>
+<span class="font-semibold text-tertiary-fixed-dim">8 Active Projects</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+<!-- Card 2: Kubernetes Microservice Standard -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">deployed_code</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary-fixed">KUBERNETES</span>
+<span class="text-[11px] font-mono text-on-surface-variant">16 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                Kubernetes Microservice Standard
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          Production-grade ConfigMap &amp; ExternalSecrets CRD mapping with tmpfs in-memory volume injection.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>VAULT_ADDR</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>K8S_SERVICE_ACCOUNT_TOKEN</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>DB_CONNECTION_POOL</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>ENCLAVE_KEY</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">REPLICA_COUNT</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">PROMETHEUS_METRICS_PORT</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield_person</span>
+<span class="font-mono text-on-surface">@secops-platform</span>
+</span>
+<span>Updated yesterday</span>
+<span class="font-semibold text-tertiary-fixed-dim">14 Clusters</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+<!-- Card 3: Python FastAPI / SQLAlchemy Engine -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">terminal</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary">APPLICATION</span>
+<span class="text-[11px] font-mono text-on-surface-variant">11 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                Python FastAPI / SQLAlchemy Engine
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          Async database pooling, Alembic migration credentials, Celery Redis brokers, and Sentry tracing.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>ASYNC_DATABASE_URI</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>JWT_ALGORITHM</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>SECRET_KEY</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>CELERY_BROKER_URL</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">CORS_ORIGINS</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">MAX_OVERFLOW</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-mono text-on-surface">@m.kovacs</span>
+</span>
+<span>Updated 3d ago</span>
+<span class="font-semibold text-tertiary-fixed-dim">5 Projects</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+<!-- Card 4: Terraform Cloud & AWS Foundation -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">cloud_sync</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary-fixed">INFRASTRUCTURE</span>
+<span class="text-[11px] font-mono text-on-surface-variant">9 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                Terraform Cloud &amp; AWS Foundation
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          Zero-plaintext infrastructure bootstrapping with AWS AssumeRole OIDC tokens and State Lock secrets.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>AWS_ROLE_ARN</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>TF_VAR_db_password</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>TF_CLOUD_TOKEN</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">TF_LOG</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">AWS_DEFAULT_REGION</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-mono text-on-surface">@s.rodriguez</span>
+</span>
+<span>Updated 1w ago</span>
+<span class="font-semibold text-tertiary-fixed-dim">3 Workspaces</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+<!-- Card 5: GitHub Actions CI/CD Secrets Shield -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">alt_route</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary-fixed">CI/CD</span>
+<span class="text-[11px] font-mono text-on-surface-variant">7 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                GitHub Actions CI/CD Secrets Shield
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          OIDC federated deployment pipeline credentials for container image signing and staging deployments.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>GH_OIDC_TOKEN</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>COSIGN_PRIVATE_KEY</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>STAGING_DEPLOY_WEBHOOK</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">SLACK_NOTIFY_KEY</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">RUNNER_TAG</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-mono text-on-surface">@alex.dev</span>
+</span>
+<span>Updated 2w ago</span>
+<span class="font-semibold text-tertiary-fixed-dim">12 Repositories</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+<!-- Card 6: Docker Compose Local Sandbox -->
+<div class="group flex flex-col justify-between rounded-xl bg-surface-container-low p-5 shadow-lg hover:bg-surface-container transition-all duration-200">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[24px]">developer_board</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="rounded px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase bg-surface-container-high text-tertiary">APPLICATION</span>
+<span class="text-[11px] font-mono text-on-surface-variant">8 vars</span>
+</div>
+<h2 class="text-base font-bold text-on-surface group-hover:text-white transition-colors mt-0.5">
+                Docker Compose Local Sandbox
+              </h2>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+          Local development ephemeral stub variables with automatic mock credential generation.
+        </p>
+<!-- Required Variables Badge Group -->
+<div class="flex flex-col gap-1.5">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant/80">Required Schema Keys</span>
+<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>LOCAL_DB_PASS</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>LOCAL_JWT_SIGNER</span>
+</div>
+<div class="flex items-center gap-1 rounded bg-surface-container-lowest px-2 py-1 font-mono text-[11px] text-tertiary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>MOCK_STRIPE_KEY</span>
+</div>
+</div>
+</div>
+<!-- Optional Variables -->
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="text-[10px] uppercase">Optional:</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">DEBUG_PORT</span>
+<span class="rounded bg-surface-container-high/60 px-1.5 py-0.5 text-[10px]">VERBOSE_LOGS</span>
+</div>
+</div>
+<div class="mt-6 flex flex-col gap-3">
+<!-- Metadata -->
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-3 border-t border-transparent">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">groups</span>
+<span class="font-mono text-on-surface">@platform-core</span>
+</span>
+<span>Updated 4d ago</span>
+<span class="font-semibold text-tertiary-fixed-dim">22 Developers</span>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="col-span-1 rounded-lg bg-surface-bright py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors text-center shadow-sm">
+            Use Template
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Edit Schema
+          </button>
+<button class="rounded-lg bg-surface-container py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors text-center shadow-sm">
+            Duplicate
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section — Template Compliance & Schema Drift Monitor -->
+<div class="rounded-xl bg-surface-container-low p-6 shadow-xl relative overflow-hidden">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+<div class="flex items-start gap-4 max-w-2xl">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-container-lowest text-tertiary shadow-inner">
+<span class="material-symbols-outlined text-[28px]">verified_user</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-tertiary animate-ping"></span>
+<span class="text-xs font-mono font-bold tracking-wider uppercase text-tertiary">Schema Compliance Status</span>
+</div>
+<h3 class="text-base font-bold text-on-surface">OPA Rego Policy Enforcement Active</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+            14 of 14 templates verified against OPA Rego security policies. Zero plaintext defaults detected. Continuous static evaluation guarantees zero secrets leak into version control manifests.
+          </p>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="flex flex-wrap items-center gap-3">
+<button class="inline-flex items-center gap-2 rounded-lg bg-surface-container px-3.5 py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">rule</span>
+<span>Validate All Templates against Production</span>
+</button>
+<button class="inline-flex items-center gap-2 rounded-lg bg-surface-container px-3.5 py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">download</span>
+<span>Export Schema Registry (.json)</span>
+</button>
+<button class="inline-flex items-center gap-2 rounded-lg bg-surface-container px-3.5 py-2 text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">history</span>
+<span>View Version Changelog</span>
+</button>
+</div>
+</div>
+<!-- Inline Drift Health Progress Ribbon -->
+<div class="mt-6 flex flex-col gap-2 pt-4">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>SCHEMA INTEGRITY VECTOR</span>
+<span class="text-tertiary font-bold">100.0% CONFORMANT (0 DRIFT ALERTS)</span>
+</div>
+<div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-lowest">
+<div class="h-full bg-gradient-to-r from-tertiary-fixed via-tertiary to-surface-bright" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple interactive mock for pill filters
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (btn.innerText.includes('Use Template')) {
+        const title = btn.closest('.group')?.querySelector('h2')?.innerText || 'Template';
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-surface-bright px-4 py-3 text-xs font-medium text-on-surface shadow-2xl transition-all';
+        notification.innerHTML = `<span class="material-symbols-outlined text-[18px]">check_circle</span> Initializing blueprint: <b>${title}</b>`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2500);
+      }
+    });
+  });
+</script></main></div></body></html>

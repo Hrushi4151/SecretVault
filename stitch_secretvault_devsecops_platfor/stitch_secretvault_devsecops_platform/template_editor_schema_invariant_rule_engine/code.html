@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-6 text-on-surface font-body">
+<!-- Top Ambient Glow Line -->
+<div class="relative w-full h-[1px] bg-gradient-to-r from-transparent via-on-tertiary-container/40 to-transparent"></div>
+<!-- Header Section -->
+<header class="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-2">
+<div class="flex flex-col gap-2">
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
+<span class="hover:text-on-surface transition-colors cursor-pointer">SecretVault</span>
+<span class="text-outline-variant">/</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Developer</span>
+<span class="text-outline-variant">/</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Templates</span>
+<span class="text-outline-variant">/</span>
+<span class="text-tertiary font-semibold">Template Editor</span>
+</nav>
+<!-- Page Title & Meta -->
+<div class="flex flex-wrap items-center gap-3">
+<h1 class="text-2xl lg:text-3xl font-headline font-bold tracking-tight text-on-surface">
+          Template Editor <span class="font-normal text-on-surface-variant">—</span> Schema &amp; Invariant Rule Engine
+        </h1>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high shadow-sm">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-on-tertiary-container"></span>
+</span>
+<span class="text-xs font-mono font-medium text-tertiary-fixed tracking-wide">ACTIVE DRAFT: Spring Boot Production v2.4</span>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant max-w-4xl font-normal leading-relaxed">
+        Define cryptographic types, required schema contracts, default invariants, and OPA Rego guardrails for environment blueprints.
+      </p>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-2 self-start xl:self-auto shrink-0">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-semibold text-on-surface tracking-wide transition-colors shadow-sm" id="validateBtn" type="button">
+<span class="material-symbols-outlined text-[17px] text-tertiary">verified_user</span>
+<span>Validate Schema</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-semibold text-on-surface-variant hover:text-on-surface tracking-wide transition-colors shadow-sm" type="button">
+<span>Discard Changes</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-on-tertiary-container hover:opacity-95 text-xs font-bold text-on-surface tracking-wider uppercase transition-all shadow-md" type="button">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+<span>Save &amp; Publish Template</span>
+</button>
+</div>
+</header>
+<!-- 2-Column Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+<!-- MAIN COLUMN: 2/3 width (8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- 1. Template Metadata Bar Card -->
+<div class="relative bg-surface-container-lowest rounded-xl p-5 shadow-lg overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-surface-container-highest via-on-tertiary-container to-surface-container-highest"></div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px]">tune</span>
+<span class="text-xs font-mono font-bold tracking-widest text-on-surface-variant uppercase">Blueprint Configuration Profile</span>
+</div>
+<span class="text-[11px] font-mono px-2 py-0.5 rounded bg-surface-container-low text-tertiary-fixed-dim">IMMUTABLE ENCLAVE SCHEMA</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Template Name -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">Template Name</label>
+<div class="flex items-center px-3 py-2 bg-surface-container-low rounded-lg focus-within:bg-surface-container">
+<input class="bg-transparent text-sm font-semibold text-on-surface w-full focus:outline-none" type="text" value="Spring Boot Production"/>
+<span class="material-symbols-outlined text-outline text-[16px]">edit</span>
+</div>
+</div>
+<!-- Scope / Archetype -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">Scope / Archetype</label>
+<div class="relative">
+<select class="w-full appearance-none px-3 py-2 bg-surface-container-low rounded-lg text-sm text-on-surface font-medium focus:outline-none focus:bg-surface-container cursor-pointer pr-8">
+<option selected="">Backend Microservice (JVM)</option>
+<option>Frontend Edge (Next.js / Nitro)</option>
+<option>Data Pipeline (Python / Spark)</option>
+<option>Event Broker (Kafka Consumer)</option>
+</select>
+<span class="material-symbols-outlined text-outline text-[18px] absolute right-2.5 top-2.5 pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Target Enclave -->
+<div class="flex flex-col gap-1.5">
+<label class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">Target Enclave</label>
+<div class="flex items-center gap-2 px-3 py-2 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span class="text-sm font-semibold text-on-surface truncate">AWS Nitro Enclaves / KMS</span>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-1.5 mt-4">
+<label class="text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">Description &amp; Contract Objective</label>
+<div class="px-3 py-2 bg-surface-container-low rounded-lg text-xs text-on-surface-variant leading-relaxed">
+            Standardized production configuration blueprint for Spring Boot 3.x applications with PostgreSQL, Redis Sentinel, and RabbitMQ. Enforces zero-plaintext policies and automatic rotatable KMS attestation.
+          </div>
+</div>
+</div>
+<!-- 2. Schema Invariant Key-Value Table / Editor Panel -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lg flex flex-col overflow-hidden">
+<!-- Table Header Panel -->
+<div class="flex flex-wrap items-center justify-between gap-4 p-4 bg-surface-container-low/70">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-[20px]">rule</span>
+<div class="flex flex-col">
+<h2 class="text-sm font-headline font-bold tracking-tight text-on-surface">Invariant Declarations</h2>
+<span class="text-[11px] font-mono text-on-surface-variant">Strict contract bounds verified across commit, CI/CD pipeline, and pod start</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-mono text-tertiary bg-surface-container px-2.5 py-1 rounded-md">6 Invariants Loaded</span>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Filter invariants">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest text-[11px] font-mono uppercase tracking-wider text-on-surface-variant select-none">
+<th class="py-3 px-4">Key Identifier</th>
+<th class="py-3 px-3">Type</th>
+<th class="py-3 px-3">Requirement</th>
+<th class="py-3 px-3">Classification</th>
+<th class="py-3 px-3">Default / Fallback</th>
+<th class="py-3 px-3">Validation RegEx / OPA</th>
+<th class="py-3 px-3 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-xs divide-y-0">
+<!-- ROW 1: DATABASE_URL -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">DATABASE_URL</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:SPRING_DATASOURCE_URL</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">string (URI)</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-mono text-[10px] font-bold uppercase tracking-wider">Required</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-[11px]">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>Secret (••••••••)</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="text-outline text-[11px] font-mono italic">None (Mandatory at runtime)</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]" title="^postgresql:\/\/[^:]+:[^@]+@.+:[0-9]+\/.+$">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">^postgresql:\/\/[^:]+:[^@]+@.+</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 2: REDIS_URL -->
+<tr class="bg-surface-container-lowest/40 hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">REDIS_URL</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:SPRING_REDIS_URL</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">string (URI)</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-mono text-[10px] font-bold uppercase tracking-wider">Required</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-[11px]">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>Secret (••••••••)</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="font-mono text-[11px] text-on-surface-variant">rediss://:••••••••@cluster:6379</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">^rediss?:\/\/.+</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 3: JWT_SIGNING_SECRET -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">JWT_SIGNING_SECRET</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:AUTH_JWT_SECRET</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">secret (crypto)</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container font-mono text-[10px] font-bold uppercase tracking-wider">Required</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-mono text-[11px]" title="High Entropy &gt; 7.5 bits/byte required">
+<span class="material-symbols-outlined text-[13px] text-tertiary">key</span>
+<span>Secret (Entropy &gt; 7.5)</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="font-mono text-[11px] text-tertiary-fixed font-semibold">Enclave Auto-Gen (AES-256)</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">min_len: 64, entropy: high</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 4: LOG_LEVEL -->
+<tr class="bg-surface-container-lowest/40 hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">LOG_LEVEL</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:LOGGING_LEVEL_ROOT</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">string (enum)</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-secondary font-mono text-[10px] font-bold uppercase tracking-wider">Optional</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-mono text-[11px]">Non-Secret</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-[11px] font-bold">"INFO"</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">enum[TRACE,DEBUG,INFO,WARN,ERROR]</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 5: SERVER_PORT -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">SERVER_PORT</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:PORT</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">integer</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-secondary font-mono text-[10px] font-bold uppercase tracking-wider">Optional</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-mono text-[11px]">Non-Secret</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-[11px] font-bold">8080</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">range[1024, 65535]</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- ROW 6: SENTRY_DSN -->
+<tr class="bg-surface-container-lowest/40 hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface group-hover:text-tertiary transition-colors tracking-wide">SENTRY_DSN</span>
+<span class="text-[10px] text-on-surface-variant font-mono">env:SENTRY_DSN</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[11px]">string (URI)</span>
+</td>
+<td class="py-3.5 px-3">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-secondary font-mono text-[10px] font-bold uppercase tracking-wider">Optional</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono text-[11px]">
+<span class="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+<span>Secret (••••••••)</span>
+</div>
+</td>
+<td class="py-3.5 px-3">
+<span class="font-mono text-[11px] text-on-surface-variant">Enclave Resolved</span>
+</td>
+<td class="py-3.5 px-3">
+<div class="flex items-center gap-1.5 max-w-[210px]" title="^https:\/\/[a-f0-9]+@o[0-9]+\.ingest\.sentry\.io\/[0-9]+$">
+<span class="material-symbols-outlined text-on-surface text-[15px] shrink-0">check_circle</span>
+<span class="font-mono text-[11px] text-on-surface truncate">^https:\/\/[a-f0-9]+@o[0-9]+\.ingest</span>
+</div>
+</td>
+<td class="py-3.5 px-3 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-tertiary-container hover:bg-surface-container transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Invariant Actions Toolbar -->
+<div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-surface-container-low/40">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-all shadow-sm" id="addRuleBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">add_circle</span>
+<span>Add Variable Rule</span>
+</button>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">upload_file</span>
+<span>Import from .env.example</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">code</span>
+<span>Export OPA Rego Schema (.rego)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Invariant Policy Rules Code Panel (Sub-feature) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">policy</span>
+<span class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface">OPA Rego Invariant Contract</span>
+</div>
+<span class="text-[11px] font-mono text-tertiary-fixed-dim">package secretvault.templates.spring_boot_prod</span>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg font-mono text-xs leading-relaxed text-on-surface-variant overflow-x-auto">
+<span class="text-tertiary">package</span> secretvault.templates.spring_boot_prod<br/><br/>
+<span class="text-on-surface-variant/70"># Enforce zero plaintext secret exposure &amp; minimum entropy</span><br/>
+          default allow = <span class="text-tertiary">true</span><br/><br/>
+          violation[msg] {<br/>
+            input.secrets[name].entropy &lt; 7.5<br/>
+            msg := sprintf(<span class="text-tertiary-fixed">"Secret %v entropy is insufficient for production enclave"</span>, [name])<br/>
+          }
+        </div>
+</div>
+</div>
+<!-- RIGHT COLUMN: 1/3 width (4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- 1. Real-Time Validation Invariant Card -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col gap-5 relative overflow-hidden">
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-on-tertiary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">fact_check</span>
+<h3 class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface">Invariant Health Engine</h3>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-tertiary">REAL-TIME</span>
+</div>
+<!-- Circular Gauge & High Impact Result -->
+<div class="flex items-center gap-5 p-3 rounded-xl bg-surface-container-low">
+<!-- Inline SVG Circle Progress Gauge -->
+<div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-on-tertiary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="100, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<div class="absolute flex flex-col items-center justify-center">
+<span class="text-sm font-mono font-bold text-on-surface leading-none">100%</span>
+<span class="text-[9px] font-mono text-tertiary uppercase">PASS</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-headline font-bold text-on-surface">Schema Invariants Fully Met</span>
+<p class="text-[11px] text-on-surface-variant leading-tight mt-0.5">
+              Zero violations detected against policy rules. Cryptographic enclave ready.
+            </p>
+</div>
+</div>
+<!-- Invariant Stats Breakdown -->
+<div class="grid grid-cols-2 gap-2.5 text-xs font-mono">
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Total Invariants</span>
+<span class="text-base font-bold text-on-surface mt-0.5">6 Variables</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Required Keys</span>
+<span class="text-base font-bold text-tertiary mt-0.5">4 Variables</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Optional Keys</span>
+<span class="text-base font-bold text-secondary mt-0.5">2 Variables</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Enclave Bound</span>
+<span class="text-base font-bold text-on-tertiary-container mt-0.5">4 Secrets</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Plaintext Config</span>
+<span class="text-base font-bold text-on-surface-variant mt-0.5">2 Non-Secret</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase">Schema Errors</span>
+<span class="text-base font-bold text-on-surface mt-0.5">0 Faults</span>
+</div>
+</div>
+<!-- Policy Status Pill -->
+<div class="p-3 rounded-lg bg-surface-container-high/60 flex items-start gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px] shrink-0 mt-0.5">gshield</span>
+<div class="flex flex-col gap-0.5">
+<span class="text-[11px] font-mono font-bold text-on-surface">OPA Rego Policy Engine</span>
+<span class="text-[11px] text-on-surface-variant leading-snug">
+              "All secrets require AES-256 entropy check on injection. Pass."
+            </span>
+</div>
+</div>
+</div>
+<!-- 2. Live Synthesized Preview Box -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lg flex flex-col overflow-hidden">
+<!-- Tab Bar -->
+<div class="flex items-center justify-between p-3 bg-surface-container-low">
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container-high text-[11px] font-mono font-semibold text-on-surface">
+              application.yml
+            </button>
+<button class="px-2.5 py-1 rounded hover:bg-surface-container text-[11px] font-mono text-on-surface-variant hover:text-on-surface transition-colors">
+              .env
+            </button>
+<button class="px-2.5 py-1 rounded hover:bg-surface-container text-[11px] font-mono text-on-surface-variant hover:text-on-surface transition-colors">
+              ConfigMap
+            </button>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px] cursor-pointer hover:text-on-surface transition-colors" title="Copy code">content_copy</span>
+</div>
+<!-- Code Content -->
+<div class="p-4 bg-surface-container-lowest font-mono text-[12px] leading-relaxed text-on-surface-variant overflow-x-auto select-all">
+<div class="text-tertiary">spring:</div>
+<div class="pl-4 text-on-surface">datasource:</div>
+<div class="pl-8 text-on-surface-variant">url: <span class="text-tertiary-fixed font-bold">${DATABASE_URL:••••••••}</span></div>
+<div class="pl-4 text-on-surface">redis:</div>
+<div class="pl-8 text-on-surface-variant">url: <span class="text-tertiary-fixed font-bold">${REDIS_URL:••••••••}</span></div>
+<div class="text-tertiary">logging:</div>
+<div class="pl-4 text-on-surface">level:</div>
+<div class="pl-8 text-on-surface-variant">root: <span class="text-on-surface font-bold">INFO</span></div>
+<div class="text-tertiary">security:</div>
+<div class="pl-4 text-on-surface">jwt:</div>
+<div class="pl-8 text-on-surface-variant">secret: <span class="text-tertiary-fixed font-bold">${JWT_SIGNING_SECRET:••••••••}</span></div>
+</div>
+<div class="px-4 py-2 bg-surface-container-low flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>Synthesized from 6 invariants</span>
+<span class="text-tertiary">Masked Credentials</span>
+</div>
+</div>
+<!-- 3. Consumption Blast Radius -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">hub</span>
+<h3 class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface">Blast Radius Matrix</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-tertiary font-mono text-[10px] font-bold">
+            3 Active Services
+          </span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+          The following microservices inherit this blueprint directly. Publishing updates will trigger shadow diff evaluation before rollouts.
+        </p>
+<!-- Service List -->
+<div class="flex flex-col gap-2">
+<!-- Service 1 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span class="font-mono font-semibold text-xs text-on-surface">payments-service</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary-fixed uppercase font-bold">Prod</span>
+</div>
+<!-- Service 2 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-mono font-semibold text-xs text-on-surface">billing-worker</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant uppercase font-bold">Staging</span>
+</div>
+<!-- Service 3 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span class="font-mono font-semibold text-xs text-on-surface">auth-gateway</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary-fixed uppercase font-bold">Prod</span>
+</div>
+</div>
+<!-- Guard Warning Notice -->
+<div class="p-3 rounded-lg bg-surface-container-high/40 flex items-start gap-2.5">
+<span class="material-symbols-outlined text-outline text-[18px] shrink-0 mt-0.5">info</span>
+<span class="text-[11px] text-on-surface-variant leading-relaxed">
+            Publishing updates will trigger shadow diff evaluation. Target pods will not restart without manual approval.
+          </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast Notification Template for Microinteraction -->
+<div class="fixed bottom-6 right-6 hidden items-center gap-3 px-4 py-3 rounded-xl bg-surface-container-highest text-on-surface shadow-2xl z-50 transition-all transform translate-y-2" id="toastNotification">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<span class="text-xs font-mono font-semibold" id="toastMsg">Schema validated against OPA engine: 0 errors.</span>
+</div>
+<script>
+    (function() {
+      const validateBtn = document.getElementById('validateBtn');
+      const addRuleBtn = document.getElementById('addRuleBtn');
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMsg');
+
+      function showToast(message) {
+        if (!toast) return;
+        toastMsg.textContent = message;
+        toast.classList.remove('hidden', 'translate-y-2');
+        toast.classList.add('flex', 'translate-y-0');
+        setTimeout(() => {
+          toast.classList.add('translate-y-2');
+          setTimeout(() => {
+            toast.classList.remove('flex');
+            toast.classList.add('hidden');
+          }, 200);
+        }, 3200);
+      }
+
+      if (validateBtn) {
+        validateBtn.addEventListener('click', () => {
+          showToast('Engine Attestation: 6/6 Invariants passed OPA Rego verification.');
+        });
+      }
+
+      if (addRuleBtn) {
+        addRuleBtn.addEventListener('click', () => {
+          showToast('Rule modal initialized. Please specify invariant key and RegEx pattern.');
+        });
+      }
+    })();
+  </script>
+</div></main></div></body></html>
