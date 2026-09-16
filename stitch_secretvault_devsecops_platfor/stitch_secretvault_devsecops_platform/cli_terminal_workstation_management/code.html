@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<!-- Header Section -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-3">
+<h1 class="text-3xl font-bold tracking-tight text-on-surface font-headline">CLI</h1>
+<span class="px-2.5 py-0.5 text-xs font-mono font-semibold rounded bg-surface-container-high text-tertiary-fixed-dim">v2.4.1</span>
+</div>
+<p class="text-sm text-on-surface-variant max-w-2xl leading-relaxed">
+        Use SecretVault directly from your terminal across your workflows and staging environments with hardware-backed enclave attestation.
+      </p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-xs font-semibold tracking-wide transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">menu_book</span>
+<span>View Documentation</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">arrow_outward</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold tracking-wide transition-all shadow-sm" onclick="document.getElementById('install-terminal-section').scrollIntoView({ behavior: 'smooth' })">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">terminal</span>
+<span>Install CLI</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-tertiary-fixed-dim hover:bg-tertiary-fixed text-on-tertiary-fixed font-semibold text-xs tracking-wide transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>+ Create CLI Credential</span>
+</button>
+</div>
+</div>
+<!-- Real-Time Telemetry / Top Metrics -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<div class="flex flex-col p-5 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Active CLI Sessions</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-extrabold text-on-surface font-headline">14</span>
+<span class="text-xs text-on-surface-variant font-mono">sessions</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-[11px] text-on-surface-variant">
+<span class="inline-block w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span>Across 3 clusters &amp; 9 nodes</span>
+</div>
+</div>
+<div class="flex flex-col p-5 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Commands (24h)</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-extrabold text-on-surface font-headline">18,420</span>
+<span class="text-xs text-tertiary-fixed-dim font-mono">+12.4%</span>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<div class="w-full bg-surface-container-low h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary-fixed-dim h-full w-[78%]"></div>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">99.98% ok</span>
+</div>
+</div>
+<div class="flex flex-col p-5 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Connected Workstations</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]">laptop_mac</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-extrabold text-on-surface font-headline">9</span>
+<span class="text-xs text-on-surface-variant font-mono">devices</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-[11px] text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">verified_user</span>
+<span>All Nitro TPM attested</span>
+</div>
+</div>
+<div class="flex flex-col p-5 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Enclave Auth Tokens</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-extrabold text-on-surface font-headline">100%</span>
+<span class="text-xs text-on-surface-variant font-mono">Validated</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-[11px] text-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+<span>Zero plain-text disk writes</span>
+</div>
+</div>
+</div>
+<!-- Hero CLI Terminal Banner -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest overflow-hidden shadow-xl" id="install-terminal-section">
+<!-- Top Terminal Bar -->
+<div class="flex flex-wrap items-center justify-between px-6 py-3.5 bg-surface-container-low gap-4">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-error-container"></span>
+<span class="w-3 h-3 rounded-full bg-surface-container-high"></span>
+<span class="w-3 h-3 rounded-full bg-surface-container-highest"></span>
+</div>
+<div class="h-4 w-px bg-surface-container-highest hidden sm:block"></div>
+<div class="flex items-center gap-2">
+<span class="inline-block w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-xs font-mono font-medium text-on-surface-variant">Live Daemon v2.4.1 Connected</span>
+</div>
+</div>
+<!-- Environment Selector Tabs -->
+<div class="flex items-center rounded-lg bg-surface-container-lowest p-1 gap-1" id="os-tabs">
+<button class="px-3 py-1 rounded text-xs font-mono font-semibold transition-all bg-surface-container text-on-surface shadow-sm" id="tab-macos" onclick="switchTab('macos')">
+          macOS (Homebrew)
+        </button>
+<button class="px-3 py-1 rounded text-xs font-mono font-medium transition-all text-on-surface-variant hover:text-on-surface" id="tab-linux" onclick="switchTab('linux')">
+          Linux (curl/bash)
+        </button>
+<button class="px-3 py-1 rounded text-xs font-mono font-medium transition-all text-on-surface-variant hover:text-on-surface" id="tab-windows" onclick="switchTab('windows')">
+          Windows (winget)
+        </button>
+</div>
+</div>
+<!-- Terminal Prompt Emulator Body -->
+<div class="p-6 md:p-8 flex flex-col gap-6">
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-4 rounded-xl bg-surface-container-low/60 backdrop-blur-md">
+<div class="flex items-center gap-3 font-mono text-sm sm:text-base overflow-x-auto w-full py-1">
+<span class="text-tertiary-fixed select-none">$</span>
+<span class="text-on-surface font-semibold tracking-wide">secretvault run</span>
+<span class="text-on-surface-variant">--env</span>
+<span class="text-tertiary-fixed-dim font-bold">production</span>
+<span class="text-on-surface-variant">--</span>
+<span class="text-on-surface">npm start</span>
+</div>
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-all shrink-0" onclick="copySnippet('secretvault run --env production -- npm start', this)">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span class="btn-text">Copy Command</span>
+</button>
+</div>
+<!-- Quick Install Panels -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- macOS -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low transition-all" id="panel-macos">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono font-semibold text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">laptop_mac</span>
+                macOS Install
+              </span>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container text-tertiary">Recommended</span>
+</div>
+<code class="font-mono text-xs text-on-surface bg-surface-container-lowest p-2.5 rounded-lg break-all leading-relaxed">
+              brew install secretvault/tap/secretvault &amp;&amp; secretvault login
+            </code>
+</div>
+<button class="mt-3 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-mono text-on-surface transition-all" onclick="copySnippet('brew install secretvault/tap/secretvault &amp;&amp; secretvault login', this)">
+<span class="material-symbols-outlined text-[14px]">copy_all</span>
+<span class="btn-text">Copy</span>
+</button>
+</div>
+<!-- Linux -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low transition-all" id="panel-linux">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono font-semibold text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+                Linux Standalone
+              </span>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">glibc / musl</span>
+</div>
+<code class="font-mono text-xs text-on-surface bg-surface-container-lowest p-2.5 rounded-lg break-all leading-relaxed">
+              curl -fsSL https://get.secretvault.io | sh
+            </code>
+</div>
+<button class="mt-3 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-mono text-on-surface transition-all" onclick="copySnippet('curl -fsSL https://get.secretvault.io | sh', this)">
+<span class="material-symbols-outlined text-[14px]">copy_all</span>
+<span class="btn-text">Copy</span>
+</button>
+</div>
+<!-- Windows -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low transition-all" id="panel-windows">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono font-semibold text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">desktop_windows</span>
+                Windows (winget)
+              </span>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">Powershell 7+</span>
+</div>
+<code class="font-mono text-xs text-on-surface bg-surface-container-lowest p-2.5 rounded-lg break-all leading-relaxed">
+              winget install secretvault
+            </code>
+</div>
+<button class="mt-3 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-mono text-on-surface transition-all" onclick="copySnippet('winget install secretvault', this)">
+<span class="material-symbols-outlined text-[14px]">copy_all</span>
+<span class="btn-text">Copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- CLI Active Sessions Table -->
+<div class="flex flex-col rounded-2xl bg-surface-container-lowest overflow-hidden shadow-lg">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-surface-container-low gap-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[18px]">key</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-base font-bold text-on-surface font-headline">Active CLI Sessions</h2>
+<span class="text-xs text-on-surface-variant">Enclave memory-bound running credentials in circulation</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs text-on-surface font-mono transition-colors">
+          Export Audit (.json)
+        </button>
+<button class="px-3 py-1.5 rounded-lg bg-on-tertiary hover:bg-error-container text-xs text-tertiary-fixed font-semibold tracking-wide transition-colors">
+          Revoke All Ephemeral
+        </button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs">
+<thead>
+<tr class="bg-surface-container-low/70 text-on-surface-variant uppercase font-mono text-[11px] tracking-wider">
+<th class="py-3 px-6 font-semibold">Device &amp; Hostname</th>
+<th class="py-3 px-6 font-semibold">Developer / Identity</th>
+<th class="py-3 px-6 font-semibold">Bound Environment</th>
+<th class="py-3 px-6 font-semibold">Current Process / Command</th>
+<th class="py-3 px-6 font-semibold">Last Active</th>
+<th class="py-3 px-6 font-semibold">Session TTL</th>
+<th class="py-3 px-6 font-semibold">Status</th>
+<th class="py-3 px-6 font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary">laptop_mac</span>
+<div class="flex flex-col font-mono">
+<span class="font-bold text-on-surface">MacBook-Pro-M3.local</span>
+<span class="text-[10px] text-on-surface-variant">Darwin 24.2.0 (arm64)</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Alex Morgan</span>
+<span class="text-[11px] text-on-surface-variant">Staff SecEng</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-container-high text-tertiary-fixed-dim">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+                Production
+              </span>
+</td>
+<td class="py-4 px-6 font-mono text-[11px] text-on-surface">
+<span class="bg-surface-container-low px-2 py-1 rounded">secretvault run -- node dist/server.js</span>
+</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">42s ago</td>
+<td class="py-4 px-6 font-mono text-tertiary-fixed-dim">4h 18m remaining</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-tertiary text-[11px] font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Active
+              </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-medium text-error transition-all" onclick="this.closest('tr').remove()">
+                Revoke Session
+              </button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">terminal</span>
+<div class="flex flex-col font-mono">
+<span class="font-bold text-on-surface">arch-workstation-pc</span>
+<span class="text-[10px] text-on-surface-variant">Linux 6.12.9-arch1</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Elena Rostova</span>
+<span class="text-[11px] text-on-surface-variant">DevOps</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-container text-on-surface-variant">
+                Staging
+              </span>
+</td>
+<td class="py-4 px-6 font-mono text-[11px] text-on-surface">
+<span class="bg-surface-container-low px-2 py-1 rounded">secretvault env pull --format dotenv</span>
+</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">3m ago</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">1h 05m remaining</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-tertiary text-[11px] font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Active
+              </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-medium text-error transition-all" onclick="this.closest('tr').remove()">
+                Revoke Session
+              </button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">dns</span>
+<div class="flex flex-col font-mono">
+<span class="font-bold text-on-surface">ubuntu-runner-ci-44</span>
+<span class="text-[10px] text-on-surface-variant">Runner AWS c6i.xlarge</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">GitHub Actions Runner</span>
+<span class="text-[11px] text-on-surface-variant">#891 (Ephemeral CI)</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-container-high text-tertiary-fixed-dim">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+                Production (Ephemeral)
+              </span>
+</td>
+<td class="py-4 px-6 font-mono text-[11px] text-on-surface">
+<span class="bg-surface-container-low px-2 py-1 rounded">secretvault inject --target k8s</span>
+</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">12m ago</td>
+<td class="py-4 px-6 font-mono text-tertiary font-bold">18m remaining</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-tertiary-fixed text-[11px] font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed"></span>
+                Expiring Soon
+              </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-medium text-error transition-all" onclick="this.closest('tr').remove()">
+                Revoke Session
+              </button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors opacity-70">
+<td class="py-4 px-6">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">devices</span>
+<div class="flex flex-col font-mono">
+<span class="font-bold text-on-surface">thinkpad-x1-carbon</span>
+<span class="text-[10px] text-on-surface-variant">Linux 6.8.0-generic</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Marcus Vance</span>
+<span class="text-[11px] text-on-surface-variant">Backend Lead</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-container text-on-surface-variant">
+                Development
+              </span>
+</td>
+<td class="py-4 px-6 font-mono text-[11px] text-on-surface-variant">
+<span class="bg-surface-container-low px-2 py-1 rounded">secretvault secret set REDIS_URL</span>
+</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">1h ago</td>
+<td class="py-4 px-6 font-mono text-on-surface-variant">Expired</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-[11px] font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant/40"></span>
+                Inactive
+              </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="this.closest('tr').remove()">
+                Remove
+              </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Bottom Grid: Audit Activity & Connected Workstations -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Recent CLI Audit Activity Timeline (5 cols) -->
+<div class="xl:col-span-5 flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-md">
+<div class="flex items-center justify-between pb-4">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-tertiary">history_toggle_off</span>
+<h2 class="text-sm font-bold text-on-surface font-headline uppercase tracking-wider">Live Audit Stream</h2>
+</div>
+<div class="flex items-center gap-1.5 text-[11px] font-mono text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+<span>Streaming</span>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-2">
+<!-- Event 1 -->
+<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/70">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono font-bold text-tertiary-fixed-dim shrink-0">14:02:11</span>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-mono text-xs font-semibold text-on-surface truncate">secretvault run --env production</span>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Executed on <span class="font-mono text-on-surface">MacBook-Pro-M3.local</span>. Nitro Enclave ephemeral key injected into memory.
+            </p>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/70">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono font-bold text-on-surface-variant shrink-0">13:58:40</span>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-mono text-xs font-semibold text-on-surface truncate">secretvault login --sso</span>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Successful handshake via Hardware WebAuthn FIDO2 security key.
+            </p>
+</div>
+</div>
+<!-- Event 3 -->
+<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/70">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono font-bold text-on-surface-variant shrink-0">13:45:19</span>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-mono text-xs font-semibold text-on-surface truncate">secretvault env diff staging production</span>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Integrity hash verified across containers with 0 drift discrepancies detected.
+            </p>
+</div>
+</div>
+<!-- Event 4 -->
+<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low/70">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono font-bold text-on-surface-variant shrink-0">13:12:04</span>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-mono text-xs font-semibold text-on-surface truncate">secretvault secret rotate STRIPE_WEBHOOK_SECRET</span>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Completed with automated zero-downtime HMAC verification sequence.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Connected & Trusted Devices Grid (7 cols) -->
+<div class="xl:col-span-7 flex flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-md">
+<div class="flex items-center justify-between pb-4">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-on-surface">fingerprint</span>
+<h2 class="text-sm font-bold text-on-surface font-headline uppercase tracking-wider">Trusted Workstations &amp; TPM Bindings</h2>
+</div>
+<span class="text-xs font-mono text-on-surface-variant">Hardware Attestation: Enforced</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+<!-- Device Card 1 -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-container text-on-surface">macOS Sequoia</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-xs text-on-surface">MacBook Pro M3 Max</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Alex Morgan</span>
+</div>
+<div class="flex flex-col gap-1 font-mono text-[10px]">
+<span class="text-on-surface-variant">Nitro TPM Hash:</span>
+<span class="text-tertiary-fixed-dim truncate">sha256:4f8a...9c2e01</span>
+</div>
+</div>
+<button class="mt-4 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-error-container text-[11px] font-mono text-error hover:text-on-error-container transition-all" onclick="alert('Device killswitch triggered: Hardware credentials wiped on MacBook-Pro-M3.')">
+<span class="material-symbols-outlined text-[14px]">power_settings_new</span>
+<span>Remote Zeroize</span>
+</button>
+</div>
+<!-- Device Card 2 -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-container text-on-surface">Arch Linux (Zen)</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-xs text-on-surface">Arch Workstation PC</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Elena Rostova</span>
+</div>
+<div class="flex flex-col gap-1 font-mono text-[10px]">
+<span class="text-on-surface-variant">Nitro TPM Hash:</span>
+<span class="text-tertiary-fixed-dim truncate">sha256:91b7...31a89c</span>
+</div>
+</div>
+<button class="mt-4 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-error-container text-[11px] font-mono text-error hover:text-on-error-container transition-all" onclick="alert('Device killswitch triggered: Hardware credentials wiped on Arch Workstation.')">
+<span class="material-symbols-outlined text-[14px]">power_settings_new</span>
+<span>Remote Zeroize</span>
+</button>
+</div>
+<!-- Device Card 3 -->
+<div class="flex flex-col justify-between p-4 rounded-xl bg-surface-container-low">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface-container text-on-surface">Ubuntu 24.04 LTS</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-xs text-on-surface">ThinkPad X1 Carbon</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Marcus Vance</span>
+</div>
+<div class="flex flex-col gap-1 font-mono text-[10px]">
+<span class="text-on-surface-variant">Nitro TPM Hash:</span>
+<span class="text-tertiary-fixed-dim truncate">sha256:c02d...e48bb2</span>
+</div>
+</div>
+<button class="mt-4 flex items-center justify-center gap-1.5 py-1.5 rounded bg-surface-container hover:bg-error-container text-[11px] font-mono text-error hover:text-on-error-container transition-all" onclick="alert('Device killswitch triggered: Hardware credentials wiped on ThinkPad X1.')">
+<span class="material-symbols-outlined text-[14px]">power_settings_new</span>
+<span>Remote Zeroize</span>
+</button>
+</div>
+</div>
+<!-- Informational hardware guarantee footer -->
+<div class="mt-4 p-3 rounded-xl bg-surface-container-high/40 flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">verified</span>
+<span class="text-[11px] text-on-surface-variant">
+          Devices in this tier communicate through TLS 1.3 mutual handshake with client private certificates permanently anchored in local enclave secure elements.
+        </span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function switchTab(os) {
+    const tabs = ['macos', 'linux', 'windows'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tab-' + t);
+      const panel = document.getElementById('panel-' + t);
+      if (t === os) {
+        btn.classList.add('bg-surface-container', 'text-on-surface', 'font-semibold');
+        btn.classList.remove('text-on-surface-variant', 'font-medium');
+        panel.classList.add('ring-1', 'ring-surface-container-high');
+      } else {
+        btn.classList.remove('bg-surface-container', 'text-on-surface', 'font-semibold');
+        btn.classList.add('text-on-surface-variant', 'font-medium');
+        panel.classList.remove('ring-1', 'ring-surface-container-high');
+      }
+    });
+  }
+
+  function copySnippet(text, buttonElement) {
+    navigator.clipboard.writeText(text).then(() => {
+      const textSpan = buttonElement.querySelector('.btn-text');
+      if (textSpan) {
+        const originalText = textSpan.innerText;
+        textSpan.innerText = 'Copied!';
+        setTimeout(() => {
+          textSpan.innerText = originalText;
+        }, 2000);
+      }
+    });
+  }
+</script></main></div></body></html>

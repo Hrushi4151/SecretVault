@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<!-- Header Block with Asymmetric Breadcrumbs & Diagnostics Status Ribbon -->
+<div class="relative flex flex-col gap-6 p-6 rounded-xl bg-surface-container-lowest shadow-2xl overflow-hidden">
+<!-- Ambient glow element -->
+<div class="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-surface-bright/20 blur-3xl pointer-events-none"></div>
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant">
+<span class="hover:text-on-surface cursor-pointer transition-colors">SecretVault</span>
+<span>/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">Developer</span>
+<span>/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">CLI</span>
+<span>/</span>
+<span class="text-tertiary-fixed font-semibold tracking-wide">Diagnostics</span>
+</div>
+<!-- Large System Status Badge -->
+<div class="flex items-center gap-3 px-4 py-2 rounded-full bg-surface-container-high self-start lg:self-auto shadow-md">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-on-tertiary-container"></span>
+</span>
+<span class="font-mono text-xs tracking-wider uppercase font-bold text-on-surface">
+          SYSTEM HEALTHY — 8/8 CHECKS PASSED
+        </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-[11px] font-mono text-tertiary tracking-tight font-bold">
+          1 WARNING
+        </span>
+</div>
+</div>
+<!-- Title & Detailed Subtitle -->
+<div class="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+<div class="max-w-3xl flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-3xl text-tertiary">health_and_safety</span>
+<h1 class="text-2xl sm:text-3xl font-headline font-bold text-on-surface tracking-tight">
+            CLI Diagnostics &amp; Workstation Health
+          </h1>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+          Automated end-to-end diagnostic suite verifying local daemon bindings, IPC sockets, WebAuthn FIDO2 keys, and enclave network connectivity.
+        </p>
+</div>
+<!-- Diagnostic Controls & Actions -->
+<div class="flex flex-wrap items-center gap-3">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-mono text-on-surface transition-all shadow-sm active:scale-95" id="copy-json-btn">
+<span class="material-symbols-outlined text-[16px] text-tertiary">data_object</span>
+<span>Copy Diagnostic Report (.json)</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs font-mono text-on-surface transition-all shadow-sm active:scale-95" id="run-diag-btn">
+<span class="material-symbols-outlined text-[16px] animate-spin text-tertiary" id="refresh-icon">autorenew</span>
+<span>Run Diagnostics</span>
+<kbd class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-[10px] text-on-surface-variant">⌘R</kbd>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:bg-secondary-fixed text-xs font-semibold tracking-wide transition-all shadow-lg active:scale-95">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Open Terminal Console</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Top Metrics Quad Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Card 1: CLI Version & Daemon -->
+<div class="p-5 rounded-xl bg-surface-container-lowest flex flex-col justify-between gap-4 shadow-md group hover:bg-surface-container-low transition-all">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono text-on-surface-variant uppercase tracking-wider">CLI &amp; Daemon</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">terminal</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-mono text-lg font-bold text-on-surface tracking-tight">v2.19.0<span class="text-xs text-on-surface-variant font-normal">-darwin-arm64</span></div>
+<div class="flex items-center gap-1.5 text-xs font-mono text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>IPC Daemon PID <span class="text-on-surface font-semibold">48291</span> active</span>
+</div>
+</div>
+<div class="h-1 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<!-- Card 2: Enclave Latency -->
+<div class="p-5 rounded-xl bg-surface-container-lowest flex flex-col justify-between gap-4 shadow-md group hover:bg-surface-container-low transition-all">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono text-on-surface-variant uppercase tracking-wider">Enclave Latency</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">speed</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-mono text-lg font-bold text-on-surface tracking-tight flex items-baseline gap-2">
+<span>14ms</span>
+<span class="text-xs text-tertiary-fixed font-normal">us-east-1 Nitro</span>
+</div>
+<div class="text-xs font-mono text-on-surface-variant">
+          Local IPC latency: <span class="text-on-surface font-semibold">0.42ms</span>
+</div>
+</div>
+<div class="h-1 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-4/5"></div>
+</div>
+</div>
+<!-- Card 3: Cryptographic Integrity -->
+<div class="p-5 rounded-xl bg-surface-container-lowest flex flex-col justify-between gap-4 shadow-md group hover:bg-surface-container-low transition-all">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono text-on-surface-variant uppercase tracking-wider">Crypto Integrity</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">verified_user</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-mono text-lg font-bold text-on-surface tracking-tight">100% Verified</div>
+<div class="text-xs font-mono text-on-surface-variant truncate">
+<span class="text-on-surface font-semibold">sha256:e3b0c442</span> zero-tamper
+        </div>
+</div>
+<div class="h-1 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<!-- Card 4: FIDO2 Hardware Session -->
+<div class="p-5 rounded-xl bg-surface-container-lowest flex flex-col justify-between gap-4 shadow-md group hover:bg-surface-container-low transition-all">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono text-on-surface-variant uppercase tracking-wider">FIDO2 Hardware Key</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">usb</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-mono text-lg font-bold text-on-surface tracking-tight">YubiKey 5C NFC</div>
+<div class="flex items-center gap-1.5 text-xs font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-tertiary">timer</span>
+<span>Session expires in <span class="text-on-surface font-semibold">6h 42m</span></span>
+</div>
+</div>
+<div class="h-1 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-3/4"></div>
+</div>
+</div>
+</div>
+<!-- Main Diagnostic Checks Matrix (Tree / Expandable Cards) -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">fact_check</span>
+<h2 class="text-base font-headline font-bold text-on-surface">Subsystem Verification Invariants</h2>
+</div>
+<div class="flex items-center gap-4 text-xs font-mono text-on-surface-variant">
+<span>Target: Localhost Workstation</span>
+<span class="hidden sm:inline">|</span>
+<span class="hidden sm:inline">Execution Engine: In-Memory eBPF</span>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Check 1: CLI Installation & Binary Signature -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-01</span>
+<span class="text-sm font-semibold text-on-surface truncate">CLI Installation &amp; Binary Signature</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+<code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">/usr/local/bin/secretvault</code> signed by Apple Notarization &amp; SecretVault Corp Root CA. Checksum verified.
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col gap-1 text-[11px]">
+<div>Binary Path: <span class="text-on-surface">/opt/homebrew/bin/secretvault -&gt; /usr/local/bin/secretvault</span></div>
+<div>Code Signature: <span class="text-on-surface">Developer ID Application: SecretVault Inc (4X7892PQL)</span></div>
+<div>Entitlements: <span class="text-on-surface">com.apple.security.cs.allow-jit, com.apple.security.device.usb</span></div>
+</div>
+</div>
+</details>
+<!-- Check 2: Workstation Authentication & Hardware MFA -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-02</span>
+<span class="text-sm font-semibold text-on-surface truncate">Workstation Authentication &amp; Hardware MFA</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Operator <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">alex.dev</code> authenticated via WebAuthn FIDO2 Hardware Key. Ephemeral JWT verified with Nitro Enclave.
+          </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+<div class="p-2.5 rounded bg-surface-container-lowest">Credential ID: <span class="text-on-surface">fido2_cred_99a80b33e</span></div>
+<div class="p-2.5 rounded bg-surface-container-lowest">Assertion Counter: <span class="text-on-surface">1,492 sync verified</span></div>
+</div>
+</div>
+</details>
+<!-- Check 3: Local Daemon & In-Memory eBPF Hook -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-03</span>
+<span class="text-sm font-semibold text-on-surface truncate">Local Daemon &amp; In-Memory eBPF Hook</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Daemon listening on unix socket <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">/var/run/secretvault/daemon.sock</code>. Ptrace/eBPF kernel probes active without crash-dump writes.
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col gap-1 text-[11px]">
+<div>Socket Permissions: <span class="text-on-surface">0600 (owner alex:staff)</span></div>
+<div>eBPF System Probes: <span class="text-on-surface">Active (PID 48291, 0 faults registered)</span></div>
+</div>
+</div>
+</details>
+<!-- Check 4: Project & Workspace Context Resolution -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-04</span>
+<span class="text-sm font-semibold text-on-surface truncate">Project &amp; Workspace Context Resolution</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Bound to <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">Acme Corp</code> / <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">web-app</code> (<code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">payments-gateway</code>). Schema v14 matched with remote master.
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest text-[11px]">
+            Remote Hash Digest: <span class="text-on-surface">d98bf73e44a9810d... (0 drift detected)</span>
+</div>
+</div>
+</details>
+<!-- Check 5: Provider Integration & Token Health [WARNING ⚠️] -->
+<details class="group rounded-xl bg-surface-container-high shadow-md transition-all" open="">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[22px]">warning</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-05</span>
+<span class="text-sm font-semibold text-on-surface truncate">Provider Integration &amp; Token Health</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container-lowest text-[11px] font-mono font-bold text-tertiary uppercase">WARNING ⚠️</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-4 text-xs font-mono">
+<!-- Warning banner inside card -->
+<div class="p-3.5 rounded-lg bg-surface-container flex items-start gap-3">
+<span class="material-symbols-outlined text-[20px] text-tertiary shrink-0 mt-0.5">notification_important</span>
+<div class="flex flex-col gap-1 text-on-surface leading-relaxed">
+<span class="font-bold">AWS Secrets Manager provider sync token expiring in 18 hours.</span>
+<span class="text-on-surface-variant">Role <code class="px-1 rounded bg-surface-container-lowest text-on-surface">arn:aws:iam::12948192:role/SecretVault-Sync</code> requires IAM STS renewal.</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-3 pt-1">
+<button class="px-3 py-1.5 rounded-lg bg-surface-bright hover:bg-surface-container-highest text-on-surface font-semibold tracking-wide transition-all shadow-sm">
+              Renew AWS STS Token
+            </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-highest text-on-surface transition-all">
+              Inspect IAM Role Details
+            </button>
+</div>
+</div>
+</details>
+<!-- Check 6: Network Topology & WireGuard MTLS Tunnel -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-06</span>
+<span class="text-sm font-semibold text-on-surface truncate">Network Topology &amp; WireGuard MTLS Tunnel</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Mutual TLS 1.3 connected to <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">enclave-gateway.secretvault.internal:443</code>. Zero packet loss (0.00%).
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest flex items-center justify-between text-[11px]">
+<span>MTU: 1420 bytes</span>
+<span>Handshake: 4s ago</span>
+<span>Cipher: TLS_AES_256_GCM_SHA384</span>
+</div>
+</div>
+</details>
+<!-- Check 7: Process Memory Scrubbing & Zero-Plaintext Storage -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-07</span>
+<span class="text-sm font-semibold text-on-surface truncate">Process Memory Scrubbing &amp; Zero-Plaintext Storage</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Filesystem scan confirms <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">.env</code> files absent from root and child directories. RAM memory locking (<code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">mlock</code>) verified active.
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest text-[11px]">
+            Zero-plaintext core dumps enabled (PR_SET_DUMPABLE = 0).
+          </div>
+</div>
+</details>
+<!-- Check 8: Upstream Audit Ledger Consensus -->
+<details class="group rounded-xl bg-surface-container-lowest shadow-sm open:bg-surface-container-low transition-all">
+<summary class="flex items-center justify-between p-4 cursor-pointer list-none select-none">
+<div class="flex items-center gap-3.5 min-w-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">check_circle</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
+<span class="font-mono text-xs font-bold text-on-surface">CHECK-08</span>
+<span class="text-sm font-semibold text-on-surface truncate">Upstream Audit Ledger Consensus</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono font-bold text-tertiary uppercase">PASSED ✓</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-5 pb-5 pt-2 flex flex-col gap-3 text-xs text-on-surface-variant font-mono">
+<p class="leading-relaxed text-on-surface">
+            Local hash chain synchronized with central Merkle tree block <code class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface">#891,042</code>.
+          </p>
+<div class="p-3 rounded-lg bg-surface-container-lowest text-[11px]">
+            Merkle Root: <span class="text-on-surface">0x6e2a...98b0</span> (Verified against AWS CloudTrail Immutable Anchor)
+          </div>
+</div>
+</details>
+</div>
+</div>
+<!-- Bottom Section: Split Terminal + Exporter Panel -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left: Interactive Terminal Command Box (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col rounded-xl bg-surface-container-lowest shadow-xl overflow-hidden">
+<!-- Terminal Header Bar -->
+<div class="flex items-center justify-between px-4 py-3 bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-error"></span>
+<span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+<span class="w-3 h-3 rounded-full bg-surface-bright"></span>
+<span class="ml-2 text-xs font-mono text-on-surface-variant font-semibold">sh — secretvault doctor --verbose</span>
+</div>
+<button class="text-xs font-mono text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" id="copy-terminal-btn">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy output</span>
+</button>
+</div>
+<!-- Terminal Screen Content -->
+<div class="p-5 font-mono text-xs text-on-surface leading-relaxed flex flex-col gap-2 overflow-x-auto bg-surface-container-lowest select-text" id="terminal-screen">
+<div class="text-on-surface-variant">$ secretvault doctor --verbose --output json</div>
+<div class="text-tertiary">[INFO] Initializing system health diagnostics...</div>
+<div class="text-on-surface">[INFO] Probing hardware security modules... <span class="text-tertiary">OK</span></div>
+<div class="text-on-surface">[INFO] Checking local IPC daemon socket... <span class="text-tertiary">OK (pid: 48291)</span></div>
+<div class="text-tertiary-fixed">[WARN] Provider AWS STS token expires in 18h 12m</div>
+<div class="text-on-surface">[INFO] Network roundtrip to Nitro Enclave: <span class="text-secondary">14.12ms</span></div>
+<div class="text-on-surface">[INFO] In-memory key scrubbing check: <span class="text-tertiary">Passed (0 plaintext leaks)</span></div>
+<div class="text-tertiary-fixed font-bold pt-1">[INFO] All 8 diagnostic invariants passed. Diagnostic hash: diag_77b01fa8</div>
+</div>
+<!-- Terminal Bottom Action -->
+<div class="p-3 bg-surface-container-low flex justify-end">
+<button class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-highest text-xs font-mono text-on-surface transition-all active:scale-95" id="rerun-doctor-btn">
+<span class="material-symbols-outlined text-[16px] text-tertiary">play_arrow</span>
+<span>Re-run secretvault doctor</span>
+</button>
+</div>
+</div>
+<!-- Right: Diagnostic Report Exporter & Sharing (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-4 p-5 rounded-xl bg-surface-container-lowest shadow-xl">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px]">share</span>
+<h3 class="text-sm font-headline font-bold text-on-surface uppercase tracking-wide">Report Exporter &amp; Sharing</h3>
+</div>
+<!-- Zero-Plaintext Security Guarantee Callout -->
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center gap-2 text-xs font-mono font-bold text-tertiary">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span>Zero-Plaintext Guarantee</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed font-sans">
+          Diagnostic reports never contain secret values, authentication tokens, or private encryption keys. All memory dumps are cryptographically obfuscated prior to compilation.
+        </p>
+</div>
+<!-- Checksum Metadata -->
+<div class="flex flex-col gap-1 p-3 rounded-lg bg-surface-container font-mono text-xs">
+<span class="text-on-surface-variant text-[11px]">Sanitized Report Checksum:</span>
+<span class="text-on-surface font-semibold select-all break-all text-[11px]">sha256:d82f0991c2b543...a90f2301</span>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex flex-col gap-2 pt-2">
+<button class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs font-mono text-on-surface transition-all shadow-sm active:scale-[0.99]">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">download</span>
+<span>Download Sanitized Report (.json)</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-mono text-on-surface transition-all shadow-sm active:scale-[0.99]">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">forward_to_inbox</span>
+<span>Send to SecOps Slack Channel</span>
+</span>
+<span class="text-[11px] text-on-surface-variant font-sans">#secops-prod</span>
+</button>
+<button class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-mono text-on-surface transition-all shadow-sm active:scale-[0.99]">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">bug_report</span>
+<span>Open GitHub Issue</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Behavior Script -->
+<script>
+    (function() {
+      const runBtn = document.getElementById('run-diag-btn');
+      const rerunDoctorBtn = document.getElementById('rerun-doctor-btn');
+      const refreshIcon = document.getElementById('refresh-icon');
+      const terminalScreen = document.getElementById('terminal-screen');
+      const copyBtn = document.getElementById('copy-json-btn');
+      const copyTerminalBtn = document.getElementById('copy-terminal-btn');
+
+      function triggerDiagnosis() {
+        if (!refreshIcon) return;
+        refreshIcon.classList.add('animate-spin');
+        if (terminalScreen) {
+          const timestamp = new Date().toISOString();
+          const logEntry = document.createElement('div');
+          logEntry.className = 'text-tertiary pt-2';
+          logEntry.textContent = `[INFO ${timestamp.slice(11, 19)}] Recalibrating daemon invariants... Diagnostics 100% verified.`;
+          terminalScreen.appendChild(logEntry);
+          terminalScreen.scrollTop = terminalScreen.scrollHeight;
+        }
+        setTimeout(() => {
+          refreshIcon.classList.remove('animate-spin');
+        }, 800);
+      }
+
+      if (runBtn) runBtn.addEventListener('click', triggerDiagnosis);
+      if (rerunDoctorBtn) rerunDoctorBtn.addEventListener('click', triggerDiagnosis);
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const originalText = copyBtn.querySelector('span:last-child').textContent;
+          copyBtn.querySelector('span:last-child').textContent = 'Copied to Clipboard!';
+          setTimeout(() => {
+            copyBtn.querySelector('span:last-child').textContent = originalText;
+          }, 1800);
+        });
+      }
+
+      if (copyTerminalBtn) {
+        copyTerminalBtn.addEventListener('click', () => {
+          const span = copyTerminalBtn.querySelector('span:last-child');
+          span.textContent = 'Copied!';
+          setTimeout(() => {
+            span.textContent = 'Copy output';
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+</div></main></div></body></html>
