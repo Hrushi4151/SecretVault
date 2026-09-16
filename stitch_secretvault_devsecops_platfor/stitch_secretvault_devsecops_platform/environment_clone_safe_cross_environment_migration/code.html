@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+<span>SecretVault</span>
+<span class="text-outline-variant">/</span>
+<span>Developer</span>
+<span class="text-outline-variant">/</span>
+<span class="text-tertiary font-semibold">Clone Environment</span>
+</div>
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-3xl font-headline font-bold text-on-surface tracking-tight">Environment Clone</h1>
+<p class="text-sm text-on-surface-variant max-w-2xl">
+          Reconcile, validate, and clone secret schemas and policies between environments safely.
+        </p>
+</div>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-[11px] font-mono font-medium text-tertiary-fixed-dim">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+          ENCLAVE BRIDGE ACTIVE
+        </span>
+<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-high text-xs font-medium text-on-surface hover:bg-surface-container-highest transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">history</span>
+<span>Clone Logs</span>
+</button>
+</div>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high p-4 shadow-md flex items-start gap-4">
+<div class="p-2 rounded-lg bg-surface-container-lowest text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[24px]">shield_lock</span>
+</div>
+<div class="flex flex-col gap-1 text-xs">
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface uppercase tracking-wide">Cryptographic Zero-Plaintext Invariant Enforced</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest text-[10px] font-mono text-tertiary">POLICY ZERO-DEC</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed">
+        Secrets will be mapped according to destination policies. Cryptographic zero-plaintext invariant enforced: values will be migrated directly across secure enclave boundaries without client-side decryption or operator inspection.
+      </p>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-11 gap-4 items-center">
+<div class="lg:col-span-5 rounded-xl bg-surface-container p-5 flex flex-col gap-4 shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-container-high/40 blur-xl"></div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant font-semibold">Source Environment</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-[10px] font-mono text-on-surface">ID: env_dev_9941</span>
+</div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h2 class="text-xl font-bold font-headline text-on-surface">Development</h2>
+<span class="text-xs font-mono text-tertiary">web-app:dev</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-high text-on-surface">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</div>
+</div>
+<div class="flex items-center gap-6 pt-3 bg-surface-container-low/60 -mx-5 -mb-5 px-5 py-3 text-xs">
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Payload</span>
+<span class="font-semibold text-on-surface">42 Secrets</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Schema</span>
+<span class="font-semibold text-on-surface">v14 Schema</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Last Drift Check</span>
+<span class="font-mono text-on-surface">3m ago</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-1 flex flex-col items-center justify-center gap-2 py-2">
+<div class="w-full flex items-center justify-center relative">
+<div class="p-3 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center shadow-lg group">
+<span class="material-symbols-outlined text-[22px] rotate-90 lg:rotate-0">east</span>
+</div>
+</div>
+<div class="flex flex-col items-center text-center">
+<span class="text-[9px] font-mono text-tertiary font-bold tracking-tight uppercase">AES-256-GCM</span>
+<span class="text-[8px] font-mono text-on-surface-variant/70">Enclave Bridge</span>
+</div>
+</div>
+<div class="lg:col-span-5 rounded-xl bg-surface-container p-5 flex flex-col gap-4 shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-surface-bright/20 blur-xl"></div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono uppercase tracking-widest text-on-surface-variant font-semibold">Destination Target</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-[10px] font-mono text-on-surface">ID: env_stg_1042</span>
+</div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<h2 class="text-xl font-bold font-headline text-on-surface">Staging</h2>
+<span class="text-xs font-mono text-tertiary">web-app:staging</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-high text-on-surface">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+</div>
+</div>
+<div class="flex items-center gap-6 pt-3 bg-surface-container-low/60 -mx-5 -mb-5 px-5 py-3 text-xs">
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Current Payload</span>
+<span class="font-semibold text-on-surface">35 Secrets</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Current Schema</span>
+<span class="font-semibold text-on-surface">v12 Schema</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase font-mono">Target Keyring</span>
+<span class="font-mono text-on-surface">kms-stg-us-east</span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+<div class="rounded-xl bg-surface-container-low p-3.5 flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant font-medium">Source Secrets</span>
+<span class="text-2xl font-bold font-mono text-on-surface">42</span>
+<span class="text-[10px] text-on-surface-variant/70">Origin baseline</span>
+</div>
+<div class="rounded-xl bg-surface-container-low p-3.5 flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant font-medium">Destination</span>
+<span class="text-2xl font-bold font-mono text-on-surface">35</span>
+<span class="text-[10px] text-on-surface-variant/70">Current live count</span>
+</div>
+<div class="rounded-xl bg-surface-container p-3.5 flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface font-medium">New To Create</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-tertiary">+7</span>
+<span class="material-symbols-outlined text-[14px] text-tertiary">add_circle</span>
+</div>
+<span class="text-[10px] text-on-surface-variant">Non-existent in staging</span>
+</div>
+<div class="rounded-xl bg-surface-container p-3.5 flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-wider text-secondary font-medium">Divergent</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-secondary-fixed">11</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">difference</span>
+</div>
+<span class="text-[10px] text-on-surface-variant">Schema or hash mismatch</span>
+</div>
+<div class="rounded-xl bg-surface-container-low p-3.5 flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-wider text-on-surface-variant font-medium">Identical</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-on-surface-variant">24</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">done_all</span>
+</div>
+<span class="text-[10px] text-on-surface-variant/70">Already in sync</span>
+</div>
+<div class="rounded-xl bg-surface-container-high p-3.5 flex flex-col gap-1 shadow-sm">
+<span class="text-[10px] font-mono uppercase tracking-wider text-tertiary font-bold">Policy Conflicts</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-mono text-on-surface">3</span>
+<span class="material-symbols-outlined text-[14px] text-error">error</span>
+</div>
+<span class="text-[10px] text-tertiary font-medium">Action required</span>
+</div>
+</div>
+<div class="rounded-xl bg-surface-container overflow-hidden shadow-lg flex flex-col">
+<div class="p-4 bg-surface-container-high flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<span class="font-headline font-semibold text-sm text-on-surface">Reconciliation Matrix</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-[11px] font-mono text-on-surface-variant">39 selected of 42</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-surface-container-lowest text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+<span>Filter: All Mappings</span>
+</div>
+<button class="px-3 py-1 rounded-lg bg-surface-container text-xs text-on-surface font-medium hover:bg-surface-bright transition-colors" id="batch-resolve">
+          Resolve Conflicts Auto
+        </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs">
+<thead class="bg-surface-container-low text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">
+<tr>
+<th class="p-3.5 pl-4 w-10">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</th>
+<th class="p-3.5 font-semibold">Secret Key Identifier</th>
+<th class="p-3.5 font-semibold">Status Differential</th>
+<th class="p-3.5 font-semibold">Source (Dev)</th>
+<th class="p-3.5 font-semibold">Destination (Staging)</th>
+<th class="p-3.5 font-semibold">Target Policy</th>
+<th class="p-3.5 pr-4 text-right font-semibold">Action Resolution</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface font-sans">
+<tr class="bg-surface hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+              DATABASE_URL
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-[10px] font-mono font-medium text-secondary-fixed">SCHEMA DIVERGENT</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v5 <span class="text-[10px] text-on-surface-variant/60">#8f2a</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v4 <span class="text-[10px] text-on-surface-variant/60">#e19c</span>
+</td>
+<td class="p-3.5 font-mono text-xs text-on-surface-variant">
+              Inherit Staging KMS
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<select class="bg-surface-container-low text-xs rounded px-2.5 py-1 text-on-surface focus:outline-none cursor-pointer">
+<option selected="">Copy Schema &amp; Remap</option>
+<option>Keep Destination Value</option>
+<option>Skip Variable</option>
+</select>
+</td>
+</tr>
+<tr class="bg-surface-container hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+              STRIPE_SECRET_KEY
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-[10px] font-mono font-bold text-tertiary">NEW IN DESTINATION</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v3 <span class="text-[10px] text-on-surface-variant/60">#bb41</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant/50">
+              — (None)
+            </td>
+<td class="p-3.5 font-mono text-xs text-tertiary-fixed-dim">
+              Auto-Generate Staging Key
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<select class="bg-surface-container-low text-xs rounded px-2.5 py-1 text-on-surface focus:outline-none cursor-pointer">
+<option selected="">Provision Staging Secret</option>
+<option>Promote Dev Hash</option>
+<option>Skip Variable</option>
+</select>
+</td>
+</tr>
+<tr class="bg-surface hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+              REDIS_CACHE_URL
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-[10px] font-mono text-on-surface-variant">IDENTICAL</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v2 <span class="text-[10px] text-on-surface-variant/60">#c421</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v2 <span class="text-[10px] text-on-surface-variant/60">#c421</span>
+</td>
+<td class="p-3.5 font-mono text-xs text-on-surface-variant">
+              Shared Cluster Policy
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<span class="text-xs font-mono text-on-surface-variant/60 uppercase">No Action (Synced)</span>
+</td>
+</tr>
+<tr class="bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">warning</span>
+              JWT_SIGNING_SECRET
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-[10px] font-mono font-bold text-tertiary">CONFLICT: MISSING POLICY</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v8 <span class="text-[10px] text-on-surface-variant/60">#d902</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v3 <span class="text-[10px] text-on-surface-variant/60">#318f</span>
+</td>
+<td class="p-3.5 font-mono text-xs text-tertiary font-semibold">
+              Requires Manual Binding
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container-highest text-tertiary-fixed text-xs font-medium hover:bg-surface-bright transition-colors">
+                Configure Policy
+              </button>
+</td>
+</tr>
+<tr class="bg-surface hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+              ANALYTICS_WRITE_KEY
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-[10px] font-mono font-bold text-tertiary">NEW IN DESTINATION</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v1 <span class="text-[10px] text-on-surface-variant/60">#aa03</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant/50">
+              — (None)
+            </td>
+<td class="p-3.5 font-mono text-xs text-on-surface-variant">
+              Inherit Staging KMS
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<select class="bg-surface-container-low text-xs rounded px-2.5 py-1 text-on-surface focus:outline-none cursor-pointer">
+<option selected="">Copy Schema</option>
+<option>Map to Staging Vault</option>
+<option>Skip</option>
+</select>
+</td>
+</tr>
+<tr class="bg-surface-container hover:bg-surface-container-low transition-colors">
+<td class="p-3.5 pl-4">
+<input checked="" class="rounded bg-surface-container-lowest text-on-surface focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5 font-mono font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+              SENTRY_AUTH_TOKEN
+            </td>
+<td class="p-3.5">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-[10px] font-mono font-medium text-secondary-fixed">SCHEMA DIVERGENT</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v4 <span class="text-[10px] text-on-surface-variant/60">#5512</span>
+</td>
+<td class="p-3.5 font-mono text-on-surface-variant">
+              v2 <span class="text-[10px] text-on-surface-variant/60">#2391</span>
+</td>
+<td class="p-3.5 font-mono text-xs text-on-surface-variant">
+              Map to Staging Vault
+            </td>
+<td class="p-3.5 pr-4 text-right">
+<select class="bg-surface-container-low text-xs rounded px-2.5 py-1 text-on-surface focus:outline-none cursor-pointer">
+<option selected="">Overwrite Destination Schema</option>
+<option>Preserve Destination</option>
+<option>Skip</option>
+</select>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 bg-surface-container-low flex items-center justify-between text-xs text-on-surface-variant font-mono">
+<span>Showing 6 of 42 evaluated schemas</span>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors text-[11px]">View All 42 Variables</button>
+</div>
+</div>
+</div>
+<div class="rounded-xl bg-surface-container-high p-6 shadow-xl flex flex-col gap-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline font-bold text-base text-on-surface">Execution Safeguards &amp; Verification</h3>
+<p class="text-xs text-on-surface-variant">Ready to clone 39 selected secrets from Development to Staging.</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono text-on-surface-variant">SOC 2 Type II Invariant</span>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col gap-3">
+<label class="flex items-start gap-3 cursor-pointer select-none">
+<input class="mt-0.5 rounded bg-surface-container text-on-surface focus:ring-0 cursor-pointer" id="confirm-checkbox" type="checkbox"/>
+<div class="flex flex-col gap-0.5">
+<span class="text-xs font-semibold text-on-surface">
+            I understand this operation will update destination environment variables and trigger automated staging deployment hooks.
+          </span>
+<span class="text-[11px] text-on-surface-variant">
+            Encrypted keys will be mirrored in memory within the secure enclave bridge. Target KMS key will seal all promoted hashes.
+          </span>
+</div>
+</label>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+<div class="flex items-center gap-2 text-[11px] font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">gavel</span>
+<span>Immutable audit log event will be dispatched upon confirmation.</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 rounded-lg bg-surface-container text-xs font-medium text-on-surface hover:bg-surface-container-highest transition-colors">
+          Cancel
+        </button>
+<button class="px-4 py-2 rounded-lg bg-surface-container text-xs font-medium text-on-surface hover:bg-surface-container-highest transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span>Preview Dry-Run Diff</span>
+</button>
+<button class="px-5 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-secondary-fixed transition-all shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" id="execute-button">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Execute Clone Operation</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  const checkbox = document.getElementById('confirm-checkbox');
+  const executeBtn = document.getElementById('execute-button');
+
+  executeBtn.disabled = !checkbox.checked;
+
+  checkbox.addEventListener('change', (e) => {
+    executeBtn.disabled = !e.target.checked;
+  });
+
+  executeBtn.addEventListener('click', () => {
+    if (!executeBtn.disabled) {
+      executeBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] animate-spin">sync</span>
+        <span>Provisioning Enclave Transfer...</span>
+      `;
+      executeBtn.disabled = true;
+      setTimeout(() => {
+        executeBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          <span>Clone Initiated (Task #8849)</span>
+        `;
+      }, 1500);
+    }
+  });
+</script></main></div></body></html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#ffb4a8",
+          "on-error-container": "#ffdad6",
+          "on-primary": "#303030",
+          "on-primary-fixed": "#1b1b1b",
+          "primary": "#c6c6c6",
+          "secondary-fixed-dim": "#c6c6c7",
+          "error": "#ffb4ab",
+          "surface-container-high": "#5a0023",
+          "outline-variant": "#4c4546",
+          "surface-bright": "#760031",
+          "on-error": "#690005",
+          "surface-tint": "#c6c6c6",
+          "on-surface-variant": "#cfc4c5",
+          "on-tertiary": "#690001",
+          "surface-dim": "#30000f",
+          "secondary-fixed": "#e2e2e2",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-container": "#ec0005",
+          "on-primary-container": "#757575",
+          "background": "#30000f",
+          "inverse-on-surface": "#660029",
+          "surface-container-highest": "#6e002d",
+          "secondary-container": "#454747",
+          "inverse-primary": "#5e5e5e",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-secondary-container": "#b4b5b5",
+          "on-surface": "#ffd9df",
+          "surface-container-low": "#3f0016",
+          "on-secondary": "#2f3131",
+          "outline": "#988e90",
+          "tertiary-fixed": "#ffdad5",
+          "on-secondary-fixed-variant": "#454747",
+          "primary-fixed": "#e2e2e2",
+          "surface-variant": "#6e002d",
+          "surface-container": "#47001a",
+          "on-background": "#ffd9df",
+          "surface": "#30000f",
+          "surface-container-lowest": "#26000b",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-primary-fixed-variant": "#474747",
+          "secondary": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "on-tertiary-fixed-variant": "#930001",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full"><div class="h-16 px-5 flex items-center gap-3 bg-surface-container-lowest"><img alt="SecretVault logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><span class="text-base font-headline font-bold tracking-wider uppercase text-on-surface">SecretVault</span></div><div class="overflow-y-auto flex-1 px-3 py-4 space-y-6"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">WORKSPACE</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_open</span><span>Projects</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span>Sync Center</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">SECURITY</div><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">policy</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">radar</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span>Audit Logs</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">AI OPS</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>AI Analysis</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">ORGANIZATION</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Team</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span>Settings</span></a></nav></div><div class="p-3 bg-surface-container-lowest space-y-1"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help-support" href="#"><span class="material-symbols-outlined text-[20px]">support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_circle</span><span>User Profile</span></a></nav></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-4"><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-secondary">deployed_code</span><span>API Gateway</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold uppercase tracking-wider text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Production</span></div></div><div class="flex items-center gap-4"><button class="flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs text-on-surface-variant" type="button"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">search</span><span>Search resources, secrets, logs...</span></div><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-lowest text-outline">⌘K</kbd></button><div class="flex items-center gap-2"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-lg">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-lg">dark_mode</span></button></div><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="relative pt-16 min-h-screen bg-background w-full px-8 pb-12"><div class="flex flex-col w-full space-y-8">
+<!-- Top Breadcrumbs & Security Tag -->
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
+<span class="hover:text-on-surface cursor-pointer transition-colors">SecretVault</span>
+<span class="text-outline-variant">/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">Organization</span>
+<span class="text-outline-variant">/</span>
+<span class="text-tertiary font-bold tracking-normal">Identity &amp; Directory</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high shadow-sm">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="text-[11px] font-mono font-bold tracking-widest text-on-surface uppercase">Zero-Trust Federation Active</span>
+</div>
+</div>
+<!-- Header & Primary Global Actions -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+<div class="max-w-3xl space-y-2">
+<h1 class="text-3xl font-display font-black tracking-tight text-on-surface">
+        Enterprise SSO &amp; Directory Provisioning (SCIM)
+      </h1>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+        Centralize employee authentication via Okta, Microsoft Entra ID, or Google Workspace with automated SCIM 2.0 user lifecycle sync and role-based policy enforcement across all vault enclaves.
+      </p>
+</div>
+<div class="flex flex-wrap items-center gap-2.5 shrink-0">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm text-primary">download</span>
+<span>Download Metadata XML</span>
+</button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-all shadow-sm" id="forceSyncBtn" type="button">
+<span class="material-symbols-outlined text-sm text-tertiary transition-transform duration-700" id="syncIcon">sync</span>
+<span>Force SCIM Sync</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-fixed text-xs font-bold transition-all shadow-md" type="button">
+<span class="material-symbols-outlined text-sm">add_moderator</span>
+<span>Configure Identity Provider</span>
+</button>
+</div>
+</div>
+<!-- Key Telemetry Metrics Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1: Connected IdPs -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface-variant">Connected IdPs</span>
+<div class="text-2xl font-display font-black text-on-surface tracking-tight">2 Active</div>
+</div>
+<div class="p-2 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-xl">account_tree</span>
+</div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-xs font-mono text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Okta (Primary) • Entra (Staging)</span>
+</div>
+</div>
+<!-- Card 2: Synced Directory Users -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface-variant">Synced Directory</span>
+<div class="text-2xl font-display font-black text-on-surface tracking-tight">248 Identities</div>
+</div>
+<div class="p-2 rounded-lg bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-xl">groups_3</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span class="text-primary font-semibold">240 Enrolled</span>
+<span class="text-error font-medium">8 Suspended</span>
+</div>
+</div>
+<!-- Card 3: Latency & Handshake -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface-variant">Handshake Latency</span>
+<div class="text-2xl font-display font-black text-on-surface tracking-tight">142<span class="text-sm font-normal text-on-surface-variant">ms</span></div>
+</div>
+<div class="p-2 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-xl">speed</span>
+</div>
+</div>
+<div class="mt-4 flex items-center gap-1.5 text-xs font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-xs text-primary">cloud_done</span>
+<span>P99 via Cloudflare Edge</span>
+</div>
+</div>
+<!-- Card 4: Drift Status -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface-variant">SCIM Drift Status</span>
+<div class="text-2xl font-display font-black text-on-surface tracking-tight">Zero Drift</div>
+</div>
+<div class="p-2 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-xl">verified_user</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span class="text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span>Automated poll</span>
+</span>
+<span id="lastSyncLabel">4m ago</span>
+</div>
+</div>
+</div>
+<!-- Main Section 1: Active Identity Providers -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-tertiary">lock_person</span>
+<h2 class="text-lg font-headline font-bold text-on-surface tracking-tight">Active Identity Federation Providers</h2>
+</div>
+<span class="text-xs font-mono text-on-surface-variant">2 Configured • Enforcing Strict JIT Provisioning</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- IdP 1: Okta Enterprise -->
+<div class="flex flex-col justify-between rounded-xl bg-surface-container-lowest p-6 shadow-md relative overflow-hidden">
+<div class="space-y-5">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container flex items-center justify-center font-black text-lg text-on-surface font-mono">
+                OK
+              </div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline font-bold text-base text-on-surface">Okta Enterprise</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-surface-container-high text-tertiary">Primary</span>
+</div>
+<p class="text-xs text-on-surface-variant">SAML 2.0 Identity Assertion + SCIM 2.0 Connector</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-xs font-mono text-on-surface">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>Enforcing</span>
+</div>
+</div>
+<!-- Configuration Specifications -->
+<div class="space-y-3 bg-surface-container-low/70 p-4 rounded-lg text-xs font-mono">
+<div class="space-y-1">
+<span class="text-[10px] text-on-surface-variant uppercase font-label">SSO Assertion Target URL</span>
+<div class="flex items-center justify-between bg-surface-container-lowest px-2.5 py-1.5 rounded text-on-surface">
+<span class="truncate max-w-[280px] sm:max-w-md">https://acme-corp.okta.com/app/secretvault_sso/sso/saml</span>
+<button class="text-on-surface-variant hover:text-on-surface text-xs ml-2" onclick="navigator.clipboard.writeText('https://acme-corp.okta.com/app/secretvault_sso/sso/saml')" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+<div>
+<span class="text-[10px] text-on-surface-variant uppercase font-label">Certificate Fingerprint</span>
+<p class="text-on-surface font-semibold truncate">3a:9f:e2:bb:41:88:bc</p>
+<span class="text-[10px] text-tertiary">Expires in 312 days</span>
+</div>
+<div>
+<span class="text-[10px] text-on-surface-variant uppercase font-label">Authentication Policy</span>
+<p class="text-on-surface font-semibold">WebAuthn / FIDO2 Required</p>
+<span class="text-[10px] text-on-surface-variant">JIT Auto-Provisioning On</span>
+</div>
+</div>
+<!-- Group Mappings -->
+<div class="pt-2">
+<span class="text-[10px] text-on-surface-variant uppercase font-label block mb-1.5">RBAC Group Mapping Matrix</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface font-mono">
+                  SecOps-Admins → <span class="text-tertiary font-bold">Admin</span>
+</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface font-mono">
+                  Platform-Engineers → <span class="text-secondary font-bold">Operator</span>
+</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface font-mono">
+                  Developers → <span class="text-on-surface-variant font-bold">ReadOnly</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-4 flex flex-wrap items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+            Edit Configuration
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+            Test SAML Assertion
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-xs font-semibold text-tertiary hover:bg-surface-variant transition-colors ml-auto" type="button">
+            Rotate X.509 Cert
+          </button>
+</div>
+</div>
+<!-- IdP 2: Microsoft Entra ID -->
+<div class="flex flex-col justify-between rounded-xl bg-surface-container-lowest p-6 shadow-md relative overflow-hidden">
+<div class="space-y-5">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container flex items-center justify-center font-black text-lg text-on-surface font-mono">
+                MS
+              </div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-headline font-bold text-base text-on-surface">Microsoft Entra ID</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-secondary-container text-on-secondary-container">Secondary</span>
+</div>
+<p class="text-xs text-on-surface-variant">OIDC Core + SCIM v2 Multi-Tenant Tenant Sync</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-xs font-mono text-on-surface">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>Enclave Isolated</span>
+</div>
+</div>
+<!-- Configuration Specifications -->
+<div class="space-y-3 bg-surface-container-low/70 p-4 rounded-lg text-xs font-mono">
+<div class="space-y-1">
+<span class="text-[10px] text-on-surface-variant uppercase font-label">OIDC Discovery Issuer URL</span>
+<div class="flex items-center justify-between bg-surface-container-lowest px-2.5 py-1.5 rounded text-on-surface">
+<span class="truncate max-w-[280px] sm:max-w-md">https://login.microsoftonline.com/7b2e49c8-3920-41ff-80c1-bfa0927e5a01/v2.0</span>
+<button class="text-on-surface-variant hover:text-on-surface text-xs ml-2" onclick="navigator.clipboard.writeText('https://login.microsoftonline.com/7b2e49c8-3920-41ff-80c1-bfa0927e5a01/v2.0')" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+<div>
+<span class="text-[10px] text-on-surface-variant uppercase font-label">Tenant Isolation Domain</span>
+<p class="text-on-surface font-semibold truncate">contractor.acme.corp</p>
+<span class="text-[10px] text-on-surface-variant">Staging / External Enclave</span>
+</div>
+<div>
+<span class="text-[10px] text-on-surface-variant uppercase font-label">Session Lifetime</span>
+<p class="text-on-surface font-semibold">4 Hours Ephemeral</p>
+<span class="text-[10px] text-secondary">Conditional Access Compliant</span>
+</div>
+</div>
+<!-- Group Mappings -->
+<div class="pt-2">
+<span class="text-[10px] text-on-surface-variant uppercase font-label block mb-1.5">RBAC Group Mapping Matrix</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface font-mono">
+                  AAD-Contractors → <span class="text-outline font-bold">ScopedGuest</span>
+</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface font-mono">
+                  AAD-AuditQA → <span class="text-on-surface-variant font-bold">ReadOnly</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-4 flex flex-wrap items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+            Manage SCIM Bearer Tokens
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+            Test OIDC Discovery
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Section 2: SCIM User & Group Synchronization Table -->
+<div class="space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h2 class="text-lg font-headline font-bold text-on-surface tracking-tight">Synchronized Identities &amp; Directory Catalog</h2>
+<p class="text-xs text-on-surface-variant">Real-time status of all identity tokens federated via upstream directory providers</p>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<div class="flex items-center rounded-lg bg-surface-container-lowest p-1 text-xs font-mono">
+<button class="filter-btn active px-3 py-1 rounded font-semibold bg-surface-container-high text-on-surface" data-filter="all" type="button">All (248)</button>
+<button class="filter-btn px-3 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" data-filter="active" type="button">Active (240)</button>
+<button class="filter-btn px-3 py-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" data-filter="deprovisioned" type="button">Revoked (8)</button>
+</div>
+</div>
+</div>
+<!-- Search & Quick Filter Bar -->
+<div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant text-base">search</span>
+<input class="w-full bg-transparent text-xs text-on-surface placeholder:text-outline-variant focus:outline-none" id="directorySearchInput" placeholder="Search employees by name, email, or IdP user ID..." type="text"/>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-outline-variant uppercase">ESC to clear</span>
+</div>
+<!-- Identity Table Container -->
+<div class="overflow-x-auto rounded-xl bg-surface-container-lowest shadow-sm">
+<table class="w-full text-left border-collapse" id="identitiesTable">
+<thead>
+<tr class="bg-surface-container-low/60 text-[10px] font-mono uppercase tracking-wider text-on-surface-variant">
+<th class="py-3 px-4 font-bold">User / Identity</th>
+<th class="py-3 px-4 font-bold">IdP Source</th>
+<th class="py-3 px-4 font-bold">Assigned Role</th>
+<th class="py-3 px-4 font-bold">Group Membership</th>
+<th class="py-3 px-4 font-bold">Last SSO Auth</th>
+<th class="py-3 px-4 font-bold">SCIM Status</th>
+<th class="py-3 px-4 font-bold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-xs font-mono">
+<!-- Row 1: Alex Morgan -->
+<tr class="hover:bg-surface-container-low/40 transition-colors identity-row" data-status="active">
+<td class="py-3.5 px-4 font-body">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs">
+                  AM
+                </div>
+<div class="min-w-0">
+<div class="font-semibold text-on-surface text-sm leading-snug truncate">Alex Morgan</div>
+<div class="text-[11px] font-mono text-on-surface-variant truncate">alex.m@acme.corp</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Okta SSO
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="text-tertiary font-bold">SecOps Lead</span>
+<span class="text-on-surface-variant text-[11px]"> (Admin)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">secops-core</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">infra-leads</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="text-on-surface">12m ago</div>
+<div class="text-[10px] text-tertiary font-sans">FIDO2 YubiKey 5C</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-primary text-[11px]">
+<span class="material-symbols-outlined text-xs">sync_saved_locally</span>
+                Synced
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors" type="button">
+                Manage
+              </button>
+</td>
+</tr>
+<!-- Row 2: Elena Rostova -->
+<tr class="hover:bg-surface-container-low/40 transition-colors identity-row" data-status="active">
+<td class="py-3.5 px-4 font-body">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-tertiary text-xs">
+                  ER
+                </div>
+<div class="min-w-0">
+<div class="font-semibold text-on-surface text-sm leading-snug truncate">Elena Rostova</div>
+<div class="text-[11px] font-mono text-on-surface-variant truncate">elena.r@acme.corp</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Okta SSO
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="text-tertiary font-bold">VP Eng / CISO</span>
+<span class="text-on-surface-variant text-[11px]"> (Admin)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">secops-core</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">exec-security</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="text-on-surface">1h ago</div>
+<div class="text-[10px] text-tertiary font-sans">Hardware MFA</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-primary text-[11px]">
+<span class="material-symbols-outlined text-xs">sync_saved_locally</span>
+                Synced
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors" type="button">
+                Manage
+              </button>
+</td>
+</tr>
+<!-- Row 3: David Chen -->
+<tr class="hover:bg-surface-container-low/40 transition-colors identity-row" data-status="active">
+<td class="py-3.5 px-4 font-body">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs">
+                  DC
+                </div>
+<div class="min-w-0">
+<div class="font-semibold text-on-surface text-sm leading-snug truncate">David Chen</div>
+<div class="text-[11px] font-mono text-on-surface-variant truncate">david.c@acme.corp</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Okta SSO
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="text-secondary font-bold">Senior SRE</span>
+<span class="text-on-surface-variant text-[11px]"> (Operator)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">platform-sre</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">k8s-admins</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="text-on-surface">42m ago</div>
+<div class="text-[10px] text-primary font-sans">WebAuthn TouchID</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-primary text-[11px]">
+<span class="material-symbols-outlined text-xs">sync_saved_locally</span>
+                Synced
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors" type="button">
+                Manage
+              </button>
+</td>
+</tr>
+<!-- Row 4: Marcus Vance -->
+<tr class="hover:bg-surface-container-low/40 transition-colors identity-row" data-status="active">
+<td class="py-3.5 px-4 font-body">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs">
+                  MV
+                </div>
+<div class="min-w-0">
+<div class="font-semibold text-on-surface text-sm leading-snug truncate">Marcus Vance</div>
+<div class="text-[11px] font-mono text-on-surface-variant truncate">marcus.v@acme.corp</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-[11px] text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Okta SSO
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="text-tertiary font-bold">Security Architect</span>
+<span class="text-on-surface-variant text-[11px]"> (Admin)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">secops-core</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-on-surface-variant">audit-reviewers</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="text-on-surface">3h ago</div>
+<div class="text-[10px] text-on-surface-variant font-sans">Okta Verify Push</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-primary text-[11px]">
+<span class="material-symbols-outlined text-xs">sync_saved_locally</span>
+                Synced
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors" type="button">
+                Manage
+              </button>
+</td>
+</tr>
+<!-- Row 5: Johnathan Miller (Deprovisioned) -->
+<tr class="hover:bg-surface-container-low/40 transition-colors bg-surface-container-lowest/50 opacity-80 identity-row" data-status="deprovisioned">
+<td class="py-3.5 px-4 font-body">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center font-bold text-outline text-xs">
+                  JM
+                </div>
+<div class="min-w-0">
+<div class="font-semibold text-on-surface text-sm leading-snug truncate">Johnathan Miller</div>
+<div class="text-[11px] font-mono text-outline truncate">j.miller@contractor.acme.corp</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-low text-[11px] text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                Entra ID
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="text-outline font-semibold">External Contractor</span>
+<span class="text-outline-variant text-[11px]"> (ScopedGuest)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-low text-[10px] text-outline">contractor-payments</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="text-outline">14d ago</div>
+<div class="text-[10px] text-error font-sans font-medium">Session Terminated</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-error text-[11px] font-bold">
+<span class="material-symbols-outlined text-xs">block</span>
+                SCIM Revoked
+              </span>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap text-right">
+<button class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-tertiary transition-colors" type="button">
+                View Audit
+              </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Bottom Panel: Automated Offboarding Safeguards -->
+<div class="rounded-xl bg-surface-container-low p-6 shadow-md relative overflow-hidden">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+<div class="flex items-start gap-4">
+<div class="p-3 rounded-xl bg-surface-container-high text-tertiary shrink-0">
+<span class="material-symbols-outlined text-2xl">auto_delete</span>
+</div>
+<div class="space-y-1.5 max-w-3xl">
+<div class="flex items-center gap-2">
+<h3 class="font-headline font-bold text-base text-on-surface">Automated Offboarding &amp; SCIM Deprovisioning Safeguards</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-surface-container-highest text-tertiary">Zero Tolerance</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+            When an identity status is modified to <span class="font-mono text-on-surface font-semibold">Suspended</span> or <span class="font-mono text-on-surface font-semibold">Deleted</span> within Okta or Microsoft Entra ID, SecretVault executes zero-latency containment: instant invalidation of active JIT credentials, immediate revocation of all personal API tokens, and automated emergency rotation of any shared production secrets accessed by the user within the preceding 7 days.
+          </p>
+</div>
+</div>
+<div class="flex sm:flex-col items-end gap-2 shrink-0">
+<button class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors shadow-sm whitespace-nowrap" type="button">
+          Configure Safeguard Rules
+        </button>
+<span class="text-[10px] font-mono text-on-surface-variant">Last automated trigger: None (Healthy)</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple interactive behaviors for search, filtering, and force sync
+  const searchInput = document.getElementById('directorySearchInput');
+  const tableRows = document.querySelectorAll('.identity-row');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const forceSyncBtn = document.getElementById('forceSyncBtn');
+  const syncIcon = document.getElementById('syncIcon');
+  const lastSyncLabel = document.getElementById('lastSyncLabel');
+
+  let currentFilter = 'all';
+
+  function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    tableRows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const status = row.getAttribute('data-status');
+      const matchesSearch = text.includes(query);
+      const matchesFilter = (currentFilter === 'all') || (status === currentFilter);
+
+      if (matchesSearch && matchesFilter) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        applyFilters();
+      }
+    });
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => {
+        b.classList.remove('active', 'bg-surface-container-high', 'text-on-surface', 'font-semibold');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.add('active', 'bg-surface-container-high', 'text-on-surface', 'font-semibold');
+      btn.classList.remove('text-on-surface-variant');
+      currentFilter = btn.getAttribute('data-filter');
+      applyFilters();
+    });
+  });
+
+  if (forceSyncBtn) {
+    forceSyncBtn.addEventListener('click', () => {
+      syncIcon.classList.add('rotate-180');
+      forceSyncBtn.disabled = true;
+      forceSyncBtn.classList.add('opacity-75');
+      
+      setTimeout(() => {
+        syncIcon.classList.remove('rotate-180');
+        forceSyncBtn.disabled = false;
+        forceSyncBtn.classList.remove('opacity-75');
+        if (lastSyncLabel) {
+          lastSyncLabel.textContent = 'Just now';
+        }
+      }, 750);
+    });
+  }
+</script></main></div></body></html>

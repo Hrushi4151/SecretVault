@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#ffb4a8",
+          "on-error-container": "#ffdad6",
+          "on-primary": "#303030",
+          "on-primary-fixed": "#1b1b1b",
+          "primary": "#c6c6c6",
+          "secondary-fixed-dim": "#c6c6c7",
+          "error": "#ffb4ab",
+          "surface-container-high": "#5a0023",
+          "outline-variant": "#4c4546",
+          "surface-bright": "#760031",
+          "on-error": "#690005",
+          "surface-tint": "#c6c6c6",
+          "on-surface-variant": "#cfc4c5",
+          "on-tertiary": "#690001",
+          "surface-dim": "#30000f",
+          "secondary-fixed": "#e2e2e2",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-container": "#ec0005",
+          "on-primary-container": "#757575",
+          "background": "#30000f",
+          "inverse-on-surface": "#660029",
+          "surface-container-highest": "#6e002d",
+          "secondary-container": "#454747",
+          "inverse-primary": "#5e5e5e",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-secondary-container": "#b4b5b5",
+          "on-surface": "#ffd9df",
+          "surface-container-low": "#3f0016",
+          "on-secondary": "#2f3131",
+          "outline": "#988e90",
+          "tertiary-fixed": "#ffdad5",
+          "on-secondary-fixed-variant": "#454747",
+          "primary-fixed": "#e2e2e2",
+          "surface-variant": "#6e002d",
+          "surface-container": "#47001a",
+          "on-background": "#ffd9df",
+          "surface": "#30000f",
+          "surface-container-lowest": "#26000b",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-primary-fixed-variant": "#474747",
+          "secondary": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "on-tertiary-fixed-variant": "#930001",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full"><div class="h-16 px-5 flex items-center gap-3 bg-surface-container-lowest"><img alt="SecretVault logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><span class="text-base font-headline font-bold tracking-wider uppercase text-on-surface">SecretVault</span></div><div class="overflow-y-auto flex-1 px-3 py-4 space-y-6"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">WORKSPACE</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_open</span><span>Projects</span></a><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span>Sync Center</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">SECURITY</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">policy</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">radar</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span>Audit Logs</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">AI OPS</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>AI Analysis</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">ORGANIZATION</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Team</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span>Settings</span></a></nav></div><div class="p-3 bg-surface-container-lowest space-y-1"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help-support" href="#"><span class="material-symbols-outlined text-[20px]">support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_circle</span><span>User Profile</span></a></nav></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-4"><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-secondary">deployed_code</span><span>API Gateway</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold uppercase tracking-wider text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Production</span></div></div><div class="flex items-center gap-4"><button class="flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs text-on-surface-variant" type="button"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">search</span><span>Search resources, secrets, logs...</span></div><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-lowest text-outline">⌘K</kbd></button><div class="flex items-center gap-2"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-lg">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-lg">dark_mode</span></button></div><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="relative pt-16 min-h-screen bg-background w-full px-8 pb-12"><div class="flex flex-col w-full">
+<!-- Sticky Context Anchor & Top Banner -->
+<div class="flex flex-col gap-6 mb-8">
+<!-- Breadcrumbs & Meta -->
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant">
+<span>SecretVault</span>
+<span class="text-outline">/</span>
+<span>Secrets</span>
+<span class="text-outline">/</span>
+<span class="text-secondary">Production</span>
+<span class="text-outline">/</span>
+<span class="text-tertiary font-semibold">DATABASE_PASSWORD</span>
+<span class="text-outline">/</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-sans font-bold">Rotate</span>
+</div>
+<!-- Target Secret Details Pill Cluster -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low shadow-sm">
+<span class="material-symbols-outlined text-[15px] text-tertiary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="text-xs font-mono font-bold text-on-surface">DATABASE_PASSWORD</span>
+<span class="text-[10px] font-mono text-on-surface-variant">••••••••••••••••</span>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-surface-container text-[11px] font-mono text-on-surface-variant">
+          Type: <span class="text-on-surface font-semibold">PostgreSQL Credential</span>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-surface-container text-[11px] font-mono text-on-surface-variant">
+          Scope: <span class="text-secondary font-semibold">prod-us-east-1</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-[11px] font-mono font-bold text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>Version v12</span>
+</div>
+</div>
+</div>
+<!-- Page Title & Pitch -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="space-y-1">
+<h1 class="text-3xl lg:text-4xl font-headline font-black tracking-tight text-on-surface">
+          Secret Rotation Wizard
+        </h1>
+<p class="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+          Safely rotate sensitive credentials across multi-region infrastructure with zero downtime, shadow verification, and automated dynamic dual-write state checks.
+        </p>
+</div>
+<!-- Quick Status Metric -->
+<div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="p-2 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-lg">verified_user</span>
+</div>
+<div>
+<div class="text-[10px] uppercase tracking-wider font-label font-bold text-on-surface-variant">Guardrail Status</div>
+<div class="text-xs font-mono font-semibold text-on-surface flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            Dual-Auth Plugin Active
+          </div>
+</div>
+</div>
+</div>
+<!-- Horizontal Stepper Bar -->
+<div class="w-full p-2.5 rounded-2xl bg-surface-container-lowest shadow-md overflow-x-auto">
+<ol class="flex items-center min-w-[760px] justify-between gap-2">
+<!-- Step 1: Done -->
+<li class="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-container-low transition-colors">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-surface-container-highest text-tertiary shrink-0">
+<span class="material-symbols-outlined text-sm font-black">check</span>
+</div>
+<div class="min-w-0">
+<div class="text-[10px] font-label font-bold text-tertiary uppercase tracking-wider">Step 1</div>
+<div class="text-xs font-headline font-bold text-on-surface truncate">Select Secret &amp; Scope</div>
+</div>
+</li>
+<!-- Step Indicator Arrow -->
+<span class="material-symbols-outlined text-outline text-sm shrink-0">chevron_right</span>
+<!-- Step 2: Active -->
+<li class="flex-1 flex items-center gap-3 px-3.5 py-2 rounded-xl bg-surface-container-high shadow-lg transition-all">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-on-primary font-mono text-xs font-black shrink-0 shadow-md">
+            2
+          </div>
+<div class="min-w-0">
+<div class="text-[10px] font-label font-extrabold uppercase tracking-widest text-tertiary flex items-center gap-1.5">
+<span>Active</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+</div>
+<div class="text-xs font-headline font-bold text-on-surface truncate">Configure Rotation Strategy</div>
+</div>
+</li>
+<!-- Step Indicator Arrow -->
+<span class="material-symbols-outlined text-outline text-sm shrink-0">chevron_right</span>
+<!-- Step 3: Pending -->
+<li class="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-container-lowest opacity-75">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-surface-container text-outline font-mono text-xs shrink-0">
+            3
+          </div>
+<div class="min-w-0">
+<div class="text-[10px] font-label font-semibold text-on-surface-variant uppercase tracking-wider">Step 3</div>
+<div class="text-xs font-headline text-on-surface-variant truncate">Impact &amp; Blast Radius</div>
+</div>
+</li>
+<!-- Step Indicator Arrow -->
+<span class="material-symbols-outlined text-outline text-sm shrink-0">chevron_right</span>
+<!-- Step 4: Pending -->
+<li class="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-container-lowest opacity-60">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-surface-container text-outline font-mono text-xs shrink-0">
+            4
+          </div>
+<div class="min-w-0">
+<div class="text-[10px] font-label font-semibold text-on-surface-variant uppercase tracking-wider">Step 4</div>
+<div class="text-xs font-headline text-on-surface-variant truncate">Staged Execution</div>
+</div>
+</li>
+<!-- Step Indicator Arrow -->
+<span class="material-symbols-outlined text-outline text-sm shrink-0">chevron_right</span>
+<!-- Step 5: Pending -->
+<li class="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-container-lowest opacity-40">
+<div class="flex items-center justify-center w-7 h-7 rounded-full bg-surface-container text-outline font-mono text-xs shrink-0">
+            5
+          </div>
+<div class="min-w-0">
+<div class="text-[10px] font-label font-semibold text-on-surface-variant uppercase tracking-wider">Step 5</div>
+<div class="text-xs font-headline text-on-surface-variant truncate">Verification &amp; Cutover</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<!-- Main Canvas: Two Columns (Left Config, Right Blast Radius Map) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start mb-10">
+<!-- LEFT COLUMN: Rotation Configuration (7 Cols) -->
+<div class="xl:col-span-7 flex flex-col gap-6">
+<!-- SECTION 1: Rotation Method -->
+<section class="p-6 rounded-2xl bg-surface-container-low shadow-sm space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-xl">tune</span>
+<h2 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">1. Select Rotation Method</h2>
+</div>
+<span class="text-xs font-mono text-on-surface-variant">Provider: AWS RDS Engine</span>
+</div>
+<div class="space-y-3" id="rotation-method-group">
+<!-- Card 1: Automatic Provider (Selected) -->
+<label class="block relative p-4 rounded-xl bg-surface-container cursor-pointer transition-all duration-150 hover:bg-surface-container-high shadow-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input checked="" class="mt-1 accent-tertiary cursor-pointer" name="rotation_method" type="radio" value="auto"/>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-headline font-bold text-on-surface">Automatic Provider Rotation</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-[10px] font-label font-bold text-tertiary uppercase tracking-wider">Recommended</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    SecretVault orchestrates credential generation and updates AWS RDS / Supabase automatically via IAM service-linked role.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary shrink-0">smart_toy</span>
+</div>
+<div class="mt-3 pt-3 flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>Entropy: 256-bit CSPRNG</span>
+<span class="text-secondary flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Zero Secret Storing locally</span>
+</div>
+</label>
+<!-- Card 2: Provider Generated -->
+<label class="block relative p-4 rounded-xl bg-surface-container-lowest cursor-pointer transition-all duration-150 hover:bg-surface-container shadow-sm">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input class="mt-1 accent-tertiary cursor-pointer" name="rotation_method" type="radio" value="provider_gen"/>
+<div class="space-y-1">
+<div class="text-sm font-headline font-bold text-on-surface">Provider Generated</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    Cloud database generates credential internally; SecretVault securely ingests via mTLS webhook callback.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline shrink-0">cloud_sync</span>
+</div>
+</label>
+<!-- Card 3: Manual Dual-Custodian -->
+<label class="block relative p-4 rounded-xl bg-surface-container-lowest cursor-pointer transition-all duration-150 hover:bg-surface-container shadow-sm">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input class="mt-1 accent-tertiary cursor-pointer" name="rotation_method" type="radio" value="manual_dual"/>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-headline font-bold text-on-surface">Manual Dual-Custodian Injection</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant">Shamir's Secret</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    Requires two independent security officers to supply cryptographic key shares before rotating.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline shrink-0">group_work</span>
+</div>
+</label>
+</div>
+</section>
+<!-- SECTION 2: Rotation Strategy -->
+<section class="p-6 rounded-2xl bg-surface-container-low shadow-sm space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl">autorenew</span>
+<h2 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">2. Rotation Strategy &amp; Availability</h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[11px] font-mono text-tertiary font-bold">SLO: 99.999%</span>
+</div>
+<div class="space-y-3">
+<!-- Strategy 1: Shadow Rotation (Selected) -->
+<label class="block relative p-4 rounded-xl bg-surface-container cursor-pointer transition-all duration-150 hover:bg-surface-container-high shadow-md">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input checked="" class="mt-1 accent-tertiary cursor-pointer" name="rotation_strategy" type="radio" value="shadow"/>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-headline font-bold text-on-surface">Shadow Rotation (Zero Downtime)</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-[10px] font-label font-bold text-secondary uppercase">Production Safe</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    Deploys new credential alongside old version (both v13 and v12 valid simultaneously). Applications dynamically transition before old credential cutoff.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary shrink-0">offline_bolt</span>
+</div>
+<!-- Visual Flow Bar inside selected card -->
+<div class="mt-4 p-3 rounded-lg bg-surface-container-lowest space-y-2">
+<div class="flex items-center justify-between text-[11px] font-mono">
+<span class="text-on-surface">State: Dual Concurrent Valid</span>
+<span class="text-tertiary font-bold">v12 &amp; v13 Synchronous</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden flex">
+<div class="h-full bg-primary" style="width: 45%"></div>
+<div class="h-full bg-tertiary animate-pulse" style="width: 55%"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-on-surface-variant">
+<span>Phase 1: Seed v13</span>
+<span>Phase 2: Pod Migration</span>
+<span>Phase 3: Prune v12</span>
+</div>
+</div>
+</label>
+<!-- Strategy 2: Blue/Green Rollout -->
+<label class="block relative p-4 rounded-xl bg-surface-container-lowest cursor-pointer transition-all duration-150 hover:bg-surface-container shadow-sm">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input class="mt-1 accent-tertiary cursor-pointer" name="rotation_strategy" type="radio" value="blue_green"/>
+<div class="space-y-1">
+<div class="text-sm font-headline font-bold text-on-surface">Staged Blue/Green Rollout</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    Rotates staging and ephemeral environments first, validates canary traffic for 15 minutes, then promotes to production clusters.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline shrink-0">call_split</span>
+</div>
+</label>
+<!-- Strategy 3: Immediate Invalidation (Hard Cut) -->
+<label class="block relative p-4 rounded-xl bg-surface-container-lowest cursor-pointer transition-all duration-150 hover:bg-surface-container shadow-sm">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-3">
+<input class="mt-1 accent-tertiary cursor-pointer" name="rotation_strategy" type="radio" value="hard_cut"/>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-headline font-bold text-on-surface">Immediate Invalidation (Hard Cut)</span>
+<span class="px-1.5 py-0.5 rounded bg-error-container text-[10px] font-mono text-on-error-container">High Risk</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                    Instantly revokes v12 and provisions v13. Recommended only during active incident response. May cause momentary connection drops.
+                  </p>
+</div>
+</div>
+<span class="material-symbols-outlined text-error shrink-0">bolt</span>
+</div>
+</label>
+</div>
+</section>
+<!-- SECTION 3: Advanced Parameters Grid -->
+<section class="p-6 rounded-2xl bg-surface-container-low shadow-sm space-y-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">settings_input_component</span>
+<h2 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">3. Resiliency Parameters</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Parameter 1: Overlap Window -->
+<div class="p-4 rounded-xl bg-surface-container-lowest space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-headline font-bold text-on-surface">Dual-Active Overlap Window</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono text-xs text-tertiary font-bold">2 Hours</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Grace period where both v12 and v13 are authenticated by PostgreSQL before v12 deletion.
+            </p>
+<input class="w-full accent-tertiary bg-surface-container h-1.5 rounded-lg appearance-none cursor-pointer" max="12" min="1" type="range" value="2"/>
+<div class="flex justify-between text-[10px] font-mono text-outline">
+<span>30m (Aggressive)</span>
+<span>2h (Optimal)</span>
+<span>12h (Audit)</span>
+</div>
+</div>
+<!-- Parameter 2: Auto-Rollback Threshold -->
+<div class="p-4 rounded-xl bg-surface-container-lowest space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-headline font-bold text-on-surface">Auto-Rollback Error Threshold</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-mono text-xs text-secondary font-bold">&gt; 0.05%</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              If client connection failures exceed 0.05% over a 5-minute sampling window, v13 is automatically aborted.
+            </p>
+<div class="flex items-center gap-2 pt-1">
+<span class="material-symbols-outlined text-secondary text-sm">history</span>
+<span class="text-xs font-mono text-on-surface">Auto-revert to v12 in &lt; 400ms</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN: Real-Time Blast Radius & Impact Preview (5 Cols) -->
+<div class="xl:col-span-5 flex flex-col gap-6">
+<!-- Blast Radius Live Card -->
+<section class="p-6 rounded-2xl bg-surface-container shadow-xl relative overflow-hidden">
+<!-- Subtle ambient radial highlight inside container -->
+<div class="absolute -right-16 -top-16 w-56 h-56 bg-surface-bright/20 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex items-center justify-between pb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">radar</span>
+<div>
+<h2 class="text-sm font-headline font-extrabold uppercase tracking-wider text-on-surface">Real-Time Blast Radius</h2>
+<p class="text-[11px] text-on-surface-variant">Step 3 Predictive Verification</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-[11px] font-mono text-on-surface">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span>Live Mesh</span>
+</div>
+</div>
+<!-- Impact Metrics 2x2 Bento -->
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="text-[10px] font-label uppercase font-bold text-on-surface-variant">Affected Projects</div>
+<div class="text-2xl font-mono font-black text-on-surface mt-1">2</div>
+<div class="text-[11px] font-mono text-outline-variant mt-0.5 truncate">Payments &amp; Billing</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="text-[10px] font-label uppercase font-bold text-on-surface-variant">Consumer Pods</div>
+<div class="text-2xl font-mono font-black text-on-surface mt-1">4</div>
+<div class="text-[11px] font-mono text-secondary mt-0.5">prod-core-01 cluster</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="text-[10px] font-label uppercase font-bold text-on-surface-variant">Synced Targets</div>
+<div class="text-2xl font-mono font-black text-on-surface mt-1">3</div>
+<div class="text-[11px] font-mono text-on-surface-variant mt-0.5">AWS SM, Vercel, K8s</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="text-[10px] font-label uppercase font-bold text-on-surface-variant">Estimated Downtime</div>
+<div class="text-2xl font-mono font-black text-secondary mt-1">0.00s</div>
+<div class="text-[11px] font-mono text-tertiary mt-0.5 font-semibold">Shadow Rotation Active</div>
+</div>
+</div>
+<!-- Dependency Tree Visualizer (Bespoke Dark Control Plane Pattern) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest space-y-3 font-mono text-xs">
+<div class="text-[11px] font-label uppercase font-bold text-on-surface-variant tracking-wider flex items-center justify-between">
+<span>Downstream Target Graph</span>
+<span class="text-[10px] text-tertiary">All In-Sync</span>
+</div>
+<!-- Root Node -->
+<div class="flex items-center gap-2 p-2 rounded-lg bg-surface-container-high text-on-surface font-bold">
+<span class="material-symbols-outlined text-sm text-tertiary">vpn_key</span>
+<span class="truncate">DATABASE_PASSWORD (v12 → v13)</span>
+</div>
+<!-- Tree Children -->
+<div class="pl-4 space-y-2 relative">
+<!-- Node 1 -->
+<div class="flex items-start justify-between gap-2 p-2 rounded bg-surface-container/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-outline">├──</span>
+<span class="material-symbols-outlined text-xs text-on-surface-variant">dns</span>
+<div>
+<div class="text-xs font-semibold text-on-surface">payments-api-prod</div>
+<div class="text-[10px] text-outline">4 pods • WireGuard mesh</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-bold text-secondary shrink-0">100% Health</span>
+</div>
+<!-- Node 2 -->
+<div class="flex items-start justify-between gap-2 p-2 rounded bg-surface-container/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-outline">├──</span>
+<span class="material-symbols-outlined text-xs text-on-surface-variant">sync_saved_locally</span>
+<div>
+<div class="text-xs font-semibold text-on-surface">billing-worker</div>
+<div class="text-[10px] text-outline">2 pods • async SQS queue</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-bold text-secondary shrink-0">100% Health</span>
+</div>
+<!-- Node 3 -->
+<div class="flex items-start justify-between gap-2 p-2 rounded bg-surface-container/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-outline">└──</span>
+<span class="material-symbols-outlined text-xs text-on-surface-variant">schedule</span>
+<div>
+<div class="text-xs font-semibold text-on-surface">analytics-etl</div>
+<div class="text-[10px] text-outline">CronJob • Suspended during cut</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary shrink-0">Next: 4h</span>
+</div>
+</div>
+</div>
+<!-- Security Invariant Checks List -->
+<div class="mt-5 space-y-2">
+<div class="text-[11px] font-label uppercase font-bold text-on-surface-variant tracking-wider">Security Invariant Pre-Checks</div>
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-low text-xs">
+<span class="material-symbols-outlined text-secondary text-base shrink-0 mt-0.5">check_circle</span>
+<div class="text-on-surface leading-tight">
+<span class="font-semibold">PostgreSQL User Permissions Verified:</span>
+<span class="font-mono text-on-surface-variant text-[11px]"> ALTER USER ... WITH PASSWORD authorized via IAM master pool.</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-low text-xs">
+<span class="material-symbols-outlined text-secondary text-base shrink-0 mt-0.5">check_circle</span>
+<div class="text-on-surface leading-tight">
+<span class="font-semibold">Hot-Reload Support:</span>
+<span class="font-mono text-on-surface-variant text-[11px]"> All 4 consumer pods support SecretVault SDK in-memory atomic reloading.</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-surface-container-low text-xs">
+<span class="material-symbols-outlined text-secondary text-base shrink-0 mt-0.5">check_circle</span>
+<div class="text-on-surface leading-tight">
+<span class="font-semibold">RDS Dual-Auth Engine:</span>
+<span class="font-mono text-on-surface-variant text-[11px]"> Database parameters support two concurrently valid passwords.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Terminal / Dry-Run Output Snippet Card -->
+<section class="p-5 rounded-2xl bg-surface-container-lowest shadow-md space-y-3 font-mono text-xs">
+<div class="flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-tertiary">terminal</span>
+<span class="font-label uppercase font-bold tracking-wider text-[10px]">Orchestrator Preflight Test</span>
+</div>
+<span class="text-[10px] text-outline">v2.4.12-core</span>
+</div>
+<div class="p-3 rounded-xl bg-primary-container text-[11px] leading-relaxed font-mono space-y-1 text-on-surface-variant overflow-x-auto">
+<div class="text-secondary">$ secretvault rotate dry-run --target=DATABASE_PASSWORD</div>
+<div>[INFO] Testing mTLS handshake to RDS instance: <span class="text-on-surface">OK (14ms)</span></div>
+<div>[INFO] Simulating credential staging in shadow slot v13: <span class="text-on-surface">PASSED</span></div>
+<div>[INFO] Verifying payments-api memory rebind hook: <span class="text-on-surface">READY (v12+v13)</span></div>
+<div class="text-tertiary">[SUCCESS] 0 blocking invariants detected. Ready for staged rollout.</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Bottom Action Bar (Fixed or Sticky In-Page Flow) -->
+<div class="sticky bottom-4 z-30 p-4 rounded-2xl bg-surface-container-lowest/90 backdrop-blur-xl shadow-2xl flex flex-wrap items-center justify-between gap-4">
+<!-- Left Cancel / Back Actions -->
+<div class="flex items-center gap-3">
+<button class="px-4 py-2.5 rounded-xl text-xs font-headline font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-sm">close</span>
+<span>Cancel &amp; Exit</span>
+</button>
+<button class="px-3 py-2 rounded-xl text-xs font-mono text-outline hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span>Save Draft Config</span>
+</button>
+</div>
+<!-- Right Primary & Secondary Interactive Flow Actions -->
+<div class="flex items-center gap-3">
+<!-- Dry Run Simulate Button -->
+<button class="px-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface transition-all text-xs font-headline font-bold flex items-center gap-2 shadow-sm" id="btn-dry-run" type="button">
+<span class="material-symbols-outlined text-base text-tertiary">play_circle</span>
+<span>Simulate Dry-Run</span>
+</button>
+<!-- Primary Next CTA -->
+<button class="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-fixed text-on-primary font-headline font-extrabold text-xs transition-all shadow-lg flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]" id="btn-next-step" type="button">
+<span>Continue to Impact Verification</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const dryRunBtn = document.getElementById('btn-dry-run');
+    if (dryRunBtn) {
+      dryRunBtn.addEventListener('click', function() {
+        const originalText = this.innerHTML;
+        this.innerHTML = '<span class="material-symbols-outlined text-base animate-spin text-tertiary">sync</span><span>Verifying Topology...</span>';
+        this.classList.add('opacity-75');
+        setTimeout(() => {
+          this.innerHTML = '<span class="material-symbols-outlined text-base text-secondary">check_circle</span><span>Simulation 100% Passed</span>';
+          this.classList.remove('opacity-75');
+          setTimeout(() => {
+            this.innerHTML = originalText;
+          }, 2400);
+        }, 1200);
+      });
+    }
+
+    const nextBtn = document.getElementById('btn-next-step');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function() {
+        const originalHtml = this.innerHTML;
+        this.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span><span>Advancing to Step 3...</span>';
+        setTimeout(() => {
+          this.innerHTML = originalHtml;
+        }, 1000);
+      });
+    }
+  })();
+</script></main></div></body></html>

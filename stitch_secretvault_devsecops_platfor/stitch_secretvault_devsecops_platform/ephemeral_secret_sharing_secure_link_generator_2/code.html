@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full">
+<!-- Top Navigation Context -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-xs font-mono tracking-wider text-on-surface-variant uppercase">
+<span>SecretVault</span>
+<span class="text-on-surface-variant/40">/</span>
+<span>Secrets</span>
+<span class="text-on-surface-variant/40">/</span>
+<span class="text-tertiary-fixed font-bold">Ephemeral Share</span>
+</div>
+<h1 class="text-2xl lg:text-3xl font-headline font-bold tracking-tight text-on-surface">
+        Ephemeral Secret Dispatch &amp; End-to-End Link Generator
+      </h1>
+<p class="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+        Generate zero-knowledge, self-destructing access tokens and client-side encrypted links for one-time credential delivery across isolated networks.
+      </p>
+</div>
+<div class="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-semibold text-on-surface transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">history_toggle_off</span>
+<span>View Active Share Logs</span>
+</button>
+<a class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-low/60 hover:bg-surface-container text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span>Security Whitepaper</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</a>
+</div>
+</div>
+<!-- Main Split Architecture -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left Column: Generator Configuration (60% ~ 7/12) -->
+<div class="lg:col-span-7 flex flex-col gap-5">
+<!-- Secret Payload Card -->
+<section class="p-6 rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-5">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2.5">
+<span class="w-2.5 h-2.5 rounded-full bg-on-tertiary-container shadow-[0_0_8px_currentColor]"></span>
+<span class="text-xs font-mono font-bold tracking-widest text-on-surface uppercase">01 // Secret Payload Specification</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-[11px] font-mono text-tertiary">AES-GCM-256</span>
+</div>
+<!-- Format Selector Pills -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-mono uppercase tracking-wider text-on-surface-variant font-semibold">Format &amp; Schema</label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="formatSelector">
+<button class="format-pill active px-3 py-2 rounded-lg bg-surface-bright text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed">vpn_key</span>
+<span>Key/Value</span>
+</button>
+<button class="format-pill px-3 py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">data_object</span>
+<span>JSON Object</span>
+</button>
+<button class="format-pill px-3 py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">receipt_long</span>
+<span>.env Bundle</span>
+</button>
+<button class="format-pill px-3 py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span>SSH Key</span>
+</button>
+</div>
+</div>
+<!-- Secret Identifier Input -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-mono uppercase tracking-wider text-on-surface-variant font-semibold flex justify-between">
+<span>Identifier Label (Audit-safe descriptor)</span>
+<span class="text-[10px] text-on-surface-variant/60 lowercase font-normal">metadata logged in plaintext</span>
+</label>
+<div class="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-low text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-outline">label</span>
+<input class="w-full bg-transparent text-sm font-mono text-on-surface placeholder-on-surface-variant/50 focus:outline-none" placeholder="e.g. AWS_RDS_STAGING_KEY" type="text" value="DATABASE_MIGRATION_SUPERUSER_PASS"/>
+</div>
+</div>
+<!-- Secret Ciphertext Textarea Area -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<label class="text-xs font-mono uppercase tracking-wider text-on-surface-variant font-semibold">Raw Secret Ciphertext Payload</label>
+<button class="flex items-center gap-1.5 text-[11px] font-mono text-tertiary hover:text-tertiary-fixed transition-colors" id="toggleMaskBtn" type="button">
+<span class="material-symbols-outlined text-[15px]" id="maskIcon">visibility</span>
+<span id="maskText">Show Plaintext</span>
+</button>
+</div>
+<div class="relative rounded-lg bg-surface-container-low p-3 flex flex-col gap-2">
+<textarea class="w-full bg-transparent text-sm font-mono text-on-surface placeholder-on-surface-variant/40 resize-none focus:outline-none leading-relaxed tracking-wider" id="secretTextarea" placeholder="Paste raw credentials, certificates, or tokens here..." rows="4">• • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • •</textarea>
+<div class="flex items-center justify-between pt-2 text-[11px] font-mono text-on-surface-variant/70">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-tertiary">lock</span>
+<span>WebCrypto client-side encrypted before network transit</span>
+</div>
+<span>128 chars</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Ephemeral Policies & Self-Destruction -->
+<section class="p-6 rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-5">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2.5">
+<span class="w-2.5 h-2.5 rounded-full bg-on-tertiary-container shadow-[0_0_8px_currentColor]"></span>
+<span class="text-xs font-mono font-bold tracking-widest text-on-surface uppercase">02 // Expiration &amp; Self-Destruction Invariant</span>
+</div>
+<span class="text-xs font-mono text-on-surface-variant/80">TTL: ACTIVE</span>
+</div>
+<!-- TTL Selector -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-mono uppercase tracking-wider text-on-surface-variant font-semibold">Time-To-Live (Hard Expiry Clock)</label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+<button class="ttl-pill px-3 py-2.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-semibold text-center transition-all" type="button">
+              5 Minutes
+            </button>
+<button class="ttl-pill active px-3 py-2.5 rounded-lg bg-surface-bright text-on-surface text-xs font-mono font-bold text-center transition-all flex items-center justify-center gap-1" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span>15 Minutes</span>
+</button>
+<button class="ttl-pill px-3 py-2.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-semibold text-center transition-all" type="button">
+              1 Hour
+            </button>
+<button class="ttl-pill px-3 py-2.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-semibold text-center transition-all" type="button">
+              24 Hours
+            </button>
+</div>
+</div>
+<!-- Read Bounds & Destruction Trigger -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col justify-between gap-3">
+<div class="flex items-start justify-between">
+<div>
+<p class="text-xs font-bold text-on-surface">Burn After Reading (BAR)</p>
+<p class="text-[11px] text-on-surface-variant mt-0.5">Destroy database record on initial unlock payload</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-on-tertiary-container"></div>
+</label>
+</div>
+<div class="flex items-center gap-2 text-[10px] font-mono text-tertiary-fixed">
+<span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+<span>Strict 1-time delivery guaranteed</span>
+</div>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col justify-between gap-3">
+<div class="flex items-start justify-between">
+<div>
+<p class="text-xs font-bold text-on-surface">Read Limit Ceiling</p>
+<p class="text-[11px] text-on-surface-variant mt-0.5">Fallback max dispatch quota</p>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-xs font-mono text-on-surface font-semibold">1 Read</span>
+</div>
+<div class="flex items-center gap-2 text-[10px] font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">counter_1</span>
+<span>Auto-revocation armed</span>
+</div>
+</div>
+</div>
+<!-- Passphrase Derivation (Argon2id) -->
+<div class="flex flex-col gap-2 pt-1">
+<div class="flex items-center justify-between">
+<label class="text-xs font-mono uppercase tracking-wider text-on-surface-variant font-semibold">Client Passphrase Key Derivation (Argon2id)</label>
+<span class="text-[10px] font-mono text-tertiary-fixed">Optional Layer 2 Defense</span>
+</div>
+<div class="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-surface-container-low text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-outline">password</span>
+<input class="w-full bg-transparent text-xs font-mono text-on-surface placeholder-on-surface-variant focus:outline-none" placeholder="Provide out-of-band secret phrase (optional)..." type="password" value="entropy-k9!v0l4tile-vector"/>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">replay</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Action Panel -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-surface-container-lowest shadow-md">
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span>Zero Server Knowledge Guaranteed</span>
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<button class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors" type="button">
+            Clear &amp; Reset
+          </button>
+<button class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-on-tertiary-container to-surface-bright hover:opacity-95 text-xs font-bold text-white tracking-wide transition-all shadow-md" id="generateBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">key</span>
+<span>Generate Encrypted Link</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Active Ephemeral Token & Security Bounds (40% ~ 5/12) -->
+<div class="lg:col-span-5 flex flex-col gap-5">
+<!-- Primary Encrypted Link Artifact Box -->
+<section class="p-6 rounded-xl bg-surface-container-lowest shadow-xl flex flex-col gap-5 relative overflow-hidden">
+<!-- Glowing accent border simulation -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-on-tertiary-container via-surface-bright to-tertiary"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">link</span>
+<span class="text-xs font-mono font-bold tracking-widest text-on-surface uppercase">Ephemeral Link Artifact</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-xs font-mono text-tertiary">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-ping"></span>
+<span id="countdownTimer">14m 58s</span>
+</div>
+</div>
+<!-- URL Container with Anchor Fragment Hash -->
+<div class="flex flex-col gap-2">
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>Client-decrypted dispatch URL</span>
+<span class="text-tertiary-fixed font-semibold">Fragment Key Protected</span>
+</div>
+<div class="flex items-center justify-between gap-2 p-2 rounded bg-surface-container-lowest">
+<code class="text-xs font-mono text-on-surface truncate">
+                https://vault.acme.corp/e/#key=a8f9c1e7094b8e2190fd83a17c3e9b
+              </code>
+<button class="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded bg-surface-bright text-xs font-bold text-white hover:opacity-90 transition-opacity" id="copyUrlBtn">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+<p class="text-[10px] text-on-surface-variant/80 italic">
+              * Note: The hash fragment (#key=...) is processed exclusively in the recipient's browser engine and is never relayed to Acme Vault telemetry servers.
+            </p>
+</div>
+</div>
+<!-- QR Code Dispatch Verification (Inline Vector Render) -->
+<div class="flex items-center gap-4 p-4 rounded-lg bg-surface-container-low">
+<!-- Stylized QR Code SVG -->
+<div class="shrink-0 p-2 rounded bg-black flex items-center justify-center shadow-inner">
+<svg class="w-20 h-20 text-on-surface" fill="currentColor" viewbox="0 0 100 100">
+<!-- Corner markers -->
+<rect fill="none" height="30" stroke="currentColor" stroke-width="6" width="30" x="5" y="5"></rect>
+<rect height="14" width="14" x="13" y="13"></rect>
+<rect fill="none" height="30" stroke="currentColor" stroke-width="6" width="30" x="65" y="5"></rect>
+<rect height="14" width="14" x="73" y="13"></rect>
+<rect fill="none" height="30" stroke="currentColor" stroke-width="6" width="30" x="5" y="65"></rect>
+<rect height="14" width="14" x="13" y="73"></rect>
+<!-- Data payload dots pattern -->
+<rect height="8" width="8" x="42" y="10"></rect>
+<rect height="8" width="6" x="52" y="10"></rect>
+<rect height="6" width="16" x="42" y="24"></rect>
+<rect height="16" width="6" x="10" y="42"></rect>
+<rect height="6" width="12" x="24" y="42"></rect>
+<rect fill="#ec0005" height="16" width="16" x="42" y="42"></rect>
+<rect height="8" width="10" x="65" y="42"></rect>
+<rect height="16" width="10" x="80" y="42"></rect>
+<rect height="25" width="8" x="42" y="65"></rect>
+<rect height="6" width="12" x="56" y="65"></rect>
+<rect height="14" width="10" x="56" y="77"></rect>
+<rect height="18" width="18" x="72" y="72"></rect>
+</svg>
+</div>
+<div class="flex flex-col gap-1.5 text-left">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">qr_code_scanner</span>
+<span class="text-xs font-mono font-bold text-on-surface">Hardware Mobile MFA</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">
+              Scan securely with YubiKey Authenticator or iOS Enclave bridge to consume without browser clipboard contamination.
+            </p>
+<span class="text-[10px] font-mono text-tertiary-fixed-dim">ECDSA P-256 Verified</span>
+</div>
+</div>
+</section>
+<!-- Access Control Boundaries Bento Card -->
+<section class="p-5 rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-4">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">shield</span>
+<span class="text-xs font-mono font-bold tracking-widest text-on-surface uppercase">Access Control Guardrails</span>
+</div>
+<span class="text-[11px] font-mono text-tertiary-fixed">Strict Policy</span>
+</div>
+<div class="flex flex-col gap-2.5">
+<!-- CIDR / VPN Lock -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px] text-tertiary">lan</span>
+<div>
+<p class="text-xs font-semibold text-on-surface">Network Geofence / CIDR</p>
+<p class="text-[10px] font-mono text-on-surface-variant">10.240.0.0/16 (Corporate Direct Connect)</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-bright/50 text-[10px] font-mono text-tertiary-fixed font-bold">Enforced</span>
+</div>
+<!-- WebAuthn Hardware Requirement -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px] text-tertiary">fingerprint</span>
+<div>
+<p class="text-xs font-semibold text-on-surface">Physical Security Token</p>
+<p class="text-[10px] font-mono text-on-surface-variant">WebAuthn / FIDO2 YubiKey Touch</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-bright/50 text-[10px] font-mono text-tertiary-fixed font-bold">Required</span>
+</div>
+<!-- Self Destruct Trigger Alert -->
+<div class="p-3 rounded-lg bg-surface-container-high/60 flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-on-tertiary-container shrink-0 mt-0.5">warning</span>
+<p class="text-[11px] text-on-surface leading-tight">
+<strong class="font-bold text-on-tertiary-container">Self-Destruct Armed:</strong> Target row drops from in-memory cluster instantly on HTTP 200 payload dispatch. Replays yield cryptographic Null-404.
+            </p>
+</div>
+</div>
+</section>
+<!-- Active Links Micro Audit Table -->
+<section class="p-5 rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline">dns</span>
+<span class="text-xs font-mono font-bold tracking-wider text-on-surface uppercase">Session Ephemeral Registry</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant">Showing 3 links</span>
+</div>
+<div class="flex flex-col gap-2 text-xs font-mono">
+<!-- Item 1: Active -->
+<div class="p-3 rounded-lg bg-surface-container-low flex items-center justify-between gap-2">
+<div class="flex flex-col gap-0.5 min-w-0">
+<span class="font-bold text-on-surface truncate">STRIPE_WEBHOOK_KEY_TEMP</span>
+<span class="text-[10px] text-on-surface-variant">Created 4m ago • 1 view left</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="px-2 py-0.5 rounded-full bg-surface-bright text-[10px] font-bold text-white flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+<span>Active</span>
+</span>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-tertiary-container transition-colors" title="Revoke immediately">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Burned -->
+<div class="p-3 rounded-lg bg-surface-container-low/50 flex items-center justify-between gap-2">
+<div class="flex flex-col gap-0.5 min-w-0 opacity-70">
+<span class="font-bold text-on-surface truncate">AWS_TEMP_SESSION_TOKEN</span>
+<span class="text-[10px] text-on-surface-variant">Created 22m ago • Burned at 14:02 UTC</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-semibold text-on-surface-variant">
+                Revoked
+              </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant/40">lock_clock</span>
+</div>
+</div>
+<!-- Item 3: Terminated -->
+<div class="p-3 rounded-lg bg-surface-container-low/50 flex items-center justify-between gap-2">
+<div class="flex flex-col gap-0.5 min-w-0 opacity-70">
+<span class="font-bold text-on-surface truncate">PG_ROOT_PASSWORD_HOTFIX</span>
+<span class="text-[10px] text-on-surface-variant">Created 45m ago • Expired via TTL clock</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-semibold text-on-surface-variant">
+                Terminated
+              </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant/40">delete_sweep</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Secret payload mask / unmask handler
+    const toggleMaskBtn = document.getElementById('toggleMaskBtn');
+    const secretTextarea = document.getElementById('secretTextarea');
+    const maskText = document.getElementById('maskText');
+    const maskIcon = document.getElementById('maskIcon');
+    let isMasked = true;
+    const mockPlaintext = 'vault_mock_secret_key_948f98a2b0c34517efd0928a349bc98129ac98d021f';
+    const mockMasked = '• • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • •';
+
+    if (toggleMaskBtn && secretTextarea) {
+      toggleMaskBtn.addEventListener('click', () => {
+        isMasked = !isMasked;
+        if (isMasked) {
+          secretTextarea.value = mockMasked;
+          maskText.textContent = 'Show Plaintext';
+          maskIcon.textContent = 'visibility';
+        } else {
+          secretTextarea.value = mockPlaintext;
+          maskText.textContent = 'Mask Secret';
+          maskIcon.textContent = 'visibility_off';
+        }
+      });
+    }
+
+    // Format Selector Pills Interaction
+    const formatPills = document.querySelectorAll('.format-pill');
+    formatPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        formatPills.forEach(p => {
+          p.classList.remove('active', 'bg-surface-bright', 'text-on-surface');
+          p.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        pill.classList.add('active', 'bg-surface-bright', 'text-on-surface');
+        pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
+      });
+    });
+
+    // TTL Pills Interaction
+    const ttlPills = document.querySelectorAll('.ttl-pill');
+    ttlPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        ttlPills.forEach(p => {
+          p.classList.remove('active', 'bg-surface-bright', 'text-on-surface', 'font-bold');
+          p.classList.add('bg-surface-container', 'text-on-surface-variant', 'font-semibold');
+          const dot = p.querySelector('span.w-1\\.5');
+          if (dot) dot.remove();
+        });
+        pill.classList.add('active', 'bg-surface-bright', 'text-on-surface', 'font-bold');
+        pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
+      });
+    });
+
+    // Copy to clipboard mock
+    const copyUrlBtn = document.getElementById('copyUrlBtn');
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener('click', () => {
+        const textSpan = copyUrlBtn.querySelector('span:last-child');
+        const originalText = textSpan.textContent;
+        navigator.clipboard?.writeText('https://vault.acme.corp/e/#key=a8f9c1e7094b8e2190fd83a17c3e9b');
+        textSpan.textContent = 'Copied!';
+        setTimeout(() => {
+          textSpan.textContent = originalText;
+        }, 1800);
+      });
+    }
+
+    // Countdown mock
+    let secondsLeft = 14 * 60 + 58;
+    const timerElem = document.getElementById('countdownTimer');
+    if (timerElem) {
+      setInterval(() => {
+        if (secondsLeft > 0) {
+          secondsLeft--;
+          const m = Math.floor(secondsLeft / 60);
+          const s = secondsLeft % 60;
+          timerElem.textContent = `${m}m ${s < 10 ? '0' : ''}${s}s`;
+        }
+      }, 1000);
+    }
+  })();
+</script></main></div></body></html>

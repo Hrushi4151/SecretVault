@@ -210,7 +210,7 @@
 </div>
 </div>
 <div class="relative">
-<textarea class="w-full p-3.5 bg-surface-container-low rounded-lg font-mono text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:bg-surface-container transition-all" id="secretPayloadInput" placeholder="sk_live_948f9382b0ac9281e01..." rows="4"></textarea>
+<textarea class="w-full p-3.5 bg-surface-container-low rounded-lg font-mono text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:bg-surface-container transition-all" id="secretPayloadInput" placeholder="vault_mock_key_948f9382b0ac9281e01..." rows="4"></textarea>
 </div>
 <div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
 <div class="flex items-center justify-between text-xs font-mono">
@@ -530,7 +530,7 @@
   function applyPreset(type) {
     if (type === 'STRIPE') {
       keyInput.value = 'STRIPE_API_SECRET_KEY';
-      payloadInput.value = 'sk_live_51MszP5KD8aLkqP0e' + Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(16).padStart(2,'0')).join('');
+      payloadInput.value = 'vault_mock_sk_51MszP5KD8aLkqP0e' + Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(16).padStart(2,'0')).join('');
       secretDesc.value = 'Stripe API production key for synchronous payments processing. Auto-rotates using webhook verification triggers.';
     } else if (type === 'DATABASE') {
       keyInput.value = 'DATABASE_URL';
@@ -571,5 +571,5 @@
     alert(`Success: Secret [${originalText}] signed with AWS KMS HSM and provisioned to target environments.`);
   }
 
-  calculateEntropy(payloadInput.value || 'sk_live_948f9382b0ac9281e01');
+  calculateEntropy(payloadInput.value || 'vault_mock_key_948f9382b0ac9281e01');
 </script></main></div></body></html>
