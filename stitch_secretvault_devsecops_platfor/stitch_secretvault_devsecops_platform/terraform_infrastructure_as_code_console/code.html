@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full">
+<!-- Dynamic IaC Header Hub -->
+<section class="relative w-full rounded-2xl bg-surface-container-lowest p-8 mb-6 overflow-hidden shadow-2xl">
+<div class="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-surface-container-highest/20 blur-3xl pointer-events-none"></div>
+<div class="absolute -left-16 bottom-0 w-72 h-72 rounded-full bg-on-tertiary-container/10 blur-3xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+<div class="max-w-3xl space-y-3">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest bg-surface-container-high text-tertiary font-bold">
+            IaC Engine v2.8.0
+          </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-surface-container text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+            OpenTofu Compatible
+          </span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-headline font-bold text-on-surface tracking-tight">
+          Terraform &amp; Infrastructure as Code
+        </h1>
+<p class="text-sm lg:text-base text-on-surface-variant leading-relaxed">
+          Declare, version, and orchestrate SecretVault vaults, policy engines, and access federation through HashiCorp Terraform and OpenTofu.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<a class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container text-xs font-semibold tracking-wide transition-all shadow-sm" href="#docs">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+<span>View Terraform Registry Docs</span>
+</a>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container text-tertiary hover:bg-surface-container-high text-xs font-semibold tracking-wide transition-all shadow-sm" id="btn-generate-module">
+<span class="material-symbols-outlined text-[18px]">difference</span>
+<span>Generate HCL Module</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary hover:bg-secondary-fixed text-xs font-bold tracking-wide transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Download Provider (v2.8.0)</span>
+</button>
+</div>
+</div>
+<!-- Telemetry Strip Banner -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 bg-surface-container-low/60 rounded-xl p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[20px]">fingerprint</span>
+</div>
+<div>
+<div class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider">Remote State backend</div>
+<div class="text-xs font-mono font-bold text-on-surface truncate">s3://acme-vault-tf-state</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined text-[20px]">lock_clock</span>
+</div>
+<div>
+<div class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider">State Lock Lease</div>
+<div class="text-xs font-mono font-bold text-on-surface flex items-center gap-1">
+<span>MUTEX_ACTIVE</span>
+<span class="text-[10px] text-tertiary-fixed-dim">(PID: 9021)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+</div>
+<div>
+<div class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider">Policy Engine Status</div>
+<div class="text-xs font-mono font-bold text-on-surface">OPA Conftest Enforced</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">history_toggle_off</span>
+</div>
+<div>
+<div class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider">Last Run Sync</div>
+<div class="text-xs font-mono font-bold text-on-surface">3 mins ago (Run #1488)</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive Navigation Subtabs -->
+<div class="flex items-center justify-between gap-4 mb-6 overflow-x-auto pb-1">
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1.5 rounded-xl">
+<button class="px-4 py-2 rounded-lg text-xs font-semibold bg-surface-container-high text-on-surface shadow-sm transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">code_blocks</span>
+<span>Provider Spec &amp; Quickstart</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span>Terraform HCL Code Examples</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+<span>Managed State &amp; Resource Map</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">fact_check</span>
+<span>Drift &amp; Plan Validation</span>
+</button>
+</div>
+<!-- Drift Detection Badge Banner Indicator -->
+<div class="flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-container-low">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-on-tertiary-container"></span>
+</span>
+<span class="text-xs font-mono font-medium text-on-surface">
+        State Hash <code class="text-tertiary font-bold">0x9f8b2c41</code> in sync with live control plane (<span class="text-tertiary-fixed-dim">0 drift detected</span>)
+      </span>
+</div>
+</div>
+<!-- Bento Grid Level 1: Managed State Counters -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<!-- Card 1 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px] text-tertiary">domain</span>
+</div>
+<div class="flex items-center justify-between mb-4">
+<div class="p-2.5 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-[20px]">domain</span>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">100% IAC BOUND</span>
+</div>
+<div>
+<div class="text-3xl font-headline font-bold text-on-surface">8</div>
+<div class="text-xs font-medium text-on-surface-variant mt-1">Projects &amp; Environments</div>
+<div class="text-[11px] font-mono text-tertiary mt-2">8 Managed via IaC</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low/40 -mx-5 -mb-5 px-5 py-3 flex items-center justify-between">
+<span class="text-[10px] font-mono text-on-surface-variant">4 Prod / 4 Staging</span>
+<span class="material-symbols-outlined text-[14px] text-tertiary">arrow_forward</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px] text-tertiary-fixed">vpn_key</span>
+</div>
+<div class="flex items-center justify-between mb-4">
+<div class="p-2.5 rounded-lg bg-surface-container text-tertiary-fixed">
+<span class="material-symbols-outlined text-[20px]">key_visualizer</span>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-tertiary-fixed-dim">ENCRYPTED STATE</span>
+</div>
+<div>
+<div class="text-3xl font-headline font-bold text-on-surface">142</div>
+<div class="text-xs font-medium text-on-surface-variant mt-1">Cryptographic Secrets</div>
+<div class="text-[11px] font-mono text-tertiary-fixed mt-2">142 tracked in state</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low/40 -mx-5 -mb-5 px-5 py-3 flex items-center justify-between">
+<span class="text-[10px] font-mono text-on-surface-variant">Zero plaintext leaks</span>
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed">arrow_forward</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px] text-on-tertiary-container">policy</span>
+</div>
+<div class="flex items-center justify-between mb-4">
+<div class="p-2.5 rounded-lg bg-surface-container text-on-tertiary-container">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">ZERO TRUST</span>
+</div>
+<div>
+<div class="text-3xl font-headline font-bold text-on-surface">24</div>
+<div class="text-xs font-medium text-on-surface-variant mt-1">Access Policies &amp; Quorums</div>
+<div class="text-[11px] font-mono text-on-tertiary-container mt-2">24 RBAC invariants</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low/40 -mx-5 -mb-5 px-5 py-3 flex items-center justify-between">
+<span class="text-[10px] font-mono text-on-surface-variant">Multi-sig validation active</span>
+<span class="material-symbols-outlined text-[14px] text-on-tertiary-container">arrow_forward</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 flex flex-col justify-between shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px] text-secondary">share</span>
+</div>
+<div class="flex items-center justify-between mb-4">
+<div class="p-2.5 rounded-lg bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container text-secondary-fixed">LIVE SYNC</span>
+</div>
+<div>
+<div class="text-3xl font-headline font-bold text-on-surface">14</div>
+<div class="text-xs font-medium text-on-surface-variant mt-1">Webhook &amp; Cloud Integrations</div>
+<div class="text-[11px] font-mono text-secondary-fixed mt-2">14 active providers</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low/40 -mx-5 -mb-5 px-5 py-3 flex items-center justify-between">
+<span class="text-[10px] font-mono text-on-surface-variant">AWS, GCP, Vault, GitHub</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid Level 2: Interactive Playground & Cloud Plan Stream -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
+<!-- Left: Interactive HCL Editor / Playground (7 cols) -->
+<div class="xl:col-span-7 flex flex-col rounded-2xl bg-surface-container-lowest shadow-xl overflow-hidden">
+<!-- Editor Top Bar -->
+<div class="flex items-center justify-between px-5 py-3.5 bg-surface-container-low">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-error-container"></span>
+<span class="w-3 h-3 rounded-full bg-surface-container-highest"></span>
+<span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+</div>
+<span class="text-xs font-mono font-semibold text-on-surface flex items-center gap-2 pl-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">data_object</span>
+            main.tf
+          </span>
+<span class="text-[10px] font-mono bg-surface-container text-tertiary-fixed-dim px-2 py-0.5 rounded">HCL2</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-[11px] font-mono font-medium text-on-surface flex items-center gap-1.5 transition-colors" id="btn-validate">
+<span class="material-symbols-outlined text-[14px] text-tertiary">verified</span>
+<span>Validate Syntax</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-tertiary-container hover:bg-surface-container-high text-[11px] font-mono font-semibold text-tertiary flex items-center gap-1.5 transition-colors" id="btn-run-plan">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span>
+<span>Run Plan in Sandbox</span>
+</button>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" id="btn-copy-hcl" title="Copy HCL Code">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Editor Canvas -->
+<div class="relative flex-1 p-6 font-mono text-xs leading-relaxed overflow-x-auto bg-surface-container-lowest">
+<div class="hidden absolute top-4 right-4 z-20 px-3 py-2 rounded-lg bg-surface-container text-tertiary text-xs flex items-center gap-2 shadow-lg" id="validation-toast">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Syntax valid! HCL conforms to provider schema v2.8.0</span>
+</div>
+<pre class="text-on-surface select-all"><span class="text-secondary-fixed-dim">terraform</span> {
+  <span class="text-tertiary">required_providers</span> {
+    <span class="text-secondary-fixed">secretvault</span> = {
+      <span class="text-on-surface-variant">source</span>  = <span class="text-tertiary-fixed-dim">"secretvault/secretvault"</span>
+      <span class="text-on-surface-variant">version</span> = <span class="text-tertiary-fixed-dim">"~&gt; 2.8.0"</span>
+    }
+  }
+}
+
+<span class="text-secondary-fixed-dim">provider</span> <span class="text-tertiary-fixed-dim">"secretvault"</span> {
+  <span class="text-on-surface-variant">organization</span> = <span class="text-tertiary-fixed-dim">"acme-corp"</span>
+  <span class="text-on-surface-variant">enclave_url</span>  = <span class="text-tertiary-fixed-dim">"https://vault.internal.acme.com"</span>
+  <span class="text-on-surface-variant">auth_method</span>  = <span class="text-tertiary-fixed-dim">"aws_iam_oidc"</span>
+}
+
+<span class="text-secondary-fixed-dim">resource</span> <span class="text-tertiary-fixed-dim">"secretvault_secret"</span> <span class="text-tertiary-fixed-dim">"stripe_key"</span> {
+  <span class="text-on-surface-variant">project</span>         = <span class="text-tertiary-fixed-dim">"payments-api"</span>
+  <span class="text-on-surface-variant">environment</span>     = <span class="text-tertiary-fixed-dim">"production"</span>
+  <span class="text-on-surface-variant">key</span>             = <span class="text-tertiary-fixed-dim">"STRIPE_SECRET_KEY"</span>
+  <span class="text-on-surface-variant">rotation_policy</span> = <span class="text-tertiary-fixed-dim">"30d"</span>
+  <span class="text-on-surface-variant">kms_ring</span>        = <span class="text-tertiary-fixed-dim">"aws-kms-us-east-1"</span>
+}</pre>
+</div>
+<!-- Quick Tips Strip -->
+<div class="px-6 py-3 bg-surface-container-low/60 flex items-center justify-between text-[11px] text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">shield</span>
+<span>Zero-Plaintext Policy: Values injected via ephemeral KMS envelopes in memory.</span>
+</div>
+<span class="font-mono">UTF-8 | 19 lines</span>
+</div>
+</div>
+<!-- Right: Terraform Cloud / CI Plan Execution Log (5 cols) -->
+<div class="xl:col-span-5 flex flex-col rounded-2xl bg-surface-container-lowest shadow-xl overflow-hidden">
+<div class="flex items-center justify-between px-5 py-3.5 bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">terminal</span>
+<span class="text-xs font-mono font-semibold text-on-surface uppercase tracking-wider">CI Plan Execution Log</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-container text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+            LIVE STREAM
+          </span>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" id="btn-clear-logs" title="Clear Console">
+<span class="material-symbols-outlined text-[14px]">cleaning_services</span>
+</button>
+</div>
+</div>
+<!-- Execution Log Console View -->
+<div class="p-5 font-mono text-[11px] leading-relaxed overflow-y-auto max-h-[350px] bg-primary-container text-on-surface-variant space-y-2" id="terminal-console">
+<div class="text-secondary-fixed">$ terraform init -backend-config=backend.hcl</div>
+<div class="text-on-surface/80">Initializing the backend "s3"...</div>
+<div class="text-tertiary-fixed flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">lock</span>
+          Acquiring state lock. Lock ID: d6b2c89f-2f74-4b51... [SUCCESS]
+        </div>
+<div class="text-on-surface/80">Initializing provider plugins...</div>
+<div class="text-on-surface/80">- Finding secretvault/secretvault versions matching "~&gt; 2.8.0"...</div>
+<div class="text-tertiary">- Installed secretvault/secretvault v2.8.0 (signed by SecretVault Inc.)</div>
+<div class="pt-2 text-secondary-fixed">$ terraform plan -out=tfplan</div>
+<div class="text-on-surface/80">Acquiring live control plane topology... Done (0.42s)</div>
+<div class="text-on-surface/80">Comparing local state against SecretVault control plane...</div>
+<div class="p-2.5 rounded bg-surface-container-lowest/80 text-on-surface space-y-1">
+<div class="text-tertiary font-semibold"># secretvault_secret.stripe_key will be created</div>
+<div class="pl-2">+ resource "secretvault_secret" "stripe_key" {</div>
+<div class="pl-4 text-tertiary-fixed">+ environment     = "production"</div>
+<div class="pl-4 text-tertiary-fixed">+ key             = "STRIPE_SECRET_KEY"</div>
+<div class="pl-4 text-tertiary-fixed">+ kms_ring        = "aws-kms-us-east-1"</div>
+<div class="pl-4 text-tertiary-fixed">+ rotation_policy = "30d"</div>
+<div class="pl-4 text-tertiary">+ secret_value    = (sensitive value) [ENCRYPTED]</div>
+<div class="pl-2">}</div>
+</div>
+<div class="text-tertiary-fixed-dim">
+          Plan: 1 to add, 0 to change, 0 to destroy.
+        </div>
+<div class="text-on-surface-variant/60 flex items-center gap-1.5 pt-1">
+<span class="material-symbols-outlined text-[13px] text-tertiary">check</span>
+<span>Zero plaintext outputs detected in plan artifact tfplan. State lock released.</span>
+</div>
+</div>
+<!-- Execution Status Footer -->
+<div class="p-4 bg-surface-container-low flex items-center justify-between mt-auto">
+<div class="flex items-center gap-2 text-xs font-mono">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-on-surface">Plan clean: 0 drift detected</span>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-xs font-semibold text-on-surface transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">play_circle</span>
+<span>Apply Run #1489</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bento Grid Level 3: Architecture Blueprint & Visual Flow -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+<!-- Visual IaC Pipeline Card with Placeholder Graphic -->
+<div class="lg:col-span-1 rounded-2xl bg-surface-container-lowest p-6 flex flex-col justify-between shadow-xl">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase tracking-widest text-on-surface-variant font-bold">IaC Topography</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-tertiary">V2 PIPELINE</span>
+</div>
+<h3 class="text-base font-headline font-bold text-on-surface mb-2">Automated Vault Convergence</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed mb-4">
+          Every commit to your Git repository triggers automated policy parsing, state drift verification, and zero-knowledge secret reconciliation.
+        </p>
+</div>
+<!-- Inline Visualization SVG Blueprint -->
+<div class="w-full bg-surface-container-low/60 rounded-xl p-4 flex flex-col items-center justify-center my-2">
+<svg class="w-full h-auto" fill="none" viewbox="0 0 320 120" xmlns="http://www.w3.org/2000/svg">
+<!-- Flow Lines -->
+<path d="M 60 60 L 140 60" stroke="#988e90" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 180 60 L 260 60" stroke="#ffb4a8" stroke-width="2"></path>
+<!-- Step 1: Git & HCL -->
+<circle cx="40" cy="60" fill="#47001a" r="22"></circle>
+<circle cx="40" cy="60" fill="#6e002d" r="14"></circle>
+<text fill="#ffd9df" font-family="monospace" font-size="9" text-anchor="middle" x="40" y="64">GIT</text>
+<!-- Step 2: TF Cloud / Runner -->
+<rect fill="#5a0023" height="44" rx="8" width="44" x="135" y="38"></rect>
+<text fill="#ffdad5" font-family="monospace" font-size="8" text-anchor="middle" x="157" y="64">PLAN</text>
+<!-- Step 3: SecretVault Enclave -->
+<polygon fill="#30000f" points="280,38 302,60 280,82 258,60" stroke="#ec0005" stroke-width="2"></polygon>
+<text fill="#ffd9df" font-family="monospace" font-size="8" text-anchor="middle" x="280" y="64">VAULT</text>
+<!-- Labels -->
+<text fill="#cfc4c5" font-family="sans-serif" font-size="9" text-anchor="middle" x="40" y="102">HCL Spec</text>
+<text fill="#cfc4c5" font-family="sans-serif" font-size="9" text-anchor="middle" x="157" y="102">Sentinel/OPA</text>
+<text fill="#ffb4a8" font-family="sans-serif" font-size="9" text-anchor="middle" x="280" y="102">Enclave Live</text>
+</svg>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between text-xs text-on-surface-variant font-mono">
+<span>Average apply time</span>
+<span class="text-on-surface font-bold">1.4s per transaction</span>
+</div>
+</div>
+<!-- Infrastructure Drift Status Real-time Table (2 cols) -->
+<div class="lg:col-span-2 rounded-2xl bg-surface-container-lowest p-6 flex flex-col justify-between shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<div>
+<span class="text-xs font-mono uppercase tracking-widest text-on-surface-variant font-bold">Continuous Drift Monitor</span>
+<h3 class="text-base font-headline font-bold text-on-surface mt-0.5">Live State Discrepancy Matrix</h3>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Trigger Re-scan</span>
+</button>
+</div>
+<!-- Resource Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs font-mono">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant">
+<th class="p-3 rounded-l-lg">Resource Address</th>
+<th class="p-3">Type</th>
+<th class="p-3">Terraform State</th>
+<th class="p-3">Live Enclave</th>
+<th class="p-3 rounded-r-lg text-right">Drift Status</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="p-3 font-medium text-on-surface">secretvault_project.core_api</td>
+<td class="p-3 text-on-surface-variant">Environment</td>
+<td class="p-3 text-secondary-fixed">sha256:7c8b...</td>
+<td class="p-3 text-secondary-fixed">sha256:7c8b...</td>
+<td class="p-3 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-tertiary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span> In Sync
+                </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="p-3 font-medium text-on-surface">secretvault_secret.stripe_key</td>
+<td class="p-3 text-on-surface-variant">Secret (KMS)</td>
+<td class="p-3 text-secondary-fixed">sha256:4a12...</td>
+<td class="p-3 text-secondary-fixed">sha256:4a12...</td>
+<td class="p-3 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-tertiary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span> In Sync
+                </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="p-3 font-medium text-on-surface">secretvault_policy.infra_breakglass</td>
+<td class="p-3 text-on-surface-variant">RBAC Quorum</td>
+<td class="p-3 text-secondary-fixed">sha256:e091...</td>
+<td class="p-3 text-secondary-fixed">sha256:e091...</td>
+<td class="p-3 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-tertiary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span> In Sync
+                </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="p-3 font-medium text-on-surface">secretvault_integration.aws_secrets_mgr</td>
+<td class="p-3 text-on-surface-variant">Sync Agent</td>
+<td class="p-3 text-secondary-fixed">sha256:3d56...</td>
+<td class="p-3 text-secondary-fixed">sha256:3d56...</td>
+<td class="p-3 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-tertiary text-[10px] font-bold">
+<span class="material-symbols-outlined text-[12px]">check</span> In Sync
+                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Live Sync Footnote -->
+<div class="mt-4 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">autorenew</span>
+<span>Background polling active: drift reconciliation frequency set to 15m.</span>
+</div>
+<a class="text-tertiary hover:underline font-semibold flex items-center gap-1" href="#">
+          Export Drift Log
+          <span class="material-symbols-outlined text-[14px]">launch</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Bottom Action Card: HCL Scaffold Modal / Export Hub -->
+<section class="rounded-2xl bg-surface-container-high p-6 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl mb-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-lowest flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[28px]">deployed_code</span>
+</div>
+<div>
+<h4 class="text-sm font-headline font-bold text-on-surface">Looking for OpenTofu or Terragrunt wrappers?</h4>
+<p class="text-xs text-on-surface-variant mt-0.5">
+          Deploy modular stacks using pre-baked Terragrunt topologies with zero secret hardcoding.
+        </p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container text-xs font-semibold tracking-wide transition-all shadow-sm">
+        Clone GitHub Template
+      </button>
+<button class="px-4 py-2 rounded-lg bg-on-tertiary text-on-surface hover:bg-surface-container-highest text-xs font-bold tracking-wide transition-all shadow-md">
+        Explore CI/CD Pipelines
+      </button>
+</div>
+</section>
+</div>
+<script>
+  (function() {
+    const copyBtn = document.getElementById('btn-copy-hcl');
+    const validateBtn = document.getElementById('btn-validate');
+    const toast = document.getElementById('validation-toast');
+    const runPlanBtn = document.getElementById('btn-run-plan');
+    const terminalConsole = document.getElementById('terminal-console');
+    const clearLogsBtn = document.getElementById('btn-clear-logs');
+    const generateModBtn = document.getElementById('btn-generate-module');
+
+    const hclContent = `terraform {
+  required_providers {
+    secretvault = {
+      source  = "secretvault/secretvault"
+      version = "~> 2.8.0"
+    }
+  }
+}
+
+provider "secretvault" {
+  organization = "acme-corp"
+  enclave_url  = "https://vault.internal.acme.com"
+  auth_method  = "aws_iam_oidc"
+}
+
+resource "secretvault_secret" "stripe_key" {
+  project         = "payments-api"
+  environment     = "production"
+  key             = "STRIPE_SECRET_KEY"
+  rotation_policy = "30d"
+  kms_ring        = "aws-kms-us-east-1"
+}`;
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(hclContent).then(() => {
+          const original = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-tertiary">done</span>';
+          setTimeout(() => {
+            copyBtn.innerHTML = original;
+          }, 2000);
+        });
+      });
+    }
+
+    if (validateBtn && toast) {
+      validateBtn.addEventListener('click', () => {
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 3500);
+      });
+    }
+
+    if (runPlanBtn && terminalConsole) {
+      runPlanBtn.addEventListener('click', () => {
+        const timestamp = new Date().toLocaleTimeString();
+        const entry = document.createElement('div');
+        entry.className = "pt-2 text-tertiary";
+        entry.innerHTML = `> [${timestamp}] Running speculative plan against Acme Production sandbox...<br/>&nbsp;&nbsp;State diff: 0 breaking changes detected. Conftest passed.`;
+        terminalConsole.appendChild(entry);
+        terminalConsole.scrollTop = terminalConsole.scrollHeight;
+      });
+    }
+
+    if (clearLogsBtn && terminalConsole) {
+      clearLogsBtn.addEventListener('click', () => {
+        terminalConsole.innerHTML = '<div class="text-on-surface-variant/60 font-mono">// Log buffer cleared. Waiting for Terraform stream...</div>';
+      });
+    }
+
+    if (generateModBtn) {
+      generateModBtn.addEventListener('click', () => {
+        alert("IaC Module Generator: Scaffold created in .secretvault/modules/payments-api.hcl");
+      });
+    }
+  })();
+</script></main></div></body></html>

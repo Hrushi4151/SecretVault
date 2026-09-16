@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full space-y-6">
+<!-- Top Hero Status Banner: Critical Alert -->
+<div class="relative overflow-hidden rounded-xl bg-error-container p-6 shadow-xl text-on-error-container">
+<div class="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-surface-bright/20 blur-3xl pointer-events-none"></div>
+<div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="p-3 rounded-lg bg-surface-container-lowest text-on-tertiary-container shadow-inner flex items-center justify-center">
+<span class="material-symbols-outlined text-[32px] animate-pulse">emergency</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-widest bg-on-tertiary-container text-surface-container-lowest">Critical Severity</span>
+<span class="text-xs font-mono text-tertiary-fixed-dim tracking-tight">SIG-9082-TRP</span>
+</div>
+<h2 class="text-lg font-headline font-bold text-inverse-surface mt-1">High Alert: Active Leaked Credential Intercepted on Public GitHub Commit</h2>
+<p class="text-xs text-on-surface-variant font-mono mt-0.5">Origin: external-push-event hook • Automated quarantining engaged for repo <span class="text-inverse-surface font-semibold">acme/payments-api</span></p>
+</div>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-4 py-2 rounded-lg bg-inverse-surface text-inverse-on-surface font-semibold text-xs tracking-wider uppercase hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2" onclick="triggerPlaybookStep3()">
+<span class="material-symbols-outlined text-[16px]">bolt</span> Quick Mitigate
+        </button>
+<button class="px-3 py-2 rounded-lg bg-surface-container-high text-on-surface text-xs font-mono hover:bg-surface-container-highest transition-colors">
+          Dismiss Alert
+        </button>
+</div>
+</div>
+</div>
+<!-- Breadcrumbs & Header Section -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-2">
+<div>
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant tracking-wider uppercase mb-1">
+<span>Acme Corp</span>
+<span class="text-outline-variant">/</span>
+<span>Security</span>
+<span class="text-outline-variant">/</span>
+<span class="text-tertiary-fixed font-semibold">Secret Leaks</span>
+</div>
+<h1 class="text-3xl font-headline font-extrabold tracking-tight text-on-surface">Secret Leaks &amp; Git Repository Forensics</h1>
+<p class="text-sm text-on-surface-variant mt-1 max-w-3xl">Continuous automated code scanning, public commit leak interception, and zero-downtime revocation playbooks.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Configure Git Hooks</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export Forensic Report</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-bright text-on-surface hover:bg-surface-container-highest text-xs font-bold transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px] animate-spin">sync</span>
+<span>Run Deep Repository Scan</span>
+</button>
+</div>
+</div>
+<!-- Key Metrics Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-xs font-mono uppercase tracking-wider">Repositories Monitored</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">source_environment</span>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-black text-on-surface">42</span>
+<span class="text-xs font-mono text-tertiary-fixed-dim">Connected</span>
+</div>
+<div class="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-[14px] text-on-tertiary-container">check_circle</span> 100% Webhook health
+      </div>
+</div>
+<!-- Card 2 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-xs font-mono uppercase tracking-wider">Commits Parsed</span>
+<span class="material-symbols-outlined text-[20px] text-secondary">commit</span>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-black text-on-surface">18,420</span>
+<span class="text-xs font-mono text-on-surface-variant">Last 24h</span>
+</div>
+<div class="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-[14px] text-secondary">insights</span> 89.2% AST deep search
+      </div>
+</div>
+<!-- Card 3 -->
+<div class="rounded-xl bg-surface-container-high p-5 shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between text-on-surface">
+<span class="text-xs font-mono uppercase tracking-wider">Intercepted Leaks</span>
+<span class="material-symbols-outlined text-[20px] text-on-tertiary-container">warning</span>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-black text-on-tertiary-container">1</span>
+<span class="text-xs font-mono text-tertiary-fixed">Active Critical</span>
+</div>
+<div class="mt-2 text-[11px] text-on-surface-variant font-mono">
+        0 resolved today • 12 historical
+      </div>
+</div>
+<!-- Card 4 -->
+<div class="rounded-xl bg-surface-container-lowest p-5 shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-xs font-mono uppercase tracking-wider">Mean Time to Revocation</span>
+<span class="material-symbols-outlined text-[20px] text-tertiary">timer</span>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-black text-inverse-surface">4.2</span>
+<span class="text-xs font-mono text-tertiary-fixed-dim">Minutes</span>
+</div>
+<div class="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-[14px] text-tertiary">trending_down</span> -38% vs industry standard
+      </div>
+</div>
+</div>
+<!-- Main 2-Column Split Console -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- LEFT COLUMN: Active Incident Investigation Card (7 Cols) -->
+<div class="xl:col-span-7 flex flex-col space-y-6">
+<!-- Primary Incident Card -->
+<div class="rounded-xl bg-surface-container-low p-6 shadow-md flex flex-col gap-6">
+<!-- Card Header -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-error-container text-on-error-container font-mono text-xs font-bold">INCIDENT #LEAK-2024-9182</span>
+<span class="flex items-center gap-1.5 text-xs font-mono text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-ping"></span>
+              Live Intercept (8m ago)
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-mono text-tertiary-fixed bg-surface-container-lowest px-2.5 py-1 rounded">Confidence: 99.8%</span>
+</div>
+</div>
+<!-- Incident Metadata Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface-container-lowest p-4 rounded-lg font-mono text-xs">
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase">Secret Type</span>
+<span class="text-on-surface font-semibold text-sm">STRIPE_RESTRICTED_KEY_LIVE</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase">Committer / Actor</span>
+<div class="flex items-center gap-2 mt-0.5">
+<div class="w-5 h-5 rounded-full bg-surface-bright flex items-center justify-center text-[10px] text-on-surface font-bold">DE</div>
+<span class="text-on-surface">developer-extern</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container-high text-tertiary-fixed">Contractor</span>
+</div>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase">Repository / Branch</span>
+<div class="flex items-center gap-1 text-on-surface mt-0.5 truncate">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">folder</span>
+<a class="underline hover:text-inverse-surface truncate" href="#">github.com/acme/payments-api</a>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-secondary font-mono">public</span>
+</div>
+<span class="text-[11px] text-tertiary-fixed-dim">ref: refs/heads/feature/checkout-v2</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-[10px] uppercase">Target Location</span>
+<span class="text-on-surface font-mono">src/config/stripe.ts:24</span>
+<div class="text-[10px] text-on-surface-variant">Commit: <span class="text-secondary font-mono font-bold">b7a892c</span> (Unsigned)</div>
+</div>
+</div>
+<!-- Forensic Visual Code Snippet -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">data_object</span>
+              Forensic Excerpt Diff
+            </span>
+<span class="text-on-tertiary-container font-semibold">Entropy: 5.12 bit/char (Shannon Threshold Exceeded)</span>
+</div>
+<div class="rounded-lg bg-surface-container-lowest overflow-hidden font-mono text-xs">
+<div class="flex items-center justify-between px-4 py-2 bg-surface-container text-on-surface-variant text-[11px]">
+<span>/src/config/stripe.ts</span>
+<span class="text-[10px] uppercase tracking-wider">Patch Preview</span>
+</div>
+<div class="p-3 text-secondary space-y-1 overflow-x-auto text-[11px]">
+<div class="text-on-surface-variant/60">22 | import { Stripe } from 'stripe';</div>
+<div class="text-on-surface-variant/60">23 |</div>
+<div class="bg-surface-container-high/60 -mx-3 px-3 py-1 text-tertiary-fixed flex items-center justify-between">
+<div>
+<span class="text-on-tertiary-container font-bold">- 24 | const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);</span>
+</div>
+</div>
+<div class="bg-error-container/40 -mx-3 px-3 py-1 text-on-error-container font-bold flex items-center justify-between">
+<div>
+<span>+ 24 | const stripe = new Stripe("rk_live_948f029a8f4c2194b••••••••••");</span>
+</div>
+<span class="text-[10px] uppercase px-1.5 py-0.5 rounded bg-on-tertiary-container text-surface-container-lowest font-black">LEAK DETECTED</span>
+</div>
+<div class="text-on-surface-variant/60">25 |</div>
+<div class="text-on-surface-variant/60">26 | export const createCheckoutSession = async (params) =&gt; {</div>
+</div>
+</div>
+</div>
+<!-- Blast Radius Visual Assessment -->
+<div class="rounded-lg bg-surface-container p-4">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-xs font-mono font-bold tracking-wider uppercase text-on-surface">Calculated Blast Radius</h3>
+<span class="text-[11px] font-mono text-on-tertiary-container bg-surface-container-lowest px-2 py-0.5 rounded">High Financial Exposure</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3">Stripe Restricted Key permissions extracted from credential scope token inspection:</p>
+<div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
+<div class="p-2.5 rounded bg-surface-container-lowest flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-[18px] text-on-tertiary-container">payments</span>
+<span class="font-bold text-on-surface">Customer Billing</span>
+<span class="text-[10px] text-on-tertiary-container uppercase font-semibold">Read / Write</span>
+</div>
+<div class="p-2.5 rounded bg-surface-container-lowest flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-[18px] text-on-tertiary-container">webhook</span>
+<span class="font-bold text-on-surface">Webhooks Config</span>
+<span class="text-[10px] text-on-tertiary-container uppercase font-semibold">Full Access</span>
+</div>
+<div class="p-2.5 rounded bg-surface-container-lowest flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-[18px] text-on-tertiary-container">receipt_long</span>
+<span class="font-bold text-on-surface">Invoices API</span>
+<span class="text-[10px] text-on-tertiary-container uppercase font-semibold">Read / Write</span>
+</div>
+</div>
+</div>
+<!-- Interactive Automated Remediation Playbook -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">play_circle</span>
+<span class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface">Zero-Downtime Revocation Playbook</span>
+</div>
+<span class="text-xs font-mono text-tertiary-fixed-dim">Step 2 of 5 Complete</span>
+</div>
+<!-- Custom Step Progress Bar -->
+<div class="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden flex">
+<div class="bg-surface-bright h-full w-2/5"></div>
+<div class="bg-on-tertiary-container h-full w-1/5 animate-pulse"></div>
+<div class="bg-surface-container-highest h-full w-2/5"></div>
+</div>
+<!-- Step By Step Interactive Flow -->
+<div class="space-y-2 mt-2 font-mono text-xs">
+<!-- Step 1 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest text-on-surface-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-[16px]">check_circle</span>
+<span class="text-on-surface font-medium">1. Revoke Credential at Stripe API</span>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-surface-container text-tertiary-fixed-dim">COMPLETED (0.8s)</span>
+</div>
+<!-- Step 2 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest text-on-surface-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-[16px]">check_circle</span>
+<span class="text-on-surface font-medium">2. Invalidate SecretVault Distributed Cache</span>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-surface-container text-tertiary-fixed-dim">COMPLETED (1.2s)</span>
+</div>
+<!-- Step 3 (Active) -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-high text-on-surface shadow-sm" id="playbook-step-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container text-[16px] animate-spin">refresh</span>
+<span class="font-bold text-inverse-surface">3. Deploy Ephemeral Replacement Key v9</span>
+</div>
+<button class="text-[10px] px-2.5 py-1 rounded bg-on-tertiary-container text-surface-container-lowest font-bold uppercase hover:opacity-90 transition-all" onclick="deployReplacementKey(this)">
+                TRIGGER ROTATION
+              </button>
+</div>
+<!-- Step 4 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest text-on-surface-variant/60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[16px]">hourglass_empty</span>
+<span>4. Force Git Commit Rewrite (git-filter-repo)</span>
+</div>
+<span class="text-[10px] uppercase font-mono">PENDING</span>
+</div>
+<!-- Step 5 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest text-on-surface-variant/60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>5. Close Incident &amp; File Compliance Post-Mortem</span>
+</div>
+<span class="text-[10px] uppercase font-mono">PENDING</span>
+</div>
+</div>
+</div>
+<!-- Incident Footer Action Bar -->
+<div class="pt-4 flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<button class="px-3 py-2 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface font-mono text-xs transition-colors flex items-center gap-1.5" onclick="alert('Repository github.com/acme/payments-api is now temporarily restricted to internal admins.')">
+<span class="material-symbols-outlined text-[16px]">lock</span> Quarantine Repo
+            </button>
+<button class="px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-mono text-xs transition-colors" onclick="confirm('Mark leak as false positive? Security operations will be notified.')">
+              Mark False Positive
+            </button>
+</div>
+<button class="px-4 py-2 rounded-lg bg-surface-bright text-on-surface font-bold text-xs uppercase tracking-wider hover:bg-surface-container-highest transition-all shadow-md flex items-center gap-2" onclick="deployReplacementKey(document.getElementById('playbook-step-3').querySelector('button'))">
+<span class="material-symbols-outlined text-[16px]">shield_with_heart</span>
+            Execute Emergency Revoke &amp; Rotate
+          </button>
+</div>
+</div>
+<!-- Developer Workstation Agent Telemetry -->
+<div class="rounded-xl bg-surface-container-lowest p-5">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">Enrolled Pre-Commit Guard Agents</h3>
+<p class="text-xs text-on-surface-variant font-mono">Real-time local CLI verification daemon (githooks engine v4.1)</p>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container text-tertiary-fixed text-xs font-mono font-bold">18 / 18 Workstations Active</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs">
+<div class="p-3 rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant text-[10px]">MACBOOK-PRO-019</span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<span class="text-on-surface font-medium truncate">sarah.k@acme.corp</span>
+<span class="text-[10px] text-tertiary-fixed">Hook: Blocks Enabled</span>
+</div>
+<div class="p-3 rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant text-[10px]">LINUX-DEV-88</span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<span class="text-on-surface font-medium truncate">alex.chen@acme.corp</span>
+<span class="text-[10px] text-tertiary-fixed">Hook: Blocks Enabled</span>
+</div>
+<div class="p-3 rounded bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant text-[10px]">WSL2-STATION-4</span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<span class="text-on-surface font-medium truncate">marcus.v@acme.corp</span>
+<span class="text-[10px] text-tertiary-fixed">Hook: Blocks Enabled</span>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Historic Leaks & Detection Engine Rules (5 Cols) -->
+<div class="xl:col-span-5 flex flex-col space-y-6">
+<!-- Active Detection Rules Engine -->
+<div class="rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">tune</span>
+<h2 class="text-sm font-headline font-bold text-on-surface uppercase tracking-wider">Detection Rules Engine</h2>
+</div>
+<span class="text-[11px] font-mono text-tertiary-fixed bg-surface-container-lowest px-2 py-0.5 rounded">5 Active Signatures</span>
+</div>
+<p class="text-xs text-on-surface-variant">Automated entropy + Regex pattern heuristics enforced prior to commit persistence across all remote repositories.</p>
+<div class="space-y-2 font-mono text-xs">
+<!-- Rule 1 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+<div>
+<div class="text-on-surface font-semibold">AWS Access Keys (AKIA...)</div>
+<div class="text-[10px] text-on-surface-variant">Regex: ^(?=.*[A-Z0-9])[A-Z0-9]{20}$</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary-fixed text-[10px] uppercase font-bold">Active</span>
+</div>
+<!-- Rule 2 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">credit_card</span>
+<div>
+<div class="text-on-surface font-semibold">Stripe Secret &amp; Restricted Keys</div>
+<div class="text-[10px] text-on-surface-variant">Prefix: rk_live_*, sk_live_*</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-tertiary-container text-[10px] uppercase font-bold">Triggered</span>
+</div>
+<!-- Rule 3 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">token</span>
+<div>
+<div class="text-on-surface font-semibold">GitHub Personal Access Tokens</div>
+<div class="text-[10px] text-on-surface-variant">Pattern: ghp_*, gho_*, ghu_*</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary-fixed text-[10px] uppercase font-bold">Active</span>
+</div>
+<!-- Rule 4 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">database</span>
+<div>
+<div class="text-on-surface font-semibold">Database Connection URIs</div>
+<div class="text-[10px] text-on-surface-variant">Protocols: postgres://, mongodb+srv://</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary-fixed text-[10px] uppercase font-bold">Active</span>
+</div>
+<!-- Rule 5 -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">vpn_key</span>
+<div>
+<div class="text-on-surface font-semibold">Private RSA / SSH Keys</div>
+<div class="text-[10px] text-on-surface-variant">Header: -----BEGIN OPENSSH PRIVATE KEY-----</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary-fixed text-[10px] uppercase font-bold">Active</span>
+</div>
+</div>
+<button class="w-full py-2 rounded bg-surface-container-lowest hover:bg-surface-container text-on-surface text-xs font-mono font-medium transition-colors flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">add_circle</span> Add Custom Secret Regex
+        </button>
+</div>
+<!-- Scanned Commits & Hook Interceptions Feed -->
+<div class="rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">history</span>
+<h2 class="text-sm font-headline font-bold text-on-surface uppercase tracking-wider">Scanned Commits Audit Feed</h2>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">Real-time Stream</span>
+</div>
+<div class="space-y-3 font-mono text-xs">
+<!-- Item 1: The current leak -->
+<div class="p-3 rounded-lg bg-surface-container-lowest">
+<div class="flex items-center justify-between text-[11px] mb-1">
+<span class="font-bold text-on-tertiary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Blocked &amp; Leaked
+              </span>
+<span class="text-on-surface-variant">8m ago</span>
+</div>
+<div class="text-on-surface font-medium truncate">commit b7a892c: "feat(checkout): add direct stripe billing"</div>
+<div class="text-[10px] text-on-surface-variant mt-1 flex items-center justify-between">
+<span>acme/payments-api:feature/checkout-v2</span>
+<span class="text-tertiary-fixed">by developer-extern</span>
+</div>
+</div>
+<!-- Item 2: Clean commit -->
+<div class="p-3 rounded-lg bg-surface-container-lowest">
+<div class="flex items-center justify-between text-[11px] mb-1">
+<span class="font-bold text-tertiary-fixed-dim flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check</span> Clean
+              </span>
+<span class="text-on-surface-variant">14m ago</span>
+</div>
+<div class="text-on-surface font-medium truncate">commit df88120: "refactor: optimize token verification grpc"</div>
+<div class="text-[10px] text-on-surface-variant mt-1 flex items-center justify-between">
+<span>acme/auth-service:main</span>
+<span class="text-secondary">by sarah.k</span>
+</div>
+</div>
+<!-- Item 3: Clean commit -->
+<div class="p-3 rounded-lg bg-surface-container-lowest">
+<div class="flex items-center justify-between text-[11px] mb-1">
+<span class="font-bold text-tertiary-fixed-dim flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check</span> Clean
+              </span>
+<span class="text-on-surface-variant">21m ago</span>
+</div>
+<div class="text-on-surface font-medium truncate">commit c3094ea: "chore(deps): bump tailwindcss v3.4"</div>
+<div class="text-[10px] text-on-surface-variant mt-1 flex items-center justify-between">
+<span>acme/dashboard-web:main</span>
+<span class="text-secondary">by bot-dependabot</span>
+</div>
+</div>
+<!-- Item 4: Historical Resolved Leak -->
+<div class="p-3 rounded-lg bg-surface-container-lowest">
+<div class="flex items-center justify-between text-[11px] mb-1">
+<span class="font-bold text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">task_alt</span> Auto-Remediated (Historical)
+              </span>
+<span class="text-on-surface-variant">2d ago</span>
+</div>
+<div class="text-on-surface font-medium truncate">commit 42e1189: "fix(db): add connection fallback"</div>
+<div class="text-[10px] text-on-surface-variant mt-1 flex items-center justify-between">
+<span>acme/inventory-worker:staging</span>
+<span class="text-secondary">AWS_SECRET_KEY rotated</span>
+</div>
+</div>
+</div>
+<!-- Forensic Visual Map Component / Log Analytics Vector -->
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col gap-2 mt-2">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface-variant font-medium">Scanning Throughput (Last 6 Hours)</span>
+<span class="text-tertiary font-bold">3,070 commits/hr</span>
+</div>
+<!-- Minimalist Inline Sparkline Chart -->
+<div class="h-16 w-full pt-2">
+<svg class="w-full h-full text-surface-bright" fill="none" preserveaspectratio="none" viewbox="0 0 300 60">
+<path d="M0 45 L30 40 L60 48 L90 28 L120 34 L150 18 L180 25 L210 12 L240 38 L270 20 L300 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+<path d="M0 45 L30 40 L60 48 L90 28 L120 34 L150 18 L180 25 L210 12 L240 38 L270 20 L300 24 L300 60 L0 60 Z" fill="currentColor" fill-opacity="0.12"></path>
+<!-- Marker for the incident commit -->
+<circle class="fill-on-tertiary-container animate-ping" cx="270" cy="20" r="4"></circle>
+<circle class="fill-on-tertiary-container" cx="270" cy="20" r="3.5"></circle>
+</svg>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-on-surface-variant/60">
+<span>T - 6h</span>
+<span>T - 3h</span>
+<span class="text-on-tertiary-container font-bold">Leak Incident Intercept</span>
+<span>Now</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Playbook Micro-interaction -->
+<script>
+function deployReplacementKey(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span> ROTATING...';
+  
+  setTimeout(() => {
+    const step3 = document.getElementById('playbook-step-3');
+    step3.className = 'flex items-center justify-between p-2.5 rounded bg-surface-container-lowest text-on-surface-variant';
+    step3.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-tertiary text-[16px]">check_circle</span>
+        <span class="text-on-surface font-medium">3. Ephemeral Key v9 Deployed to 8 Pods</span>
+      </div>
+      <span class="text-[10px] px-2 py-0.5 rounded bg-surface-container text-tertiary-fixed-dim">COMPLETED (2.4s)</span>
+    `;
+    
+    // Trigger notification banner update
+    alert('Security Alert: Live Ephemeral Replacement Key rotated and distributed to API Gateway successfully.');
+  }, 1200);
+}
+
+function triggerPlaybookStep3() {
+  const btn = document.getElementById('playbook-step-3').querySelector('button');
+  if (btn) {
+    deployReplacementKey(btn);
+  }
+}
+</script></main></div></body></html>
