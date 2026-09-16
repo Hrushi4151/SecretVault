@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-primary-fixed-variant": "#474747",
+          "surface-variant": "#6e002d",
+          "on-tertiary": "#690001",
+          "on-tertiary-container": "#ec0005",
+          "on-error-container": "#ffdad6",
+          "surface-container-highest": "#6e002d",
+          "inverse-primary": "#5e5e5e",
+          "outline": "#988e90",
+          "surface-container-lowest": "#26000b",
+          "primary-fixed": "#e2e2e2",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-fixed-variant": "#930001",
+          "error": "#ffb4ab",
+          "surface-dim": "#30000f",
+          "surface-container-high": "#5a0023",
+          "surface-bright": "#760031",
+          "on-surface-variant": "#cfc4c5",
+          "on-primary": "#303030",
+          "surface-container-low": "#3f0016",
+          "secondary": "#c6c6c7",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-error": "#690005",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-secondary-container": "#b4b5b5",
+          "on-primary-fixed": "#1b1b1b",
+          "on-secondary-fixed-variant": "#454747",
+          "surface-container": "#47001a",
+          "tertiary-fixed": "#ffdad5",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-surface": "#ffd9df",
+          "on-primary-container": "#757575",
+          "on-secondary": "#2f3131",
+          "secondary-fixed": "#e2e2e2",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "primary": "#c6c6c6",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary": "#ffb4a8",
+          "outline-variant": "#4c4546",
+          "background": "#30000f",
+          "surface-tint": "#c6c6c6",
+          "inverse-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "surface": "#30000f",
+          "on-background": "#ffd9df",
+          "secondary-container": "#454747",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="flex flex-col"><div class="h-16 px-6 flex items-center gap-3 bg-surface-container-low"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XG4lSzclsqeVpIW4sHOvd6HpKCFIkWZHRZlWwTegSMV4s1QkcazgIB9xiYyQhIn-YZfZ0_aJetxL081AYPbiPJEZXZwg0GisycvuzxdWVQeTDu-E8LgqKPTeBDWlOkYxlPCSMZ-1LWbk67kiqs4OtxGKCGv_0fKf_K-NsFWHqE6LPaZOANv2uRh280SyR5iDpiLVHZgNeU8QzSyxdw0K5t947Azb88uhAd8ZtiutLPepCM5KHy2Fo01cc"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface leading-none">SecretVault</span><span class="text-[10px] font-mono tracking-wider uppercase text-on-surface-variant mt-1">DevSecOps Control</span></div></div><div class="px-4 pt-4 pb-2"><button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container-low text-xs text-on-surface hover:bg-surface-container transition-colors"><div class="flex items-center gap-2 overflow-hidden"><span class="material-symbols-outlined text-sm text-secondary">business_center</span><span class="truncate font-medium">Acme Global Core</span></div><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button></div><nav class="px-3 space-y-6 pt-2 pb-6" data-active-classes="bg-surface-container text-on-surface font-semibold rounded-lg"><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">Workspace</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="dashboard" href="#"><span class="material-symbols-outlined text-lg">space_dashboard</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="projects" href="#"><span class="material-symbols-outlined text-lg">folder</span><span>Projects</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="secrets" href="#"><span class="material-symbols-outlined text-lg">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="integrations" href="#"><span class="material-symbols-outlined text-lg">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="sync-center" href="#"><span class="material-symbols-outlined text-lg">sync</span><span>Sync Center</span></a></div><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">Security</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="security-overview" href="#"><span class="material-symbols-outlined text-lg">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="risk-center" href="#"><span class="material-symbols-outlined text-lg">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="threat-protection" href="#"><span class="material-symbols-outlined text-lg">compress</span><span>Threat Protection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-lg">cloud_download</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-lg">difference</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-lg">receipt_long</span><span>Audit Logs</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="access-reviews" href="#"><span class="material-symbols-outlined text-lg">assignment_ind</span><span>Access Reviews</span></a></div><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">AI Ops</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-lg">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-lg">psychology</span><span>AI Analysis</span></a></div><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">Organization</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="team" href="#"><span class="material-symbols-outlined text-lg">group</span><span>Team</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="machine-identities" href="#"><span class="material-symbols-outlined text-lg">fingerprint</span><span>Machine Identities</span></a><a aria-current="page" class="flex items-center gap-3 px-3 py-2 transition-colors bg-surface-container text-on-surface font-semibold rounded-lg" data-path="settings" href="#"><span class="material-symbols-outlined text-lg">settings</span><span>Settings</span></a></div></nav></div><div class="p-3 bg-surface-container-lowest flex flex-col gap-1"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="documentation" href="#"><span class="material-symbols-outlined text-base">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="help-and-support" href="#"><span class="material-symbols-outlined text-base">contact_support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="user-profile" href="#"><span class="material-symbols-outlined text-base">manage_accounts</span><span>User Profile</span></a></div></aside><div class="pl-72 flex flex-col min-h-screen"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-8"><div class="flex items-center gap-4"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface"><span class="material-symbols-outlined text-xs text-secondary">layers</span><span class="font-medium">Production Cluster #01</span><span class="material-symbols-outlined text-xs text-on-surface-variant">arrow_drop_down</span></div><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3 text-sm text-on-surface-variant">search</span><input class="bg-surface-container-low rounded-lg pl-9 pr-4 py-1.5 text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:bg-surface-container w-80 transition-colors" placeholder="Search secrets, vaults, policies... (Ctrl+K)" type="text"/></div></div><div class="flex items-center gap-4"><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container-low text-[11px] font-mono text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Zero Trust: Active</span></div><button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-lg">notifications</span></button><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/><div class="flex flex-col text-left"><span class="text-xs font-medium text-on-surface leading-tight">Alex Mercer</span><span class="text-[10px] text-on-surface-variant leading-tight">Security Lead</span></div></div></div></header><main class="w-full pt-16 bg-surface flex-1 px-8 pb-12"><div class="flex flex-col w-full">
+<div class="flex flex-col gap-6 w-full">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<h1 class="text-2xl font-headline font-bold tracking-tight text-on-surface">Network Access</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-surface-container-high text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+            ENABLED: Hardware CIDR Guardrails
+          </span>
+</div>
+<p class="text-xs text-on-surface-variant font-mono tracking-wide">ENCLAVE_EDGE_FIREWALL // eBPF ACTIVE KERNEL FILTERING</p>
+</div>
+<div class="flex items-center gap-3 self-start md:self-auto">
+<button class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-bright text-on-surface hover:bg-surface-variant text-xs font-semibold tracking-wide transition-all shadow-md" onclick="document.getElementById('add-ip-drawer').classList.remove('translate-x-full')">
+<span class="material-symbols-outlined text-sm">add_moderator</span>
+<span>Add IP Range</span>
+</button>
+<button class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-medium transition-colors">
+<span class="material-symbols-outlined text-sm">tune</span>
+<span>Policy Defaults</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-1 overflow-x-auto p-1 bg-surface-container-lowest rounded-xl">
+<button class="px-4 py-2 rounded-lg bg-surface-container text-on-surface text-xs font-medium flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-sm text-tertiary">lock_open</span>
+<span>IP Allowlist</span>
+<span class="px-1.5 py-0.2 bg-surface-container-high text-[10px] font-mono rounded text-tertiary">14</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low text-xs font-medium flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">hub</span>
+<span>Trusted Networks</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low text-xs font-medium flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">rule</span>
+<span>Access Rules</span>
+</button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low text-xs font-medium flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">receipt_long</span>
+<span>Activity Stream</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+</button>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-4 shadow-sm">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+<div class="flex items-start gap-3.5">
+<div class="p-2 rounded-lg bg-surface-container-high text-tertiary">
+<span class="material-symbols-outlined text-xl">security</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold font-headline uppercase tracking-wider text-tertiary">High Enforcement Threshold Active</span>
+<span class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-high text-on-surface-variant">2 Active Waivers</span>
+</div>
+<p class="text-xs text-on-surface-variant max-w-2xl leading-relaxed">
+              When enabled, incoming API requests and CLI secret syncs from non-allowlisted CIDR ranges are immediately blocked at the edge enclave.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-2 self-end lg:self-auto shrink-0">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>Export Invariant Rules</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-bright text-xs font-medium text-on-surface hover:bg-surface-variant transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">network_ping</span>
+<span>Test IP Connectivity</span>
+</button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex flex-col p-4 rounded-xl bg-surface-container-lowest relative overflow-hidden group hover:bg-surface-container-low transition-colors shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-2">
+<span class="text-xs font-medium tracking-wide uppercase font-mono">Allowlisted CIDRs</span>
+<span class="material-symbols-outlined text-base text-secondary">lan</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline text-on-surface">14</span>
+<span class="text-xs font-mono text-tertiary">Ranges</span>
+</div>
+<div class="flex items-center gap-1.5 mt-3 text-[11px] text-on-surface-variant">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Distributed across 4 multi-cloud zones</span>
+</div>
+</div>
+<div class="flex flex-col p-4 rounded-xl bg-surface-container-lowest relative overflow-hidden group hover:bg-surface-container-low transition-colors shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-2">
+<span class="text-xs font-medium tracking-wide uppercase font-mono">Edge Interceptions</span>
+<span class="material-symbols-outlined text-base text-tertiary">block</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline text-tertiary">342</span>
+<span class="text-xs font-mono text-on-surface-variant">Blocked / 24h</span>
+</div>
+<div class="flex items-center gap-1.5 mt-3 text-[11px] text-tertiary">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+<span>+14.2% anomalous probing from AS14061</span>
+</div>
+</div>
+<div class="flex flex-col p-4 rounded-xl bg-surface-container-lowest relative overflow-hidden group hover:bg-surface-container-low transition-colors shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-2">
+<span class="text-xs font-medium tracking-wide uppercase font-mono">Verified Gateways</span>
+<span class="material-symbols-outlined text-base text-secondary">vpn_lock</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline text-on-surface">6</span>
+<span class="text-xs font-mono text-on-surface-variant">Mesh Nodes</span>
+</div>
+<div class="flex items-center gap-1.5 mt-3 text-[11px] text-on-surface-variant">
+<span class="font-mono text-secondary">WireGuard &amp; Tailscale</span>
+<span>active</span>
+</div>
+</div>
+<div class="flex flex-col p-4 rounded-xl bg-surface-container-lowest relative overflow-hidden group hover:bg-surface-container-low transition-colors shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-2">
+<span class="text-xs font-medium tracking-wide uppercase font-mono">Enforce Engine</span>
+<span class="material-symbols-outlined text-base text-secondary">bolt</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-base font-bold font-mono text-on-surface tracking-tight">HARDWARE_STRICT</span>
+</div>
+<div class="flex items-center gap-1.5 mt-3 text-[11px] text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+<span>eBPF XDP zero-copy drop active</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col rounded-xl bg-surface-container-lowest overflow-hidden shadow-sm">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-surface-container-low">
+<div class="flex items-center gap-3 flex-1 max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest rounded-lg pl-9 pr-4 py-1.5 text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:bg-surface-container transition-colors" placeholder="Search by CIDR, label, or node name..." type="text"/>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<select class="bg-surface-container-lowest text-xs text-on-surface rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
+<option>Type: All Subnets</option>
+<option>Corporate Gateway</option>
+<option>CI/CD Runners</option>
+<option>Internal VPN</option>
+<option>Monitoring Probe</option>
+</select>
+<select class="bg-surface-container-lowest text-xs text-on-surface rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer">
+<option>Env: All Environments</option>
+<option>Production Only</option>
+<option>Staging</option>
+<option>Dev Peering</option>
+</select>
+<button class="p-1.5 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:text-on-surface transition-colors" title="Reload Range Table">
+<span class="material-symbols-outlined text-sm">refresh</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs">
+<thead class="bg-surface-container text-on-surface-variant font-mono uppercase text-[10px] tracking-wider">
+<tr>
+<th class="py-3 px-4">Name / Entity</th>
+<th class="py-3 px-4">CIDR / IP Range</th>
+<th class="py-3 px-4">Type</th>
+<th class="py-3 px-4">Environments</th>
+<th class="py-3 px-4">Status</th>
+<th class="py-3 px-4">Last Handshake</th>
+<th class="py-3 px-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<tr class="hover:bg-surface-container-low/70 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-sm">corporate_fare</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface font-headline">Office HQ Primary</span>
+<span class="text-[10px] font-mono text-on-surface-variant">North America East Gateway</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-secondary">203.0.113.0/24</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">router</span>
+                  Corporate Gateway
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container-high text-on-surface">Production</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container text-on-surface-variant">Staging</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container text-on-surface-variant">Dev</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-container text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                  Active
+                </span>
+</td>
+<td class="py-3.5 px-4 font-mono text-on-surface-variant">4 min ago</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" title="Edit Range">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors" title="Revoke CIDR">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-sm">terminal</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface font-headline">GitHub Actions Runners</span>
+<span class="text-[10px] font-mono text-on-surface-variant">CI/CD Auto-Scale Workers</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-secondary">198.51.100.0/24</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">build</span>
+                  CI/CD Platform
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container-high text-on-surface">Production</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container text-on-surface-variant">Staging</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-container text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                  Active
+                </span>
+</td>
+<td class="py-3.5 px-4 font-mono text-on-surface-variant">12 min ago</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-sm">shield_person</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface font-headline">SecOps WireGuard Hub</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Privileged Incident Tunnel</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-secondary">10.240.0.0/16</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">vpn_key</span>
+                  Internal VPN
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-bright text-on-surface">All Environments</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-container text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                  Active
+                </span>
+</td>
+<td class="py-3.5 px-4 font-mono text-on-surface-variant">1 min ago</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-sm">monitoring</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface font-headline">Datadog Observability Probe</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Telemetry Ingestion VPC</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-secondary">192.0.2.64/28</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">analytics</span>
+                  Monitoring Agent
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container-high text-on-surface">Production</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-container text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                  Active
+                </span>
+</td>
+<td class="py-3.5 px-4 font-mono text-tertiary">Just now</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/70 transition-colors group">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-sm">alt_route</span>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface font-headline">Legacy Staging Proxy</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Temporary Partner Ingress</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-secondary">198.18.0.0/15</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">cloud_sync</span>
+                  Dev Cluster
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface-container text-on-surface-variant">Staging</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-variant text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                  Expiring in 2d
+                </span>
+</td>
+<td class="py-3.5 px-4 font-mono text-on-surface-variant">3h ago</td>
+<td class="py-3.5 px-4 text-right">
+<div class="inline-flex items-center gap-1">
+<button class="px-2 py-0.5 rounded bg-surface-container text-[11px] font-medium text-tertiary hover:bg-surface-container-high transition-colors">Renew</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 bg-surface-container-low flex items-center justify-between text-xs text-on-surface-variant">
+<span class="font-mono text-[11px]">Showing 5 of 14 configured CIDR allocations</span>
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors text-xs disabled:opacity-40" disabled="">Previous</button>
+<span class="font-mono text-[11px] text-on-surface">Page 1 / 3</span>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors text-xs">Next</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<h2 class="text-xs font-bold font-headline uppercase tracking-wider text-on-surface">Real-Time Access Activity Log</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-mono text-on-surface-variant">STREAM: LIVE / 120 FPS BUFFER</span>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-xs">pause</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<div class="flex flex-col gap-1.5 font-mono text-[11px]">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">14:02:19.481</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary text-[10px] font-semibold">ALLOWED</span>
+<span class="text-on-surface">203.0.113.42</span>
+<span class="text-on-surface-variant">→</span>
+<span class="text-secondary">enclave-auth-prod-us-east.edge</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span>AS13335 (Cloudflare)</span>
+<span class="text-secondary">TLS1.3 ECDSA_P256</span>
+<span class="text-[10px] text-on-surface-variant/80">sig: 0x8f2c...e19a</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-variant/40 hover:bg-surface-variant/60 transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">14:02:18.012</span>
+<span class="px-1.5 py-0.5 rounded bg-error-container text-error text-[10px] font-semibold">BLOCKED</span>
+<span class="text-error">185.220.101.5</span>
+<span class="text-on-surface-variant">→</span>
+<span class="text-secondary">enclave-sync-prod-global.edge</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="text-error">AS42459 (Tor Exit Node)</span>
+<span class="text-error">eBPF_DROP: Non-allowlisted ingress</span>
+<span class="text-[10px] text-on-surface-variant/80">sig: REJECTED</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">14:02:15.918</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary text-[10px] font-semibold">ALLOWED</span>
+<span class="text-on-surface">198.51.100.18</span>
+<span class="text-on-surface-variant">→</span>
+<span class="text-secondary">enclave-api-staging-eu.edge</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span>AS36459 (GitHub CI Pool)</span>
+<span class="text-secondary">Mutual TLS v1.3</span>
+<span class="text-[10px] text-on-surface-variant/80">sig: 0x4a7b...882e</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low/60 hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">14:02:12.774</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary text-[10px] font-semibold">ALLOWED</span>
+<span class="text-on-surface">10.240.4.91</span>
+<span class="text-on-surface-variant">→</span>
+<span class="text-secondary">vault-internal-cluster-01</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span>Tailscale Encrypted Mesh</span>
+<span class="text-secondary">ChaCha20-Poly1305</span>
+<span class="text-[10px] text-on-surface-variant/80">sig: 0x991f...bc03</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed inset-y-0 right-0 w-96 max-w-full bg-surface-container-lowest shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between" id="add-ip-drawer">
+<div class="flex flex-col h-full">
+<div class="flex items-center justify-between p-5 bg-surface-container-low">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-lg">add_location_alt</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Add Network Range</h3>
+</div>
+<button class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="document.getElementById('add-ip-drawer').classList.add('translate-x-full')">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface">Rule / Range Label</label>
+<input class="bg-surface-container-low rounded-lg px-3 py-2 text-xs text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container transition-colors" placeholder="e.g. Frankfurt DC VPC Peering" type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface">CIDR / IP Range (IPv4 or IPv6)</label>
+<input class="bg-surface-container-low font-mono rounded-lg px-3 py-2 text-xs text-tertiary placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container transition-colors" placeholder="198.51.100.0/24" type="text"/>
+<span class="text-[10px] text-on-surface-variant">Supports standard CIDR notation (/32 up to /12)</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface">Network Archetype</label>
+<select class="bg-surface-container-low rounded-lg px-3 py-2 text-xs text-on-surface focus:outline-none cursor-pointer">
+<option>Corporate Gateway (Egress NAT)</option>
+<option>CI/CD Build Cluster</option>
+<option>Cloud VPC Peering (Direct Route)</option>
+<option>Internal VPN (WireGuard / Tailscale)</option>
+</select>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<label class="text-xs font-medium text-on-surface">Applicable Environments</label>
+<div class="flex flex-col gap-2 p-3 bg-surface-container-low rounded-lg text-xs">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded bg-surface-container accent-tertiary" type="checkbox"/>
+<span class="text-on-surface font-medium">Production Enclaves</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded bg-surface-container accent-tertiary" type="checkbox"/>
+<span class="text-on-surface font-medium">Staging Enclaves</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded bg-surface-container accent-tertiary" type="checkbox"/>
+<span class="text-on-surface font-medium">Development &amp; Sandbox</span>
+</label>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface">Authorized Access Delegation</label>
+<select class="bg-surface-container-low rounded-lg px-3 py-2 text-xs text-on-surface focus:outline-none cursor-pointer">
+<option>All Workspace Members &amp; Tokens</option>
+<option>SecOps &amp; Infrastructure Leads Only</option>
+<option>Specific Service Accounts (CI Machines)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface">Range Expiration / TTL</label>
+<select class="bg-surface-container-low rounded-lg px-3 py-2 text-xs text-on-surface focus:outline-none cursor-pointer">
+<option>Never (Permanent Infrastructure)</option>
+<option>30 Days (Temporary Peering)</option>
+<option>7 Days (Maintenance Window)</option>
+<option>24 Hours (Emergency Break-glass)</option>
+</select>
+</div>
+</div>
+<div class="p-4 bg-surface-container-low flex items-center justify-end gap-2">
+<button class="px-3.5 py-2 rounded-lg bg-surface-container text-xs font-medium text-on-surface hover:bg-surface-container-high transition-colors" onclick="document.getElementById('add-ip-drawer').classList.add('translate-x-full')">
+          Cancel
+        </button>
+<button class="px-3.5 py-2 rounded-lg bg-surface-bright text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors flex items-center gap-1.5" onclick="document.getElementById('add-ip-drawer').classList.add('translate-x-full')">
+<span class="material-symbols-outlined text-xs">verified_user</span>
+<span>Add Network to Allowlist</span>
+</button>
+</div>
+</div>
+</div>
+</div></main></div></body></html>
