@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full">
+<!-- Breadcrumb & Top Bar -->
+<div class="flex flex-col gap-3 mb-6">
+<div class="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-on-surface-variant">
+<span>SecretVault</span>
+<span class="text-on-surface-variant/40">/</span>
+<span>Security</span>
+<span class="text-on-surface-variant/40">/</span>
+<span class="text-tertiary font-semibold">Emergency Rotation</span>
+</div>
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+<div class="flex flex-col gap-1.5 max-w-3xl">
+<div class="flex items-center gap-3 flex-wrap">
+<h1 class="text-2xl lg:text-3xl font-headline font-bold tracking-tight text-on-surface">
+            Emergency Secret Rotation &amp; Blast Radius Simulator
+          </h1>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-on-tertiary-container text-surface-container-lowest text-[11px] font-mono font-bold uppercase tracking-wider animate-pulse">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+              EMERGENCY PROTOCOL ACTIVE
+            </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-tertiary-fixed text-[11px] font-mono font-medium">
+<span class="material-symbols-outlined text-[14px] text-tertiary">shield_locked</span>
+              Zero-Downtime Rollback Guard
+            </span>
+</div>
+</div>
+<p class="text-xs lg:text-sm text-on-surface-variant leading-relaxed">
+          Simulate service disruption, downstream dependency impact, and execute phased zero-downtime key rotation under compromised conditions.
+        </p>
+</div>
+<div class="flex items-center gap-2.5 self-start xl:self-auto">
+<button class="flex items-center gap-2 px-3 py-2 rounded bg-surface-container-low text-xs font-semibold text-on-surface hover:bg-surface-container hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+          Export Incident Report
+        </button>
+<button class="flex items-center gap-2 px-3 py-2 rounded bg-surface-container-highest text-xs font-semibold text-tertiary hover:bg-surface-bright hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+          Cancel Simulation
+        </button>
+</div>
+</div>
+</div>
+<!-- SECTION 1: Target Secret & Incident Trigger Bar -->
+<section class="mb-6 rounded-lg bg-surface-container-lowest p-5 shadow-xl">
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+<!-- Target Secret Key -->
+<div class="flex items-start gap-3.5 min-w-0 flex-1">
+<div class="p-2.5 rounded bg-error-container text-on-error-container shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[24px]">vpn_key_alert</span>
+</div>
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-mono uppercase tracking-widest text-on-surface-variant font-bold">Target Identity</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-high text-[10px] font-mono text-tertiary">Root Infrastructure Key</span>
+</div>
+<div class="flex items-center gap-2 font-mono text-xs lg:text-sm text-on-surface font-semibold truncate">
+<span class="truncate">AWS_ACCESS_KEY_ID</span>
+<span class="text-on-surface-variant/40">/</span>
+<span class="truncate">SECRET_ACCESS_KEY</span>
+<span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono">v8_curr</span>
+</div>
+<div class="flex items-center gap-2 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-error">notification_important</span>
+<span class="font-medium text-error truncate">Suspected Compromise via Public GitHub Commit #c48f21</span>
+</div>
+</div>
+</div>
+<div class="h-px lg:h-12 w-full lg:w-px bg-surface-container-high shrink-0"></div>
+<!-- Rotation Strategy Stats -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 lg:gap-8 shrink-0">
+<div class="flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-widest text-on-surface-variant font-bold">Strategy Archetype</span>
+<div class="flex items-center gap-2 text-xs font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">alt_route</span>
+            Dual-Token Overlap
+          </div>
+<span class="text-[11px] font-mono text-on-surface-variant">Grace buffer: 15m active window</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[10px] font-mono uppercase tracking-widest text-on-surface-variant font-bold">Propagation Scope</span>
+<div class="flex items-center gap-2 text-xs font-semibold text-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[16px]">sync_alt</span>
+            14 Microservices In-Mesh
+          </div>
+<span class="text-[11px] font-mono text-on-surface-variant">4 Cloud Regions Active</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-2 rounded bg-surface-container-high text-xs font-mono text-tertiary self-stretch sm:self-auto justify-center">
+<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+<span>SIMULATION PRE-CHECK PASS</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: Blast Radius Simulation Map & Dependency Topology -->
+<section class="mb-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Left: Blast Radius Matrix KPIs & Mini Chart -->
+<div class="xl:col-span-4 flex flex-col gap-4">
+<div class="rounded-lg bg-surface-container-lowest p-5 flex flex-col gap-5 shadow-xl flex-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">hub</span>
+<h2 class="text-sm font-headline font-bold tracking-tight text-on-surface uppercase">Impact Matrix Overview</h2>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">v8 → v9 DRIFT ANALYSIS</span>
+</div>
+<!-- Metric Cards Grid -->
+<div class="grid grid-cols-2 gap-3">
+<div class="p-3.5 rounded bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">Mesh Status</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold font-mono text-on-surface">12</span>
+<span class="text-xs font-mono text-on-surface-variant">/ 14</span>
+</div>
+<span class="text-[11px] text-tertiary-fixed flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
+              2 Queued Delay
+            </span>
+</div>
+<div class="p-3.5 rounded bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">Failure Rate</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold font-mono text-tertiary">0.00%</span>
+</div>
+<span class="text-[11px] text-on-surface-variant truncate">Zero-loss verified</span>
+</div>
+<div class="p-3.5 rounded bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">Providers</span>
+<span class="text-base font-bold font-mono text-on-surface">4 Clouds</span>
+<span class="text-[10px] text-on-surface-variant truncate">AWS, Vercel, CF, EKS</span>
+</div>
+<div class="p-3.5 rounded bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider">Simulated Traffic</span>
+<span class="text-base font-bold font-mono text-on-surface">48.2k rps</span>
+<span class="text-[10px] text-on-surface-variant truncate">Peak synthetic test</span>
+</div>
+</div>
+<!-- Simulated Traffic Handshake Graph (Inline SVG Sparkline / Donut) -->
+<div class="flex flex-col gap-2 p-3.5 rounded bg-surface-container-low">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface font-semibold">Dual-Token Traffic Rollover Curve</span>
+<span class="text-tertiary font-bold">100% Buffered</span>
+</div>
+<!-- Dual-key transition line chart -->
+<div class="h-20 w-full pt-2">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 300 70">
+<!-- Grid lines -->
+<line stroke="#47001a" stroke-dasharray="2 2" stroke-width="0.8" x1="0" x2="300" y1="10" y2="10"></line>
+<line stroke="#47001a" stroke-dasharray="2 2" stroke-width="0.8" x1="0" x2="300" y1="35" y2="35"></line>
+<line stroke="#47001a" stroke-dasharray="2 2" stroke-width="0.8" x1="0" x2="300" y1="60" y2="60"></line>
+<!-- Old Key v8 Decay (from top to bottom) -->
+<path d="M0,15 C90,15 150,45 220,62 L300,65" fill="none" stroke="#cfc4c5" stroke-dasharray="3 3" stroke-width="2"></path>
+<!-- New Key v9 Ramp (from bottom to top) -->
+<path d="M0,65 C80,62 140,25 210,18 L300,12" fill="none" stroke="#ffb4a8" stroke-width="2.5"></path>
+<!-- Area fill v9 -->
+<path class="text-surface-container-high/40" d="M0,65 C80,62 140,25 210,18 L300,12 L300,70 L0,70 Z" fill="currentColor"></path>
+</svg>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-on-surface-variant pt-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-0.5 bg-on-surface-variant inline-block"></span>
+<span>v8 In-Flight Requests</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-0.5 bg-tertiary inline-block"></span>
+<span class="text-tertiary font-bold">v9 Ingress Flow</span>
+</div>
+</div>
+</div>
+<!-- Blast Zone Risk Summary Banner -->
+<div class="p-3 rounded bg-surface-container-high flex items-start gap-2.5 text-xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary shrink-0 mt-0.5">verified_user</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-bold text-on-surface">Zero Expected Request Drop</span>
+<span class="text-[11px] text-on-surface-variant leading-tight">
+              Graceful fallback configured across AWS us-east-1 and global edge cache proxies.
+            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Service Dependency Topology Tree & Health Checks -->
+<div class="xl:col-span-8 flex flex-col gap-4">
+<div class="rounded-lg bg-surface-container-lowest p-5 flex flex-col gap-4 shadow-xl">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-on-surface">device_hub</span>
+<h2 class="text-sm font-headline font-bold tracking-tight text-on-surface uppercase">
+              Service Dependency Tree &amp; Pre-Rotation Telemetry
+            </h2>
+</div>
+<div class="flex items-center gap-2 text-[11px] font-mono text-on-surface-variant">
+<span class="inline-block w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
+            Live Health Polling: Every 2000ms
+          </div>
+</div>
+<!-- Dependency Table / Visual Tree Rows -->
+<div class="flex flex-col gap-2.5">
+<!-- Service 1: api-gateway -->
+<div class="p-3.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="p-2 rounded bg-surface-container text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]">alt_route</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-on-surface truncate">api-gateway</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-high text-on-surface-variant">Core Mesh</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-highest text-tertiary">AWS us-east-1</span>
+</div>
+<span class="text-xs text-on-surface-variant truncate">Ready for atomic rollover • Target transition: v8 → v9</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+<div class="flex flex-col items-end text-right">
+<span class="text-[11px] font-mono text-tertiary-fixed font-bold">100% STAGED</span>
+<span class="text-[10px] font-mono text-on-surface-variant">42 pods synced</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-tertiary">check_circle</span>
+</div>
+</div>
+<!-- Service 2: billing-service -->
+<div class="p-3.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="p-2 rounded bg-surface-container text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]">credit_card</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-on-surface truncate">billing-service</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-high text-on-surface-variant">PCI Vault</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-highest text-tertiary">Kubernetes EKS</span>
+</div>
+<span class="text-xs text-on-surface-variant truncate">Ready for atomic rollover • Transaction buffers synchronized</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+<div class="flex flex-col items-end text-right">
+<span class="text-[11px] font-mono text-tertiary-fixed font-bold">100% STAGED</span>
+<span class="text-[10px] font-mono text-on-surface-variant">18 pods synced</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-tertiary">check_circle</span>
+</div>
+</div>
+<!-- Service 3: auth-worker -->
+<div class="p-3.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="p-2 rounded bg-surface-container text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]">security</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-on-surface truncate">auth-worker</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-high text-on-surface-variant">Edge Auth</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-highest text-tertiary">Vercel Edge</span>
+</div>
+<span class="text-xs text-on-surface-variant truncate">24 Global Edge PoPs pre-warmed with v9 ephemeral key token</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+<div class="flex flex-col items-end text-right">
+<span class="text-[11px] font-mono text-tertiary-fixed font-bold">EDGE PRE-WARMED</span>
+<span class="text-[10px] font-mono text-on-surface-variant">24/24 PoPs</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-tertiary">bolt</span>
+</div>
+</div>
+<!-- Service 4: data-pipeline (Warning service) -->
+<div class="p-3.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="p-2 rounded bg-surface-container text-error shrink-0">
+<span class="material-symbols-outlined text-[20px]">query_stats</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-on-surface truncate">data-pipeline</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-error-container text-on-error-container">Kafka Ingestion</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-highest text-tertiary">EKS cluster-us-west</span>
+</div>
+<span class="text-xs text-error font-medium truncate">Kafka consumer group • Warning: 45s drain delay recommended before revoking v8</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+<div class="flex flex-col items-end text-right">
+<span class="text-[11px] font-mono text-error font-bold">DRAIN HOLD 45s</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Active batches: 6</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-error">error</span>
+</div>
+</div>
+<!-- Service 5: notification-service -->
+<div class="p-3.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="p-2 rounded bg-surface-container text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-on-surface truncate">notification-service</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-high text-on-surface-variant">Async Worker</span>
+<span class="px-1.5 py-0.2 text-[10px] font-mono rounded bg-surface-container-highest text-tertiary">Cloudflare Workers</span>
+</div>
+<span class="text-xs text-on-surface-variant truncate">Ready • Event batching pause invoked for rollover interval</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+<div class="flex flex-col items-end text-right">
+<span class="text-[11px] font-mono text-tertiary-fixed font-bold">100% STAGED</span>
+<span class="text-[10px] font-mono text-on-surface-variant">8 workers ready</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-tertiary">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: Execution Step Controls & Dual-Authorization Quorum Box -->
+<section class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Phased Execution Stepper -->
+<div class="xl:col-span-7 flex flex-col gap-4">
+<div class="rounded-lg bg-surface-container-lowest p-5 flex flex-col gap-5 shadow-xl">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">tune</span>
+<h2 class="text-sm font-headline font-bold tracking-tight text-on-surface uppercase">Phased Rotation Pipeline</h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary">PHASE 3 OF 4</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Step 1: Provision Keypair -->
+<div class="flex items-start gap-4 p-3 rounded-lg bg-surface-container-low">
+<div class="flex flex-col items-center mt-1">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div class="w-0.5 h-8 bg-surface-container-high mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="text-xs font-mono font-bold text-on-surface">Step 1: Provision New Cryptographic Keypair in AWS KMS</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-tertiary-fixed">Automated • Complete</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">
+                Key ID: <code class="font-mono text-tertiary">arn:aws:kms:us-east-1:39012:key/v9-rot-880c</code> generated with AES-256-GCM.
+              </p>
+</div>
+</div>
+<!-- Step 2: Inject v9 Secret -->
+<div class="flex items-start gap-4 p-3 rounded-lg bg-surface-container-low -mt-2">
+<div class="flex flex-col items-center mt-1">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div class="w-0.5 h-8 bg-surface-container-high mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="text-xs font-mono font-bold text-on-surface">Step 2: Inject v9 Secret into Staging &amp; Pre-warm Edge Pods</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-tertiary-fixed">Automated • Complete</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">
+                Encrypted payload synced across 14 services. Verified zero deserialization bottlenecks.
+              </p>
+</div>
+</div>
+<!-- Step 3: Atomic Shift Routing Traffic (Current Active Gate) -->
+<div class="flex items-start gap-4 p-3.5 rounded-lg bg-surface-container -mt-2 ring-1 ring-tertiary/20">
+<div class="flex flex-col items-center mt-1">
+<div class="w-6 h-6 rounded-full bg-on-tertiary-container flex items-center justify-center text-white text-xs font-bold animate-pulse">
+                3
+              </div>
+<div class="w-0.5 h-8 bg-surface-container-high mt-1"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="text-xs font-mono font-bold text-white">Step 3: Atomic Shift Routing Traffic to v9</span>
+<span class="px-2 py-0.5 rounded bg-surface-bright text-[10px] font-mono text-white font-bold animate-pulse">
+                  Awaiting Operator Sign-Off
+                </span>
+</div>
+<p class="text-xs text-on-surface mt-1">
+                Will initiate DNS weight flip and Envoy ingress reroute to v9 endpoint in dual-token mode.
+              </p>
+</div>
+</div>
+<!-- Step 4: Revoke Compromised v8 Credential -->
+<div class="flex items-start gap-4 p-3 rounded-lg bg-surface-container-low -mt-2 opacity-75">
+<div class="flex flex-col items-center mt-1">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant text-xs font-bold">
+                4
+              </div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="text-xs font-mono font-bold text-on-surface-variant">Step 4: Revoke Compromised v8 Credential</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant">Armed • 15m Grace Period</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">
+                Target key decommissioned via AWS IAM API. Automatic revocation alert pushed to SOC SIEM.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Dual-Authorization Quorum Box & Execution CTA -->
+<div class="xl:col-span-5 flex flex-col gap-4">
+<div class="rounded-lg bg-surface-container-lowest p-5 flex flex-col justify-between shadow-xl flex-1 gap-6">
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-tertiary">fingerprint</span>
+<h2 class="text-sm font-headline font-bold tracking-tight text-on-surface uppercase">Dual-Authorization Quorum</h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary font-bold">1 OF 2 SIGNED</span>
+</div>
+<p class="text-xs text-on-surface-variant">
+            Under High-Impact protocol SEC-904, root credentials require cryptographic mutual authorization prior to ingress traffic flips.
+          </p>
+<!-- Signers List -->
+<div class="flex flex-col gap-2.5">
+<!-- Co-signer 1: Completed -->
+<div class="p-3 rounded bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-mono font-bold text-on-surface">d.lindqvist@acme.corp</span>
+<span class="text-[10px] font-mono text-on-surface-variant">Signed via YubiKey FIDO2 • 2m ago</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono text-tertiary-fixed font-bold">VERIFIED</span>
+</div>
+<!-- Co-signer 2: Pending Touch -->
+<div class="p-3 rounded bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-error-container flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined text-[18px] animate-spin">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-mono font-bold text-on-surface">SecOps Lead Approval</span>
+<span class="text-[10px] font-mono text-error">Awaiting second hardware key touch</span>
+</div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-bright text-[11px] font-mono font-bold text-white hover:bg-on-tertiary-container transition-colors" id="touch-sign-btn">
+                TOUCH TO SIGN
+              </button>
+</div>
+</div>
+</div>
+<!-- Warning Disclaimer & Big Crimson CTA -->
+<div class="flex flex-col gap-3 pt-2">
+<div class="flex items-center gap-2 text-[11px] font-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-tertiary">lock_clock</span>
+<span>Revocation window begins immediately upon traffic handshake sign-off.</span>
+</div>
+<button class="w-full py-3.5 px-4 rounded bg-on-tertiary-container hover:bg-surface-bright text-white font-headline text-sm font-bold tracking-wide flex items-center justify-center gap-2.5 shadow-lg transition-all active:scale-[0.99]" id="execute-btn">
+<span class="material-symbols-outlined text-[20px]">lock_reset</span>
+            Authorize Emergency Rollover &amp; Revocation
+          </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive script for client-side feedback micro-interactions -->
+<script>
+    (function() {
+      const signBtn = document.getElementById('touch-sign-btn');
+      const execBtn = document.getElementById('execute-btn');
+      let signed = false;
+
+      if (signBtn) {
+        signBtn.addEventListener('click', function() {
+          signed = true;
+          this.textContent = 'SIGNED (FIDO2)';
+          this.classList.remove('bg-surface-bright', 'hover:bg-on-tertiary-container');
+          this.classList.add('bg-surface-container-high', 'text-tertiary-fixed');
+          this.disabled = true;
+        });
+      }
+
+      if (execBtn) {
+        execBtn.addEventListener('click', function() {
+          if (!signed) {
+            alert('Hardware Quorum Incomplete: Secondary SecOps Lead hardware touch signature is required.');
+            return;
+          }
+          this.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">rotate_right</span> Commencing Zero-Downtime Rollover...';
+          this.classList.add('opacity-90', 'cursor-not-allowed');
+          this.disabled = true;
+        });
+      }
+    })();
+  </script>
+</div></main></div></body></html>

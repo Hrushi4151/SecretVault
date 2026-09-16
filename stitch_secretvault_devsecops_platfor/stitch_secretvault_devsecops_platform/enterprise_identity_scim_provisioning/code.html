@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<!-- Top Breadcrumb & Actions Bar -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-xs font-mono tracking-wider uppercase text-on-surface-variant">
+<span>SecretVault</span>
+<span class="text-surface-bright font-bold">/</span>
+<span>Organization</span>
+<span class="text-surface-bright font-bold">/</span>
+<span class="text-tertiary-fixed font-semibold">Identity &amp; Directory</span>
+</div>
+<h1 class="text-2xl lg:text-3xl font-headline font-extrabold tracking-tight text-on-surface">
+        Enterprise Identity &amp; SCIM Directory Provisioning
+      </h1>
+<p class="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+        Manage SAML 2.0 / OIDC identity providers, automated SCIM v2.0 employee directory synchronization, and domain-wide authentication enforcement.
+      </p>
+</div>
+<!-- Top CTAs -->
+<div class="flex flex-wrap items-center gap-2.5 shrink-0">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs font-semibold text-on-surface transition-colors shadow-sm" id="export-audit-btn">
+<span class="material-symbols-outlined text-[17px] text-tertiary">download</span>
+        Export Directory Audit (.csv)
+      </button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs font-semibold text-on-surface transition-colors shadow-sm" id="test-handshake-btn">
+<span class="material-symbols-outlined text-[17px] text-primary">network_ping</span>
+        Test IdP Handshake
+      </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-on-tertiary-container hover:brightness-110 text-white text-xs font-bold transition-all shadow-md">
+<span class="material-symbols-outlined text-[18px]">add_moderator</span>
+        + Connect Identity Provider
+      </button>
+</div>
+</div>
+<!-- Real-time Metrics Banner (4 Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Metric 1 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">Connected IdP</span>
+<span class="text-lg font-headline font-bold text-on-surface">Okta Enterprise</span>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[19px]">verified_user</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between pt-3 bg-surface-container-lowest/50 -mx-5 -mb-5 px-5 py-3">
+<div class="flex items-center gap-2">
+<span class="inline-block w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
+<span class="text-xs font-semibold text-on-surface">SSO Active</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant">Latency: <strong class="text-on-surface font-semibold">42ms</strong></span>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">Synced Users</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-headline font-black text-on-surface">1,428</span>
+<span class="text-xs font-mono text-tertiary font-medium">Identities</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[19px]">group</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between pt-3 bg-surface-container-lowest/50 -mx-5 -mb-5 px-5 py-3">
+<div class="flex items-center gap-1.5 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-tertiary text-[15px]">trending_up</span>
+<span>+14 provisioned today</span>
+</div>
+<span class="text-[11px] font-mono uppercase text-on-surface-variant">SCIM v2</span>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">Directory Sync</span>
+<span class="text-lg font-headline font-bold text-on-surface">Synchronized</span>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[19px]">sync_saved_locally</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between pt-3 bg-surface-container-lowest/50 -mx-5 -mb-5 px-5 py-3">
+<div class="flex items-center gap-1.5 text-xs text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-tertiary">check_circle</span>
+<span>0 errors (2m ago)</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant">Poll: 5m</span>
+</div>
+</div>
+<!-- Metric 4 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">Domain Enforcement</span>
+<span class="text-sm font-headline font-bold text-on-surface">Strict SAML + WebAuthn</span>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-container text-[19px]">gshield</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between pt-3 bg-surface-container-lowest/50 -mx-5 -mb-5 px-5 py-3">
+<span class="text-[11px] font-mono text-on-surface truncate">acme-corp.com + 1 alias</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-[10px] font-mono uppercase font-bold text-tertiary">MFA LOCK</span>
+</div>
+</div>
+</div>
+<!-- Main Content Grid: 60% Left / 40% Right -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (IdP & SCIM Settings) -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<!-- Card 1: Active Identity Providers -->
+<div class="rounded-xl bg-surface-container-low shadow-md overflow-hidden">
+<div class="p-5 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-2xl">vpn_key</span>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface">Active Identity Providers (IdP)</h2>
+<p class="text-xs text-on-surface-variant">Configured authentication brokers and assertion consumers.</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container-highest text-[11px] font-mono text-on-surface font-semibold">2 Active Connections</span>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<!-- Primary IdP: Okta -->
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col gap-3.5">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-md bg-surface-container-high flex items-center justify-center font-black text-xs text-on-surface tracking-tighter">
+                  OKTA
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline text-sm font-bold text-on-surface">Okta Enterprise SAML 2.0</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-[10px] font-mono font-bold text-tertiary-fixed tracking-wider">DEFAULT SSO</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant">SSO Protocol: SAML 2.0 (Post-Binding / SHA-256)</span>
+</div>
+</div>
+<span class="px-2 py-1 rounded-full bg-surface-container-high text-tertiary text-[11px] font-semibold flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+                Enforced
+              </span>
+</div>
+<!-- Parameters -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-surface-container-low p-3 rounded-lg">
+<div class="flex flex-col gap-0.5">
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">Entity ID / Issuer</span>
+<span class="text-on-surface truncate">http://www.okta.com/exk9a3e9l8</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">ACS Consumer URL</span>
+<span class="text-on-surface truncate">https://id.secretvault.io/saml/sso</span>
+</div>
+<div class="flex flex-col gap-0.5 sm:col-span-2 mt-1">
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">X.509 Primary Signature Certificate</span>
+<div class="flex items-center justify-between text-on-surface">
+<span>SHA1 Fingerprint: 6E:C2:59:71:0D:39:81...</span>
+<span class="text-tertiary font-semibold text-[11px]">342 days remaining</span>
+</div>
+</div>
+</div>
+<!-- Action buttons -->
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-semibold text-on-surface transition-colors">
+                Rotate IdP Certificate
+              </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-semibold text-on-surface transition-colors">
+                Test SAML Assertion
+              </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-semibold text-on-surface transition-colors">
+                Configure Attribute Mapping
+              </button>
+</div>
+</div>
+<!-- Secondary IdP: Azure AD -->
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col gap-3.5 opacity-90">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-md bg-surface-container-high flex items-center justify-center font-black text-xs text-on-surface tracking-tighter">
+                  MSFT
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline text-sm font-bold text-on-surface">Azure AD / Microsoft Entra ID</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-[10px] font-mono font-bold text-on-surface-variant tracking-wider">ACTIVE</span>
+</div>
+<span class="text-[11px] font-mono text-on-surface-variant">Contractor Portal Federation (OIDC / OAuth 2.0)</span>
+</div>
+</div>
+<span class="px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-semibold flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-surface-tint"></span>
+                Isolated Realm
+              </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-surface-container-low p-3 rounded-lg">
+<div class="flex flex-col gap-0.5">
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">Directory Tenant ID</span>
+<span class="text-on-surface truncate">9b294e78-0e31-419b-a621-c4238e9</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">Federated Secret Validity</span>
+<span class="text-on-surface truncate">180 days remaining</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-semibold text-on-surface transition-colors">
+                Configure Realm Scopes
+              </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-[11px] font-semibold text-on-surface transition-colors">
+                Inspect Token Claim
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: SCIM 2.0 Provisioning Engine -->
+<div class="rounded-xl bg-surface-container-low shadow-md overflow-hidden">
+<div class="p-5 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-2xl">sync_alt</span>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface">SCIM 2.0 Provisioning Engine</h2>
+<p class="text-xs text-on-surface-variant">Automated lifecycle management protocol (RFC 7643 &amp; 7644).</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-on-tertiary-container text-white text-[10px] font-mono uppercase font-bold tracking-wider">Engine Live</span>
+</div>
+<div class="p-5 flex flex-col gap-4">
+<!-- SCIM Endpoint URL -->
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-mono tracking-wider text-on-surface-variant uppercase">SCIM Base URL (Endpoint)</label>
+<div class="flex items-center gap-2">
+<input class="w-full px-3.5 py-2 rounded-lg bg-surface-container-lowest font-mono text-xs text-on-surface outline-none focus:bg-surface-container-high" id="scim-endpoint" readonly="" type="text" value="https://id.secretvault.io/scim/v2/tenants/acme-corp"/>
+<button class="shrink-0 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center gap-1.5 transition-colors" id="copy-scim-btn">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span id="copy-text">Copy</span>
+</button>
+</div>
+</div>
+<!-- Bearer Token -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<label class="text-xs font-mono tracking-wider text-on-surface-variant uppercase">OAuth Bearer Token (SCIM Secret)</label>
+<span class="text-[11px] font-mono text-tertiary">Expires in 62 days</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-full px-3.5 py-2 rounded-lg bg-surface-container-lowest font-mono text-xs text-on-surface tracking-widest flex items-center justify-between">
+<span>scim_live_••••••••••••••••94f2</span>
+<span class="text-[10px] font-sans px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">Encrypted</span>
+</div>
+<button class="shrink-0 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px] text-tertiary">cached</span>
+                Rotate Token
+              </button>
+</div>
+</div>
+<!-- Automated Actions / Security Toggles -->
+<div class="mt-2 pt-3 bg-surface-container-lowest rounded-lg p-3.5 flex flex-col gap-3">
+<span class="text-xs font-headline font-bold text-on-surface uppercase tracking-wider">Automated Enforcement Rules</span>
+<div class="flex items-center justify-between py-1">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">person_add</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Automatic Account Provisioning</span>
+<span class="text-[11px] text-on-surface-variant">Instantly instantiate identities matching verified domains</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-mono text-[10px] font-bold uppercase">Enabled</span>
+</div>
+<div class="flex items-center justify-between py-1">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-on-tertiary-container text-[18px]">person_off</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Immediate Blast-Radius Deprovisioning</span>
+<span class="text-[11px] text-on-surface-variant">Shred ephemeral access tokens, secrets &amp; CLI sessions on IdP suspend</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-on-tertiary-container text-white font-mono text-[10px] font-bold uppercase">Enforced</span>
+</div>
+<div class="flex items-center justify-between py-1">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[18px]">groups</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Group Membership Bi-Directional Sync</span>
+<span class="text-[11px] text-on-surface-variant">Push Okta/Entra group nesting rules straight to Vault access policies</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-tertiary font-mono text-[10px] font-bold uppercase">Active</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Domain Claim & Verification -->
+<div class="rounded-xl bg-surface-container-low shadow-md overflow-hidden">
+<div class="p-5 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-2xl">domain_verification</span>
+<div>
+<h2 class="text-base font-headline font-bold text-on-surface">Domain Claim &amp; Routing</h2>
+<p class="text-xs text-on-surface-variant">Verified corporate apex and subdomain boundaries enforcing SSO.</p>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs font-semibold text-on-surface transition-colors">
+            + Claim Domain
+          </button>
+</div>
+<div class="p-5 flex flex-col gap-3">
+<!-- Domain Item 1 -->
+<div class="p-3.5 rounded-lg bg-surface-container-lowest flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-start gap-3">
+<div class="p-2 rounded bg-surface-container text-tertiary mt-0.5">
+<span class="material-symbols-outlined text-[20px]">public</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-sm font-mono font-bold text-on-surface">acme-corp.com</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-[10px] font-mono text-tertiary font-bold">PRIMARY</span>
+</div>
+<span class="text-xs font-mono text-on-surface-variant mt-0.5">
+                  DNS TXT: <span class="text-on-surface">secretvault-site-verification=4f92bc8091ae7</span>
+</span>
+</div>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-center">
+<span class="px-2 py-1 rounded bg-surface-container-high text-xs font-semibold text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                Enforce SSO
+              </span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+</div>
+</div>
+<!-- Domain Item 2 -->
+<div class="p-3.5 rounded-lg bg-surface-container-lowest flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-start gap-3">
+<div class="p-2 rounded bg-surface-container text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[20px]">dns</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-sm font-mono font-bold text-on-surface">engineering.acme-corp.net</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant font-medium">SUBDOMAIN</span>
+</div>
+<span class="text-xs font-mono text-on-surface-variant mt-0.5">
+                  DNS CNAME delegated via Route53 DNSSEC
+                </span>
+</div>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-center">
+<span class="px-2 py-1 rounded bg-surface-container-high text-xs font-semibold text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                Enforce SSO
+              </span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (Live Feed & Attribute Mappings) -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- Live SCIM Provisioning & Deprovisioning Feed -->
+<div class="rounded-xl bg-surface-container-low shadow-md overflow-hidden flex flex-col">
+<div class="p-5 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-on-tertiary-container text-xl">pulse_alert</span>
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">Live SCIM Provisioning Feed</h3>
+<p class="text-[11px] text-on-surface-variant">Real-time audit journal with blast-radius trace</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-ping"></span>
+<span class="text-[11px] font-mono text-on-surface font-semibold">STREAMING</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<!-- Event 1: Provisioned -->
+<div class="p-3.5 rounded-lg bg-surface-container-lowest flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-tertiary text-[10px] font-mono font-bold">USER_CREATE</span>
+<span class="text-xs font-bold text-on-surface font-mono">s.patel@acme-corp.com</span>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">14:24:10.82 UTC</span>
+</div>
+<div class="text-xs text-on-surface-variant leading-relaxed">
+              Assigned Group <span class="font-mono text-tertiary px-1 py-0.5 rounded bg-surface-container-high">secops-platform-eng</span> via SCIM POST <code class="text-[11px] text-on-surface">/Users</code>.
+            </div>
+<div class="flex items-center gap-2 text-[10px] font-mono text-on-surface-variant/80 pt-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check</span>
+<span>Vault Policy: <strong>secops-lead-readwrite</strong> attached</span>
+</div>
+</div>
+<!-- Event 2: Immediate Deprovisioning & Blast Revocation -->
+<div class="p-3.5 rounded-lg bg-surface-container-lowest flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-on-tertiary-container"></div>
+<div class="flex items-center justify-between pl-1">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-on-tertiary-container text-white text-[10px] font-mono font-black tracking-wide uppercase">BLAST_REVOKE</span>
+<span class="text-xs font-bold text-on-surface font-mono">j.doe@acme-corp.com</span>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">14:18:02.19 UTC</span>
+</div>
+<div class="text-xs text-on-surface-variant pl-1 leading-relaxed">
+              HR System Offboarding signal triggered via Okta SCIM PATCH. 
+              <span class="text-tertiary font-semibold">Immediate blast mitigation enacted:</span>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-1 pl-1 font-mono text-[11px]">
+<div class="p-2 rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">JIT Leases:</span>
+<span class="text-on-tertiary-container font-black">4 shredded</span>
+</div>
+<div class="p-2 rounded bg-surface-container flex items-center justify-between">
+<span class="text-on-surface-variant">API Tokens:</span>
+<span class="text-on-tertiary-container font-black">12 terminated</span>
+</div>
+</div>
+</div>
+<!-- Event 3: Group Sync -->
+<div class="p-3.5 rounded-lg bg-surface-container-lowest flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface text-[10px] font-mono font-bold">GROUP_PATCH</span>
+<span class="text-xs font-bold text-on-surface font-mono">sre-oncall-tier1</span>
+</div>
+<span class="text-[10px] font-mono text-on-surface-variant">13:55:40.04 UTC</span>
+</div>
+<div class="text-xs text-on-surface-variant leading-relaxed">
+              Rotated group membership metadata: updated <strong class="text-on-surface">18 members</strong>. Re-calculated dynamic envelope decryption grants.
+            </div>
+<div class="flex items-center gap-2 text-[10px] font-mono text-on-surface-variant/80 pt-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">done_all</span>
+<span>Propagation latency: 12ms across cluster</span>
+</div>
+</div>
+<button class="w-full py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface text-center transition-colors">
+            View Complete SCIM Journal (14,920 Logs) →
+          </button>
+</div>
+</div>
+<!-- Role-Based Attribute Mapping (JIT RBAC) -->
+<div class="rounded-xl bg-surface-container-low shadow-md overflow-hidden flex flex-col">
+<div class="p-5 bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-xl">schema</span>
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">Role-Based Attribute Mapping (JIT RBAC)</h3>
+<p class="text-[11px] text-on-surface-variant">Transforms incoming IdP assertions directly to granular roles.</p>
+</div>
+</div>
+<button class="p-1 rounded bg-surface-container-highest text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-3.5">
+<!-- Mapping 1 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col gap-2">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>SAML Assertion Claim</span>
+<span>Vault Policy Binding</span>
+</div>
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-1.5 bg-surface-container-high px-2 py-1 rounded text-xs font-mono text-on-surface">
+<span class="text-tertiary font-bold">dept</span> == "SecOps"
+              </div>
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">arrow_forward</span>
+<div class="flex items-center gap-1.5 bg-surface-container px-2 py-1 rounded text-xs font-mono font-bold text-tertiary">
+                Security Lead (Admin)
+              </div>
+</div>
+</div>
+<!-- Mapping 2 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col gap-2">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>SAML Assertion Claim</span>
+<span>Vault Policy Binding</span>
+</div>
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-1.5 bg-surface-container-high px-2 py-1 rounded text-xs font-mono text-on-surface">
+<span class="text-tertiary font-bold">group</span> == "DevOps-Backend"
+              </div>
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">arrow_forward</span>
+<div class="flex items-center gap-1.5 bg-surface-container px-2 py-1 rounded text-xs font-mono font-bold text-on-surface truncate">
+                Env Dev (Staging &amp; Prod Read)
+              </div>
+</div>
+</div>
+<!-- Mapping 3 -->
+<div class="p-3 rounded-lg bg-surface-container-lowest flex flex-col gap-2">
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>SAML Assertion Claim</span>
+<span>Vault Policy Binding</span>
+</div>
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-1.5 bg-surface-container-high px-2 py-1 rounded text-xs font-mono text-on-surface">
+<span class="text-tertiary font-bold">group</span> == "Contractor-QA"
+              </div>
+<span class="material-symbols-outlined text-[16px] text-on-tertiary-container">arrow_forward</span>
+<div class="flex items-center gap-1.5 bg-surface-container px-2 py-1 rounded text-xs font-mono font-bold text-on-surface-variant">
+                Ephemeral Sandbox Tester
+              </div>
+</div>
+</div>
+<!-- Deep-dive Footer Link -->
+<div class="pt-2 flex items-center justify-between">
+<a class="text-xs font-semibold text-tertiary hover:text-on-surface flex items-center gap-1 transition-colors" href="#">
+              Manage All 14 Attribute Mappings
+              <span class="material-symbols-outlined text-[15px]">arrow_right_alt</span>
+</a>
+<span class="text-[10px] font-mono text-on-surface-variant">Strict JIT fallback: Deny All</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Feedback Toast Container -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-lg bg-surface-container-highest text-on-surface text-xs font-mono flex items-center gap-2 shadow-2xl" id="toast-message">
+<span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+<span id="toast-text">Operation completed successfully</span>
+</div>
+</div>
+<script>
+  // Simple toast helper
+  function triggerNotification(msg) {
+    const toast = document.getElementById('toast-message');
+    const toastText = document.getElementById('toast-text');
+    if (!toast || !toastText) return;
+    
+    toastText.textContent = msg;
+    toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    
+    setTimeout(() => {
+      toast.classList.remove('translate-y-0', 'opacity-100');
+      toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+    }, 2800);
+  }
+
+  // Copy SCIM Endpoint
+  const copyBtn = document.getElementById('copy-scim-btn');
+  const copyText = document.getElementById('copy-text');
+  if (copyBtn && copyText) {
+    copyBtn.addEventListener('click', () => {
+      const endpoint = document.getElementById('scim-endpoint');
+      if (endpoint) {
+        navigator.clipboard.writeText(endpoint.value);
+        copyText.textContent = 'Copied!';
+        triggerNotification('SCIM 2.0 Base URL copied to clipboard');
+        setTimeout(() => {
+          copyText.textContent = 'Copy';
+        }, 2000);
+      }
+    });
+  }
+
+  // IdP Handshake Test
+  const handshakeBtn = document.getElementById('test-handshake-btn');
+  if (handshakeBtn) {
+    handshakeBtn.addEventListener('click', () => {
+      triggerNotification('SAML 2.0 Handshake Verified: Okta endpoint responding in 41.8ms');
+    });
+  }
+
+  // Export Directory Audit
+  const exportBtn = document.getElementById('export-audit-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      triggerNotification('Preparing SCIM Directory Audit log (.csv) for download...');
+    });
+  }
+</script></main></div></body></html>

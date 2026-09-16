@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#ffb4a8",
+          "on-error-container": "#ffdad6",
+          "on-primary": "#303030",
+          "on-primary-fixed": "#1b1b1b",
+          "primary": "#c6c6c6",
+          "secondary-fixed-dim": "#c6c6c7",
+          "error": "#ffb4ab",
+          "surface-container-high": "#5a0023",
+          "outline-variant": "#4c4546",
+          "surface-bright": "#760031",
+          "on-error": "#690005",
+          "surface-tint": "#c6c6c6",
+          "on-surface-variant": "#cfc4c5",
+          "on-tertiary": "#690001",
+          "surface-dim": "#30000f",
+          "secondary-fixed": "#e2e2e2",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-container": "#ec0005",
+          "on-primary-container": "#757575",
+          "background": "#30000f",
+          "inverse-on-surface": "#660029",
+          "surface-container-highest": "#6e002d",
+          "secondary-container": "#454747",
+          "inverse-primary": "#5e5e5e",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-secondary-container": "#b4b5b5",
+          "on-surface": "#ffd9df",
+          "surface-container-low": "#3f0016",
+          "on-secondary": "#2f3131",
+          "outline": "#988e90",
+          "tertiary-fixed": "#ffdad5",
+          "on-secondary-fixed-variant": "#454747",
+          "primary-fixed": "#e2e2e2",
+          "surface-variant": "#6e002d",
+          "surface-container": "#47001a",
+          "on-background": "#ffd9df",
+          "surface": "#30000f",
+          "surface-container-lowest": "#26000b",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-primary-fixed-variant": "#474747",
+          "secondary": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "on-tertiary-fixed-variant": "#930001",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full"><div class="h-16 px-5 flex items-center gap-3 bg-surface-container-lowest"><img alt="SecretVault logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><span class="text-base font-headline font-bold tracking-wider uppercase text-on-surface">SecretVault</span></div><div class="overflow-y-auto flex-1 px-3 py-4 space-y-6"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">WORKSPACE</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_open</span><span>Projects</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span>Sync Center</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">SECURITY</div><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">policy</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">radar</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span>Audit Logs</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">AI OPS</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>AI Analysis</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">ORGANIZATION</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Team</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span>Settings</span></a></nav></div><div class="p-3 bg-surface-container-lowest space-y-1"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help-support" href="#"><span class="material-symbols-outlined text-[20px]">support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_circle</span><span>User Profile</span></a></nav></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-4"><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-secondary">deployed_code</span><span>API Gateway</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold uppercase tracking-wider text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Production</span></div></div><div class="flex items-center gap-4"><button class="flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs text-on-surface-variant" type="button"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">search</span><span>Search resources, secrets, logs...</span></div><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-lowest text-outline">⌘K</kbd></button><div class="flex items-center gap-2"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-lg">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-lg">dark_mode</span></button></div><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="relative pt-16 min-h-screen bg-background w-full px-8 pb-12"><div class="flex flex-col w-full gap-6">
+<!-- Top Command & Status Bar -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6 bg-surface-container-low rounded-xl">
+<div class="space-y-1.5">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono tracking-widest text-outline uppercase font-semibold">RAFT CONSENSUS LAYER v4.8</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold tracking-wider text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping inline-block"></span>
+<span>QUORUM ONLINE (3/3 NODES)</span>
+</div>
+</div>
+<h1 class="text-2xl lg:text-3xl font-headline font-black tracking-tight text-on-surface">
+        Disaster Recovery &amp; Multi-Cloud Vault Consensus
+      </h1>
+<p class="text-xs font-mono text-on-surface-variant flex items-center gap-2">
+<span class="text-primary font-bold">STATE HASH:</span>
+<span class="bg-surface-container-lowest px-2 py-0.5 rounded text-secondary font-mono tracking-wide">0x9f4a7c1b00e35fa8...88c1d392a10</span>
+<span class="text-outline">·</span>
+<span>Replication Cadence: 60s (Last sync: 14s ago)</span>
+</p>
+</div>
+<!-- Executive Runbook Controls -->
+<div class="flex flex-wrap items-center gap-2.5">
+<button class="group px-3.5 py-2 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface text-xs font-semibold tracking-wide transition-colors flex items-center gap-2 shadow-sm" id="partitionSimBtn" type="button">
+<span class="material-symbols-outlined text-base text-tertiary group-hover:rotate-12 transition-transform">leak_remove</span>
+<span>Simulate Regional Partition</span>
+</button>
+<button class="px-3.5 py-2 rounded-lg bg-error-container hover:bg-surface-container-high text-on-error-container text-xs font-semibold tracking-wide transition-colors flex items-center gap-2 shadow-md" id="coldFailoverBtn" type="button">
+<span class="material-symbols-outlined text-base text-error">fmd_bad</span>
+<span>Initiate Cold Standby Failover</span>
+</button>
+<button class="px-2.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Cryptographic Checksum Recalculation" type="button">
+<span class="material-symbols-outlined text-base">refresh</span>
+</button>
+</div>
+</div>
+<!-- Primary Enclave Topology Cards (3 Regions) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<!-- Enclave 1: AWS -->
+<div class="bg-surface-container-lowest rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-md">
+<div class="absolute top-0 left-0 right-0 h-1 bg-tertiary"></div>
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg">verified_user</span>
+<span class="text-[11px] font-mono tracking-wider uppercase text-outline font-bold">PRIMARY · NITRO ENCLAVE</span>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-surface-container-high text-tertiary">LEADER</span>
+</div>
+<div class="text-lg font-headline font-bold text-on-surface mb-1 flex items-center justify-between">
+<span>AWS us-east-1</span>
+<span class="text-xs font-mono text-secondary">N. Virginia</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-4 font-mono">Instance: c6i.metal-enclave · KMS: HSM-Level-3</p>
+<!-- Metric Bars -->
+<div class="space-y-3 bg-surface-container-low p-3.5 rounded-lg mb-4">
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant font-mono">Consensus Latency</span>
+<span class="font-mono text-tertiary font-bold">4.2 ms</span>
+</div>
+<div class="w-full bg-surface-container-lowest rounded-full h-1.5 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 14%"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2 text-[11px] font-mono text-on-surface-variant">
+<div>
+<span class="text-outline">Raft Term:</span>
+<span class="font-bold text-on-surface">#420</span>
+</div>
+<div>
+<span class="text-outline">Active Lease:</span>
+<span class="font-bold text-on-surface">840ms / 1000ms</span>
+</div>
+<div>
+<span class="text-outline">State Sync:</span>
+<span class="font-bold text-secondary">100% In-Sync</span>
+</div>
+<div>
+<span class="text-outline">Attestation:</span>
+<span class="font-bold text-on-surface">Valid (TPM 2.0)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] font-mono text-outline">
+<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Drain Rate: 0 req/s</span>
+<button class="text-secondary hover:text-on-surface underline font-semibold text-xs" type="button">Isolate Region</button>
+</div>
+</div>
+<!-- Enclave 2: GCP -->
+<div class="bg-surface-container-lowest rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-md">
+<div class="absolute top-0 left-0 right-0 h-1 bg-secondary"></div>
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">shield_with_heart</span>
+<span class="text-[11px] font-mono tracking-wider uppercase text-outline font-bold">HOT STANDBY · CONFIDENTIAL VM</span>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-surface-container text-on-surface-variant">FOLLOWER</span>
+</div>
+<div class="text-lg font-headline font-bold text-on-surface mb-1 flex items-center justify-between">
+<span>GCP europe-west3</span>
+<span class="text-xs font-mono text-secondary">Frankfurt</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-4 font-mono">Instance: n2d-confidential · AMD SEV-SNP</p>
+<!-- Metric Bars -->
+<div class="space-y-3 bg-surface-container-low p-3.5 rounded-lg mb-4">
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant font-mono">Replication Delta</span>
+<span class="font-mono text-secondary font-bold">28.4 ms (0 lag)</span>
+</div>
+<div class="w-full bg-surface-container-lowest rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 32%"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2 text-[11px] font-mono text-on-surface-variant">
+<div>
+<span class="text-outline">Raft Term:</span>
+<span class="font-bold text-on-surface">#420</span>
+</div>
+<div>
+<span class="text-outline">Log Index:</span>
+<span class="font-bold text-on-surface">#8,941,204</span>
+</div>
+<div>
+<span class="text-outline">State Sync:</span>
+<span class="font-bold text-secondary">100% In-Sync</span>
+</div>
+<div>
+<span class="text-outline">Heartbeat:</span>
+<span class="font-bold text-on-surface">32ms ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] font-mono text-outline">
+<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Ready for Promotion</span>
+<button class="text-secondary hover:text-on-surface underline font-semibold text-xs" type="button">Elect Leader</button>
+</div>
+</div>
+<!-- Enclave 3: Azure -->
+<div class="bg-surface-container-lowest rounded-xl p-5 relative overflow-hidden flex flex-col justify-between shadow-md">
+<div class="absolute top-0 left-0 right-0 h-1 bg-secondary"></div>
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">vpn_key</span>
+<span class="text-[11px] font-mono tracking-wider uppercase text-outline font-bold">HOT STANDBY · ACC SGX</span>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-surface-container text-on-surface-variant">FOLLOWER</span>
+</div>
+<div class="text-lg font-headline font-bold text-on-surface mb-1 flex items-center justify-between">
+<span>Azure us-west-2</span>
+<span class="text-xs font-mono text-secondary">Washington</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-4 font-mono">Instance: DC4as_v5 · Intel SGX Enclave Memory</p>
+<!-- Metric Bars -->
+<div class="space-y-3 bg-surface-container-low p-3.5 rounded-lg mb-4">
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant font-mono">Replication Delta</span>
+<span class="font-mono text-secondary font-bold">41.1 ms (0 lag)</span>
+</div>
+<div class="w-full bg-surface-container-lowest rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 45%"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2 text-[11px] font-mono text-on-surface-variant">
+<div>
+<span class="text-outline">Raft Term:</span>
+<span class="font-bold text-on-surface">#420</span>
+</div>
+<div>
+<span class="text-outline">Log Index:</span>
+<span class="font-bold text-on-surface">#8,941,204</span>
+</div>
+<div>
+<span class="text-outline">State Sync:</span>
+<span class="font-bold text-secondary">100% In-Sync</span>
+</div>
+<div>
+<span class="text-outline">Heartbeat:</span>
+<span class="font-bold text-on-surface">45ms ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] font-mono text-outline">
+<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Ready for Promotion</span>
+<button class="text-secondary hover:text-on-surface underline font-semibold text-xs" type="button">Elect Leader</button>
+</div>
+</div>
+</div>
+<!-- Middle Grid: Merkle State Matrix & Quorum Protection Invariant -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Merkle Tree Sync & Quorum Matrix (2 Cols) -->
+<div class="xl:col-span-2 bg-surface-container-low rounded-xl p-6 flex flex-col justify-between shadow-md">
+<div>
+<div class="flex items-center justify-between pb-4">
+<div class="space-y-1">
+<h2 class="text-lg font-headline font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">account_tree</span>
+              Cross-Region Merkle State Synchronization Matrix
+            </h2>
+<p class="text-xs text-on-surface-variant font-mono">Deterministic cryptographic state verification across distributed storage drivers</p>
+</div>
+<span class="text-xs font-mono px-2.5 py-1 bg-surface-container-high text-tertiary rounded font-bold">QUORUM: 2 of 3 REQUIRED</span>
+</div>
+<!-- Merkle Leaf Verification Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left font-mono text-xs">
+<thead class="bg-surface-container text-on-surface-variant uppercase tracking-wider text-[10px]">
+<tr>
+<th class="py-2.5 px-3">State Segment / Leaf</th>
+<th class="py-2.5 px-3">AWS us-east-1</th>
+<th class="py-2.5 px-3">GCP europe-west3</th>
+<th class="py-2.5 px-3">Azure us-west-2</th>
+<th class="py-2.5 px-3 text-right">Consensus</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container/40">
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-3 font-semibold text-on-surface">Root Hash (Block #8,941,204)</td>
+<td class="py-3 px-3 text-tertiary">0x9f4a...88c1</td>
+<td class="py-3 px-3 text-secondary">0x9f4a...88c1</td>
+<td class="py-3 px-3 text-secondary">0x9f4a...88c1</td>
+<td class="py-3 px-3 text-right font-bold text-tertiary">MATCH (3/3)</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-3 font-semibold text-on-surface">Secret Payload Subtree (/prod)</td>
+<td class="py-3 px-3 text-outline">0x51ae...b04d</td>
+<td class="py-3 px-3 text-outline">0x51ae...b04d</td>
+<td class="py-3 px-3 text-outline">0x51ae...b04d</td>
+<td class="py-3 px-3 text-right font-bold text-tertiary">MATCH (3/3)</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-3 font-semibold text-on-surface">IAM Lease Revocation Map</td>
+<td class="py-3 px-3 text-outline">0xcc01...881f</td>
+<td class="py-3 px-3 text-outline">0xcc01...881f</td>
+<td class="py-3 px-3 text-outline">0xcc01...881f</td>
+<td class="py-3 px-3 text-right font-bold text-tertiary">MATCH (3/3)</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-3 font-semibold text-on-surface">DEK Enclave Wrap Ring Key</td>
+<td class="py-3 px-3 text-outline">0x74bd...33aa</td>
+<td class="py-3 px-3 text-outline">0x74bd...33aa</td>
+<td class="py-3 px-3 text-outline">0x74bd...33aa</td>
+<td class="py-3 px-3 text-right font-bold text-tertiary">MATCH (3/3)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Split-Brain Protection Invariant Summary Banner -->
+<div class="mt-4 p-4 rounded-lg bg-surface-container-lowest flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-tertiary mt-0.5">lock</span>
+<div class="space-y-0.5">
+<span class="text-xs font-headline font-bold text-on-surface uppercase tracking-wide">Split-Brain Invariant Active</span>
+<p class="text-[11px] text-on-surface-variant font-mono">
+              In any network partitioning event where quorum (&lt;2 nodes) is lost, partition strictly enters <span class="text-tertiary font-semibold">READ_ONLY_SEALED</span> state. No unverified micro-writes permitted.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-[11px] font-mono text-outline">Zero-Trust Guard:</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary text-xs font-bold font-mono">ENFORCED</span>
+</div>
+</div>
+</div>
+<!-- Live Consensus Heartbeat SVG Dial & Telemetry -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between shadow-md">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-sm font-headline font-bold tracking-wide uppercase text-on-surface">Quorum Pulse &amp; Ring Latency</h2>
+<span class="material-symbols-outlined text-secondary text-sm">hub</span>
+</div>
+<!-- Inline SVG Ring Topology Visualizer -->
+<div class="relative flex items-center justify-center py-2">
+<svg class="w-48 h-48" viewbox="0 0 200 200">
+<!-- Interconnecting mesh lines -->
+<polygon class="text-surface-container-highest" fill="none" points="100,30 165,145 35,145" stroke="currentColor" stroke-dasharray="4,4" stroke-width="2"></polygon>
+<!-- AWS Node -->
+<circle class="fill-surface-container-high stroke-tertiary" cx="100" cy="30" r="16" stroke-width="2"></circle>
+<text class="fill-tertiary font-mono text-[9px] font-bold" text-anchor="middle" x="100" y="34">AWS</text>
+<!-- GCP Node -->
+<circle class="fill-surface-container stroke-secondary" cx="165" cy="145" r="16" stroke-width="2"></circle>
+<text class="fill-secondary font-mono text-[9px] font-bold" text-anchor="middle" x="165" y="149">GCP</text>
+<!-- Azure Node -->
+<circle class="fill-surface-container stroke-secondary" cx="35" cy="145" r="16" stroke-width="2"></circle>
+<text class="fill-secondary font-mono text-[9px] font-bold" text-anchor="middle" x="35" y="149">AZR</text>
+<!-- Center Consensus Anchor -->
+<circle class="fill-tertiary animate-pulse" cx="100" cy="108" r="8"></circle>
+</svg>
+</div>
+<div class="space-y-2 font-mono text-xs">
+<div class="flex justify-between py-1 bg-surface-container-lowest px-3 rounded">
+<span class="text-outline">AWS ⇄ GCP Ping:</span>
+<span class="text-secondary font-bold">24.2 ms</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container-lowest px-3 rounded">
+<span class="text-outline">AWS ⇄ Azure Ping:</span>
+<span class="text-secondary font-bold">36.8 ms</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container-lowest px-3 rounded">
+<span class="text-outline">GCP ⇄ Azure Ping:</span>
+<span class="text-secondary font-bold">112.4 ms</span>
+</div>
+</div>
+</div>
+<div class="pt-4 mt-2 bg-surface-container-high/40 p-3 rounded text-[11px] font-mono text-on-surface-variant flex items-center justify-between">
+<span>Raft Tick Frequency:</span>
+<span class="text-on-surface font-bold">100ms / Heartbeat</span>
+</div>
+</div>
+</div>
+<!-- Bottom Split: Live Consensus Replication Event Stream & Emergency Failover Drill Runbook -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Event Log & Heartbeat Monitor (2 Cols) -->
+<div class="xl:col-span-2 bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-md">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-base">terminal</span>
+<h2 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">Active Replication Stream &amp; Raft Heartbeats</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+<span class="text-[11px] font-mono text-tertiary font-bold">STREAM LIVE</span>
+</div>
+</div>
+<!-- Monospace Stream Area -->
+<div class="space-y-1.5 font-mono text-xs bg-surface-dim p-4 rounded-lg overflow-y-auto max-h-64 scrollbar-none text-on-surface-variant" id="replicationConsole">
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:18.910</span>
+<span class="text-tertiary font-bold shrink-0">[RAFT-LEADER]</span>
+<span class="text-on-surface">Heartbeat ACK sent to followers (Term #420, Lease refreshed for 1000ms).</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:17.404</span>
+<span class="text-secondary font-bold shrink-0">[SNAP-SYNC]</span>
+<span class="text-on-surface">Merkle incremental delta verified on GCP europe-west3: state hash match (0x9f4a...88c1).</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:17.382</span>
+<span class="text-secondary font-bold shrink-0">[SNAP-SYNC]</span>
+<span class="text-on-surface">Merkle incremental delta verified on Azure us-west-2: state hash match (0x9f4a...88c1).</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:12.115</span>
+<span class="text-outline font-bold shrink-0">[DEK-ROTATE]</span>
+<span class="text-on-surface">Hardware HSM enclave key re-wrapped with cross-cloud consensus ephemeral seed.</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:08.892</span>
+<span class="text-tertiary font-bold shrink-0">[RAFT-LEADER]</span>
+<span class="text-on-surface">Transaction #8,941,204 committed with 3-of-3 unanimous vote acknowledgment.</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="text-outline shrink-0">14:02:01.002</span>
+<span class="text-outline font-bold shrink-0">[ATTEST-RUN]</span>
+<span class="text-on-surface">Nitro PCR0/PCR1 verification successful. Remote TLS secure enclave channel intact.</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 text-xs font-mono text-outline">
+<span>Log retention: Strict memory buffer (Zero disk persistence of secrets)</span>
+<button class="hover:text-on-surface underline" id="clearLogBtn" type="button">Clear View</button>
+</div>
+</div>
+<!-- Emergency Failover Runbook & Break-Glass Panel (1 Col) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-md">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error">emergency</span>
+<h2 class="text-sm font-headline font-bold uppercase tracking-wider text-on-surface">Break-Glass Runbook</h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container text-[10px] font-bold font-mono">STANDBY READY</span>
+</div>
+<p class="text-xs text-on-surface-variant font-mono leading-relaxed">
+          Evacuate the primary cloud enclave immediately. Traffic will instantly route to GCP europe-west3 with zero dropped client calls.
+        </p>
+<!-- Provider Health Matrix Indicator -->
+<div class="bg-surface-container-low p-3.5 rounded-lg space-y-2">
+<div class="flex items-center justify-between text-xs font-mono">
+<span class="text-on-surface font-semibold">Pre-Auth Connected Providers</span>
+<span class="text-secondary font-bold">14 / 14 Ready</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 100%"></div>
+</div>
+<p class="text-[10px] font-mono text-outline">All standby endpoints primed with active mutual TLS certificates.</p>
+</div>
+<!-- Evacuation Simulation Details -->
+<div class="space-y-2 font-mono text-xs">
+<div class="flex justify-between py-1 bg-surface-container-low px-3 rounded">
+<span class="text-outline">Target Hot Node:</span>
+<span class="text-on-surface font-bold">GCP europe-west3</span>
+</div>
+<div class="flex justify-between py-1 bg-surface-container-low px-3 rounded">
+<span class="text-outline">Estimated RTO / RPO:</span>
+<span class="text-tertiary font-bold">0.0s / 0.0s (Zero Loss)</span>
+</div>
+</div>
+</div>
+<!-- Evacuate Action CTA -->
+<div class="pt-4">
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-mono font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md" id="evacuateDrillBtn" type="button">
+<span class="material-symbols-outlined text-base text-tertiary">bolt</span>
+<span>EXECUTE REGIONAL EVACUATION DRILL</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for simulation console
+  const consoleEl = document.getElementById('replicationConsole');
+  const partitionBtn = document.getElementById('partitionSimBtn');
+  const coldFailoverBtn = document.getElementById('coldFailoverBtn');
+  const evacBtn = document.getElementById('evacuateDrillBtn');
+  const clearLogBtn = document.getElementById('clearLogBtn');
+
+  function appendLog(category, categoryClass, message) {
+    const time = new Date().toTimeString().split(' ')[0] + '.' + Math.floor(Math.random() * 900 + 100);
+    const div = document.createElement('div');
+    div.className = 'flex items-start gap-2 animate-fadeIn';
+    div.innerHTML = `
+      <span class="text-outline shrink-0">${time}</span>
+      <span class="${categoryClass} font-bold shrink-0">[${category}]</span>
+      <span class="text-on-surface">${message}</span>
+    `;
+    consoleEl.prepend(div);
+  }
+
+  partitionBtn?.addEventListener('click', () => {
+    appendLog('SPLIT-BRAIN-TEST', 'text-error', 'Partition injected between AWS us-east-1 and Europe nodes. Quorum evaluated: 2/3 hot nodes alive.');
+    appendLog('CONSENSUS-ISOLATION', 'text-tertiary', 'GCP and Azure form new Quorum 2/3. Isolated AWS leader demoted itself to read-only.');
+  });
+
+  coldFailoverBtn?.addEventListener('click', () => {
+    appendLog('COLD-FAILOVER', 'text-error', 'Manual Cold Standby Failover triggered by operator. Term incremented to #421.');
+    appendLog('RAFT-ELECTION', 'text-secondary', 'GCP europe-west3 elected LEADER. Lease established (1000ms). Secret writes uninterrupted.');
+  });
+
+  evacBtn?.addEventListener('click', () => {
+    appendLog('DRILL-INITIATED', 'text-tertiary', 'Regional evacuation drill running: Re-routing 14 client providers to GCP europe-west3...');
+    setTimeout(() => {
+      appendLog('DRILL-SUCCESS', 'text-secondary', 'Evacuation complete in 42ms. Zero secret lookups failed or dropped.');
+    }, 600);
+  });
+
+  clearLogBtn?.addEventListener('click', () => {
+    consoleEl.innerHTML = '';
+    appendLog('BUFFER', 'text-outline', 'Console buffer cleared. Listening for incoming consensus ticks...');
+  });
+</script></main></div></body></html>

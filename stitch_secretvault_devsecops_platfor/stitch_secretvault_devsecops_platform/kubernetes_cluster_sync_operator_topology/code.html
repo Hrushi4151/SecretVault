@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-surface": "#ffd9df",
+          "inverse-on-surface": "#660029",
+          "tertiary-fixed": "#ffdad5",
+          "on-primary-container": "#757575",
+          "on-error": "#690005",
+          "error-container": "#93000a",
+          "on-tertiary-fixed": "#410000",
+          "background": "#30000f",
+          "on-secondary-fixed-variant": "#454747",
+          "on-secondary": "#2f3131",
+          "on-primary": "#303030",
+          "secondary": "#c6c6c7",
+          "on-tertiary": "#690001",
+          "on-primary-fixed-variant": "#474747",
+          "on-primary-fixed": "#1b1b1b",
+          "surface-container-low": "#3f0016",
+          "outline": "#988e90",
+          "surface-dim": "#30000f",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "surface-container-highest": "#6e002d",
+          "outline-variant": "#4c4546",
+          "tertiary-container": "#000000",
+          "surface-container-lowest": "#26000b",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed-variant": "#930001",
+          "primary": "#c6c6c6",
+          "secondary-fixed": "#e2e2e2",
+          "on-tertiary-container": "#ec0005",
+          "surface-bright": "#760031",
+          "primary-container": "#000000",
+          "on-error-container": "#ffdad6",
+          "tertiary": "#ffb4a8",
+          "secondary-fixed-dim": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "primary-fixed-dim": "#c6c6c6",
+          "surface-variant": "#6e002d",
+          "surface-tint": "#c6c6c6",
+          "error": "#ffb4ab",
+          "on-surface-variant": "#cfc4c5",
+          "inverse-primary": "#5e5e5e",
+          "surface": "#30000f",
+          "surface-container": "#47001a",
+          "primary-fixed": "#e2e2e2",
+          "surface-container-high": "#5a0023",
+          "on-background": "#ffd9df",
+          "on-secondary-container": "#b4b5b5",
+          "secondary-container": "#454747"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-surface font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between overflow-y-auto"><div class="p-4 flex flex-col gap-6"><div class="flex items-center gap-3 px-2 py-1"><img alt="Brand logo. - Primary color: #7c5cff
+- Font: geist
+- Mode: dark
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><div class="flex flex-col"><span class="text-base font-headline font-bold tracking-tight text-on-surface">SecretVault</span><span class="text-[11px] font-mono tracking-widest text-on-surface-variant uppercase">DevSecOps Platform</span></div></div><nav class="flex flex-col gap-5 text-sm" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Workspace</span><div class="flex flex-col gap-0.5"><a aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span>Dashboard</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_copy</span>Projects</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span>Secrets</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span>Integrations</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span>Sync Center</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Security</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">security</span>Security Overview</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">gshield</span>Risk Center</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">warning</span>Secret Leaks</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">rule</span>Drift Detection</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">history</span>Audit Logs</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">AI Ops</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">neurology</span>AI Assistant</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">insights</span>AI Analysis</a></div></div><div class="flex flex-col gap-1"><span class="px-2.5 text-[11px] font-mono font-bold tracking-wider text-on-surface-variant/60 uppercase">Organization</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span>Team</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span>Settings</a></div></div></nav></div><div class="p-4 flex flex-col gap-1 bg-surface-container-lowest"><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span>Documentation</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help" href="#"><span class="material-symbols-outlined text-[20px]">help</span>Help &amp; Support</a><a class="flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span>User Profile</a></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-6"><div class="flex items-center gap-3"><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface font-medium"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">alt_route</span><span>API Gateway</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant">unfold_more</span></div><span class="text-on-surface-variant/40">/</span><div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container text-xs font-semibold text-tertiary-fixed-dim"><span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span><span>Production</span><span class="material-symbols-outlined text-[14px]">expand_more</span></div></div><div class="flex items-center gap-4"><button class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-surface-container-low text-xs text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">search</span><span>Search vaults, keys...</span><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-highest text-on-surface">⌘K</kbd></button><button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-tertiary-container"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><div class="flex items-center pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-8 py-6"><div class="flex flex-col w-full gap-8">
+<!-- Interactive Top Action Header -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2.5">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-tertiary-fixed font-mono text-[11px] font-semibold tracking-wider uppercase">
+          Continuous Engine v2.4
+        </span>
+<span class="text-xs text-on-surface-variant font-mono flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
+          Mesh Controller Daemon Online
+        </span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-headline font-bold tracking-tight text-on-surface">
+        Kubernetes Cluster Sync &amp; Operator Topology
+      </h1>
+<p class="text-sm lg:text-base text-on-surface-variant max-w-3xl">
+        Automated synchronization between SecretVault cryptographic enclaves and Kubernetes ExternalSecrets CRDs.
+      </p>
+</div>
+<!-- Actions CTA -->
+<div class="flex flex-wrap items-center gap-2.5 shrink-0">
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold tracking-wide transition-all shadow-sm" onclick="triggerNotification('Cluster Connection Wizard Initiated')">
+<span class="material-symbols-outlined text-[18px]">add</span>
+        + Connect K8s Cluster
+      </button>
+<button class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold tracking-wide transition-all shadow-sm" onclick="triggerNotification('Helm Chart values.yaml packaged to STDOUT')">
+<span class="material-symbols-outlined text-[18px]">package_2</span>
+        Deploy Helm Operator
+      </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:bg-white font-semibold text-xs tracking-wide transition-all shadow-md active:scale-95" onclick="triggerGlobalResync()">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+        Reconcile All Clusters
+      </button>
+</div>
+</div>
+<!-- KPI Metric Mosaic Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono tracking-widest uppercase text-on-surface-variant">Connected Clusters</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">hub</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold text-on-surface">4</span>
+<span class="text-xs text-on-surface-variant">clusters total</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-[11px] font-mono text-tertiary">
+<span class="truncate">EKS Prod • GKE EU • Staging AKS • Edge K3s</span>
+</div>
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-surface-container-highest/30 rounded-full blur-xl pointer-events-none"></div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono tracking-widest uppercase text-on-surface-variant">Synced Namespaces</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">layers</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold text-on-surface">28</span>
+<span class="text-xs text-tertiary font-mono">100% active coverage</span>
+</div>
+<div class="mt-3 w-full bg-surface-container h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-surface-container-highest/30 rounded-full blur-xl pointer-events-none"></div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono tracking-widest uppercase text-on-surface-variant">Active CRD Mappings</span>
+<span class="material-symbols-outlined text-tertiary text-[20px]">data_object</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold text-on-surface">184</span>
+<span class="text-xs text-on-surface-variant font-mono">ExternalSecrets</span>
+</div>
+<div class="mt-3 flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+<span>tmpfs: 142</span>
+<span>Native Secret: 42</span>
+</div>
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-surface-container-highest/30 rounded-full blur-xl pointer-events-none"></div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-mono tracking-widest uppercase text-on-surface-variant">Drift Status</span>
+<span class="material-symbols-outlined text-on-tertiary-container text-[20px]">verified</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold text-on-surface">0 Drift</span>
+<span class="text-xs text-tertiary font-mono">Zero Divergence</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+        Sub-second webhook reconciliation
+      </div>
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-surface-container-highest/30 rounded-full blur-xl pointer-events-none"></div>
+</div>
+</div>
+<!-- SECTION 1: Connected Cluster Matrix & Health (Page 84) -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2.5 h-2.5 bg-tertiary rounded-sm"></div>
+<h2 class="text-lg font-headline font-bold tracking-tight text-on-surface uppercase">
+          Cluster Matrix &amp; Node Enclave Health
+        </h2>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant">
+          Page 84 Topology
+        </span>
+</div>
+<div class="text-xs font-mono text-on-surface-variant hidden md:block">
+        mTLS Handshake: Mutual v1.3 / Enclave Validated
+      </div>
+</div>
+<!-- Cluster Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<!-- Cluster 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col justify-between gap-5 relative overflow-hidden group">
+<div class="flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="p-2 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[22px]">dns</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold font-mono text-on-surface">eks-us-east-prod-01</span>
+<span class="text-[11px] text-on-surface-variant">AWS EKS v1.29 • Dedicated VPC</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-tertiary font-mono text-[10px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+              Healthy
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-surface-container-low/60 text-center">
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Nodes</span>
+<span class="text-base font-bold text-on-surface">12</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Namespaces</span>
+<span class="text-base font-bold text-on-surface">14</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">CRDs</span>
+<span class="text-base font-bold text-tertiary">92</span>
+</div>
+</div>
+<!-- Sparkline / sync cadence -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-[10px] font-mono text-on-surface-variant">
+<span>Webhook Latency Pulse</span>
+<span class="text-on-surface">8s ago (4.2ms)</span>
+</div>
+<svg class="w-full h-7 text-tertiary" fill="none" viewbox="0 0 200 28">
+<path d="M0 20 L20 18 L40 22 L60 8 L75 22 L90 14 L110 16 L130 9 L150 14 L170 12 L185 24 L200 11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="grid grid-cols-2 gap-2">
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="inspectClusterModal('eks-us-east-prod-01')">
+              Inspect Cluster
+            </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="triggerNotification('Re-syncing eks-us-east-prod-01 manifests...')">
+              Force CRD Resync
+            </button>
+</div>
+<button class="w-full px-2.5 py-1.5 rounded bg-surface-container-low hover:bg-surface-container-highest text-tertiary font-mono text-[11px] font-semibold text-center transition-colors flex items-center justify-center gap-1.5" onclick="triggerNotification('TLS Certificate renewal sequence queued.')">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span>
+            Rotate Operator TLS Cert
+          </button>
+</div>
+</div>
+<!-- Cluster 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col justify-between gap-5 relative overflow-hidden group">
+<div class="flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="p-2 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[22px]">cloud</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold font-mono text-on-surface">gke-eu-west-primary</span>
+<span class="text-[11px] text-on-surface-variant">GKE v1.28 • Frankfurt Datacenter</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-tertiary font-mono text-[10px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+              Healthy
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-surface-container-low/60 text-center">
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Nodes</span>
+<span class="text-base font-bold text-on-surface">8</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Namespaces</span>
+<span class="text-base font-bold text-on-surface">8</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">CRDs</span>
+<span class="text-base font-bold text-tertiary">54</span>
+</div>
+</div>
+<!-- Sparkline -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-[10px] font-mono text-on-surface-variant">
+<span>Webhook Latency Pulse</span>
+<span class="text-on-surface">14s ago (6.8ms)</span>
+</div>
+<svg class="w-full h-7 text-tertiary" fill="none" viewbox="0 0 200 28">
+<path d="M0 16 L25 15 L50 20 L70 12 L95 14 L120 7 L140 18 L165 14 L185 15 L200 13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="grid grid-cols-2 gap-2">
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="inspectClusterModal('gke-eu-west-primary')">
+              Inspect Cluster
+            </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="triggerNotification('Re-syncing gke-eu-west-primary manifests...')">
+              Force CRD Resync
+            </button>
+</div>
+<button class="w-full px-2.5 py-1.5 rounded bg-surface-container-low hover:bg-surface-container-highest text-tertiary font-mono text-[11px] font-semibold text-center transition-colors flex items-center justify-center gap-1.5" onclick="triggerNotification('TLS Certificate renewal sequence queued.')">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span>
+            Rotate Operator TLS Cert
+          </button>
+</div>
+</div>
+<!-- Cluster 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-lg flex flex-col justify-between gap-5 relative overflow-hidden group">
+<div class="flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<span class="p-2 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[22px]">terminal</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold font-mono text-on-surface">aks-staging-enclave</span>
+<span class="text-[11px] text-on-surface-variant">Azure AKS v1.29 • Conf. Compute</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-tertiary font-mono text-[10px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-pulse"></span>
+              Healthy
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-surface-container-low/60 text-center">
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Nodes</span>
+<span class="text-base font-bold text-on-surface">4</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">Namespaces</span>
+<span class="text-base font-bold text-on-surface">6</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-mono text-on-surface-variant uppercase">CRDs</span>
+<span class="text-base font-bold text-tertiary">38</span>
+</div>
+</div>
+<!-- Sparkline -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-[10px] font-mono text-on-surface-variant">
+<span>Webhook Latency Pulse</span>
+<span class="text-on-surface">2m ago (3.1ms)</span>
+</div>
+<svg class="w-full h-7 text-tertiary" fill="none" viewbox="0 0 200 28">
+<path d="M0 18 L30 19 L60 17 L85 10 L115 16 L140 12 L170 20 L200 10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+</svg>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="grid grid-cols-2 gap-2">
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="inspectClusterModal('aks-staging-enclave')">
+              Inspect Cluster
+            </button>
+<button class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium tracking-tight text-center transition-colors" onclick="triggerNotification('Re-syncing aks-staging-enclave manifests...')">
+              Force CRD Resync
+            </button>
+</div>
+<button class="w-full px-2.5 py-1.5 rounded bg-surface-container-low hover:bg-surface-container-highest text-tertiary font-mono text-[11px] font-semibold text-center transition-colors flex items-center justify-center gap-1.5" onclick="triggerNotification('TLS Certificate renewal sequence queued.')">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span>
+            Rotate Operator TLS Cert
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 2: ExternalSecrets CRD Mapping Console (Page 85) -->
+<div class="flex flex-col gap-4">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-2.5 h-2.5 bg-on-tertiary-container rounded-sm"></div>
+<div class="flex items-baseline gap-2">
+<h2 class="text-lg font-headline font-bold tracking-tight text-on-surface uppercase">
+            ExternalSecrets CRD Mapping Console
+          </h2>
+<span class="px-2 py-0.5 rounded bg-surface-container text-[10px] font-mono text-on-surface-variant">
+            Page 85 Synced Bindings
+          </span>
+</div>
+</div>
+<!-- Cluster Selector Dropdown Simulated -->
+<div class="flex items-center gap-2 self-start md:self-auto">
+<span class="text-xs text-on-surface-variant font-mono">Cluster Target:</span>
+<div class="relative">
+<select class="bg-surface-container-lowest text-on-surface text-xs font-mono py-1.5 pl-3 pr-8 rounded-lg appearance-none cursor-pointer focus:outline-none" id="clusterSelector">
+<option value="eks">eks-us-east-prod-01 (Active Primary)</option>
+<option value="gke">gke-eu-west-primary</option>
+<option value="aks">aks-staging-enclave</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2 top-2 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Filter Bar Pill Tabs -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1" id="namespaceFilters">
+<button class="filter-pill px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface text-xs font-mono font-medium tracking-wide transition-all shrink-0" onclick="filterNamespace('all', this)">
+        All Namespaces (4)
+      </button>
+<button class="filter-pill px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-medium tracking-wide transition-all shrink-0" onclick="filterNamespace('payments', this)">
+        payments
+      </button>
+<button class="filter-pill px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-medium tracking-wide transition-all shrink-0" onclick="filterNamespace('core-auth', this)">
+        auth-service
+      </button>
+<button class="filter-pill px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-medium tracking-wide transition-all shrink-0" onclick="filterNamespace('billing-engine', this)">
+        billing-worker
+      </button>
+<button class="filter-pill px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-mono font-medium tracking-wide transition-all shrink-0" onclick="filterNamespace('cache-layer', this)">
+        ingress-edge
+      </button>
+</div>
+<!-- Dense Enterprise Table -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-xl">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-[11px] font-mono uppercase tracking-wider text-on-surface-variant">
+<th class="py-3 px-4">Vault Secret Key</th>
+<th class="py-3 px-4">Target K8s Namespace</th>
+<th class="py-3 px-4">Kubernetes Secret Object</th>
+<th class="py-3 px-4">Driver / Engine</th>
+<th class="py-3 px-4">Mount Strategy</th>
+<th class="py-3 px-4">Sync Integrity</th>
+<th class="py-3 px-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low/40 text-xs font-mono" id="secretRows">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group" data-ns="payments">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">key</span>
+<span class="font-bold text-on-surface">DATABASE_URL</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-sans">postgresql://app:****@db-cluster.internal</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-tertiary-fixed font-semibold">payments</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="text-on-surface bg-surface-container-low px-2 py-1 rounded text-[11px]">k8s-db-credentials</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface-variant">
+<div class="flex flex-col font-sans text-[11px]">
+<span class="font-medium text-on-surface">SecretVault CSI v2.1</span>
+<span class="text-[10px] text-on-surface-variant">Driver Pin #84</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary text-[10px] font-bold tracking-tight">
+<span class="material-symbols-outlined text-[12px]">memory</span>
+                  In-Memory tmpfs (Zero-Disk)
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-bold">Synced</span>
+<span class="text-[10px] text-on-surface-variant font-sans font-normal">(12s ago)</span>
+</div>
+<span class="text-[10px] text-on-surface-variant truncate w-32" title="SHA256: 9b2cf481a10fca683">SHA: 9b2cf4...a10</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="viewYaml('DATABASE_URL', 'payments', 'k8s-db-credentials')" title="View YAML Manifest">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="triggerImmediateReconcile('DATABASE_URL')" title="Trigger Immediate Reconcile">
+<span class="material-symbols-outlined text-[16px]">autorenew</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="driftCheck('DATABASE_URL')" title="Drift Check">
+<span class="material-symbols-outlined text-[16px]">rule</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group" data-ns="core-auth">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">vpn_key</span>
+<span class="font-bold text-on-surface">JWT_SIGNING_PRIVATE_KEY</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-sans">Ed25519 Enclave Ring 0</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-tertiary-fixed font-semibold">core-auth</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="text-on-surface bg-surface-container-low px-2 py-1 rounded text-[11px]">jwt-vault-token</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface-variant">
+<div class="flex flex-col font-sans text-[11px]">
+<span class="font-medium text-on-surface">ESO v0.9.11</span>
+<span class="text-[10px] text-on-surface-variant">ExternalSecret CRD</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary text-[10px] font-bold tracking-tight">
+<span class="material-symbols-outlined text-[12px]">memory</span>
+                  In-Memory tmpfs (Zero-Disk)
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-bold">Synced</span>
+<span class="text-[10px] text-on-surface-variant font-sans font-normal">(45s ago)</span>
+</div>
+<span class="text-[10px] text-on-surface-variant truncate w-32" title="SHA256: 4f1a2387e029c784">SHA: 4f1a23...784</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="viewYaml('JWT_SIGNING_PRIVATE_KEY', 'core-auth', 'jwt-vault-token')" title="View YAML Manifest">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="triggerImmediateReconcile('JWT_SIGNING_PRIVATE_KEY')" title="Trigger Immediate Reconcile">
+<span class="material-symbols-outlined text-[16px]">autorenew</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="driftCheck('JWT_SIGNING_PRIVATE_KEY')" title="Drift Check">
+<span class="material-symbols-outlined text-[16px]">rule</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group" data-ns="billing-engine">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">credit_card</span>
+<span class="font-bold text-on-surface">STRIPE_RESTRICTED_TOKEN</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-sans">rk_live_8932402183921...</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-tertiary-fixed font-semibold">billing-engine</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="text-on-surface bg-surface-container-low px-2 py-1 rounded text-[11px]">stripe-api-bind</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface-variant">
+<div class="flex flex-col font-sans text-[11px]">
+<span class="font-medium text-on-surface">ESO v0.9.11</span>
+<span class="text-[10px] text-on-surface-variant">ExternalSecret CRD</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-mono">
+<span class="material-symbols-outlined text-[12px]">cached</span>
+                  Native Secret (Auto-Rotated)
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-bold">Synced</span>
+<span class="text-[10px] text-on-surface-variant font-sans font-normal">(1m ago)</span>
+</div>
+<span class="text-[10px] text-on-surface-variant truncate w-32" title="SHA256: ee019ac32098b72">SHA: ee019a...b72</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="viewYaml('STRIPE_RESTRICTED_TOKEN', 'billing-engine', 'stripe-api-bind')" title="View YAML Manifest">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="triggerImmediateReconcile('STRIPE_RESTRICTED_TOKEN')" title="Trigger Immediate Reconcile">
+<span class="material-symbols-outlined text-[16px]">autorenew</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="driftCheck('STRIPE_RESTRICTED_TOKEN')" title="Drift Check">
+<span class="material-symbols-outlined text-[16px]">rule</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group" data-ns="cache-layer">
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">memory</span>
+<span class="font-bold text-on-surface">REDIS_CACHE_AUTH</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-sans">mTLS Mutual-Cert Auth Spec</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-[11px] text-tertiary-fixed font-semibold">cache-layer</span>
+</td>
+<td class="py-3.5 px-4">
+<span class="text-on-surface bg-surface-container-low px-2 py-1 rounded text-[11px]">redis-secret</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface-variant">
+<div class="flex flex-col font-sans text-[11px]">
+<span class="font-medium text-on-surface">SecretVault CSI v2.1</span>
+<span class="text-[10px] text-on-surface-variant">Driver Pin #84</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-tertiary text-[10px] font-bold tracking-tight">
+<span class="material-symbols-outlined text-[12px]">memory</span>
+                  In-Memory tmpfs (Zero-Disk)
+                </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-bold">Synced</span>
+<span class="text-[10px] text-on-surface-variant font-sans font-normal">(2m ago)</span>
+</div>
+<span class="text-[10px] text-on-surface-variant truncate w-32" title="SHA256: 8a7d189ca821034f">SHA: 8a7d18...34f</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="viewYaml('REDIS_CACHE_AUTH', 'cache-layer', 'redis-secret')" title="View YAML Manifest">
+<span class="material-symbols-outlined text-[16px]">code</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="triggerImmediateReconcile('REDIS_CACHE_AUTH')" title="Trigger Immediate Reconcile">
+<span class="material-symbols-outlined text-[16px]">autorenew</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors" onclick="driftCheck('REDIS_CACHE_AUTH')" title="Drift Check">
+<span class="material-symbols-outlined text-[16px]">rule</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 bg-surface-container-low/40 flex items-center justify-between text-xs text-on-surface-variant font-mono">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+          Operator Webhook Sync Engine: ACTIVE (Zero drift across 184 bindings)
+        </span>
+<span>Polling rate: 5000ms</span>
+</div>
+</div>
+</div>
+<!-- SECTION 3: Operator DaemonSet & CSI Security Posture -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<!-- Security Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<span class="p-2.5 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[24px]">shield</span>
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">eBPF Memory Shielding</h3>
+<span class="text-[11px] font-mono text-on-surface-variant">Cilium Enclave Hook</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+        Active across all 24 worker nodes. Prohibits rogue container kernel reads from peeking at shared memory buffers during live runtime secret injection.
+      </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-[11px] font-mono text-tertiary">
+<span>Kprobe / BPF_PROG_TYPE_SOCK_OPS</span>
+<span class="font-bold">ACTIVE</span>
+</div>
+</div>
+<!-- Security Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<span class="p-2.5 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[24px]">turn_left</span>
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">Distroless DaemonSet</h3>
+<span class="text-[11px] font-mono text-on-surface-variant">Zero-Shell Container Surface</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+        The CSI Driver and Operator controller run inside Google Distroless minimal images without bash, sh, package managers, or root execution privileges.
+      </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-[11px] font-mono text-tertiary">
+<span>Image: gcr.io/distroless/static:nonroot</span>
+<span class="font-bold">RO-ROOT</span>
+</div>
+</div>
+<!-- Security Card 3 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-md flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<span class="p-2.5 rounded-lg bg-surface-container-low text-tertiary material-symbols-outlined text-[24px]">lock_person</span>
+<div>
+<h3 class="text-sm font-headline font-bold text-on-surface">RBAC Least-Privilege Role</h3>
+<span class="text-[11px] font-mono text-on-surface-variant">Namespace Scope Isolated</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+        ClusterRoles strictly restricted from global secret reads. ServiceAccount tokens mapped through Kubernetes OIDC federation directly with enclave vault HSMs.
+      </p>
+<div class="mt-auto pt-2 flex items-center justify-between text-[11px] font-mono text-tertiary">
+<span>Target RoleBindings: 28 Scoped</span>
+<span class="font-bold">RESTRICTED</span>
+</div>
+</div>
+</div>
+<!-- Interactive YAML Manifest Drawer Modal (Simulated in-canvas) -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" id="manifestModal">
+<div class="bg-surface-container-lowest rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">code</span>
+<h3 class="text-base font-headline font-bold text-on-surface" id="modalTitle">ExternalSecret Manifest</h3>
+</div>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface" onclick="closeYamlModal()">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<pre class="bg-surface-container-low p-4 rounded-lg text-xs font-mono text-on-surface overflow-x-auto leading-relaxed" id="yamlContent">apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: dynamic-secret-spec
+  namespace: default
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: secretvault-cluster-store
+    kind: ClusterSecretStore
+  target:
+    name: secret-k8s-target
+    creationPolicy: Owner
+  data:
+    - secretKey: payload
+      remoteRef:
+        key: vault/path
+      </pre>
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-xs font-mono text-on-surface flex items-center gap-1.5" onclick="copyYaml()">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+          Copy Manifest
+        </button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold" onclick="closeYamlModal()">
+          Done
+        </button>
+</div>
+</div>
+</div>
+<!-- Toast Notification Container -->
+<div class="fixed bottom-6 right-6 bg-surface-container-highest text-on-surface px-4 py-2.5 rounded-lg font-mono text-xs shadow-xl hidden flex items-center gap-2 z-50" id="toast">
+<span class="material-symbols-outlined text-tertiary text-[16px]">check_circle</span>
+<span id="toastMessage">Action completed</span>
+</div>
+</div>
+<script>
+  function triggerNotification(msg) {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMessage');
+    toastMsg.innerText = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3500);
+  }
+
+  function triggerGlobalResync() {
+    triggerNotification('Reconciliation initiated across all 4 Kubernetes clusters. 184 CRD objects refreshed.');
+  }
+
+  function inspectClusterModal(clusterName) {
+    triggerNotification('Loaded deep telemetry inspection for: ' + clusterName);
+  }
+
+  function filterNamespace(ns, btn) {
+    const buttons = document.querySelectorAll('.filter-pill');
+    buttons.forEach(b => {
+      b.classList.remove('bg-surface-container-highest', 'text-on-surface');
+      b.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+    });
+    btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
+    btn.classList.add('bg-surface-container-highest', 'text-on-surface');
+
+    const rows = document.querySelectorAll('#secretRows tr');
+    rows.forEach(r => {
+      if (ns === 'all' || r.getAttribute('data-ns') === ns) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  function viewYaml(secretKey, namespace, k8sObj) {
+    const modal = document.getElementById('manifestModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const yamlContent = document.getElementById('yamlContent');
+
+    modalTitle.innerText = `CRD: ${k8sObj} (${namespace})`;
+    yamlContent.textContent = `apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: ${k8sObj}
+  namespace: ${namespace}
+  labels:
+    vault.io/synced: "true"
+    vault.io/security-mesh: "enclave-primary"
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    name: secretvault-cluster-store
+    kind: ClusterSecretStore
+  target:
+    name: ${k8sObj}
+    creationPolicy: Owner
+  data:
+    - secretKey: ${secretKey}
+      remoteRef:
+        key: production/enclave/${namespace}/${secretKey}
+        version: "v1.8"
+        decryptionStrategy: "Hardware-HSM-mTLS"`;
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeYamlModal() {
+    document.getElementById('manifestModal').classList.add('hidden');
+  }
+
+  function copyYaml() {
+    const text = document.getElementById('yamlContent').innerText;
+    navigator.clipboard.writeText(text);
+    triggerNotification('Manifest copied to clipboard.');
+    closeYamlModal();
+  }
+
+  function triggerImmediateReconcile(key) {
+    triggerNotification(`CRD webhook sync queued for: ${key}. Zero drift verified.`);
+  }
+
+  function driftCheck(key) {
+    triggerNotification(`Drift check passed: Enclave HMAC matches in-cluster secret hash for ${key}`);
+  }
+</script></main></div></body></html>
