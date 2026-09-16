@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary": "#ffb4a8",
+          "on-error-container": "#ffdad6",
+          "on-primary": "#303030",
+          "on-primary-fixed": "#1b1b1b",
+          "primary": "#c6c6c6",
+          "secondary-fixed-dim": "#c6c6c7",
+          "error": "#ffb4ab",
+          "surface-container-high": "#5a0023",
+          "outline-variant": "#4c4546",
+          "surface-bright": "#760031",
+          "on-error": "#690005",
+          "surface-tint": "#c6c6c6",
+          "on-surface-variant": "#cfc4c5",
+          "on-tertiary": "#690001",
+          "surface-dim": "#30000f",
+          "secondary-fixed": "#e2e2e2",
+          "inverse-surface": "#ffd9df",
+          "on-tertiary-fixed": "#410000",
+          "on-tertiary-container": "#ec0005",
+          "on-primary-container": "#757575",
+          "background": "#30000f",
+          "inverse-on-surface": "#660029",
+          "surface-container-highest": "#6e002d",
+          "secondary-container": "#454747",
+          "inverse-primary": "#5e5e5e",
+          "primary-fixed-dim": "#c6c6c6",
+          "on-secondary-container": "#b4b5b5",
+          "on-surface": "#ffd9df",
+          "surface-container-low": "#3f0016",
+          "on-secondary": "#2f3131",
+          "outline": "#988e90",
+          "tertiary-fixed": "#ffdad5",
+          "on-secondary-fixed-variant": "#454747",
+          "primary-fixed": "#e2e2e2",
+          "surface-variant": "#6e002d",
+          "surface-container": "#47001a",
+          "on-background": "#ffd9df",
+          "surface": "#30000f",
+          "surface-container-lowest": "#26000b",
+          "tertiary-container": "#000000",
+          "primary-container": "#000000",
+          "on-primary-fixed-variant": "#474747",
+          "secondary": "#c6c6c7",
+          "on-secondary-fixed": "#1a1c1c",
+          "tertiary-fixed-dim": "#ffb4a8",
+          "on-tertiary-fixed-variant": "#930001",
+          "error-container": "#93000a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+          "headline": [
+            "Inter"
+          ],
+          "display": [
+            "Inter"
+          ],
+          "body": [
+            "Inter"
+          ],
+          "label": [
+            "Inter"
+          ]
+        },
+        "fontSize": {}
+      },
+    },
+  }</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full"><div class="h-16 px-5 flex items-center gap-3 bg-surface-container-lowest"><img alt="SecretVault logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U_7Lp6w0lIRR9Aiz2_SdNBjglu6EnHQosJdsfvSGh6NezK4RlrM-CKpwJOX-YU_Yazl-XXzKa6T_dFn3kS0iHo4XtFPmyuGWxxhQmf02tZdFyH17u3Rgti5myIv2pbk-1CpCzAf2MUKl1gWGW3wwPBP2xlW8g1riyfE2etwWJQVoj8eG7lPqec1DvWY6LNoHedIe4YlymS7ba2K1hCBYYsHib-tyxf_FTAodrdxMhE3LDdVRpH49Bv63g"/><span class="text-base font-headline font-bold tracking-wider uppercase text-on-surface">SecretVault</span></div><div class="overflow-y-auto flex-1 px-3 py-4 space-y-6"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">WORKSPACE</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span>Dashboard</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="projects" href="#"><span class="material-symbols-outlined text-[20px]">folder_open</span><span>Projects</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secrets" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span>Secrets</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="integrations" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span>Integrations</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sync-center" href="#"><span class="material-symbols-outlined text-[20px]">sync_alt</span><span>Sync Center</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">SECURITY</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="security-overview" href="#"><span class="material-symbols-outlined text-[20px]">shield</span><span>Security Overview</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="risk-center" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span>Risk Center</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="secret-leaks" href="#"><span class="material-symbols-outlined text-[20px]">policy</span><span>Secret Leaks</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="drift-detection" href="#"><span class="material-symbols-outlined text-[20px]">radar</span><span>Drift Detection</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audit-logs" href="#"><span class="material-symbols-outlined text-[20px]">receipt_long</span><span>Audit Logs</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">AI OPS</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-assistant" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span><span>AI Assistant</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ai-analysis" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>AI Analysis</span></a></nav><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><div class="px-3 pb-2 text-[10px] font-label font-bold tracking-widest uppercase text-on-surface-variant/70">ORGANIZATION</div><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="team" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Team</span></a><a aria-current="page" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-surface-container-high text-on-surface font-semibold" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span>Settings</span></a></nav></div><div class="p-3 bg-surface-container-lowest space-y-1"><nav class="space-y-1" data-active-classes="bg-surface-container-high text-on-surface font-semibold"><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-[20px]">menu_book</span><span>Documentation</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="help-support" href="#"><span class="material-symbols-outlined text-[20px]">support</span><span>Help &amp; Support</span></a><a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="user-profile" href="#"><span class="material-symbols-outlined text-[20px]">account_circle</span><span>User Profile</span></a></nav></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 flex items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-4"><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-tertiary">corporate_fare</span><span>Acme Corp</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface" type="button"><span class="material-symbols-outlined text-sm text-secondary">deployed_code</span><span>API Gateway</span><span class="material-symbols-outlined text-xs text-on-surface-variant">unfold_more</span></button><span class="text-outline text-xs">/</span><div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-[11px] font-bold uppercase tracking-wider text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span>Production</span></div></div><div class="flex items-center gap-4"><button class="flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs text-on-surface-variant" type="button"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">search</span><span>Search resources, secrets, logs...</span></div><kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface-container-lowest text-outline">⌘K</kbd></button><div class="flex items-center gap-2"><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-lg">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span></button><button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-lg">dark_mode</span></button></div><div class="flex items-center gap-3 pl-2"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WJER3sBUcrxSBlcFz_pXvRl9ndhwBZaZn8D8KPipoSS325bnxSg-3LrHp-gpB2bkVTIIzpEanWEdisaLFsPSeV72sgRJbs1gwgys-FUlhEGabkrLvqmBjJgHB3yVfoZxzGrBWkgxE3fPwi8PnjoxWCNpTgK3qHYkfG9YOq4Cet6AYERcxlUFx0BUKr6GGlJPc2VF_qlp9kp8m_PO7yD-q7lBoDG6OfjhPg0khqhFoRek_QMz2tqfTf9Hc"/></div></div></header><main class="relative pt-16 min-h-screen bg-background w-full px-8 pb-12"><div class="flex flex-col w-full space-y-8">
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-on-surface-variant/80">
+<span>SecretVault</span>
+<span class="text-tertiary">/</span>
+<span>Governance</span>
+<span class="text-tertiary">/</span>
+<span class="text-on-surface font-semibold">Access Reviews</span>
+</div>
+<h1 class="text-3xl font-black tracking-tight text-on-surface uppercase font-headline">Access Review Campaigns &amp; Certification</h1>
+<p class="text-sm text-on-surface-variant max-w-3xl">
+        Periodic zero-trust privilege attestation, SOX/SOC-2 compliance certification, and automated entitlement pruning with cryptographic audit manifests.
+      </p>
+</div>
+<div class="flex items-center gap-3 flex-wrap">
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm text-secondary">assignment</span>
+<span>Attestation Reports</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-xs font-semibold text-on-surface shadow-sm" type="button">
+<span class="material-symbols-outlined text-sm text-secondary">file_download</span>
+<span>Audit Export</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary hover:bg-primary-fixed text-on-primary transition-all font-bold text-xs shadow-md" type="button">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span>Create Review Campaign</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-md flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="text-[11px] font-mono tracking-wider text-on-surface-variant uppercase font-bold">Active Campaigns</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-base">fact_check</span>
+</span>
+</div>
+<div class="mt-4 space-y-1">
+<div class="text-3xl font-black font-headline tracking-tight text-on-surface">3 Active</div>
+<div class="flex items-center gap-2 text-xs text-error font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
+<span>1 Due in 48h (Prod Enclaves)</span>
+</div>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-md flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="text-[11px] font-mono tracking-wider text-on-surface-variant uppercase font-bold">Certified Identities</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-secondary">
+<span class="material-symbols-outlined text-base">badge</span>
+</span>
+</div>
+<div class="mt-4 space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-black font-headline tracking-tight text-on-surface">142</span>
+<span class="text-sm font-mono text-on-surface-variant">/ 186 Reviewed</span>
+</div>
+<div class="text-xs text-secondary font-medium">
+          76.3% Completion Rate (On Target)
+        </div>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 76.3%;"></div>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-md flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="text-[11px] font-mono tracking-wider text-on-surface-variant uppercase font-bold">Revocation Rate</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-error">
+<span class="material-symbols-outlined text-base">person_remove</span>
+</span>
+</div>
+<div class="mt-4 space-y-1">
+<div class="text-3xl font-black font-headline tracking-tight text-on-surface">14 Revoked</div>
+<div class="text-xs text-on-surface-variant font-medium">
+          Stale Grants Pruned · Zero Downtime
+        </div>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full" style="width: 24%;"></div>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-5 shadow-md flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<span class="text-[11px] font-mono tracking-wider text-on-surface-variant uppercase font-bold">SOC 2 Compliance</span>
+<span class="p-1.5 rounded-lg bg-surface-container text-tertiary">
+<span class="material-symbols-outlined text-base">verified</span>
+</span>
+</div>
+<div class="mt-4 space-y-1">
+<div class="text-3xl font-black font-headline tracking-tight text-on-surface">100%</div>
+<div class="text-xs text-tertiary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">check_circle</span>
+<span>Q3 Invariant Certified</span>
+</div>
+</div>
+<div class="mt-4 h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+<div class="rounded-xl bg-surface-container-low shadow-xl overflow-hidden">
+<div class="p-5 bg-surface-container flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary"></div>
+<h2 class="text-base font-bold font-headline uppercase tracking-wider text-on-surface">Active Campaign Ledger</h2>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-[11px] font-mono text-tertiary font-semibold">4 Managed</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative">
+<input class="w-64 bg-surface-container-lowest text-xs text-on-surface placeholder:text-on-surface-variant/50 px-3 py-1.5 rounded-lg outline-none focus:ring-1 focus:ring-tertiary" placeholder="Filter campaigns or lead..." type="text"/>
+</div>
+<button class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-bright text-xs font-semibold rounded-lg text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+<span>Filter</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs">
+<thead class="bg-surface-container-lowest text-[10px] uppercase font-mono tracking-widest text-on-surface-variant">
+<tr>
+<th class="py-3.5 px-5 font-semibold">Campaign Name</th>
+<th class="py-3.5 px-4 font-semibold">Scope</th>
+<th class="py-3.5 px-4 font-semibold">Reviewers / Lead</th>
+<th class="py-3.5 px-4 font-semibold">Identities</th>
+<th class="py-3.5 px-4 font-semibold">Due Date</th>
+<th class="py-3.5 px-4 font-semibold min-w-[160px]">Certification Progress</th>
+<th class="py-3.5 px-4 font-semibold">Status</th>
+<th class="py-3.5 px-5 text-right font-semibold">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface">
+<tr class="bg-surface-container-low hover:bg-surface-container/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-lg">shield_lock</span>
+<div class="flex flex-col">
+<span class="font-bold text-sm tracking-tight text-on-surface">Q3 Production Secrets Certification</span>
+<span class="text-[10px] font-mono text-on-surface-variant">ID: CMP-2024-Q3-PROD</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-[11px] font-mono font-medium text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                Production Enclaves
+              </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-on-surface">SR</div>
+<span class="text-xs text-on-surface font-medium">SecOps Lead (@s.rodriguez)</span>
+</div>
+</td>
+<td class="py-4 px-4 font-mono text-xs">
+<span class="font-semibold text-on-surface">18 Users</span>
+<span class="text-on-surface-variant"> &amp; 12 Svcs</span>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col">
+<span class="font-mono text-xs text-error font-bold">Sep 30, 2024</span>
+<span class="text-[10px] text-error font-medium">in 3 days</span>
+</div>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-[11px] font-mono">
+<span class="font-bold text-on-surface">72%</span>
+<span class="text-on-surface-variant">22/30 Certified</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 72%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error-container/40 text-error text-[11px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+                In Progress
+              </span>
+</td>
+<td class="py-4 px-5 text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-bold text-xs tracking-wide transition-colors" type="button">
+                Open Workbench
+              </button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest/40 hover:bg-surface-container/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">folder_shared</span>
+<div class="flex flex-col">
+<span class="font-bold text-sm tracking-tight text-on-surface">Engineering Broad Read Access</span>
+<span class="text-[10px] font-mono text-on-surface-variant">ID: CMP-2024-ENG-READ</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container text-[11px] font-mono font-medium text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                All Projects &amp; Staging
+              </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-on-surface">EM</div>
+<span class="text-xs text-on-surface font-medium">Eng Managers &amp; Leads</span>
+</div>
+</td>
+<td class="py-4 px-4 font-mono text-xs">
+<span class="font-semibold text-on-surface">46 Developers</span>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col">
+<span class="font-mono text-xs text-on-surface">Oct 15, 2024</span>
+<span class="text-[10px] text-on-surface-variant">in 18 days</span>
+</div>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-[11px] font-mono">
+<span class="font-bold text-on-surface">100%</span>
+<span class="text-on-surface-variant">46/46 Certified</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 100%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface text-[11px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                Completed
+              </span>
+</td>
+<td class="py-4 px-5 text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold text-xs tracking-wide transition-colors" type="button">
+                View Manifest
+              </button>
+</td>
+</tr>
+<tr class="bg-surface-container-low hover:bg-surface-container/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-lg">smart_toy</span>
+<div class="flex flex-col">
+<span class="font-bold text-sm tracking-tight text-on-surface">Machine Identity &amp; M2M Token Audit</span>
+<span class="text-[10px] font-mono text-on-surface-variant">ID: CMP-2024-M2M-K8S</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-[11px] font-mono font-medium text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                K8s &amp; CI/CD Runners
+              </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-on-surface">MK</div>
+<span class="text-xs text-on-surface font-medium">Platform Architect (@m.kovacs)</span>
+</div>
+</td>
+<td class="py-4 px-4 font-mono text-xs">
+<span class="font-semibold text-on-surface">34 Machine Creds</span>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col">
+<span class="font-mono text-xs text-on-surface">Oct 05, 2024</span>
+<span class="text-[10px] text-on-surface-variant">in 8 days</span>
+</div>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-[11px] font-mono">
+<span class="font-bold text-on-surface">48%</span>
+<span class="text-on-surface-variant">16/34 Certified</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 48%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error-container/40 text-error text-[11px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+                In Progress
+              </span>
+</td>
+<td class="py-4 px-5 text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-bold text-xs tracking-wide transition-colors" type="button">
+                Open Workbench
+              </button>
+</td>
+</tr>
+<tr class="bg-surface-container-lowest/40 hover:bg-surface-container/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">alarm_on</span>
+<div class="flex flex-col">
+<span class="font-bold text-sm tracking-tight text-on-surface">Emergency JIT Privilege Attestation</span>
+<span class="text-[10px] font-mono text-on-surface-variant">ID: CMP-2024-INC-2048</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container text-[11px] font-mono font-medium text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                Incident INC-2048 Access
+              </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-on-surface">VP</div>
+<span class="text-xs text-on-surface font-medium">VP Engineering</span>
+</div>
+</td>
+<td class="py-4 px-4 font-mono text-xs">
+<span class="font-semibold text-on-surface">4 Responders</span>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col">
+<span class="font-mono text-xs text-on-surface">Sep 28, 2024</span>
+<span class="text-[10px] text-on-surface-variant">Closed</span>
+</div>
+</td>
+<td class="py-4 px-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-[11px] font-mono">
+<span class="font-bold text-on-surface">100%</span>
+<span class="text-on-surface-variant">4/4 Certified</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 100%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface text-[11px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                Completed
+              </span>
+</td>
+<td class="py-4 px-5 text-right">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold text-xs tracking-wide transition-colors" type="button">
+                View Manifest
+              </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<div class="lg:col-span-7 flex flex-col justify-between rounded-xl bg-surface-container-low p-6 shadow-xl space-y-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<span class="text-[10px] font-mono tracking-widest uppercase text-tertiary font-bold">Entitlement Metrics</span>
+<h3 class="text-lg font-bold font-headline text-on-surface">Campaign Certification Progress Breakdown</h3>
+</div>
+<div class="flex items-center gap-2 flex-wrap text-xs">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-tertiary font-medium">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> 108 Approved
+          </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-error font-medium">
+<span class="w-2 h-2 rounded-full bg-error"></span> 14 Revoked
+          </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium">
+<span class="w-2 h-2 rounded-full bg-outline"></span> 44 Pending
+          </span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs font-mono">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">dns</span>
+<span class="font-semibold text-on-surface">Infrastructure Team</span>
+</div>
+<span class="text-on-surface-variant">42 / 48 Evaluated (87.5%)</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-md overflow-hidden flex">
+<div class="bg-tertiary h-full" style="width: 78%;" title="38 Approved"></div>
+<div class="bg-error h-full" style="width: 9%;" title="4 Revoked"></div>
+<div class="bg-surface-container h-full" style="width: 13%;" title="6 Pending"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs font-mono">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">payments</span>
+<span class="font-semibold text-on-surface">Payments &amp; Ledger</span>
+</div>
+<span class="text-on-surface-variant">28 / 28 Evaluated (100%)</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-md overflow-hidden flex">
+<div class="bg-tertiary h-full" style="width: 82%;" title="23 Approved"></div>
+<div class="bg-error h-full" style="width: 18%;" title="5 Revoked"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs font-mono">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">hub</span>
+<span class="font-semibold text-on-surface">Core Platform</span>
+</div>
+<span class="text-on-surface-variant">46 / 64 Evaluated (71.8%)</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-md overflow-hidden flex">
+<div class="bg-tertiary h-full" style="width: 65%;" title="42 Approved"></div>
+<div class="bg-error h-full" style="width: 7%;" title="4 Revoked"></div>
+<div class="bg-surface-container h-full" style="width: 28%;" title="18 Pending"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs font-mono">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">memory</span>
+<span class="font-semibold text-on-surface">Machine Agents &amp; Runners</span>
+</div>
+<span class="text-on-surface-variant">26 / 46 Evaluated (56.5%)</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-md overflow-hidden flex">
+<div class="bg-tertiary h-full" style="width: 54%;" title="25 Approved"></div>
+<div class="bg-error h-full" style="width: 2%;" title="1 Revoked"></div>
+<div class="bg-surface-container h-full" style="width: 44%;" title="20 Pending"></div>
+</div>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-2xl">auto_delete</span>
+<div class="text-xs">
+<div class="font-bold text-on-surface">Automated Entitlement Pruning</div>
+<div class="text-on-surface-variant text-[11px]">Uncertified privileges automatically revoke at campaign termination.</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container-highest text-tertiary text-xs font-mono font-bold">Active Safe-Mode</span>
+</div>
+</div>
+<div class="lg:col-span-5 rounded-xl bg-surface-container-low p-6 shadow-xl flex flex-col justify-between space-y-6">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-mono tracking-widest uppercase text-tertiary font-bold">Quick Spec Drawer</span>
+</div>
+<h3 class="text-lg font-bold font-headline text-on-surface">Initiate Privilege Attestation</h3>
+<p class="text-xs text-on-surface-variant">Define zero-trust parameters and trigger recertification workflows.</p>
+</div>
+<div class="space-y-4 text-xs">
+<div class="space-y-1.5">
+<label class="font-mono text-[11px] text-on-surface-variant uppercase font-semibold">Campaign Title</label>
+<input class="w-full bg-surface-container text-on-surface px-3 py-2 rounded-lg outline-none font-medium focus:ring-1 focus:ring-tertiary" type="text" value="Q4 Zero-Trust Enclave Recertification"/>
+</div>
+<div class="space-y-1.5">
+<label class="font-mono text-[11px] text-on-surface-variant uppercase font-semibold">Target Scope</label>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-tertiary text-[11px] font-mono">
+<span>Production Enclave</span>
+<span class="material-symbols-outlined text-xs cursor-pointer hover:text-white">close</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-tertiary text-[11px] font-mono">
+<span>KMS Keyrings</span>
+<span class="material-symbols-outlined text-xs cursor-pointer hover:text-white">close</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-high text-tertiary text-[11px] font-mono">
+<span>JIT Roles</span>
+<span class="material-symbols-outlined text-xs cursor-pointer hover:text-white">close</span>
+</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="font-mono text-[11px] text-on-surface-variant uppercase font-semibold">Review Cadence</label>
+<div class="grid grid-cols-3 gap-2">
+<label class="flex items-center justify-center p-2 rounded-lg bg-surface-container-high text-on-surface font-semibold text-[11px] cursor-pointer">
+<input checked="" class="sr-only" name="cadence" type="radio"/>
+<span>Quarterly (SOX)</span>
+</label>
+<label class="flex items-center justify-center p-2 rounded-lg bg-surface-container text-on-surface-variant font-semibold text-[11px] cursor-pointer hover:bg-surface-container-high">
+<input class="sr-only" name="cadence" type="radio"/>
+<span>Bi-Annual</span>
+</label>
+<label class="flex items-center justify-center p-2 rounded-lg bg-surface-container text-on-surface-variant font-semibold text-[11px] cursor-pointer hover:bg-surface-container-high">
+<input class="sr-only" name="cadence" type="radio"/>
+<span>Ad-Hoc</span>
+</label>
+</div>
+</div>
+<div class="space-y-2 pt-1">
+<label class="font-mono text-[11px] text-on-surface-variant uppercase font-semibold">Policy Invariants</label>
+<div class="space-y-2">
+<label class="flex items-start gap-2.5 text-[11px] text-on-surface cursor-pointer">
+<input checked="" class="mt-0.5 rounded bg-surface-container text-tertiary accent-tertiary" type="checkbox"/>
+<span>Require explicit justification for access re-approval</span>
+</label>
+<label class="flex items-start gap-2.5 text-[11px] text-on-surface cursor-pointer">
+<input checked="" class="mt-0.5 rounded bg-surface-container text-tertiary accent-tertiary" type="checkbox"/>
+<span>Auto-revoke uncertified grants after 14-day grace period</span>
+</label>
+<label class="flex items-start gap-2.5 text-[11px] text-on-surface cursor-pointer">
+<input checked="" class="mt-0.5 rounded bg-surface-container text-tertiary accent-tertiary" type="checkbox"/>
+<span>Enforce cryptographic WebAuthn signoff on final cert bundle</span>
+</label>
+</div>
+</div>
+</div>
+<button class="w-full py-3 rounded-lg bg-primary hover:bg-primary-fixed text-on-primary font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md" type="button">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+<span>Launch Campaign Workflow</span>
+</button>
+</div>
+</div>
+</div></main></div></body></html>
