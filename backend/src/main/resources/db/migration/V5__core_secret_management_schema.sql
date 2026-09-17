@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS secret_versions (
 CREATE INDEX IF NOT EXISTS idx_secret_versions_secret_id ON secret_versions(secret_id);
 CREATE INDEX IF NOT EXISTS idx_secret_versions_secret_ver ON secret_versions(secret_id, version_number);
 
--- 3. Audit Logs Table (Append-Only Non-Repudiable Security Audit Trail)
+-- 3. Audit Logs Table (Append-Only Security Audit Trail)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID,

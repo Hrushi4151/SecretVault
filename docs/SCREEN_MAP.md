@@ -28,7 +28,7 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 16 | Secret Details | Secret Engine | Metadata, tags, version summary | `GET /secrets/{id}` | Audited metadata access | `secret` | NOT STARTED |
 | 17 | Secret Reveal | Secret Engine | Protected reveal modal/flow | `POST /secrets/{id}/reveal` | `secret.reveal` permission + MFA | `secret` | NOT STARTED |
 | 18 | Secret Versions | Secret Engine | Immutable version history table | `GET /secrets/{id}/versions` | Immutable history; no plaintexts | `secret` | NOT STARTED |
-| 19 | Secret Activity | Secret Engine | Audit log timeline for a secret | `GET /secrets/{id}/activity` | Non-repudiable audit events | `audit` | NOT STARTED |
+| 19 | Secret Activity | Secret Engine | Audit log timeline for a secret | `GET /secrets/{id}/activity` | Append-only audit events | `audit` | NOT STARTED |
 | 20 | Integration Marketplace | Integrations | Catalog of supported providers | `GET /integrations/catalog` | Metadata catalog | `integration` | NOT STARTED |
 | 21 | Connect Provider | Integrations | Provider setup wizard | `POST /integrations/connect` | Encrypted provider token storage | `integration` | NOT STARTED |
 | 22 | Provider Details | Integrations | Connection health and configs | `GET /integrations/{id}` | Admin permission required | `integration` | NOT STARTED |
@@ -97,7 +97,7 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 85 | Kubernetes Cluster Details | Infrastructure | Namespace mappings & operator | `GET /infrastructure/kubernetes/{id}` | Cluster health probe | `deployment` | NOT STARTED |
 | 86 | Blast Radius | Security | Compromise impact predictor | `GET /security/blast-radius` | Graph traversal (no secrets) | `security` | NOT STARTED |
 | 87 | Secret Dependency Graph | Security | Visual interactive node graph | `GET /security/graph` | Metadata relationship graph | `security` | NOT STARTED |
-| 88 | Security Incident | Security | Active incident forensics | `GET /security/incidents/{id}` | Non-repudiable timeline | `security` | NOT STARTED |
+| 88 | Security Incident | Security | Active incident forensics | `GET /security/incidents/{id}` | Audited incident timeline | `security` | NOT STARTED |
 | 89 | Security Policies | Security | Zero-trust guardrail policies | `GET /security/policies` | Invariant enforcement | `security` | NOT STARTED |
 | 90 | Policy Details | Security | Edit specific guardrail rule | `PUT /security/policies/{id}` | Strict policy validation | `security` | NOT STARTED |
 | 91 | Slack Integration | Integrations | Alert & approval dispatcher | `POST /integrations/slack` | Webhook signature verification | `integration` | NOT STARTED |
@@ -129,7 +129,7 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 117 | IP Allowlist Center | Security | CIDR network rules workbench | `GET /security/ip-allowlists` | CIDR validation | `security` | NOT STARTED |
 | 118 | Threat Protection | Security | Threat intelligence timeline | `GET /security/threats` | Anomaly alert feeds | `security` | NOT STARTED |
 | 119 | Access Review Campaign | Security | Certification campaign manager | `POST /access/reviews/campaigns`| Governance assignment | `access` | NOT STARTED |
-| 120 | Access Review Details | Security | Certification workbench | `POST /access/reviews/certify` | Non-repudiable signoff | `access` | NOT STARTED |
+| 120 | Access Review Details | Security | Certification workbench | `POST /access/reviews/certify` | Audited governance signoff | `access` | NOT STARTED |
 | 121 | Secret Rotation Wizard | Rotation | Guided rotation walkthrough | `POST /rotation/wizard` | Provider verification step | `secret` | NOT STARTED |
 | 122 | Rotation Schedule | Rotation | Calendar view of rotations | `GET /rotation/schedules` | Expiration forecast | `secret` | NOT STARTED |
 | 123 | Runtime App Setup | Developer | In-memory SDK hydration wizard | `POST /runtime/applications/setup` | Token generation | `runtime` | NOT STARTED |

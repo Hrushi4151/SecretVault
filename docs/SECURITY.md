@@ -6,7 +6,7 @@
 |---|---|---|
 | **Spoofing** | Forged user or machine identity token | Cryptographically signed JWT tokens with short TTLs; OIDC workload federation with issuer validation; MFA/WebAuthn for administrative actions. |
 | **Tampering** | Modifying ciphertext or database records directly | AES-256-GCM authenticated encryption with 128-bit auth tags (AEAD); HMAC integrity checks on audit records. |
-| **Repudiation** | Actor denies creating, deleting, or revealing a secret | Non-repudiable, append-only `audit_logs` storing actor identity, timestamp, IP, request ID, and action outcome. |
+| **Repudiation** | Actor denies creating, deleting, or revealing a secret | Append-only `audit_logs` storing actor identity, timestamp, IP, request ID, and action outcome. |
 | **Information Disclosure** | Secret leaks via database dump, logs, APM, or errors | Envelope encryption (AES-256-GCM); zero plaintext stored in PostgreSQL; `GlobalExceptionHandler` sanitizes errors; log scrubbers strip sensitive headers. |
 | **Denial of Service** | Flooding reveal or sync endpoints | Redis sliding-window rate limiting; async worker queue isolation for heavy sync jobs; connection pooling. |
 | **Elevation of Privilege** | Cross-tenant IDOR or role tampering | Multi-tenant tenant verification at repository and service layer; granular RBAC checks; JIT time-bound access. |
@@ -73,7 +73,7 @@ $$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} 
 - **Default Masked State:** Standard secret retrieval endpoints (`GET /secrets`, `GET /secrets/{id}`) and listing tables return only sanitized metadata (`SecretMetadataResponse`). Plaintext values are completely absent.
 - **Explicit In-Memory Decryption:** Decryption occurs strictly upon an explicit `POST /api/v1/.../secrets/{id}/reveal` request. The plaintext is decrypted transiently in JVM memory and immediately handed to the client response.
 - **Anti-Caching HTTP Headers:** Reveal responses include `Cache-Control: no-store, no-cache, must-revalidate, private` and `Pragma: no-cache` headers, preventing intermediate proxies, CDNs, or browser disk caches from recording plaintext.
-- **Non-Repudiable Audit Ledger:** Every reveal event generates an immutable `SECRET_REVEALED` row in `audit_logs` capturing actor identity, workspace, IP address, request ID, and timestamp.
+- **Append-Only Audit Trail:** Every reveal event generates an immutable `SECRET_REVEALED` row in `audit_logs` capturing actor identity, workspace, IP address, request ID, and timestamp.
 - **Zero Leakage Invariant:** Plaintext secrets, raw DEKs, and unencrypted master keys are NEVER transmitted in:
   - HTTP URLs or query parameters
   - Browser console logs, localStorage, or sessionStorage

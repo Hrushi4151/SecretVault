@@ -48,7 +48,7 @@ import java.util.UUID;
 /**
  * Core Secret Management Engine providing multi-tenant hierarchical authorization,
  * envelope encryption lifecycle, immutable versioning, in-memory explicit reveal,
- * soft deletion, and non-repudiable audit logging.
+ * soft deletion, and append-only audit logging.
  */
 @Service
 public class SecretService {
@@ -316,7 +316,8 @@ public class SecretService {
     ) {
         WorkspaceContext context = verifyHierarchyAndWriteAccess(workspaceId, projectId, environmentId, userId);
 
-        Secret secret = secretRepository.findByIdAndEnvironmentId(secretId, environmentId)
+        // Lock Secret row for pessimistic concurrency control during version mutation
+        Secret secret = secretRepository.findByIdAndEnvironmentIdForUpdate(secretId, environmentId)
                 .orElseThrow(() -> ApiException.notFound("Secret not found in this environment"));
 
         if (secret.getStatus() == SecretStatus.DELETED) {
@@ -427,6 +428,10 @@ public class SecretService {
             throw ApiException.badRequest("Cannot reveal a deleted secret");
         }
 
+        if (secret.getStatus() == SecretStatus.DISABLED) {
+            throw ApiException.badRequest("Cannot reveal a disabled secret. Please enable the secret first.");
+        }
+
         int targetVersion = (versionNumber != null && versionNumber > 0)
                 ? versionNumber
                 : secret.getCurrentVersionNumber();
@@ -450,7 +455,7 @@ public class SecretService {
         // Memory zeroization of temporary byte array
         Arrays.fill(plaintextBytes, (byte) 0);
 
-        // 2. Emit non-repudiable audit event
+        // 2. Emit audit event
         auditService.recordSecretAudit(
                 context.workspace().getOrganizationId(),
                 workspaceId,
@@ -476,7 +481,7 @@ public class SecretService {
     }
 
     /**
-     * Soft-deletes a secret by setting status to DELETED.
+     * Soft-deletes a secret by setting status to DELETED and releasing the unique name constraint.
      */
     @Transactional
     public void deleteSecret(
@@ -493,6 +498,15 @@ public class SecretService {
         Secret secret = secretRepository.findByIdAndEnvironmentId(secretId, environmentId)
                 .orElseThrow(() -> ApiException.notFound("Secret not found in this environment"));
 
+        if (secret.getStatus() == SecretStatus.DELETED) {
+            return; // Idempotent deletion
+        }
+
+        // Tombstone name upon soft deletion to unblock creating a new independent secret with the same name
+        String tombstoneSuffix = "#DELETED#" + secret.getId().toString().substring(0, 8);
+        int maxBaseLength = 255 - tombstoneSuffix.length();
+        String baseName = secret.getName().length() > maxBaseLength ? secret.getName().substring(0, maxBaseLength) : secret.getName();
+        secret.setName(baseName + tombstoneSuffix);
         secret.setStatus(SecretStatus.DELETED);
         secretRepository.save(secret);
 

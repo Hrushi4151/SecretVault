@@ -150,7 +150,7 @@ In multi-tenant secret management, ciphertext swapping attacks (where an attacke
 ### Decision:
 1. **AAD Context Binding:** Every AES-256-GCM encryption operation cryptographically binds Authenticated Additional Data formatted as `secretId:environmentId:versionNumber`. Any attempt to decrypt ciphertext in a different secret, environment, or version fails AEAD authentication immediately (`SECRET_DECRYPTION_FAILED`).
 2. **Immutable Version Ledger:** Secret values are never mutated in place. Every value update generates a fresh random 256-bit DEK and 96-bit IV, creates an immutable row in `secret_versions`, and atomically advances the `current_version_number` pointer on the parent `secrets` record.
-3. **Zero-Plaintext Default & Explicit Reveal:** All standard REST endpoints return only sanitized metadata (`SecretMetadataResponse`). Decryption occurs strictly on-demand via `POST /reveal` with HTTP `Cache-Control: no-store, no-cache` headers and non-repudiable audit logging.
+3. **Zero-Plaintext Default & Explicit Reveal:** All standard REST endpoints return only sanitized metadata (`SecretMetadataResponse`). Decryption occurs strictly on-demand via `POST /reveal` with HTTP `Cache-Control: no-store, no-cache` headers and append-only audit logging.
 
 ### Consequences:
 - **Positive:** Complete immunity against cross-tenant or cross-environment ciphertext replay/transplantation; total audit traceability; zero risk of stale HTTP cache leaks.

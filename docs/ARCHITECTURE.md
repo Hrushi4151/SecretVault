@@ -138,7 +138,7 @@ Organization (Global Tenant Container)
 | `secret` | Secret CRUD, immutable versioning, masking, rollback, batch import | Member 1 | 🟢 IMPLEMENTED |
 | `encryption` | AES-256-GCM envelope encryption, DEK generation, AAD context binding, KMS/HSM integration | Member 1 | 🟢 IMPLEMENTED |
 | `access` | Granular RBAC, JIT access requests, approval workflows, access review campaigns | Member 1 | 🟢 IMPLEMENTED (RBAC Scope) |
-| `audit` | Non-repudiable audit ledger, event emission, compliance logs | Member 1 | 🟢 IMPLEMENTED |
+| `audit` | Append-only audit ledger, event emission, compliance logs | Member 1 | 🟢 IMPLEMENTED |
 | `security` | Risk Center, secret leak scanner, blast radius graph, security policies | Member 1 | ⚪ PLANNED |
 | `integration` | Provider connection credentials, platform mapping definitions | Member 2 | ⚪ PLANNED |
 | `provider` | `SecretProvider` SPI and adapters (AWS, Vercel, Railway, GitHub, K8s) | Member 2 | ⚪ PLANNED |

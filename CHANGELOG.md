@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bulk `.env` import API (`POST /api/v1/.../secrets/batch-import`) with key validation, comments parsing, and optional overwrite toggle.
 - **Append-Only Tamper-Evident Audit Logging (`com.secretvault.audit`)**:
   - `AuditLog` entity, `AuditAction` (`SECRET_CREATED`, `SECRET_REVEALED`, `SECRET_VALUE_UPDATED`, `SECRET_DELETED`), and `AuditService`.
-  - Records non-repudiable logs with actor ID, workspace ID, client IP, request ID, and timestamp without sensitive plaintext leakage.
+  - Records append-only logs with actor ID, workspace ID, client IP, request ID, and timestamp without sensitive plaintext leakage.
 - **Database Schema & Migrations**:
   - Flyway migration `V5__core_secret_management_schema.sql` creating `secrets`, `secret_versions`, and `audit_logs` tables with UUID PKs, composite indexes, and unique constraints.
 - **Frontend Control Plane (React 18 / Vite / Tailwind CSS / JSX)**:

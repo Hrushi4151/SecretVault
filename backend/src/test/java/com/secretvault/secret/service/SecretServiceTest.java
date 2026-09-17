@@ -263,7 +263,7 @@ class SecretServiceTest {
         mockValidHierarchy(WorkspaceRole.DEVELOPER);
         when(projectAccessRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.empty());
         when(environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)).thenReturn(Optional.empty());
-        when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
+        when(secretRepository.findByIdAndEnvironmentIdForUpdate(secretId, environmentId)).thenReturn(Optional.of(secret));
         when(secretRepository.save(any(Secret.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UpdateSecretRequest request = new UpdateSecretRequest("Updated description", SecretStatus.DISABLED, null, null);
@@ -289,7 +289,7 @@ class SecretServiceTest {
         mockValidHierarchy(WorkspaceRole.DEVELOPER);
         when(projectAccessRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.empty());
         when(environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)).thenReturn(Optional.empty());
-        when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
+        when(secretRepository.findByIdAndEnvironmentIdForUpdate(secretId, environmentId)).thenReturn(Optional.of(secret));
         when(secretRepository.save(any(Secret.class))).thenAnswer(inv -> inv.getArgument(0));
 
         EncryptedPayload mockPayload = new EncryptedPayload(
@@ -354,6 +354,19 @@ class SecretServiceTest {
     }
 
     @Test
+    @DisplayName("Should reject reveal on a DISABLED secret")
+    void testRevealDisabledSecret() {
+        mockValidHierarchy(WorkspaceRole.DEVELOPER);
+        secret.setStatus(SecretStatus.DISABLED);
+        when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                secretService.revealSecret(workspaceId, projectId, environmentId, secretId, null, userId, "req-6", "127.0.0.1"));
+        assertEquals("BAD_REQUEST", ex.getCode());
+        assertTrue(ex.getMessage().contains("disabled"));
+    }
+
+    @Test
     @DisplayName("Should reject reveal on a DELETED secret")
     void testRevealDeletedSecret() {
         mockValidHierarchy(WorkspaceRole.DEVELOPER);
@@ -363,23 +376,88 @@ class SecretServiceTest {
         ApiException ex = assertThrows(ApiException.class, () ->
                 secretService.revealSecret(workspaceId, projectId, environmentId, secretId, null, userId, "req-6", "127.0.0.1"));
         assertEquals("BAD_REQUEST", ex.getCode());
+        assertTrue(ex.getMessage().contains("deleted"));
     }
 
     @Test
-    @DisplayName("Should soft-delete a secret and emit SECRET_DELETED audit log")
+    @DisplayName("Should reject update on a DELETED secret")
+    void testUpdateDeletedSecret() {
+        mockValidHierarchy(WorkspaceRole.DEVELOPER);
+        when(projectAccessRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.empty());
+        when(environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)).thenReturn(Optional.empty());
+        secret.setStatus(SecretStatus.DELETED);
+        when(secretRepository.findByIdAndEnvironmentIdForUpdate(secretId, environmentId)).thenReturn(Optional.of(secret));
+
+        UpdateSecretRequest req = new UpdateSecretRequest("desc", null, "val", "reason");
+        ApiException ex = assertThrows(ApiException.class, () ->
+                secretService.updateSecret(workspaceId, projectId, environmentId, secretId, req, userId, "req-7", "127.0.0.1"));
+        assertEquals("BAD_REQUEST", ex.getCode());
+        assertTrue(ex.getMessage().contains("deleted"));
+    }
+
+    @Test
+    @DisplayName("Should soft-delete secret with tombstoned name and emit SECRET_DELETED audit log")
     void testDeleteSecretSuccess() {
         mockValidHierarchy(WorkspaceRole.ADMIN);
         when(projectAccessRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.empty());
         when(environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)).thenReturn(Optional.empty());
         when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
 
-        secretService.deleteSecret(workspaceId, projectId, environmentId, secretId, userId, "req-7", "127.0.0.1");
+        secretService.deleteSecret(workspaceId, projectId, environmentId, secretId, userId, "req-8", "127.0.0.1");
 
         assertEquals(SecretStatus.DELETED, secret.getStatus());
+        assertTrue(secret.getName().contains("#DELETED#"));
         verify(secretRepository).save(secret);
         verify(auditService).recordSecretAudit(
                 eq(orgId), eq(workspaceId), eq(userId), eq(AuditAction.SECRET_DELETED),
-                eq(secretId), eq("req-7"), eq("127.0.0.1"), eq("SUCCESS")
+                eq(secretId), eq("req-8"), eq("127.0.0.1"), eq("SUCCESS")
         );
+    }
+
+    @Test
+    @DisplayName("Should verify delete and recreate creates an independent secret without version bleed")
+    void testDeleteAndRecreateIndependence() {
+        mockValidHierarchy(WorkspaceRole.DEVELOPER);
+        when(projectAccessRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.empty());
+        when(environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)).thenReturn(Optional.empty());
+
+        // Step 1: Delete original secret S1
+        when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
+        secretService.deleteSecret(workspaceId, projectId, environmentId, secretId, userId, "req-del", "127.0.0.1");
+        assertEquals(SecretStatus.DELETED, secret.getStatus());
+        assertTrue(secret.getName().startsWith("STRIPE_API_KEY#DELETED#"));
+
+        // Step 2: Now create fresh secret S2 with original name "STRIPE_API_KEY"
+        UUID newSecretId = UUID.randomUUID();
+        when(secretRepository.existsByEnvironmentIdAndName(environmentId, "STRIPE_API_KEY")).thenReturn(false);
+        when(secretRepository.save(any(Secret.class))).thenAnswer(inv -> {
+            Secret s = inv.getArgument(0);
+            try {
+                var idField = Secret.class.getDeclaredField("id");
+                idField.setAccessible(true);
+                idField.set(s, newSecretId);
+            } catch (Exception ignored) {
+            }
+            return s;
+        });
+
+        EncryptedPayload mockPayload = new EncryptedPayload(
+                "new_cipher".getBytes(StandardCharsets.UTF_8),
+                "new_dek".getBytes(StandardCharsets.UTF_8),
+                new byte[12],
+                new byte[16],
+                "mock-primary-kek"
+        );
+        when(encryptionService.encrypt(any(byte[].class), anyString())).thenReturn(mockPayload);
+
+        CreateSecretRequest createReq = new CreateSecretRequest("STRIPE_API_KEY", "new_fresh_value", "Fresh key");
+        SecretMetadataResponse created = secretService.createSecret(
+                workspaceId, projectId, environmentId, createReq, userId, "req-create", "127.0.0.1"
+        );
+
+        assertNotNull(created);
+        assertEquals("STRIPE_API_KEY", created.name());
+        assertEquals(1, created.currentVersionNumber()); // Fresh v1, no inheritance from S1
+        assertEquals(SecretStatus.ACTIVE, created.status());
     }
 }
