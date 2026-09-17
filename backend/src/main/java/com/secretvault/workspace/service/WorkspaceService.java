@@ -176,6 +176,142 @@ public class WorkspaceService {
         return responses;
     }
 
+    /**
+     * Updates an existing member's workspace role.
+     * Prevents demoting the last remaining OWNER of the workspace.
+     */
+    @Transactional
+    public MemberResponse updateMemberRole(UUID workspaceId, UUID targetUserId, WorkspaceRole newRole, UUID actorUserId) {
+        WorkspaceMembership actorMembership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, actorUserId)
+                .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
+
+        if (!actorMembership.getRole().canManageWorkspace()) {
+            throw ApiException.forbidden("Only OWNER or ADMIN can change member roles");
+        }
+
+        WorkspaceMembership targetMembership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
+                .orElseThrow(() -> ApiException.notFound("Member not found in this workspace"));
+
+        // Safeguard: Cannot demote the last remaining OWNER
+        if (targetMembership.getRole() == WorkspaceRole.OWNER && newRole != WorkspaceRole.OWNER) {
+            long ownerCount = membershipRepository.findByWorkspaceId(workspaceId).stream()
+                    .filter(m -> m.getRole() == WorkspaceRole.OWNER)
+                    .count();
+            if (ownerCount <= 1) {
+                throw ApiException.badRequest("Cannot demote the last remaining OWNER of the workspace");
+            }
+        }
+
+        targetMembership.setRole(newRole);
+        targetMembership = membershipRepository.save(targetMembership);
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> ApiException.notFound("User not found"));
+
+        log.info("Updated role of user [{}] to [{}] in workspace [{}] by actor [{}]",
+                targetUserId, newRole, workspaceId, actorUserId);
+
+        return new MemberResponse(
+                targetMembership.getId(),
+                targetUser.getId(),
+                targetUser.getEmail(),
+                targetUser.getFullName(),
+                targetMembership.getRole(),
+                targetMembership.getCreatedAt()
+        );
+    }
+
+    /**
+     * Removes a member from the workspace or allows a member to self-remove (leave).
+     * Prevents removing the last remaining OWNER of the workspace.
+     */
+    @Transactional
+    public void removeMember(UUID workspaceId, UUID targetUserId, UUID actorUserId) {
+        WorkspaceMembership actorMembership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, actorUserId)
+                .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
+
+        boolean isSelfRemoval = actorUserId.equals(targetUserId);
+
+        if (!isSelfRemoval && !actorMembership.getRole().canManageWorkspace()) {
+            throw ApiException.forbidden("Only OWNER or ADMIN can remove other members from this workspace");
+        }
+
+        WorkspaceMembership targetMembership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
+                .orElseThrow(() -> ApiException.notFound("Member not found in this workspace"));
+
+        // Safeguard: Cannot remove the last remaining OWNER
+        if (targetMembership.getRole() == WorkspaceRole.OWNER) {
+            long ownerCount = membershipRepository.findByWorkspaceId(workspaceId).stream()
+                    .filter(m -> m.getRole() == WorkspaceRole.OWNER)
+                    .count();
+            if (ownerCount <= 1) {
+                throw ApiException.badRequest("Cannot remove the last remaining OWNER. Please transfer ownership first.");
+            }
+        }
+
+        membershipRepository.delete(targetMembership);
+
+        log.info("Removed member [{}] from workspace [{}] by actor [{}] (self-removal: {})",
+                targetUserId, workspaceId, actorUserId, isSelfRemoval);
+    }
+
+    /**
+     * Retrieves workspace configuration and governance settings.
+     */
+    @Transactional(readOnly = true)
+    public com.secretvault.workspace.dto.WorkspaceSettingsResponse getWorkspaceSettings(UUID workspaceId, UUID actorUserId) {
+        if (!membershipRepository.existsByWorkspaceIdAndUserId(workspaceId, actorUserId)) {
+            throw ApiException.forbidden("You are not a member of this workspace");
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> ApiException.notFound("Workspace not found"));
+
+        return new com.secretvault.workspace.dto.WorkspaceSettingsResponse(
+                workspace.getId(),
+                workspace.getName(),
+                workspace.getSlug(),
+                "ALL_MEMBERS",
+                "ADMIN_ONLY",
+                true
+        );
+    }
+
+    /**
+     * Updates workspace settings and display metadata.
+     */
+    @Transactional
+    public com.secretvault.workspace.dto.WorkspaceSettingsResponse updateWorkspaceSettings(
+            UUID workspaceId,
+            com.secretvault.workspace.dto.UpdateWorkspaceSettingsRequest request,
+            UUID actorUserId) {
+        WorkspaceMembership actorMembership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, actorUserId)
+                .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
+
+        if (!actorMembership.getRole().canManageWorkspace()) {
+            throw ApiException.forbidden("Only OWNER or ADMIN can modify workspace settings");
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> ApiException.notFound("Workspace not found"));
+
+        if (StringUtils.hasText(request.name())) {
+            workspace.setName(request.name().trim());
+            workspace = workspaceRepository.save(workspace);
+        }
+
+        log.info("Updated workspace settings for [{}] by actor [{}]", workspaceId, actorUserId);
+
+        return new com.secretvault.workspace.dto.WorkspaceSettingsResponse(
+                workspace.getId(),
+                workspace.getName(),
+                workspace.getSlug(),
+                request.projectCreationPolicy() != null ? request.projectCreationPolicy() : "ALL_MEMBERS",
+                request.environmentCreationPolicy() != null ? request.environmentCreationPolicy() : "ADMIN_ONLY",
+                request.productionProtectionEnforced() != null ? request.productionProtectionEnforced() : true
+        );
+    }
+
     private String generateSlug(String input) {
         String slug = input.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9\\s-]", "")

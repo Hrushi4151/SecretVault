@@ -32,4 +32,30 @@ export const environmentApi = {
       method: 'DELETE',
     });
   },
+
+  listAccess: async (workspaceId, projectId, environmentId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/access`, {
+      method: 'GET',
+    });
+  },
+
+  grantAccess: async (workspaceId, projectId, environmentId, payload) => {
+    return apiClient.request(`/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/access`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateAccess: async (workspaceId, projectId, environmentId, userId, payload) => {
+    return apiClient.request(`/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/access/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  removeAccess: async (workspaceId, projectId, environmentId, userId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/access/${userId}`, {
+      method: 'DELETE',
+    });
+  },
 };

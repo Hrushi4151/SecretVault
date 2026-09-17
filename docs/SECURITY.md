@@ -13,46 +13,46 @@
 
 ---
 
-## 2. Multi-Tenant Authorization & RBAC
+## 2. Multi-Tier Authorization & Access Scoping (Role $\neq$ Scope) [IMPLEMENTED]
 
 ```text
 Identity (User / Service Account / OIDC Workload)
   └── Organization Membership Verification
-        └── Workspace Access Check
-              └── Project Access Check
-                    └── Environment Scope (Dev, Staging, Prod)
-                          └── Role & Granular Permission Check
+        └── Workspace Membership Check (OWNER | ADMIN | DEVELOPER | VIEWER)
+              └── Project Access Scope (ProjectAccess Grant)
+                    └── Environment Access Scope (EnvironmentAccess Grant: READ | WRITE | MANAGE)
+                          └── Effective Permission Evaluation
 ```
 
-### Initial Organization Roles & Phase 2 Capabilities:
+### Effective Permission Invariant:
+$$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope} \cap \text{Security Policies}$$
+
+- **Child Scopes Restrict Privilege:** A child grant (ProjectAccess or EnvironmentAccess) may narrow down capabilities (e.g. restrict a workspace DEVELOPER to READ in Production).
+- **Elevation Prevented:** A child grant can never elevate permissions beyond the parent workspace role (e.g. a VIEWER cannot write in Production even if an environment record says WRITE).
+
+### Workspace Roles & Capabilities:
 - **OWNER:** Full account, billing, security policy, workspace/project/environment lifecycle control (`canManageWorkspace()`, `canCreateProjects()`, `canManageProjects()`, `canManageEnvironments()`, `canWriteSecrets()`).
 - **ADMIN:** Workspace administration, project/environment management, team invitations, and policy configuration (`canManageWorkspace()`, `canCreateProjects()`, `canManageProjects()`, `canManageEnvironments()`, `canWriteSecrets()`).
 - **DEVELOPER:** Can create projects and manage secrets in allowed environments (`canCreateProjects()`, `canWriteSecrets()`). Read-only access to workspaces and projects; cannot delete projects or create/delete custom environments.
 - **VIEWER:** Strict read-only access to workspaces, projects, environments, and secret metadata (`canReadSecrets()`). Cannot mutate projects, environments, or secrets.
 
-### Granular Permissions:
-- `project.read` — View projects and their environment summaries.
-- `project.create` — Provision new projects with default environments (`development`, `staging`, `production`).
-- `project.update` / `project.delete` — Modify or delete projects (OWNER / ADMIN only).
-- `environment.read` — View environment lists and configuration details.
-- `environment.create` / `environment.update` / `environment.delete` — Manage custom environment tiers and protection status (OWNER / ADMIN only).
-- `secret.read` — View secret names, descriptions, tags, and sync status.
-- `secret.reveal` — Decrypt and view plaintext secret material.
-- `secret.create` / `secret.update` / `secret.delete` — Modify secrets.
-- `secret.rotate` — Execute manual or scheduled rotation.
-- `integration.manage` — Connect/disconnect infrastructure providers.
-- `sync.execute` — Trigger synchronization jobs.
-- `audit.read` — Inspect immutable audit logs.
-- `security.manage` — Configure policies, JIT settings, and IP allowlists.
-
-### Hierarchical Authorization & Anti-Mass-Assignment Invariants:
-1. **Server-Side Authoritative Authorization:** Frontend claims of role, tenant, or membership are never trusted. All access decisions evaluate the database-backed `WorkspaceMembership`.
-2. **Anti-Mass-Assignment:** Request DTOs strictly limit modifiable fields to `name`, `slug`, `description`, `envType`, `isProtected`, and `status`. Critical fields (`id`, `workspaceId`, `projectId`, `createdBy`, `createdAt`) are exclusively generated and assigned server-side.
-3. **Cross-Tenant IDOR Guard:** All database lookups for projects and environments enforce `findByIdAndWorkspaceId` and `findByIdAndProjectId`. Querying a resource under a mismatched parent ID returns `404 RESOURCE_NOT_FOUND`.
+### Last Owner Safeguard:
+- A workspace must never be left ownerless.
+- Demoting (`updateMemberRole`) or removing (`removeMember`) the final remaining `OWNER` is rejected with `400 BAD_REQUEST`.
 
 ---
 
-## 3. Envelope Encryption Architecture (AES-256-GCM)
+## 3. Workspace Invitations & Token Security [IMPLEMENTED]
+
+1. **Cryptographically Secure Random Tokens:** Invitations generate high-entropy single-use tokens (`inv_...`).
+2. **SHA-256 One-Way Hash Storage:** Raw tokens are never stored in the database. Only the cryptographic SHA-256 hash is persisted in `workspace_invitations.token_hash`.
+3. **Single-Use Acceptance:** Upon acceptance, the invitation status transitions from `PENDING` to `ACCEPTED` and stores `accepted_at`. Subsequent attempts to accept the token are rejected with `400 BAD_REQUEST`.
+4. **Expiration & Revocation:** Expired tokens (`expires_at < now()`) or revoked invitations (`status = REVOKED`) cannot be accepted.
+5. **No Token Leaks:** Raw invitation tokens are returned exactly once upon creation and are NEVER recorded in logs, stack traces, or audit metadata.
+
+---
+
+## 4. Envelope Encryption Architecture (AES-256-GCM) [PHASE 3 PLANNED]
 
 ```text
 [Plaintext Secret Payload] + [Unique 256-bit DEK] ──(AES-256-GCM)──> [Ciphertext] + [128-bit Tag] + [96-bit IV]
@@ -67,7 +67,7 @@ Identity (User / Service Account / OIDC Workload)
 
 ---
 
-## 4. Secret Reveal Safeguards
+## 5. Secret Reveal Safeguards [PHASE 3 PLANNED]
 
 - **Default State:** Plaintext is masked (`••••••••`).
 - **Explicit User Action:** Decryption occurs only upon deliberate user request (`POST /api/v1/secrets/{id}/reveal`).
@@ -77,18 +77,6 @@ Identity (User / Service Account / OIDC Workload)
   - Browser console or analytics payloads
   - Server application logs or APM spans
   - AI prompts or external LLM APIs
-
----
-
-## 5. Just-In-Time (JIT) Temporary Access Workflow
-
-```text
-Developer Requests JIT Access (Reason + Duration: e.g. 1 hour)
-  └── Admin / Dual Approval Workflow
-        └── Ephemeral Role Grant Issued in Redis
-              └── Developer Performs Authorized Production Task
-                    └── Time Window Expires -> Automatic Revocation & Audit Flag
-```
 
 ---
 

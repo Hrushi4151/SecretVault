@@ -6,7 +6,9 @@ import com.secretvault.common.exception.ApiException;
 import com.secretvault.workspace.dto.AddMemberRequest;
 import com.secretvault.workspace.dto.CreateWorkspaceRequest;
 import com.secretvault.workspace.dto.MemberResponse;
+import com.secretvault.workspace.dto.UpdateWorkspaceSettingsRequest;
 import com.secretvault.workspace.dto.WorkspaceResponse;
+import com.secretvault.workspace.dto.WorkspaceSettingsResponse;
 import com.secretvault.workspace.entity.Workspace;
 import com.secretvault.workspace.entity.WorkspaceMembership;
 import com.secretvault.workspace.entity.WorkspaceRole;
@@ -157,5 +159,69 @@ class WorkspaceServiceTest {
 
         ApiException ex = assertThrows(ApiException.class, () -> workspaceService.addMember(workspaceId, request, userId));
         assertEquals("FORBIDDEN", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Should update member role")
+    void testUpdateMemberRoleSuccess() {
+        UUID targetUserId = UUID.randomUUID();
+        User targetUser = new User("dev@example.com", "hash", "Dev User");
+        targetUser.setId(targetUserId);
+        WorkspaceMembership targetMembership = new WorkspaceMembership(workspaceId, targetUserId, WorkspaceRole.DEVELOPER);
+
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(testMembership));
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)).thenReturn(Optional.of(targetMembership));
+        when(membershipRepository.save(any(WorkspaceMembership.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
+
+        MemberResponse response = workspaceService.updateMemberRole(workspaceId, targetUserId, WorkspaceRole.ADMIN, userId);
+
+        assertNotNull(response);
+        assertEquals(WorkspaceRole.ADMIN, response.role());
+    }
+
+    @Test
+    @DisplayName("Should safeguard against demoting the last remaining OWNER")
+    void testDemoteLastOwnerFails() {
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(testMembership));
+        when(membershipRepository.findByWorkspaceId(workspaceId)).thenReturn(List.of(testMembership));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                workspaceService.updateMemberRole(workspaceId, userId, WorkspaceRole.DEVELOPER, userId));
+        assertEquals("BAD_REQUEST", ex.getCode());
+        assertTrue(ex.getMessage().contains("Cannot demote the last remaining OWNER"));
+    }
+
+    @Test
+    @DisplayName("Should safeguard against removing the last remaining OWNER")
+    void testRemoveLastOwnerFails() {
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(testMembership));
+        when(membershipRepository.findByWorkspaceId(workspaceId)).thenReturn(List.of(testMembership));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                workspaceService.removeMember(workspaceId, userId, userId));
+        assertEquals("BAD_REQUEST", ex.getCode());
+        assertTrue(ex.getMessage().contains("Cannot remove the last remaining OWNER"));
+    }
+
+    @Test
+    @DisplayName("Should retrieve and update workspace settings")
+    void testWorkspaceSettings() {
+        when(membershipRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(true);
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(testMembership));
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
+        when(workspaceRepository.save(any(Workspace.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        WorkspaceSettingsResponse settings = workspaceService.getWorkspaceSettings(workspaceId, userId);
+        assertNotNull(settings);
+        assertEquals("Production Core", settings.name());
+
+        UpdateWorkspaceSettingsRequest updateReq = new UpdateWorkspaceSettingsRequest(
+                "Updated Production", "OWNER_ONLY", "ADMIN_ONLY", true);
+        WorkspaceSettingsResponse updated = workspaceService.updateWorkspaceSettings(workspaceId, updateReq, userId);
+
+        assertNotNull(updated);
+        assertEquals("Updated Production", updated.name());
+        assertEquals("OWNER_ONLY", updated.projectCreationPolicy());
     }
 }
