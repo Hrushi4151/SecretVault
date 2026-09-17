@@ -54,7 +54,7 @@ SecretVault is **NOT** a consumer password manager (like 1Password or Bitwarden 
 5. **Developer-First UX**: In-memory child process secret injection (`secretvault run`) eliminates `.env` file clutter.
 6. **Infrastructure Awareness**: Real-time drift detection across external cloud hosting providers.
 7. **Reliable Synchronization**: Asynchronous, idempotent sync queue with exponential backoff.
-8. **Complete Auditing**: Immutable, non-repudiable audit logs for all sensitive transitions.
+8. **Complete Auditing**: Immutable, append-only audit logs for all sensitive transitions.
 9. **AI as an Advisory Intelligence Layer**: Co-pilot for root cause analysis and security posture.
 10. **Core Operability Without AI**: The secret engine and control plane function 100% reliably if AI is offline.
 

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service managing non-repudiable append-only security audit trails.
+ * Service managing append-only security audit trails.
  * Guaranteed never to log or persist secret plaintext, keys, tokens, or credentials.
  */
 @Service

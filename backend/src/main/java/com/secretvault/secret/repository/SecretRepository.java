@@ -2,7 +2,11 @@ package com.secretvault.secret.repository;
 
 import com.secretvault.secret.entity.Secret;
 import com.secretvault.secret.entity.SecretStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,6 +20,10 @@ import java.util.UUID;
 public interface SecretRepository extends JpaRepository<Secret, UUID> {
 
     Optional<Secret> findByIdAndEnvironmentId(UUID id, UUID environmentId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Secret s WHERE s.id = :id AND s.environmentId = :environmentId")
+    Optional<Secret> findByIdAndEnvironmentIdForUpdate(@Param("id") UUID id, @Param("environmentId") UUID environmentId);
 
     Optional<Secret> findByEnvironmentIdAndName(UUID environmentId, String name);
 

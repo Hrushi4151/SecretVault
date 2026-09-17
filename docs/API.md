@@ -154,7 +154,7 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
       "revealedAt": "2026-09-17T19:30:00Z"
     }
     ```
-  - **Audit:** Records a non-repudiable `SECRET_REVEALED` event in `audit_logs`.
+  - **Audit:** Records an append-only `SECRET_REVEALED` event in `audit_logs`.
 
 - `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/batch-import` — Bulk `.env` format import.
   - **Request Body:**
