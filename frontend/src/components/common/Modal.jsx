@@ -40,7 +40,7 @@ export const Modal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -48,24 +48,24 @@ export const Modal = ({
       />
       <div
         className={clsx(
-          'relative w-full rounded-2xl bg-[#0D1117]/95 border border-white/[0.12] p-6 text-vault-text shadow-2xl shadow-black/80 animate-scale-in z-10 flex flex-col gap-4',
+          'relative w-full rounded-2xl bg-[#30000F] border border-[#FFB4C8]/25 p-6 text-white shadow-2xl shadow-black/90 animate-scale-in z-10 flex flex-col gap-4 font-body backdrop-blur-xl',
           maxWidthStyles[maxWidth] || 'max-w-md'
         )}
       >
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold tracking-tight text-vault-text font-sans">
+            <h3 className="text-lg font-headline font-bold tracking-tight text-white">
               {title}
             </h3>
             {description && (
-              <p className="text-xs text-vault-text-secondary leading-relaxed">
+              <p className="text-xs text-[#F4B5C8] leading-relaxed">
                 {description}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-vault-text-muted hover:text-vault-text hover:bg-white/[0.08] transition-colors"
+            className="p-1.5 rounded-xl text-[#A26377] hover:text-white hover:bg-[#3F0016] border border-transparent hover:border-[#FFB4C8]/15 transition-colors"
             title="Close modal"
           >
             <X className="w-4 h-4" />

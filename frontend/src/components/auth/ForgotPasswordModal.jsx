@@ -21,7 +21,6 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
     setIsLoading(true);
     setError(null);
 
-    // Timing-attack resistant simulated dispatch
     setTimeout(() => {
       setIsLoading(false);
       setIsSubmitted(true);
@@ -44,14 +43,14 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
       maxWidth="md"
     >
       {isSubmitted ? (
-        <div className="flex flex-col items-center text-center py-4 gap-4">
-          <div className="w-12 h-12 rounded-full bg-vault-success/20 border border-vault-success/30 flex items-center justify-center text-vault-success">
+        <div className="flex flex-col items-center text-center py-4 gap-4 font-body text-white">
+          <div className="w-12 h-12 rounded-2xl bg-[#3F0016] border border-[#FF2D6D]/40 flex items-center justify-center text-[#FF2D6D] shadow-lg shadow-[#FF2D6D]/20">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div className="flex flex-col gap-1">
-            <h4 className="text-sm font-semibold text-vault-text">Recovery Dispatched</h4>
-            <p className="text-xs text-vault-text-secondary max-w-xs">
-              If an account is associated with <span className="font-mono text-vault-text">{email}</span>, password reset instructions have been transmitted.
+            <h4 className="text-sm font-semibold text-white font-headline">Recovery Dispatched</h4>
+            <p className="text-xs text-[#F4B5C8] max-w-xs">
+              If an account is associated with <span className="font-mono text-white font-bold">{email}</span>, password reset instructions have been transmitted.
             </p>
           </div>
           <Button variant="secondary" onClick={handleReset} className="w-full mt-2">
@@ -59,7 +58,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-white">
           {error && <Alert variant="danger" message={error} onDismiss={() => setError(null)} />}
 
           <Input

@@ -84,11 +84,11 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Workspace Members &amp; Access Control"
+      title="Workspace Members & Access Control"
       description={`Manage identities and role authorizations for ${activeWorkspace?.name || 'this workspace'}.`}
       maxWidth="lg"
     >
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 font-body text-white">
         {error && <Alert variant="danger" message={error} onDismiss={() => setError(null)} />}
         {successMsg && (
           <Alert variant="success" message={successMsg} onDismiss={() => setSuccessMsg(null)} />
@@ -98,10 +98,10 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
         {canManage ? (
           <form
             onSubmit={handleAddMember}
-            className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] flex flex-col gap-3"
+            className="p-4 rounded-xl bg-[#3F0016] border border-[#FFB4C8]/20 flex flex-col gap-3 shadow-inner"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-vault-text">
-              <UserPlus className="w-4 h-4 text-vault-primary" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <UserPlus className="w-4 h-4 text-[#FF2D6D]" />
               <span>Invite or Add Existing User</span>
             </div>
 
@@ -120,18 +120,18 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full h-full min-h-[38px] text-xs font-medium rounded-lg bg-white/[0.04] text-vault-text border border-white/[0.10] px-3 py-2 focus:outline-none focus:border-vault-primary/70 focus:ring-2 focus:ring-vault-primary/20"
+                  className="w-full h-full min-h-[42px] text-xs font-medium rounded-xl bg-[#4A001C] text-white border border-[#FFB4C8]/25 px-3 py-2 focus:outline-none focus:border-[#FF2D6D] focus:ring-2 focus:ring-[#FF2D6D]/25"
                 >
-                  <option value="VIEWER" className="bg-[#0D1117] text-vault-text">
+                  <option value="VIEWER" className="bg-[#30000F] text-white">
                     VIEWER (Read-only)
                   </option>
-                  <option value="DEVELOPER" className="bg-[#0D1117] text-vault-text">
+                  <option value="DEVELOPER" className="bg-[#30000F] text-white">
                     DEVELOPER (Read &amp; Write)
                   </option>
-                  <option value="ADMIN" className="bg-[#0D1117] text-vault-text">
+                  <option value="ADMIN" className="bg-[#30000F] text-white">
                     ADMIN (Full Config)
                   </option>
-                  <option value="OWNER" className="bg-[#0D1117] text-vault-text">
+                  <option value="OWNER" className="bg-[#30000F] text-white">
                     OWNER (Primary Tenant)
                   </option>
                 </select>
@@ -145,47 +145,47 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
             </div>
           </form>
         ) : (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-vault-text-muted font-mono">
-            <Shield className="w-4 h-4 text-vault-warning" />
+          <div className="flex items-center gap-2 p-3.5 rounded-xl bg-[#3F0016] border border-[#FFB4C8]/15 text-xs text-[#F4B5C8] font-mono">
+            <Shield className="w-4 h-4 text-[#FF2D6D]" />
             <span>You have {activeWorkspace?.role} permissions. Member management requires ADMIN or OWNER role.</span>
           </div>
         )}
 
         {/* Member List */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-vault-text-secondary">
+          <div className="flex items-center justify-between text-xs font-semibold text-[#F4B5C8]">
             <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 text-[#FF2D6D]" />
               Active Members ({members.length})
             </span>
-            <span className="font-mono text-[11px] text-vault-text-muted">RBAC Policy: Strict</span>
+            <span className="font-mono text-[11px] text-[#A26377]">RBAC Policy: Strict</span>
           </div>
 
           <div className="max-h-64 overflow-y-auto flex flex-col gap-1.5 pr-1">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8 text-vault-text-muted gap-2 text-xs">
-                <Loader2 className="w-4 h-4 animate-spin text-vault-primary" />
+              <div className="flex items-center justify-center py-8 text-[#A26377] gap-2 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin text-[#FF2D6D]" />
                 <span>Loading workspace members...</span>
               </div>
             ) : members.length === 0 ? (
-              <div className="text-center py-8 text-xs text-vault-text-muted">
+              <div className="text-center py-8 text-xs text-[#A26377]">
                 No members found in this workspace.
               </div>
             ) : (
               members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] transition-all"
+                  className="flex items-center justify-between p-3 rounded-xl bg-[#3F0016] hover:bg-[#4A001C] border border-[#FFB4C8]/15 transition-all"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-white/[0.08] flex items-center justify-center font-bold text-xs text-vault-primary-light shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#4A001C] border border-[#FF2D6D]/30 flex items-center justify-center font-bold text-xs text-[#FF2D6D] shrink-0">
                       {getInitials(member.fullName, member.email)}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-vault-text truncate">
+                      <span className="text-xs font-semibold text-white truncate">
                         {member.fullName || 'Registered User'}
                       </span>
-                      <span className="text-[11px] font-mono text-vault-text-muted truncate">
+                      <span className="text-[11px] font-mono text-[#A26377] truncate">
                         {member.email}
                       </span>
                     </div>
@@ -193,7 +193,7 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
 
                   <div className="flex items-center gap-3 shrink-0">
                     <RoleBadge role={member.role} />
-                    <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-vault-text-muted">
+                    <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-[#A26377]">
                       <Clock className="w-3 h-3" />
                       {new Date(member.joinedAt).toLocaleDateString()}
                     </span>
@@ -204,7 +204,7 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <div className="flex justify-end pt-2 border-t border-white/[0.08]">
+        <div className="flex justify-end pt-3 border-t border-[#FFB4C8]/15">
           <Button variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
