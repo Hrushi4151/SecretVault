@@ -111,4 +111,65 @@ class WorkspaceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)));
     }
+
+    @Test
+    @DisplayName("Cross-tenant isolation: User in Org A cannot access or mutate Workspace in Org B")
+    void testCrossTenantIsolation() throws Exception {
+        // 1. Create User A in Org A
+        String emailA = "tenant_a_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest reqA = new RegisterRequest(emailA, "Password123!Secure", "Tenant A User", "Org Alpha");
+        MvcResult resA = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reqA)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String tokenA = objectMapper.readTree(resA.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+
+        // Create Workspace A
+        CreateWorkspaceRequest createWsA = new CreateWorkspaceRequest("Alpha Internal", "alpha-internal");
+        MvcResult wsResA = mockMvc.perform(post("/api/v1/workspaces")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createWsA)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String workspaceIdA = objectMapper.readTree(wsResA.getResponse().getContentAsString())
+                .path("data").path("id").asText();
+
+        // 2. Create User B in Org B
+        String emailB = "tenant_b_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest reqB = new RegisterRequest(emailB, "Password123!Secure", "Tenant B User", "Org Beta");
+        MvcResult resB = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reqB)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String tokenB = objectMapper.readTree(resB.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+
+        // 3. User B attempts to access Workspace A -> MUST FAIL with 403 Forbidden
+        mockMvc.perform(get("/api/v1/workspaces/" + workspaceIdA)
+                        .header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        // 4. User B attempts to list members of Workspace A -> MUST FAIL with 403 Forbidden
+        mockMvc.perform(get("/api/v1/workspaces/" + workspaceIdA + "/members")
+                        .header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        // 5. User B attempts to add a member to Workspace A -> MUST FAIL with 403 Forbidden
+        com.secretvault.workspace.dto.AddMemberRequest illegalAddReq = new com.secretvault.workspace.dto.AddMemberRequest(
+                emailB,
+                WorkspaceRole.OWNER
+        );
+        mockMvc.perform(post("/api/v1/workspaces/" + workspaceIdA + "/members")
+                        .header("Authorization", "Bearer " + tokenB)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(illegalAddReq)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
 }

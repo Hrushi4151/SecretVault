@@ -106,4 +106,80 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("Refresh Token Rotation: Old refresh token is revoked upon use; replay is rejected")
+    void testRefreshTokenRotationAndReplayRejection() throws Exception {
+        String email = "refresh_user_" + java.util.UUID.randomUUID() + "@example.com";
+        RegisterRequest registerReq = new RegisterRequest(email, "Password123!Secure", "Refresh User", "Org Refresh");
+
+        MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String rawRefreshToken1 = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                .path("data").path("refreshToken").asText();
+
+        // 1. First refresh exchange with rawRefreshToken1 -> Should SUCCEED
+        com.secretvault.auth.dto.RefreshTokenRequest refreshReq1 = new com.secretvault.auth.dto.RefreshTokenRequest(rawRefreshToken1);
+        MvcResult refreshResult1 = mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshReq1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isString())
+                .andExpect(jsonPath("$.data.refreshToken").isString())
+                .andReturn();
+
+        String rawRefreshToken2 = objectMapper.readTree(refreshResult1.getResponse().getContentAsString())
+                .path("data").path("refreshToken").asText();
+
+        // 2. Replaying rawRefreshToken1 -> MUST FAIL with 401 Unauthorized
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshReq1)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        // 3. Using rawRefreshToken2 -> Should SUCCEED
+        com.secretvault.auth.dto.RefreshTokenRequest refreshReq2 = new com.secretvault.auth.dto.RefreshTokenRequest(rawRefreshToken2);
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshReq2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isString());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/logout should revoke all active refresh tokens for the user")
+    void testLogoutInvalidation() throws Exception {
+        String email = "logout_user_" + java.util.UUID.randomUUID() + "@example.com";
+        RegisterRequest registerReq = new RegisterRequest(email, "Password123!Secure", "Logout User", "Org Logout");
+
+        MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String accessToken = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+        String refreshToken = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                .path("data").path("refreshToken").asText();
+
+        // Logout
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        // Attempt to use refresh token after logout -> MUST FAIL with 401 Unauthorized
+        com.secretvault.auth.dto.RefreshTokenRequest refreshReq = new com.secretvault.auth.dto.RefreshTokenRequest(refreshToken);
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshReq)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
 }
