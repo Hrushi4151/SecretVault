@@ -9,10 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned (Upcoming Milestone: Phase 1)
-- User registration, login, and secure JWT session issuance with refresh tokens.
-- Multi-tenant Organization and Workspace entities with workspace switching API.
-- Team member invitation flow and baseline RBAC roles (`OWNER`, `ADMIN`, `DEVELOPER`, `VIEWER`).
+### Added - Phase 1: Authentication, Identity & Multi-Tenant Workspaces
+- **Authentication & Identity Engine**:
+  - `User`, `RefreshToken`, `UserStatus` domain entities and repositories.
+  - BCrypt 12-round secure password hashing.
+  - JJWT 0.12.6 implementation (`JwtTokenProvider`, `JwtAuthenticationFilter`, `JwtAuthenticationEntryPoint`, `UserPrincipal`).
+  - Auth REST API (`/api/v1/auth/register`, `/login`, `/refresh`, `/me`, `/logout`).
+  - Atomic auto-provisioning of personal Organization and default Workspace with `OWNER` role on registration.
+- **Multi-Tenant Workspaces & RBAC**:
+  - `Organization`, `Workspace`, `WorkspaceMembership`, `WorkspaceRole` entities and repositories.
+  - ThreadLocal `TenantContext` for workspace isolation.
+  - Workspace REST API (`/api/v1/workspaces`, creation, details, member management, listing).
+  - RBAC permission checks for workspace modification and membership management.
+- **Database Migrations & Test Suite**:
+  - Flyway migration `V2__auth_and_workspaces_schema.sql` (PostgreSQL DDL with foreign keys and composite indexes).
+  - 100% passing test suite across `JwtTokenProviderTest`, `AuthServiceTest`, `WorkspaceServiceTest`, `AuthControllerTest`, `WorkspaceControllerTest` (27/27 tests green).
+
+### Planned (Upcoming Milestone: Phase 2)
+- Projects & Environments domain (`com.secretvault.project`, `com.secretvault.environment`) with Dev/Staging/Prod scoped isolation.
 
 ---
 
