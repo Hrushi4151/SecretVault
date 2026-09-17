@@ -18,7 +18,10 @@
 3. **Multi-Tenancy Indexing:**
    - Every tenant-scoped entity (`projects`, `environments`, `secrets`, `audit_logs`) MUST contain `organization_id` and `workspace_id`.
    - Composite indexes must be applied: `(organization_id, id)` and `(organization_id, created_at)`.
-4. **UTC Timestamps:** All timestamp columns must use `TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP`.
+### Applied Flyway Migrations:
+- `V1__init_baseline.sql` — Baseline initialization
+- `V2__auth_and_workspaces_schema.sql` — Users, organizations, workspaces, memberships, and refresh tokens
+- `V3__projects_and_environments_schema.sql` — Projects and environments tables with UUID primary keys, foreign keys, unique slug constraints, and indexes
 
 ---
 
@@ -58,20 +61,28 @@ erDiagram
 
     PROJECT {
         uuid id PK
-        uuid organization_id FK
         uuid workspace_id FK
         string name
         string slug
         string description
+        string status "ACTIVE | ARCHIVED"
+        uuid created_by FK
         timestamp created_at
+        timestamp updated_at
     }
 
     ENVIRONMENT {
         uuid id PK
         uuid project_id FK
         string name
-        string type "DEVELOPMENT | STAGING | PRODUCTION"
+        string slug
+        string env_type "DEVELOPMENT | STAGING | PRODUCTION"
+        string description
+        boolean is_protected
+        string status "ACTIVE | ARCHIVED"
+        uuid created_by FK
         timestamp created_at
+        timestamp updated_at
     }
 
     SECRET {

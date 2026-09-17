@@ -156,7 +156,36 @@ sequenceDiagram
 
 ---
 
-## 3. Domain Package Boundaries (`com.secretvault.*`)
+## 3. Authoritative Multi-Tenant Hierarchy [IMPLEMENTED]
+
+SecretVault strictly enforces a 4-tier tenant hierarchy:
+
+```text
+Organization (Global Tenant Container)
+    │
+    └── Workspace (Isolation Boundary & RBAC Context)
+            │
+            ├── Project (Application / Microservice)
+            │      │
+            │      ├── Environment (development)
+            │      ├── Environment (staging)
+            │      └── Environment (production [is_protected = true])
+            │
+            └── Project
+```
+
+### Hierarchy Validation & IDOR Prevention Rules:
+1. **Never Trust Client-Supplied Composite IDs:** A client request containing `workspaceId`, `projectId`, and `environmentId` is NEVER trusted implicitly.
+2. **Server-Side Ownership Verification:**
+   - The backend checks `WorkspaceMembership(workspaceId, userId)` to establish caller authorization and RBAC role.
+   - The backend verifies `Project.workspaceId == workspaceId`.
+   - The backend verifies `Environment.projectId == projectId`.
+3. **Mismatched Path ID Rejection:** If a valid `environmentId` from Project A is queried under `/projects/{projectB}/environments/{envA}`, the server immediately aborts with `404 RESOURCE_NOT_FOUND` (preventing IDOR enumeration).
+4. **Cross-Tenant Request Rejection:** Any cross-workspace request is blocked with `403 FORBIDDEN`.
+
+---
+
+## 4. Domain Package Boundaries (`com.secretvault.*`)
 
 | Domain Package | Primary Responsibility | Primary Owner | Status |
 |---|---|---|---|

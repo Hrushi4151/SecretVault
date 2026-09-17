@@ -31,8 +31,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reusable API client (`client.js`, `auth.js`, `workspaces.js`) with Bearer token authentication, `X-Workspace-ID` tenant context, and silent refresh.
   - Global `AuthContext.jsx` with full authentication lifecycle, session persistence, and multi-tenant workspace switcher.
 
-### Planned (Upcoming Milestone: Phase 2)
-- Projects & Environments domain (`com.secretvault.project`, `com.secretvault.environment`) with Dev/Staging/Prod scoped isolation.
+### Added - Phase 2: Projects, Environments & RBAC Expansion
+- **Projects & Environments Domain**:
+  - `Project`, `ProjectStatus`, `Environment`, `EnvType`, `EnvironmentStatus` entities and repositories.
+  - Granular RBAC capabilities on `WorkspaceRole` (`canCreateProjects()`, `canManageProjects()`, `canManageEnvironments()`).
+  - Automatic provisioning of 3 default deployment tiers (`development`, `staging`, and `production` with `is_protected = true`) on project creation.
+  - Strict hierarchical authorization chain (`User → Workspace Membership → Workspace → Project → Environment`).
+  - Cross-tenant IDOR defense returning `404 RESOURCE_NOT_FOUND` on mismatched parent-child route paths.
+  - Project REST APIs (`/api/v1/workspaces/{workspaceId}/projects`, list, create, get, patch, delete).
+  - Environment REST APIs (`/api/v1/workspaces/{workspaceId}/projects/{projectId}/environments`, list, create, get, patch, delete).
+- **Database Migrations & Test Suite**:
+  - Flyway migration `V3__projects_and_environments_schema.sql` adding `projects` and `environments` tables with foreign keys and unique slug constraints.
+  - Full automated test suite across `ProjectServiceTest`, `ProjectControllerTest`, `EnvironmentServiceTest`, `EnvironmentControllerTest` (50/50 tests passing).
+- **Phase 2 Frontend Control Plane (React / Vite / Tailwind CSS / JSX)**:
+  - High-Contrast Bold Dark Ruby-Garnet design system.
+  - `ProjectsView.jsx` (Stitch Screen 10 / Screen 12) featuring live project listing, environment tier chips, search, and metric cards.
+  - `CreateProjectModal.jsx` (Stitch Screen 11) with slug auto-generation and automated environment provisioning notice.
+  - Integrated `projectApi` and `environmentApi` client modules.
+
+### Planned (Upcoming Milestone: Phase 3)
+- Secret Engine & Encryption (`com.secretvault.secret`, `com.secretvault.encryption`) with AES-256-GCM envelope encryption and masked secret reveal.
 
 ---
 
