@@ -17,9 +17,11 @@ import {
   Server,
   Lock,
   Sparkles,
+  Key,
+  ArrowRight,
 } from 'lucide-react';
 
-export const ProjectsView = () => {
+export const ProjectsView = ({ onNavigateToSecrets }) => {
   const { activeWorkspace } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +72,19 @@ export const ProjectsView = () => {
       alert(err.message || 'Failed to delete project');
     } finally {
       setDeletingProjectId(null);
+    }
+  };
+
+  const handleProjectClick = (projectId, defaultEnvId) => {
+    if (onNavigateToSecrets) {
+      onNavigateToSecrets(projectId, defaultEnvId);
+    }
+  };
+
+  const handleEnvironmentClick = (projectId, envId, e) => {
+    e.stopPropagation();
+    if (onNavigateToSecrets) {
+      onNavigateToSecrets(projectId, envId);
     }
   };
 
@@ -289,91 +304,114 @@ export const ProjectsView = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="p-6 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 hover:border-[#FFB4C8]/35 shadow-sm hover:shadow-xl hover:shadow-black/40 flex flex-col justify-between gap-5 transition-all group"
-            >
-              {/* Card Top */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#3F0016] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D] group-hover:scale-105 transition-transform">
-                      <Server className="w-5 h-5" />
+          {filteredProjects.map((project) => {
+            const firstEnvId = project.environments?.[0]?.id;
+
+            return (
+              <div
+                key={project.id}
+                onClick={() => handleProjectClick(project.id, firstEnvId)}
+                className="p-6 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 hover:border-[#FF2D6D]/60 shadow-sm hover:shadow-2xl hover:shadow-black/60 flex flex-col justify-between gap-5 transition-all group cursor-pointer hover:-translate-y-1"
+              >
+                {/* Card Top */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#3F0016] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D] group-hover:scale-105 group-hover:border-[#FF2D6D] transition-all shadow-sm">
+                        <Server className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-headline font-bold text-white group-hover:text-[#FFB4C8] transition-colors flex items-center gap-1.5">
+                          <span>{project.name}</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-[#FF2D6D] opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-0.5" />
+                        </h3>
+                        <span className="text-[11px] font-mono text-[#A26377]">
+                          {project.slug}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-headline font-bold text-white group-hover:text-[#FFB4C8] transition-colors">
-                        {project.name}
-                      </h3>
-                      <span className="text-[11px] font-mono text-[#A26377]">
-                        {project.slug}
-                      </span>
-                    </div>
+
+                    <span className="px-2 py-0.5 rounded-full bg-[#3F0016] text-[10px] font-mono text-[#4ADE80] border border-[#4ADE80]/30 font-semibold">
+                      {project.status || 'ACTIVE'}
+                    </span>
                   </div>
 
-                  <span className="px-2 py-0.5 rounded-full bg-[#3F0016] text-[10px] font-mono text-[#4ADE80] border border-[#4ADE80]/30 font-semibold">
-                    {project.status || 'ACTIVE'}
-                  </span>
+                  <p className="text-xs text-[#F4B5C8] leading-relaxed line-clamp-2">
+                    {project.description || 'Application microservice running on SecretVault zero-trust infrastructure.'}
+                  </p>
                 </div>
 
-                <p className="text-xs text-[#F4B5C8] leading-relaxed line-clamp-2">
-                  {project.description || 'Application microservice running on SecretVault zero-trust infrastructure.'}
-                </p>
-              </div>
-
-              {/* Environments Tier Pills */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#FFB4C8]/10">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#A26377]">
-                  Environments ({project.environments?.length || 0})
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {project.environments && project.environments.length > 0 ? (
-                    project.environments.map((env) => {
-                      const isProd = env.envType === 'PRODUCTION' || env.isProtected;
-                      const isStaging = env.envType === 'STAGING';
-                      return (
-                        <span
-                          key={env.id}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium flex items-center gap-1 border ${
-                            isProd
-                              ? 'bg-[#3F0016] text-[#F87171] border-[#F87171]/40 shadow-sm'
-                              : isStaging
-                              ? 'bg-[#3F0016] text-[#FBBF24] border-[#FBBF24]/40'
-                              : 'bg-[#3F0016] text-[#60A5FA] border-[#60A5FA]/40'
-                          }`}
-                        >
-                          {isProd && <ShieldCheck className="w-3 h-3 text-[#F87171]" />}
-                          <span>{env.slug}</span>
-                        </span>
-                      );
-                    })
-                  ) : (
-                    <span className="text-[10px] font-mono text-[#A26377]">
-                      No environments
+                {/* Environments Tier Pills (Clickable to jump directly into specific env secrets) */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-[#FFB4C8]/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#A26377]">
+                      Environments ({project.environments?.length || 0})
                     </span>
-                  )}
+                    <span className="text-[10px] font-mono text-[#FF2D6D] opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click tier to open vault →
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {project.environments && project.environments.length > 0 ? (
+                      project.environments.map((env) => {
+                        const isProd = env.envType === 'PRODUCTION' || env.isProtected;
+                        const isStaging = env.envType === 'STAGING';
+                        return (
+                          <button
+                            key={env.id}
+                            type="button"
+                            onClick={(e) => handleEnvironmentClick(project.id, env.id, e)}
+                            title={`Open ${env.name} secrets`}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-mono font-medium flex items-center gap-1.5 border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                              isProd
+                                ? 'bg-[#3F0016] text-[#F87171] border-[#F87171]/40 hover:border-[#F87171] shadow-sm'
+                                : isStaging
+                                ? 'bg-[#3F0016] text-[#FBBF24] border-[#FBBF24]/40 hover:border-[#FBBF24]'
+                                : 'bg-[#3F0016] text-[#60A5FA] border-[#60A5FA]/40 hover:border-[#60A5FA]'
+                            }`}
+                          >
+                            {isProd ? (
+                              <ShieldCheck className="w-3 h-3 text-[#F87171]" />
+                            ) : (
+                              <Key className="w-3 h-3 text-[#FF2D6D]" />
+                            )}
+                            <span className="font-semibold">{env.slug || env.name}</span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <span className="text-[10px] font-mono text-[#A26377]">
+                        No environments
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Card Footer Actions */}
-              <div className="flex items-center justify-between pt-3 border-t border-[#FFB4C8]/10 text-xs">
-                <span className="text-[10px] font-mono text-[#A26377]">
-                  Created {new Date(project.createdAt).toLocaleDateString()}
-                </span>
-
-                <div className="flex items-center gap-2">
+                {/* Card Footer Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-[#FFB4C8]/10 text-xs">
                   <button
-                    onClick={(e) => handleDeleteProject(project.id, e)}
-                    disabled={deletingProjectId === project.id}
-                    title="Delete Project"
-                    className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors"
+                    type="button"
+                    onClick={() => handleProjectClick(project.id, firstEnvId)}
+                    className="px-3 py-1.5 rounded-xl bg-[#3F0016] hover:bg-[#FF2D6D] text-[#FFB4C8] hover:text-white text-[11px] font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Key className="w-3.5 h-3.5 text-[#FF2D6D] group-hover:text-white" />
+                    <span>Open Secrets Vault</span>
                   </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleDeleteProject(project.id, e)}
+                      disabled={deletingProjectId === project.id}
+                      title="Delete Project"
+                      className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
