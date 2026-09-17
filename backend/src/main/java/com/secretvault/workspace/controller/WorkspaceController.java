@@ -103,4 +103,56 @@ public class WorkspaceController {
         List<MemberResponse> members = workspaceService.getWorkspaceMembers(id, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(members));
     }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/members/{userId}")
+    @Operation(summary = "Update Member Role", description = "Updates a member's assigned RBAC role. (Requires OWNER or ADMIN).")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Role updated"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Cannot demote last owner"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<ApiResponse<MemberResponse>> updateMemberRole(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody com.secretvault.workspace.dto.UpdateMemberRoleRequest request) {
+        MemberResponse member = workspaceService.updateMemberRole(id, userId, request.role(), principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(member));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}/members/{userId}")
+    @Operation(summary = "Remove Member", description = "Removes a member from the workspace or allows self-removal. (Requires OWNER/ADMIN or Self).")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Member removed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Cannot remove last owner"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> removeMember(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        workspaceService.removeMember(id, userId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(java.util.Map.of("message", "Member successfully removed", "userId", userId)));
+    }
+
+    @GetMapping("/{id}/settings")
+    @Operation(summary = "Get Workspace Settings", description = "Retrieves workspace configuration and governance settings.")
+    public ResponseEntity<ApiResponse<com.secretvault.workspace.dto.WorkspaceSettingsResponse>> getSettings(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        com.secretvault.workspace.dto.WorkspaceSettingsResponse settings = workspaceService.getWorkspaceSettings(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(settings));
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/settings")
+    @Operation(summary = "Update Workspace Settings", description = "Updates workspace configuration and display metadata. (Requires OWNER or ADMIN).")
+    public ResponseEntity<ApiResponse<com.secretvault.workspace.dto.WorkspaceSettingsResponse>> updateSettings(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody com.secretvault.workspace.dto.UpdateWorkspaceSettingsRequest request) {
+        com.secretvault.workspace.dto.WorkspaceSettingsResponse settings = workspaceService.updateWorkspaceSettings(id, request, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(settings));
+    }
 }

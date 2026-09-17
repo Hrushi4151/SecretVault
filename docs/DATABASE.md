@@ -18,30 +18,30 @@
 3. **Multi-Tenancy Indexing:**
    - Every tenant-scoped entity (`projects`, `environments`, `secrets`, `audit_logs`) MUST contain `organization_id` and `workspace_id`.
    - Composite indexes must be applied: `(organization_id, id)` and `(organization_id, created_at)`.
+
 ### Applied Flyway Migrations:
 - `V1__init_baseline.sql` — Baseline initialization
 - `V2__auth_and_workspaces_schema.sql` — Users, organizations, workspaces, memberships, and refresh tokens
 - `V3__projects_and_environments_schema.sql` — Projects and environments tables with UUID primary keys, foreign keys, unique slug constraints, and indexes
+- `V4__workspace_invitations_and_access_scoping.sql` — `workspace_invitations`, `project_access`, and `environment_access` tables for fine-grained multi-tier RBAC and invitation workflows
 
 ---
 
-## 3. Conceptual Entity-Relationship Model [PLANNED]
+## 3. Conceptual Entity-Relationship Model [IMPLEMENTED]
 
 ```mermaid
 erDiagram
     ORGANIZATION ||--o{ WORKSPACE : contains
     ORGANIZATION ||--o{ USER_MEMBERSHIP : employs
+    WORKSPACE ||--o{ WORKSPACE_MEMBERSHIP : enrolls
+    WORKSPACE ||--o{ WORKSPACE_INVITATION : issues
     WORKSPACE ||--o{ PROJECT : contains
+    PROJECT ||--o{ PROJECT_ACCESS : scopes
     PROJECT ||--o{ ENVIRONMENT : defines
+    ENVIRONMENT ||--o{ ENVIRONMENT_ACCESS : restricts
     ENVIRONMENT ||--o{ SECRET : owns
     SECRET ||--|{ SECRET_VERSION : tracks
-    ENVIRONMENT ||--o{ PROVIDER_MAPPING : maps
-    ORGANIZATION ||--o{ PROVIDER_CONNECTION : configures
-    ENVIRONMENT ||--o{ SYNC_JOB : executes
     ORGANIZATION ||--o{ AUDIT_LOG : records
-    PROJECT ||--o{ SERVICE_ACCOUNT : grants
-    ORGANIZATION ||--o{ SECURITY_POLICY : enforces
-    PROJECT ||--o{ SECURITY_FINDING : detects
 
     ORGANIZATION {
         uuid id PK
@@ -59,6 +59,20 @@ erDiagram
         timestamp created_at
     }
 
+    WORKSPACE_INVITATION {
+        uuid id PK
+        uuid workspace_id FK
+        string email
+        uuid invited_by FK
+        string role
+        string status "PENDING | ACCEPTED | DECLINED | EXPIRED | REVOKED"
+        string token_hash UK
+        timestamp expires_at
+        timestamp accepted_at
+        timestamp revoked_at
+        timestamp created_at
+    }
+
     PROJECT {
         uuid id PK
         uuid workspace_id FK
@@ -66,6 +80,16 @@ erDiagram
         string slug
         string description
         string status "ACTIVE | ARCHIVED"
+        uuid created_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PROJECT_ACCESS {
+        uuid id PK
+        uuid project_id FK
+        uuid user_id FK
+        string role "OWNER | ADMIN | DEVELOPER | VIEWER"
         uuid created_by FK
         timestamp created_at
         timestamp updated_at
@@ -85,51 +109,20 @@ erDiagram
         timestamp updated_at
     }
 
-    SECRET {
+    ENVIRONMENT_ACCESS {
         uuid id PK
-        uuid organization_id FK
         uuid environment_id FK
-        string name
-        string description
-        string secret_type
-        integer current_version
+        uuid user_id FK
+        string permission_level "READ | WRITE | MANAGE"
+        uuid created_by FK
         timestamp created_at
         timestamp updated_at
-    }
-
-    SECRET_VERSION {
-        uuid id PK
-        uuid secret_id FK
-        integer version_number
-        bytea encrypted_payload
-        bytea encrypted_dek
-        bytea iv_nonce
-        bytea auth_tag
-        string kms_key_id
-        uuid created_by_actor_id
-        string change_reason
-        timestamp created_at
-    }
-
-    AUDIT_LOG {
-        uuid id PK
-        uuid organization_id FK
-        uuid workspace_id FK
-        uuid actor_id
-        string actor_type "USER | SERVICE_ACCOUNT | SYSTEM"
-        string action
-        string resource_type
-        string resource_id
-        string request_id
-        string ip_address
-        string outcome "SUCCESS | FAILURE | DENIED"
-        timestamp created_at
     }
 ```
 
 ---
 
-## 4. Encryption Metadata Columns
+## 4. Encryption Metadata Columns (Phase 3 Planned)
 
 Every secret version table record stores cryptographic envelope components:
 

@@ -17,11 +17,12 @@ graph TB
     subgraph ControlPlane["SecretVault Spring Boot Control Plane (Modular Monolith)"]
         subgraph CorePlatform["Core Platform & Security Domains (Member 1)"]
             Auth["auth (JWT / Sessions / MFA)"]
-            Org["organization / workspace"]
-            Proj["project / environment"]
+            Org["organization / workspace (Invitations / Lifecycle)"]
+            Proj["project (Scoped Access / Policies)"]
+            Env["environment (Scoped Access / Protection)"]
             SecEngine["secret (CRUD / Versions / Diff / Rollback)"]
             Crypto["encryption (AES-256-GCM / Envelope / KMS)"]
-            Access["access (RBAC / JIT / Reviews)"]
+            Access["access (RBAC / Inheritance / Scoping)"]
             Audit["audit (Immutable Event Ledger)"]
             SecIntel["security (Risk / Leaks / Blast Radius)"]
         end
@@ -70,89 +71,29 @@ graph TB
 
 ---
 
-## 2. Core Data & Execution Flows
+## 2. Multi-Tier Access Scoping & Inheritance Model [IMPLEMENTED]
 
-### 2.1 Secret Creation & Envelope Encryption Flow [PLANNED]
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dev as Developer / CLI
-    participant API as SecretController
-    participant Auth as AccessService (RBAC)
-    participant Engine as SecretService
-    participant Crypto as EncryptionService
-    participant KMS as KMS / Master KEK
-    participant DB as PostgreSQL
-    participant Audit as AuditService
+SecretVault enforces the fundamental security principle: **Role $\neq$ Scope**.
 
-    Dev->>API: POST /api/v1/projects/{pId}/environments/{eId}/secrets (Plaintext)
-    API->>Auth: Validate tenant access & 'secret.create' permission
-    Auth-->>API: Authorized
-    API->>Engine: createSecret(dto)
-    Engine->>Crypto: encryptSecret(plaintext)
-    Crypto->>Crypto: Generate random 256-bit DEK & 96-bit IV
-    Crypto->>Crypto: Encrypt plaintext using AES-256-GCM
-    Crypto->>KMS: Encrypt DEK with Master KEK
-    KMS-->>Crypto: Return Encrypted DEK
-    Crypto-->>Engine: EncryptedPayload (Ciphertext, Encrypted DEK, IV, Tag)
-    Engine->>DB: INSERT into secrets & secret_versions (Encrypted)
-    Engine->>Audit: emitEvent(SECRET_CREATED, actor, metadata) [No Plaintext]
-    Engine-->>API: SecretResponseDTO (Masked: ••••••••)
-    API-->>Dev: 201 Created (Masked Payload)
+```text
+User Principal
+     ↓
+Organization Membership
+     ↓
+Workspace Membership (Role: OWNER | ADMIN | DEVELOPER | VIEWER)
+     ↓
+Project Scope Grant (ProjectAccess: Scoped Role)
+     ↓
+Environment Scope Grant (EnvironmentAccess: PermissionLevel READ | WRITE | MANAGE)
+     ↓
+Effective Permission Evaluation
 ```
 
----
+### Effective Permission Formula:
+$$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope} \cap \text{Security Policies}$$
 
-### 2.2 Asynchronous Synchronization Flow [PLANNED]
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Developer / Web UI
-    participant API as SyncController
-    participant Queue as Redis Sync Queue
-    participant Worker as SyncJobWorker
-    participant Engine as SecretEngine
-    participant Adapter as VercelProviderAdapter
-    participant Target as Vercel API
-    participant DB as PostgreSQL
-
-    User->>API: POST /api/v1/sync/projects/{pId}/environments/{eId}
-    API->>Queue: Push SyncJob(jobId, projectId, envId, providerId)
-    API-->>User: 202 Accepted (jobId: UUID, status: PENDING)
-    
-    Worker->>Queue: Pop SyncJob
-    Worker->>DB: Update job status -> RUNNING
-    Worker->>Engine: Fetch encrypted secrets & decrypt in-memory
-    Worker->>Adapter: syncSecrets(config, decryptedSecrets)
-    Adapter->>Target: Upsert Environment Variables (HTTPS)
-    Target-->>Adapter: 200 OK / Target Hash
-    Adapter-->>Worker: SyncResult(SUCCESS, versionFingerprint)
-    Worker->>DB: Record sync log, update state -> SYNCED
-    Worker->>DB: Update SyncJob status -> COMPLETED
-```
-
----
-
-### 2.3 Developer Runtime Secret Injection Flow (`secretvault run`) [PLANNED]
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dev as Developer
-    participant CLI as SecretVault CLI
-    participant API as RuntimeApiController
-    participant DB as PostgreSQL
-    participant Proc as Child Process (e.g. npm start)
-
-    Dev->>CLI: secretvault run --env development -- npm start
-    CLI->>API: Authenticate & Request Encrypted Secrets for Project/Env
-    API-->>CLI: Encrypted Secret Payload Bundle
-    CLI->>CLI: Decrypt payload into local RAM
-    CLI->>Proc: Spawn child process with injected env variables in memory
-    Note over CLI,Proc: Plaintext is NEVER written to disk (.env)
-    Proc-->>CLI: Process execution output (stdout/stderr)
-    Proc->>Proc: Process terminates
-    CLI->>CLI: Zero / Wipe memory buffers
-```
+- **Permission Reduction / Restriction:** A child grant (ProjectAccess or EnvironmentAccess) may further restrict a user's permissions within that specific boundary.
+- **Elevation Blocked:** A child grant cannot exceed the user's workspace-level role permissions (e.g., a `VIEWER` at the workspace level assigned `WRITE` in an environment still receives `READ` as effective permission).
 
 ---
 
@@ -163,9 +104,9 @@ SecretVault strictly enforces a 4-tier tenant hierarchy:
 ```text
 Organization (Global Tenant Container)
     │
-    └── Workspace (Isolation Boundary & RBAC Context)
+    └── Workspace (Isolation Boundary, Invitations, & Member Governance)
             │
-            ├── Project (Application / Microservice)
+            ├── Project (Application / Microservice Scope)
             │      │
             │      ├── Environment (development)
             │      ├── Environment (staging)
@@ -190,14 +131,14 @@ Organization (Global Tenant Container)
 | Domain Package | Primary Responsibility | Primary Owner | Status |
 |---|---|---|---|
 | `common` | Exceptions, RFC-7807 error handler, OpenAPI, Redis, Security filter chain, CorrelationIdFilter | Shared | 🟢 IMPLEMENTED |
-| `auth` | User identity, JWT issuance, password reset, sessions, MFA | Member 1 | ⚪ PLANNED |
-| `organization` | Organization and workspace lifecycle, tenant membership, invitations | Member 1 | ⚪ PLANNED |
-| `project` | Project container lifecycle, health scores, project-level metadata | Member 1 | ⚪ PLANNED |
-| `environment` | Dev, Staging, Prod scoping, environment-level policies | Member 1 | ⚪ PLANNED |
-| `secret` | Secret CRUD, versioning, masking, rollback, secret diffing, rotation wizard | Member 1 | ⚪ PLANNED |
-| `encryption` | AES-256-GCM envelope encryption, DEK generation, KMS/HSM integration | Member 1 | ⚪ PLANNED |
-| `access` | Granular RBAC, JIT access requests, approval workflows, access review campaigns | Member 1 | ⚪ PLANNED |
-| `audit` | Non-repudiable audit ledger, event emission, compliance logs | Member 1 | ⚪ PLANNED |
+| `auth` | User identity, JWT issuance, password reset, sessions, MFA | Member 1 | 🟢 IMPLEMENTED |
+| `workspace` | Organization and workspace lifecycle, tenant membership, invitations, settings | Member 1 | 🟢 IMPLEMENTED |
+| `project` | Project container lifecycle, scoped member access, environments auto-provisioning | Member 1 | 🟢 IMPLEMENTED |
+| `environment` | Scoped access tiers, dev/staging/prod management, protection rules | Member 1 | 🟢 IMPLEMENTED |
+| `secret` | Secret CRUD, versioning, masking, rollback, secret diffing, rotation wizard | Member 1 | ⚪ PLANNED (PHASE 3) |
+| `encryption` | AES-256-GCM envelope encryption, DEK generation, KMS/HSM integration | Member 1 | ⚪ PLANNED (PHASE 3) |
+| `access` | Granular RBAC, JIT access requests, approval workflows, access review campaigns | Member 1 | 🟢 IMPLEMENTED (RBAC Scope) |
+| `audit` | Non-repudiable audit ledger, event emission, compliance logs | Member 1 | 🟢 IMPLEMENTED |
 | `security` | Risk Center, secret leak scanner, blast radius graph, security policies | Member 1 | ⚪ PLANNED |
 | `integration` | Provider connection credentials, platform mapping definitions | Member 2 | ⚪ PLANNED |
 | `provider` | `SecretProvider` SPI and adapters (AWS, Vercel, Railway, GitHub, K8s) | Member 2 | ⚪ PLANNED |
@@ -209,12 +150,3 @@ Organization (Global Tenant Container)
 | `deployment` | Cloud and self-hosted deployment profiles, cluster connectivity | Member 2 | ⚪ PLANNED |
 | `health` | Public health probes, Actuator observability indicators | Member 2 | 🟢 IMPLEMENTED |
 | `ai` | Outbound communication boundary to Python/FastAPI AI co-pilot | Member 2 | ⚪ PLANNED |
-
----
-
-## 4. Future Microservice Extraction Strategy
-
-Extracting a domain into a standalone microservice requires a formal Architecture Decision Record (ADR). Extraction candidate priorities:
-1. `ai-service` (Implemented as independent Python/FastAPI service from day one).
-2. `sync-worker` (Extractable if asynchronous provider rate-limiting demands separate scale-out).
-3. `auth-service` (Extractable for high-volume enterprise SSO / SCIM token validation).

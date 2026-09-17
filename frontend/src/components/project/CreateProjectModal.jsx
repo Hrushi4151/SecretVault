@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { projectApi } from '../../api/projects';
 import {
@@ -20,6 +21,26 @@ export const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -83,9 +104,14 @@ export const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#30000F] border border-[#FFB4C8]/25 p-6 shadow-2xl shadow-black/80 flex flex-col gap-6 text-white font-body">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+      <div
+        className="fixed inset-0"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="relative w-full my-auto max-w-lg rounded-2xl bg-[#30000F] border border-[#FFB4C8]/25 p-6 shadow-2xl shadow-black/90 flex flex-col gap-6 text-white font-body z-10 backdrop-blur-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#FFB4C8]/15 pb-4">
           <div className="flex items-center gap-3">
@@ -218,6 +244,7 @@ export const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

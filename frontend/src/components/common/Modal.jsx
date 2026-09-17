@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -39,8 +40,8 @@ export const Modal = ({
     xl: 'max-w-xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -48,7 +49,7 @@ export const Modal = ({
       />
       <div
         className={clsx(
-          'relative w-full rounded-2xl bg-[#30000F] border border-[#FFB4C8]/25 p-6 text-white shadow-2xl shadow-black/90 animate-scale-in z-10 flex flex-col gap-4 font-body backdrop-blur-xl',
+          'relative w-full my-auto rounded-2xl bg-[#30000F] border border-[#FFB4C8]/25 p-6 text-white shadow-2xl shadow-black/90 animate-scale-in z-10 flex flex-col gap-4 font-body backdrop-blur-xl',
           maxWidthStyles[maxWidth] || 'max-w-md'
         )}
       >
@@ -65,7 +66,7 @@ export const Modal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-[#A26377] hover:text-white hover:bg-[#3F0016] border border-transparent hover:border-[#FFB4C8]/15 transition-colors"
+            className="p-1.5 rounded-xl text-[#A26377] hover:text-white hover:bg-[#3F0016] border border-transparent hover:border-[#FFB4C8]/15 transition-colors cursor-pointer"
             title="Close modal"
           >
             <X className="w-4 h-4" />
@@ -74,6 +75,7 @@ export const Modal = ({
 
         <div className="mt-1">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
