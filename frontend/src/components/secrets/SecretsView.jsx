@@ -4,6 +4,7 @@ import { projectApi } from '../../api/projects';
 import { secretApi } from '../../api/secrets';
 import { CreateSecretModal } from './CreateSecretModal';
 import { SecretDetailsModal } from './SecretDetailsModal';
+import { ImportEnvModal } from './ImportEnvModal';
 import {
   Key,
   Plus,
@@ -25,6 +26,7 @@ import {
   ChevronRight,
   Server,
   Filter,
+  Upload,
 } from 'lucide-react';
 
 export const SecretsView = () => {
@@ -41,6 +43,7 @@ export const SecretsView = () => {
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedSecretForDetails, setSelectedSecretForDetails] = useState(null);
   const [copiedKeyName, setCopiedKeyName] = useState(null);
 
@@ -184,6 +187,10 @@ export const SecretsView = () => {
     setSecrets((prev) => [newSecret, ...prev]);
   };
 
+  const handleSecretsImported = () => {
+    fetchSecrets(false);
+  };
+
   const handleSecretUpdated = (updatedSecret) => {
     setSecrets((prev) =>
       prev.map((s) => (s.id === updatedSecret.id ? updatedSecret : s))
@@ -236,6 +243,16 @@ export const SecretsView = () => {
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF2D6D]' : ''}`} />
             <span>Sync Vault</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!selectedEnvironmentId}
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-[#FFB4C8] hover:text-white text-xs font-mono font-bold tracking-wider uppercase flex items-center gap-2 transition-all border border-[#FFB4C8]/20 active:scale-95 cursor-pointer shadow-sm"
+          >
+            <Upload className="w-4 h-4 text-[#FF2D6D]" />
+            <span>Import .env</span>
           </button>
 
           <button
@@ -443,13 +460,23 @@ export const SecretsView = () => {
             </p>
           </div>
           {!searchQuery && selectedEnvironmentId && (
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="mt-2 px-5 py-2.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 text-white text-xs font-bold shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add First Secret</span>
-            </button>
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-[#FFB4C8] hover:text-white text-xs font-bold border border-[#FFB4C8]/25 transition-all flex items-center gap-2 active:scale-95 cursor-pointer shadow-sm"
+              >
+                <Upload className="w-4 h-4 text-[#FF2D6D]" />
+                <span>Import from .env</span>
+              </button>
+
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-5 py-2.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 text-white text-xs font-bold shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add First Secret</span>
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -588,6 +615,19 @@ export const SecretsView = () => {
           environmentId={selectedEnvironmentId}
           environmentName={currentEnvironment?.name || 'Production'}
           onSecretCreated={handleSecretCreated}
+        />
+      )}
+
+      {/* Import .env Modal */}
+      {selectedEnvironmentId && (
+        <ImportEnvModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          workspaceId={activeWorkspace?.id}
+          projectId={selectedProjectId}
+          environmentId={selectedEnvironmentId}
+          environmentName={currentEnvironment?.name || 'Production'}
+          onSecretsImported={handleSecretsImported}
         />
       )}
 

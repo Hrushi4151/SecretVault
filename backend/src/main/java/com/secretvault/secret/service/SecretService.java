@@ -236,6 +236,71 @@ public class SecretService {
     }
 
     /**
+     * Batch imports multiple secrets (e.g. from .env file).
+     * Supports overwriting existing secrets with new versions or skipping duplicates.
+     */
+    @Transactional
+    public com.secretvault.secret.dto.BatchImportSecretsResponse batchImportSecrets(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            com.secretvault.secret.dto.BatchImportSecretsRequest request,
+            UUID userId,
+            String requestId,
+            String ipAddress
+    ) {
+        verifyHierarchyAndWriteAccess(workspaceId, projectId, environmentId, userId);
+
+        int importedCount = 0;
+        int updatedCount = 0;
+        int skippedCount = 0;
+        java.util.List<SecretMetadataResponse> resultSecrets = new java.util.ArrayList<>();
+
+        for (CreateSecretRequest item : request.secrets()) {
+            String normalizedName = item.name().trim();
+            Optional<Secret> existingOpt = secretRepository.findByEnvironmentIdAndName(environmentId, normalizedName);
+
+            if (existingOpt.isPresent()) {
+                Secret existing = existingOpt.get();
+                if (request.overwriteExisting()) {
+                    UpdateSecretRequest updateReq = new UpdateSecretRequest(
+                            item.description(),
+                            SecretStatus.ACTIVE,
+                            item.value(),
+                            "Batch imported from .env"
+                    );
+                    SecretMetadataResponse updated = updateSecret(
+                            workspaceId, projectId, environmentId, existing.getId(),
+                            updateReq, userId, requestId, ipAddress
+                    );
+                    resultSecrets.add(updated);
+                    updatedCount++;
+                } else {
+                    skippedCount++;
+                    resultSecrets.add(SecretMetadataResponse.fromEntity(existing));
+                }
+            } else {
+                SecretMetadataResponse created = createSecret(
+                        workspaceId, projectId, environmentId, item, userId, requestId, ipAddress
+                );
+                resultSecrets.add(created);
+                importedCount++;
+            }
+        }
+
+        log.info("Batch import completed in environment [{}]: total={}, imported={}, updated={}, skipped={}",
+                environmentId, request.secrets().size(), importedCount, updatedCount, skippedCount);
+
+        return new com.secretvault.secret.dto.BatchImportSecretsResponse(
+                request.secrets().size(),
+                importedCount,
+                updatedCount,
+                skippedCount,
+                resultSecrets
+        );
+    }
+
+    /**
      * Updates secret metadata or creates a new immutable version (vN+1) if a new value is supplied.
      */
     @Transactional

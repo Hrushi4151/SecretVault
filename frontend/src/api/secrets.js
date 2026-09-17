@@ -43,6 +43,16 @@ export const secretApi = {
     );
   },
 
+  batchImport: async (workspaceId, projectId, environmentId, payload) => {
+    return apiClient.request(
+      `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/batch-import`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
   update: async (workspaceId, projectId, environmentId, secretId, payload) => {
     return apiClient.request(
       `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}`,
