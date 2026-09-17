@@ -21,7 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export const AppShell = ({ children }) => {
+export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => {
   const { user, activeWorkspace, logout } = useAuth();
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,11 +38,11 @@ export const AppShell = ({ children }) => {
   };
 
   const workspaceNavItems = [
-    { label: 'Dashboard', icon: <LayoutGrid className="w-4 h-4" />, active: true },
-    { label: 'Projects', icon: <FolderGit2 className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Secrets', icon: <Key className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Integrations', icon: <Network className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Sync Center', icon: <RefreshCw className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutGrid className="w-4 h-4" /> },
+    { id: 'projects', label: 'Projects', icon: <FolderGit2 className="w-4 h-4" /> },
+    { id: 'secrets', label: 'Secrets', icon: <Key className="w-4 h-4" />, badge: 'Phase 3' },
+    { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4" />, badge: 'Phase 3' },
+    { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4" />, badge: 'Phase 3' },
   ];
 
   const securityNavItems = [
@@ -114,29 +114,33 @@ export const AppShell = ({ children }) => {
                 Workspace
               </span>
               <div className="flex flex-col gap-1">
-                {workspaceNavItems.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
-                      item.active
-                        ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
-                        : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className={item.active ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
-                        {item.icon}
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {workspaceNavItems.map((item) => {
+                  const isActive = item.id === activeTab;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onSelectTab && onSelectTab(item.id)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
+                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

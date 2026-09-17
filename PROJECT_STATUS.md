@@ -1,6 +1,6 @@
 # SecretVault — Project Status & Implementation Tracker
 
-> **Last Updated:** Foundation Phase  
+> **Last Updated:** Phase 2 Access Extension  
 > **Current Version:** `0.1.0-SNAPSHOT`  
 > **Architecture Style:** Modular Monolith (Spring Boot 3.3.4 / Java 21)
 
@@ -14,7 +14,8 @@
 | **Backend Core Baseline** | 🟢 **COMPLETE** | Domain package boundaries (`com.secretvault.*`), baseline health endpoint, test suite passing. |
 | **Authentication & Workspace (Phase 1 Backend)** | 🟢 **COMPLETE** | User registration, BCrypt password security, stateless JJWT access & rotating refresh tokens, Organization multi-tenancy, Workspace scoping, Membership RBAC roles (OWNER, ADMIN, DEVELOPER, VIEWER), full REST APIs & 30/30 backend tests passing. |
 | **Authentication & Workspace (Phase 1 Frontend)** | 🟢 **COMPLETE** | React 18 / Vite / Tailwind CSS / JSX dark glassmorphic control plane. Implemented Login, Sign Up, Forgot Password Modal, MFA Challenge, Workspace Switcher, Create Workspace Modal, Workspace Members & RBAC dialog, and App Shell / Workspace Onboarding overview. Connected to live Phase 1 backend APIs with silent refresh & X-Workspace-ID tenant context. |
-| **Projects & Environments (Phase 2)** | ⚪ **NOT STARTED** | Project CRUD and Dev/Staging/Prod scoping planned. |
+| **Projects & Environments (Phase 2 Core)** | 🟢 **COMPLETE** | Scoped `Project` and `Environment` entities, `V3` Flyway migration, automatic provisioning of `development`, `staging`, and `production` (protected) tiers, complete REST APIs with RBAC and cross-tenant IDOR protection, 50/50 tests passing, and React control plane with Stitch dark theme. |
+| **Workspace Access, Invitations & Scoping (Phase 2 Extension)** | 🟢 **COMPLETE** | `V4` Flyway migration (`workspace_invitations`, `project_access`, `environment_access`). Member lifecycle management with last OWNER safeguard (`PATCH/DELETE /members/{userId}`), Workspace Settings (`GET/PATCH /settings`), Cryptographic single-use Invitations (SHA-256 hash storage), Scoped Project Access (`/projects/{id}/members`), Scoped Environment Access (`/environments/{id}/access`), Permission reduction rule ($\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope}$), 72/72 backend tests passing. |
 | **Secret Engine & Encryption (Phase 3)** | ⚪ **NOT STARTED** | AES-256-GCM envelope encryption, masked reveal planned. |
 | **Versioning & Audit (Phase 4)** | ⚪ **NOT STARTED** | Immutable version ledger, rollback, and append-only audit trail planned. |
 | **RBAC & Access Control (Phase 5)** | ⚪ **NOT STARTED** | Fine-grained permission evaluator and JIT access planned. |
@@ -43,5 +44,10 @@
   - Screen 40: Invite Member — 🟢 **IMPLEMENTED**
   - Screen 114: Workspace Switcher — 🟢 **IMPLEMENTED**
   - Screen 115: Workspace Management — 🟢 **IMPLEMENTED**
-- **Phase 2+ Screens:** ⚪ **NOT STARTED**
-- **Total:** 8 / 126 Screens Implemented (Phase 1 Target Complete)
+- **Phase 2 Frontend Screens:**
+  - Screen 10: Projects List — 🟢 **IMPLEMENTED**
+  - Screen 11: Create Project Modal — 🟢 **IMPLEMENTED**
+  - Screen 12: Project & Environments Control — 🟢 **IMPLEMENTED**
+  - Screen 38: Workspace Settings & Member Governance Dialog — 🟢 **IMPLEMENTED**
+- **Phase 3+ Screens:** ⚪ **NOT STARTED**
+- **Total:** 12 / 126 Screens Implemented (Phase 1 & Phase 2 Extension Targets Complete)
