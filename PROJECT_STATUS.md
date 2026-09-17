@@ -1,6 +1,6 @@
 # SecretVault — Project Status & Implementation Tracker
 
-> **Last Updated:** Phase 2 Access Extension  
+> **Last Updated:** Phase 3 Core Secret Management & Envelope Encryption  
 > **Current Version:** `0.1.0-SNAPSHOT`  
 > **Architecture Style:** Modular Monolith (Spring Boot 3.3.4 / Java 21)
 
@@ -16,8 +16,8 @@
 | **Authentication & Workspace (Phase 1 Frontend)** | 🟢 **COMPLETE** | React 18 / Vite / Tailwind CSS / JSX dark glassmorphic control plane. Implemented Login, Sign Up, Forgot Password Modal, MFA Challenge, Workspace Switcher, Create Workspace Modal, Workspace Members & RBAC dialog, and App Shell / Workspace Onboarding overview. Connected to live Phase 1 backend APIs with silent refresh & X-Workspace-ID tenant context. |
 | **Projects & Environments (Phase 2 Core)** | 🟢 **COMPLETE** | Scoped `Project` and `Environment` entities, `V3` Flyway migration, automatic provisioning of `development`, `staging`, and `production` (protected) tiers, complete REST APIs with RBAC and cross-tenant IDOR protection, 50/50 tests passing, and React control plane with Stitch dark theme. |
 | **Workspace Access, Invitations & Scoping (Phase 2 Extension)** | 🟢 **COMPLETE** | `V4` Flyway migration (`workspace_invitations`, `project_access`, `environment_access`). Member lifecycle management with last OWNER safeguard (`PATCH/DELETE /members/{userId}`), Workspace Settings (`GET/PATCH /settings`), Cryptographic single-use Invitations (SHA-256 hash storage), Scoped Project Access (`/projects/{id}/members`), Scoped Environment Access (`/environments/{id}/access`), Permission reduction rule ($\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope}$), 72/72 backend tests passing. |
-| **Secret Engine & Encryption (Phase 3)** | ⚪ **NOT STARTED** | AES-256-GCM envelope encryption, masked reveal planned. |
-| **Versioning & Audit (Phase 4)** | ⚪ **NOT STARTED** | Immutable version ledger, rollback, and append-only audit trail planned. |
+| **Secret Engine & Envelope Encryption (Phase 3)** | 🟢 **COMPLETE** | AES-256-GCM envelope encryption with ephemeral 256-bit DEKs and 96-bit IVs, Authenticated Additional Data (AAD) context binding (`secretId:environmentId:versionNumber`), pluggable `KmsKeyProvider` key wrapping, immutable monotonic version ledger (`secret_versions`), append-only audit logging (`audit_logs`), bulk `.env` import engine, masked reveal with `Cache-Control: no-store` headers, 99/99 backend tests passing. |
+| **Versioning & Audit (Phase 4)** | ⚪ **NOT STARTED** | Immutable version ledger baseline built in Phase 3; Rollback engine, point-in-time secret diffing, and audit compliance search planned. |
 | **RBAC & Access Control (Phase 5)** | ⚪ **NOT STARTED** | Fine-grained permission evaluator and JIT access planned. |
 | **Provider Adapters (Phase 6)** | ⚪ **NOT STARTED** | `SecretProvider` SPI and AWS/Vercel/Railway/GitHub adapters planned. |
 | **Synchronization Engine (Phase 7)** | ⚪ **NOT STARTED** | Async Redis sync queue, worker, drift detection planned. |
@@ -49,5 +49,11 @@
   - Screen 11: Create Project Modal — 🟢 **IMPLEMENTED**
   - Screen 12: Project & Environments Control — 🟢 **IMPLEMENTED**
   - Screen 38: Workspace Settings & Member Governance Dialog — 🟢 **IMPLEMENTED**
-- **Phase 3+ Screens:** ⚪ **NOT STARTED**
-- **Total:** 12 / 126 Screens Implemented (Phase 1 & Phase 2 Extension Targets Complete)
+- **Phase 3 Frontend Screens:**
+  - Screen 14: Secrets List Control Plane (`SecretsView.jsx`) — 🟢 **IMPLEMENTED**
+  - Screen 15: Create Secret & Bulk Import Modal (`CreateSecretModal.jsx`) — 🟢 **IMPLEMENTED**
+  - Screen 16: Secret Details & History Modal (`SecretDetailsModal.jsx`) — 🟢 **IMPLEMENTED**
+  - Screen 17: Plaintext Reveal & Auto-Masking Timer (`SecretDetailsModal.jsx`) — 🟢 **IMPLEMENTED**
+- **Phase 4+ Screens:** ⚪ **NOT STARTED**
+- **Total:** 16 / 126 Screens Implemented (Phase 1, Phase 2, & Phase 3 Targets Complete)
+

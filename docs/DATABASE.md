@@ -24,6 +24,7 @@
 - `V2__auth_and_workspaces_schema.sql` — Users, organizations, workspaces, memberships, and refresh tokens
 - `V3__projects_and_environments_schema.sql` — Projects and environments tables with UUID primary keys, foreign keys, unique slug constraints, and indexes
 - `V4__workspace_invitations_and_access_scoping.sql` — `workspace_invitations`, `project_access`, and `environment_access` tables for fine-grained multi-tier RBAC and invitation workflows
+- `V5__core_secret_management_schema.sql` — `secrets`, `secret_versions`, and `audit_logs` tables with envelope encryption columns, monotonic version constraints, foreign keys, and indexes
 
 ---
 
@@ -41,7 +42,7 @@ erDiagram
     ENVIRONMENT ||--o{ ENVIRONMENT_ACCESS : restricts
     ENVIRONMENT ||--o{ SECRET : owns
     SECRET ||--|{ SECRET_VERSION : tracks
-    ORGANIZATION ||--o{ AUDIT_LOG : records
+    WORKSPACE ||--o{ AUDIT_LOG : records
 
     ORGANIZATION {
         uuid id PK
@@ -118,21 +119,96 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    SECRET {
+        uuid id PK
+        uuid environment_id FK
+        string name
+        string description
+        string status "ACTIVE | DISABLED | DELETED"
+        int current_version_number
+        uuid created_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SECRET_VERSION {
+        uuid id PK
+        uuid secret_id FK
+        int version_number
+        bytea ciphertext
+        bytea encrypted_dek
+        bytea iv
+        bytea auth_tag
+        string key_reference
+        uuid created_by FK
+        timestamp created_at
+        string reason
+    }
+
+    AUDIT_LOG {
+        uuid id PK
+        uuid organization_id
+        uuid workspace_id
+        uuid actor_id
+        string actor_type
+        string action
+        string resource_type
+        uuid resource_id
+        string request_id
+        string ip_address
+        string outcome
+        timestamp created_at
+    }
 ```
 
 ---
 
-## 4. Encryption Metadata Columns (Phase 3 Planned)
+## 4. Encryption Metadata Columns & Table Schemas [IMPLEMENTED]
 
-Every secret version table record stores cryptographic envelope components:
+### 4.1 `secrets` Table
+Stores high-level metadata and active version pointers without holding secret values.
+- `id` (UUID, PK)
+- `environment_id` (UUID, FK -> `environments(id) ON DELETE RESTRICT`)
+- `name` (VARCHAR(255), pattern `^[A-Z0-9][A-Z0-9_.-]*$`)
+- `description` (TEXT)
+- `status` (VARCHAR(32), `ACTIVE` | `DISABLED` | `DELETED`)
+- `current_version_number` (INTEGER, default 1)
+- `created_by` (UUID, FK -> `users(id)`)
+- `created_at`, `updated_at` (TIMESTAMPTZ)
+- Constraints: `UNIQUE(environment_id, name)`
+- Indexes: `idx_secrets_env_status (environment_id, status)`, `idx_secrets_name (name)`
 
-| Column Name | Type | Purpose |
-|---|---|---|
-| `encrypted_payload` | `BYTEA` | Ciphertext produced by AES-256-GCM |
-| `encrypted_dek` | `BYTEA` | Unique Data Encryption Key encrypted with Master KEK |
-| `iv_nonce` | `BYTEA` | 96-bit unique Initialization Vector (IV) |
-| `auth_tag` | `BYTEA` | 128-bit authentication tag validating ciphertext integrity |
-| `kms_key_id` | `VARCHAR(255)` | Identifier or ARN of the Key Encryption Key (KEK) |
+### 4.2 `secret_versions` Table
+Immutable cryptographic ledger storing envelope-encrypted payloads.
+- `id` (UUID, PK)
+- `secret_id` (UUID, FK -> `secrets(id) ON DELETE CASCADE`)
+- `version_number` (INTEGER NOT NULL)
+- `ciphertext` (`BYTEA` NOT NULL, AES-256-GCM ciphertext)
+- `encrypted_dek` (`BYTEA` NOT NULL, DEK wrapped with Master KEK)
+- `iv` (`BYTEA` NOT NULL, 96-bit random nonce)
+- `auth_tag` (`BYTEA` NOT NULL, 128-bit authentication tag)
+- `key_reference` (VARCHAR(255) NOT NULL, KMS / KEK identifier)
+- `created_by` (UUID, FK -> `users(id)`)
+- `created_at` (TIMESTAMPTZ NOT NULL)
+- `reason` (TEXT, optional audit rotation note)
+- Constraints: `UNIQUE(secret_id, version_number)`
+- Indexes: `idx_secret_versions_secret_ver (secret_id, version_number DESC)`
+
+### 4.3 `audit_logs` Table
+Append-only immutable record of all security-sensitive actions.
+- `id` (UUID, PK)
+- `organization_id`, `workspace_id` (UUID)
+- `actor_id` (UUID, actor user ID)
+- `actor_type` (VARCHAR(32), e.g. `USER`, `SERVICE_ACCOUNT`)
+- `action` (VARCHAR(64), e.g. `SECRET_CREATED`, `SECRET_REVEALED`, `SECRET_VALUE_UPDATED`, `SECRET_DELETED`)
+- `resource_type` (VARCHAR(64), e.g. `SECRET`, `ENVIRONMENT`)
+- `resource_id` (UUID, target resource ID)
+- `request_id` (VARCHAR(128), correlation trace ID)
+- `ip_address` (VARCHAR(64), client IP)
+- `outcome` (VARCHAR(32), `SUCCESS` | `FAILURE`)
+- `created_at` (TIMESTAMPTZ NOT NULL)
+- Indexes: `idx_audit_workspace_created (workspace_id, created_at DESC)`, `idx_audit_resource (resource_type, resource_id)`
 
 ---
 
@@ -141,6 +217,7 @@ Every secret version table record stores cryptographic envelope components:
 - `audit_logs` records are **append-only**.
 - PostgreSQL permissions for application users must omit `UPDATE` and `DELETE` privileges on `audit_logs`.
 - Minimum retention: 365 days for standard tiers; 7 years for enterprise compliance tiers.
+
 
 ---
 

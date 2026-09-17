@@ -102,13 +102,70 @@ All error responses return a standardized, sanitized JSON payload without leakin
 - `PATCH /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}/access/{userId}` — Update scoped environment permission level.
 - `DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}/access/{userId}` — Revoke scoped environment access.
 
-### 4.6 Secret Engine [PLANNED — PHASE 3]
-- `GET /api/v1/environments/{envId}/secrets` — List secrets (Values are masked: `••••••••`).
-- `POST /api/v1/environments/{envId}/secrets` — Create secret (Encrypts payload).
-- `POST /api/v1/secrets/{secretId}/reveal` — Explicit reveal request (Requires `secret.reveal` permission & audits action).
-- `POST /api/v1/secrets/{secretId}/rotate` — Trigger manual or provider rotation.
-- `POST /api/v1/secrets/{secretId}/rollback` — Roll back to prior version number.
-- `GET /api/v1/secrets/{secretId}/versions` — List immutable version history.
+### 4.6 Secret Management Engine & Envelope Encryption [IMPLEMENTED]
+
+All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}/secrets`. Standard endpoints return metadata ONLY. Plaintext values are never returned unless explicitly called via the reveal endpoint.
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets` — Create a new secret.
+  - **Request Body:**
+    ```json
+    {
+      "name": "DATABASE_URL",
+      "value": "postgresql://usr:pwd@db.internal:5432/app",
+      "description": "Primary PostgreSQL connection string"
+    }
+    ```
+  - **Response (201 Created):** `SecretMetadataResponse` (Version 1, zero plaintext returned).
+  - **Headers:** `Location: /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}`
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets` — List secrets metadata for an environment.
+  - **Query Params:** `status` (`ACTIVE` | `DISABLED` | `DELETED`), `search` (case-insensitive substring filter), `page`, `size`, `sort`.
+  - **Response (200 OK):** Page of `SecretMetadataResponse` objects with version counters and timestamps.
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}` — Get metadata for a single secret.
+  - **Response (200 OK):** `SecretMetadataResponse` (name, status, description, currentVersionNumber, created/updated timestamps).
+
+- `PATCH /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}` — Update secret metadata or rotate value.
+  - **Request Body:**
+    ```json
+    {
+      "value": "postgresql://usr:new_pwd@db.internal:5432/app",
+      "description": "Updated database credentials",
+      "reason": "Quarterly credential rotation",
+      "status": "ACTIVE"
+    }
+    ```
+  - **Behavior:** If `value` is present, creates an immutable new version row ($v_{N+1}$), advances `current_version_number`, and preserves historical versions. If only `description`/`status` are provided, modifies metadata in place without incrementing version.
+
+- `DELETE /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}` — Soft-delete secret.
+  - **Behavior:** Transitions status to `DELETED`. Blocks subsequent reveals and updates while preserving cryptographic audit history.
+  - **Response (204 No Content)**
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/reveal` — Explicit plaintext reveal.
+  - **Permissions:** Requires effective `READ` or `WRITE` access.
+  - **Response Headers:** `Cache-Control: no-store, no-cache, must-revalidate, private`, `Pragma: no-cache`.
+  - **Response (200 OK):**
+    ```json
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "name": "DATABASE_URL",
+      "versionNumber": 2,
+      "value": "postgresql://usr:new_pwd@db.internal:5432/app",
+      "revealedAt": "2026-09-17T19:30:00Z"
+    }
+    ```
+  - **Audit:** Records a non-repudiable `SECRET_REVEALED` event in `audit_logs`.
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/batch-import` — Bulk `.env` format import.
+  - **Request Body:**
+    ```json
+    {
+      "envContent": "API_KEY=sk_live_12345\nJWT_SECRET=supersecret\nREDIS_HOST=10.0.0.5",
+      "overwrite": true
+    }
+    ```
+  - **Response (200 OK):** `BatchImportResponse` detailing imported, updated, skipped, and failed keys.
+
 
 ---
 

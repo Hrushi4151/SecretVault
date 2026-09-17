@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Phase 3: Core Secret Management & AES-256-GCM Envelope Encryption Engine
+- **Cryptographic Envelope Encryption Engine (`com.secretvault.encryption`)**:
+  - `EncryptedPayload` immutable record storing ciphertext, wrapped DEK, IV nonce, GCM auth tag, and key reference.
+  - `KmsKeyProvider` SPI with `LocalDevKmsKeyProvider` implementation using RFC 3394 / AES-KW and AES-GCM wrapping with 256-bit Master Key Encryption Key (KEK).
+  - `AesGcmEnvelopeEncryptionService` with cryptographically secure random 256-bit DEK and 96-bit IV generation per encryption operation.
+  - Authenticated Additional Data (AAD) context binding: binds ciphertext to `secretId:environmentId:versionNumber`, rejecting cross-swapping attacks.
+  - Comprehensive cryptographic test suite (`AesGcmEnvelopeEncryptionServiceTest`).
+- **Core Secret Domain & Lifecycle (`com.secretvault.secret`)**:
+  - `Secret`, `SecretVersion`, `SecretStatus` (`ACTIVE`, `DISABLED`, `DELETED`) entities and repositories.
+  - Immutable version ledger with monotonic version increments ($v_{N+1}$) and atomic pointer advancement.
+  - Zero-plaintext default guarantee: standard GET endpoints return `SecretMetadataResponse` without secret values.
+  - Explicit Reveal API (`POST /api/v1/.../secrets/{secretId}/reveal`) returning plaintext with HTTP `Cache-Control: no-store, no-cache, must-revalidate, private` and `Pragma: no-cache` headers.
+  - Soft deletion protecting audit history while blocking further reveal/mutation actions.
+  - Bulk `.env` import API (`POST /api/v1/.../secrets/batch-import`) with key validation, comments parsing, and optional overwrite toggle.
+- **Append-Only Tamper-Evident Audit Logging (`com.secretvault.audit`)**:
+  - `AuditLog` entity, `AuditAction` (`SECRET_CREATED`, `SECRET_REVEALED`, `SECRET_VALUE_UPDATED`, `SECRET_DELETED`), and `AuditService`.
+  - Records non-repudiable logs with actor ID, workspace ID, client IP, request ID, and timestamp without sensitive plaintext leakage.
+- **Database Schema & Migrations**:
+  - Flyway migration `V5__core_secret_management_schema.sql` creating `secrets`, `secret_versions`, and `audit_logs` tables with UUID PKs, composite indexes, and unique constraints.
+- **Frontend Control Plane (React 18 / Vite / Tailwind CSS / JSX)**:
+  - `frontend/src/api/secrets.js` API client module.
+  - `SecretsView.jsx` (Stitch Screen 14): Project dropdown selector, environment tier filter chips, real-time search, metrics cards, and instant reveal timer.
+  - `CreateSecretModal.jsx` (Stitch Screen 15): Dual-mode modal supporting single secret creation and bulk `.env` paste/upload import with syntax parser.
+  - `SecretDetailsModal.jsx` (Stitch Screens 16 & 17): Masked view, on-demand explicit reveal with countdown auto-mask timer, one-click clipboard copy, immutable version history timeline, metadata and value mutation tabs, and soft delete confirmation.
+- **Automated Test Suite**:
+  - 99/99 passing backend tests across all unit and integration test suites.
+
 ### Added - Phase 2 Extension: Workspace Access, Invitations & Fine-Grained Scoping
 - **Workspace Governance & Member Lifecycle**:
   - `UpdateMemberRoleRequest`, `UpdateWorkspaceSettingsRequest`, `WorkspaceSettingsResponse`.
@@ -72,8 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reusable API client (`client.js`, `auth.js`, `workspaces.js`) with Bearer token authentication, `X-Workspace-ID` tenant context, and silent refresh.
   - Global `AuthContext.jsx` with full authentication lifecycle, session persistence, and multi-tenant workspace switcher.
 
-### Planned (Upcoming Milestone: Phase 3)
-- Secret Engine & Encryption (`com.secretvault.secret`, `com.secretvault.encryption`) with AES-256-GCM envelope encryption and masked secret reveal.
+### Planned (Upcoming Milestone: Phase 4)
+- Versioning & Audit: Rollback engine, point-in-time secret diffing, version tagging, and audit log compliance search.
 
 ---
 
