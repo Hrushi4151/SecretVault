@@ -267,4 +267,54 @@ class SecretControllerTest {
                         .content(objectMapper.writeValueAsString(dupReq)))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    @DisplayName("Batch Import: Successfully imports multiple secrets from .env payload and handles overwrites")
+    void testBatchImportSecrets() throws Exception {
+        TestContext ctx = setupTestWorkspaceAndProject("batch_import");
+
+        // 1. Initial Batch Import of 2 secrets
+        com.secretvault.secret.dto.BatchImportSecretsRequest batchReq = new com.secretvault.secret.dto.BatchImportSecretsRequest(
+                java.util.List.of(
+                        new CreateSecretRequest("DATABASE_URL", "postgres://localhost/db", "DB Conn"),
+                        new CreateSecretRequest("REDIS_HOST", "127.0.0.1", "Redis Cache")
+                ),
+                true
+        );
+
+        mockMvc.perform(post("/api/v1/workspaces/" + ctx.wsId + "/projects/" + ctx.projId + "/environments/" + ctx.envId + "/secrets/batch-import")
+                        .header("Authorization", "Bearer " + ctx.token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(batchReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalProcessed").value(2))
+                .andExpect(jsonPath("$.data.importedCount").value(2))
+                .andExpect(jsonPath("$.data.updatedCount").value(0))
+                .andExpect(jsonPath("$.data.skippedCount").value(0));
+
+        // 2. Second Batch Import with 1 existing (overwrite) and 1 new secret
+        com.secretvault.secret.dto.BatchImportSecretsRequest batch2Req = new com.secretvault.secret.dto.BatchImportSecretsRequest(
+                java.util.List.of(
+                        new CreateSecretRequest("DATABASE_URL", "postgres://prod-db/db", "Updated DB"),
+                        new CreateSecretRequest("API_KEY", "sk_live_12345", "Live Stripe Key")
+                ),
+                true
+        );
+
+        mockMvc.perform(post("/api/v1/workspaces/" + ctx.wsId + "/projects/" + ctx.projId + "/environments/" + ctx.envId + "/secrets/batch-import")
+                        .header("Authorization", "Bearer " + ctx.token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(batch2Req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalProcessed").value(2))
+                .andExpect(jsonPath("$.data.importedCount").value(1))
+                .andExpect(jsonPath("$.data.updatedCount").value(1))
+                .andExpect(jsonPath("$.data.skippedCount").value(0));
+
+        // 3. Verify 3 total secrets exist now
+        mockMvc.perform(get("/api/v1/workspaces/" + ctx.wsId + "/projects/" + ctx.projId + "/environments/" + ctx.envId + "/secrets")
+                        .header("Authorization", "Bearer " + ctx.token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(3)));
+    }
 }

@@ -126,6 +126,27 @@ public class SecretController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
+    @PostMapping("/batch-import")
+    @Operation(summary = "Batch import secrets from .env key-value pairs")
+    public ResponseEntity<ApiResponse<com.secretvault.secret.dto.BatchImportSecretsResponse>> batchImportSecrets(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID environmentId,
+            @Valid @RequestBody com.secretvault.secret.dto.BatchImportSecretsRequest request,
+            @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest servletRequest
+    ) {
+        validateWorkspaceHeader(workspaceId, headerWorkspaceId);
+        String requestId = getRequestId();
+        String ipAddress = servletRequest.getRemoteAddr();
+
+        com.secretvault.secret.dto.BatchImportSecretsResponse response = secretService.batchImportSecrets(
+                workspaceId, projectId, environmentId, request, principal.getId(), requestId, ipAddress
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PatchMapping("/{secretId}")
     @Operation(summary = "Update secret metadata or append new version")
     public ResponseEntity<ApiResponse<SecretMetadataResponse>> updateSecret(
