@@ -6,12 +6,13 @@ import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AppShell } from './components/layout/AppShell';
 import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
 import { ProjectsView } from './components/project/ProjectsView';
+import { SecretsView } from './components/secrets/SecretsView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects'
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets'
 
   if (isLoading) {
     return (
@@ -49,7 +50,13 @@ const MainRouter = () => {
 
   return (
     <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
-      {currentTab === 'projects' ? <ProjectsView /> : <WorkspaceOverview />}
+      {currentTab === 'projects' ? (
+        <ProjectsView />
+      ) : currentTab === 'secrets' ? (
+        <SecretsView />
+      ) : (
+        <WorkspaceOverview />
+      )}
     </AppShell>
   );
 };

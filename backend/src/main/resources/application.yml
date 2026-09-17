@@ -70,7 +70,7 @@ springdoc:
 # Application Security Configuration
 secretvault:
   security:
-    master-key: ${VAULT_MASTER_KEY:dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2Zvcl9sb2NhbF9kZXY=}
+    master-key: ${VAULT_MASTER_KEY:MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=}
     jwt:
       secret: ${JWT_SECRET:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
       expiration-seconds: 86400

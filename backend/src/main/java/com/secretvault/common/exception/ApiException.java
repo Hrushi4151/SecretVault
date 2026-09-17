@@ -42,6 +42,18 @@ public class ApiException extends RuntimeException {
         return new ApiException(message, HttpStatus.BAD_REQUEST, "BAD_REQUEST");
     }
 
+    public static ApiException badRequest(String code, String message) {
+        return new ApiException(message, HttpStatus.BAD_REQUEST, code);
+    }
+
+    public static ApiException internal(String code, String message) {
+        return new ApiException(message, HttpStatus.INTERNAL_SERVER_ERROR, code);
+    }
+
+    public static ApiException internal(String code, String message, Throwable cause) {
+        return new ApiException(message, cause, HttpStatus.INTERNAL_SERVER_ERROR, code);
+    }
+
     public HttpStatus getStatus() {
         return status;
     }
