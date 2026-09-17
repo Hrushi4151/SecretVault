@@ -24,13 +24,18 @@ Identity (User / Service Account / OIDC Workload)
                           └── Role & Granular Permission Check
 ```
 
-### Initial Organization Roles:
-- **OWNER:** Full account, billing, security policy, and tenant lifecycle control.
-- **ADMIN:** Workspace configuration, team invitations, provider connections, and policy management.
-- **DEVELOPER:** Secret management in permitted environments (Dev/Staging by default); JIT access requests for Production.
-- **VIEWER:** Read-only access to metadata, audit events, and project overview. Cannot reveal secrets.
+### Initial Organization Roles & Phase 2 Capabilities:
+- **OWNER:** Full account, billing, security policy, workspace/project/environment lifecycle control (`canManageWorkspace()`, `canCreateProjects()`, `canManageProjects()`, `canManageEnvironments()`, `canWriteSecrets()`).
+- **ADMIN:** Workspace administration, project/environment management, team invitations, and policy configuration (`canManageWorkspace()`, `canCreateProjects()`, `canManageProjects()`, `canManageEnvironments()`, `canWriteSecrets()`).
+- **DEVELOPER:** Can create projects and manage secrets in allowed environments (`canCreateProjects()`, `canWriteSecrets()`). Read-only access to workspaces and projects; cannot delete projects or create/delete custom environments.
+- **VIEWER:** Strict read-only access to workspaces, projects, environments, and secret metadata (`canReadSecrets()`). Cannot mutate projects, environments, or secrets.
 
 ### Granular Permissions:
+- `project.read` — View projects and their environment summaries.
+- `project.create` — Provision new projects with default environments (`development`, `staging`, `production`).
+- `project.update` / `project.delete` — Modify or delete projects (OWNER / ADMIN only).
+- `environment.read` — View environment lists and configuration details.
+- `environment.create` / `environment.update` / `environment.delete` — Manage custom environment tiers and protection status (OWNER / ADMIN only).
 - `secret.read` — View secret names, descriptions, tags, and sync status.
 - `secret.reveal` — Decrypt and view plaintext secret material.
 - `secret.create` / `secret.update` / `secret.delete` — Modify secrets.
@@ -39,6 +44,11 @@ Identity (User / Service Account / OIDC Workload)
 - `sync.execute` — Trigger synchronization jobs.
 - `audit.read` — Inspect immutable audit logs.
 - `security.manage` — Configure policies, JIT settings, and IP allowlists.
+
+### Hierarchical Authorization & Anti-Mass-Assignment Invariants:
+1. **Server-Side Authoritative Authorization:** Frontend claims of role, tenant, or membership are never trusted. All access decisions evaluate the database-backed `WorkspaceMembership`.
+2. **Anti-Mass-Assignment:** Request DTOs strictly limit modifiable fields to `name`, `slug`, `description`, `envType`, `isProtected`, and `status`. Critical fields (`id`, `workspaceId`, `projectId`, `createdBy`, `createdAt`) are exclusively generated and assigned server-side.
+3. **Cross-Tenant IDOR Guard:** All database lookups for projects and environments enforce `findByIdAndWorkspaceId` and `findByIdAndProjectId`. Querying a resource under a mismatched parent ID returns `404 RESOURCE_NOT_FOUND`.
 
 ---
 

@@ -65,10 +65,17 @@ All error responses return a standardized, sanitized JSON payload without leakin
 - `POST /api/v1/auth/mfa/verify` — Verify TOTP / hardware key during step-up auth.
 - `GET /api/v1/workspaces` — List workspaces for the authenticated user.
 
-### 4.3 Projects & Environments [PLANNED]
-- `GET /api/v1/projects` — List projects within active workspace.
-- `POST /api/v1/projects` — Create a new project.
-- `GET /api/v1/projects/{projectId}/environments` — List environments (Dev, Staging, Prod).
+### 4.3 Projects & Environments [IMPLEMENTED]
+- `GET /api/v1/workspaces/{workspaceId}/projects` — List projects accessible to caller within workspace.
+- `POST /api/v1/workspaces/{workspaceId}/projects` — Create project and automatically provision default environments (`development`, `staging`, `production`).
+- `GET /api/v1/workspaces/{workspaceId}/projects/{projectId}` — Get project metadata and environment summaries.
+- `PATCH /api/v1/workspaces/{workspaceId}/projects/{projectId}` — Update project name, description, or status (Requires `OWNER` or `ADMIN`).
+- `DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}` — Delete project and cascade to associated environments (Requires `OWNER` or `ADMIN`).
+- `GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments` — List all deployment environments for a project.
+- `POST /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments` — Create custom environment tier (Requires `OWNER` or `ADMIN`).
+- `GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}` — Get environment details.
+- `PATCH /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}` — Update environment settings or protection tier (Requires `OWNER` or `ADMIN`).
+- `DELETE /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}` — Delete environment tier (Requires `OWNER` or `ADMIN`).
 
 ### 4.4 Secret Engine [PLANNED]
 - `GET /api/v1/environments/{envId}/secrets` — List secrets (Values are masked: `••••••••`).
