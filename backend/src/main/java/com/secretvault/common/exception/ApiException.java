@@ -22,6 +22,26 @@ public class ApiException extends RuntimeException {
         this.code = code;
     }
 
+    public static ApiException unauthorized(String message) {
+        return new ApiException(message, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+    }
+
+    public static ApiException forbidden(String message) {
+        return new ApiException(message, HttpStatus.FORBIDDEN, "FORBIDDEN");
+    }
+
+    public static ApiException notFound(String message) {
+        return new ApiException(message, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND");
+    }
+
+    public static ApiException conflict(String message) {
+        return new ApiException(message, HttpStatus.CONFLICT, "RESOURCE_CONFLICT");
+    }
+
+    public static ApiException badRequest(String message) {
+        return new ApiException(message, HttpStatus.BAD_REQUEST, "BAD_REQUEST");
+    }
+
     public HttpStatus getStatus() {
         return status;
     }

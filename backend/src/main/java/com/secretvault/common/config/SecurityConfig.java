@@ -1,5 +1,7 @@
 package com.secretvault.common.config;
 
+import com.secretvault.auth.security.JwtAuthenticationEntryPoint;
+import com.secretvault.auth.security.JwtAuthenticationFilter;
 import com.secretvault.common.logging.CorrelationIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +23,7 @@ import java.util.List;
 /**
  * Spring Security baseline configuration for SecretVault.
  * Enforces stateless session management, secures all API routes by default,
- * and allows unauthenticated access only to health probes and OpenAPI documentation.
+ * and allows unauthenticated access only to health probes, OpenAPI, and public auth endpoints.
  */
 @Configuration
 @EnableWebSecurity
@@ -29,9 +31,16 @@ import java.util.List;
 public class SecurityConfig {
 
     private final CorrelationIdFilter correlationIdFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    public SecurityConfig(CorrelationIdFilter correlationIdFilter) {
+    public SecurityConfig(
+            CorrelationIdFilter correlationIdFilter,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
         this.correlationIdFilter = correlationIdFilter;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
     @Bean
@@ -40,6 +49,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         // Public Health & Diagnostics
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
@@ -54,10 +64,18 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
+                        // Public Authentication Endpoints
+                        .requestMatchers(
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh"
+                        ).permitAll()
+
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
