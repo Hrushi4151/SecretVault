@@ -23,7 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - RBAC permission checks for workspace modification and membership management.
 - **Database Migrations & Test Suite**:
   - Flyway migration `V2__auth_and_workspaces_schema.sql` (PostgreSQL DDL with foreign keys and composite indexes).
-  - 100% passing test suite across `JwtTokenProviderTest`, `AuthServiceTest`, `WorkspaceServiceTest`, `AuthControllerTest`, `WorkspaceControllerTest` (27/27 tests green).
+  - 100% passing test suite across `JwtTokenProviderTest`, `AuthServiceTest`, `WorkspaceServiceTest`, `AuthControllerTest`, `WorkspaceControllerTest` (30/30 tests green).
+- **Phase 1 Frontend Web Dashboard (React / Vite / Tailwind CSS / JSX)**:
+  - Stitch dark glassmorphism design system tokens (`#05070A`, `#7C5CFF`, glass panels, borders).
+  - Clean JSX component architecture (`LoginScreen.jsx`, `RegisterScreen.jsx`, `ForgotPasswordModal.jsx`, `MfaChallengeScreen.jsx`, `WorkspaceSwitcher.jsx`, `CreateWorkspaceModal.jsx`, `WorkspaceMembersDialog.jsx`, `WorkspaceOverview.jsx`, `AppShell.jsx`).
+  - Reusable components (`Button.jsx`, `Input.jsx`, `Badge.jsx`, `Modal.jsx`, `Alert.jsx`).
+  - Reusable API client (`client.js`, `auth.js`, `workspaces.js`) with Bearer token authentication, `X-Workspace-ID` tenant context, and silent refresh.
+  - Global `AuthContext.jsx` with full authentication lifecycle, session persistence, and multi-tenant workspace switcher.
 
 ### Planned (Upcoming Milestone: Phase 2)
 - Projects & Environments domain (`com.secretvault.project`, `com.secretvault.environment`) with Dev/Staging/Prod scoped isolation.

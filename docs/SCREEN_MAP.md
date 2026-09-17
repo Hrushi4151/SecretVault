@@ -10,12 +10,12 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 
 | # | Screen Name | Product Area | Purpose | Backend Dependencies | Security Requirements | Related Domain | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Login | Auth & Onboarding | User sign-in with email & password | `POST /auth/login` | Rate limited; BCrypt verification | `auth` | NOT STARTED |
-| 2 | Sign Up | Auth & Onboarding | Account registration | `POST /auth/register` | Password complexity validation | `auth` | NOT STARTED |
-| 3 | Forgot Password | Auth & Onboarding | Password reset request | `POST /auth/forgot-password` | Timing attack safe; token hash | `auth` | NOT STARTED |
+| 1 | Login | Auth & Onboarding | User sign-in with email & password | `POST /auth/login` | Rate limited; BCrypt verification | `auth` | IMPLEMENTED |
+| 2 | Sign Up | Auth & Onboarding | Account registration | `POST /auth/register` | Password complexity validation | `auth` | IMPLEMENTED |
+| 3 | Forgot Password | Auth & Onboarding | Password reset request | `POST /auth/forgot-password` | Timing attack safe; token hash | `auth` | IMPLEMENTED |
 | 4 | Reset Password | Auth & Onboarding | Setting new password via token | `POST /auth/reset-password` | Single-use token expiry | `auth` | NOT STARTED |
-| 5 | MFA Verification | Auth & Onboarding | 2FA / TOTP challenge | `POST /auth/mfa/verify` | Ephemeral verification token | `auth` | NOT STARTED |
-| 6 | Create Organization | Workspace | New tenant organization setup | `POST /organizations` | Unique slug; ownership assignment | `organization` | NOT STARTED |
+| 5 | MFA Verification | Auth & Onboarding | 2FA / TOTP challenge | `POST /auth/mfa/verify` | Ephemeral verification token | `auth` | IMPLEMENTED |
+| 6 | Create Organization | Workspace | New tenant organization setup | `POST /organizations` | Unique slug; ownership assignment | `organization` | IMPLEMENTED |
 | 7 | Create First Project | Workspace | First project onboarding wizard | `POST /projects` | Tenant scoping | `project` | NOT STARTED |
 | 8 | Choose Environments | Workspace | Initial environment selection | `POST /environments` | Default Dev/Staging/Prod creation | `environment` | NOT STARTED |
 | 9 | Dashboard | Workspace | Workspace executive overview | `GET /dashboard/summary` | Tenant isolation; aggregated metrics | `workspace` | NOT STARTED |
@@ -48,8 +48,8 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 36 | AI Assistant | AI Co-pilot | Interactive security assistant | `POST /ai/chat` | Zero plaintext prompt policy | `ai` | NOT STARTED |
 | 37 | AI Security Analysis | AI Co-pilot | AI posture report & insights | `GET /ai/security-analysis` | Advisory output only | `ai` | NOT STARTED |
 | 38 | Deployment RCA | AI Co-pilot | Deployment failure diagnosis | `POST /ai/deployment-rca` | Sanitized log parsing | `ai` | NOT STARTED |
-| 39 | Team Members | Organization | User list and roles | `GET /organization/members` | Tenant admin access check | `organization` | NOT STARTED |
-| 40 | Invite Member | Organization | Invite user to workspace | `POST /organization/invitations` | Role assignment validation | `organization` | NOT STARTED |
+| 39 | Team Members | Organization | User list and roles | `GET /organization/members` | Tenant admin access check | `organization` | IMPLEMENTED |
+| 40 | Invite Member | Organization | Invite user to workspace | `POST /organization/invitations` | Role assignment validation | `organization` | IMPLEMENTED |
 | 41 | Roles & Permissions | Organization | Custom RBAC role editor | `GET /organization/roles` | `role.manage` permission | `access` | NOT STARTED |
 | 42 | Organization Settings | Organization | Org profile, name, logo | `GET /organization/settings` | `organization.manage` permission | `organization` | NOT STARTED |
 | 43 | Account Settings | User Profile | User preferences, password, MFA | `GET /user/profile` | Self-management authorization | `auth` | NOT STARTED |
@@ -123,8 +123,8 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 111 | Secret History | Secret Engine | Detailed version timeline | `GET /secrets/{id}/history` | Immutable version entries | `secret` | NOT STARTED |
 | 112 | Secret Rollback | Secret Engine | Rollback impact inspector | `POST /secrets/{id}/rollback` | Creates audit & new version | `secret` | NOT STARTED |
 | 113 | Developer Overview | Developer | Developer platform hub | `GET /developer/overview` | Developer quick links | `runtime` | NOT STARTED |
-| 114 | Workspace Switcher | Navigation | Multi-tenant tenant navigator | `GET /workspaces` | Workspace membership check | `workspace` | NOT STARTED |
-| 115 | Workspace Management | Workspace | Identity governance & telemetry | `GET /workspaces/{id}` | Workspace admin check | `workspace` | NOT STARTED |
+| 114 | Workspace Switcher | Navigation | Multi-tenant tenant navigator | `GET /workspaces` | Workspace membership check | `workspace` | IMPLEMENTED |
+| 115 | Workspace Management | Workspace | Identity governance & telemetry | `GET /workspaces/{id}` | Workspace admin check | `workspace` | IMPLEMENTED |
 | 116 | MFA & Auth Security | Security | Hardware WebAuthn & passkeys | `GET /security/mfa-settings` | Step-up auth enforcement | `auth` | NOT STARTED |
 | 117 | IP Allowlist Center | Security | CIDR network rules workbench | `GET /security/ip-allowlists` | CIDR validation | `security` | NOT STARTED |
 | 118 | Threat Protection | Security | Threat intelligence timeline | `GET /security/threats` | Anomaly alert feeds | `security` | NOT STARTED |
