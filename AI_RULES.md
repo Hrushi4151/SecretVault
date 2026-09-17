@@ -14,29 +14,210 @@
 
 ---
 
-## 2. Mandatory Pre-Implementation Workflow
+## 2. Mandatory Git Synchronization & Pre-Implementation Protocol
 
-Before generating or editing ANY code, every AI agent MUST:
+> **ABSOLUTE RULE:** The GitHub repository (`origin/main`) is the shared source of truth. Because two developers and two AI coding agents are working on the same repository, **NEVER assume that the local repository is up to date.**
 
-1. **SYNC & INSPECT**:
-   - Check git status (`git status`).
-   - Pull/rebase latest changes from `main`.
-   - Inspect files that will be touched.
-   - Check git history for recent changes by team members.
-2. **READ RELEVANT SPECS**:
-   - `README.md`
-   - `AI_RULES.md`
-   - `PROJECT_STATUS.md`
-   - `docs/ARCHITECTURE.md`
-   - `docs/SECURITY.md`
-   - `docs/DATABASE.md`
-   - `docs/API.md`
-   - `docs/GIT_WORKFLOW.md`
-   - `docs/TEAM_OWNERSHIP.md`
-3. **PLAN & COMMUNICATE**:
-   - Check for existing patterns in the codebase.
-   - Plan minimal, high-impact edits.
-   - Never replace entire working files when a targeted chunk replacement is sufficient.
+### 2.1 Complete Lifecycle Workflow
+
+```text
+                 START PHASE / TASK
+                         │
+                         ▼
+                    GIT STATUS
+                         │
+                         ▼
+                 FETCH ALL REMOTES
+                         │
+                         ▼
+               CHECK BRANCH + HISTORY
+                         │
+                         ▼
+                SYNC WITH origin/main
+                         │
+                         ▼
+               CHECK TEAMMATE CHANGES
+                         │
+                         ▼
+                  READ DOCUMENTS
+                         │
+                         ▼
+               INSPECT STITCH DESIGN
+                         │
+                         ▼
+                 INSPECT TARGET FILE
+                         │
+                         ▼
+                      PLAN
+                         │
+                         ▼
+                    IMPLEMENT
+                         │
+                         ▼
+                       TEST
+                         │
+                         ▼
+                 SECURITY REVIEW
+                         │
+                         ▼
+                REVIEW GIT DIFF
+                         │
+                         ▼
+                      COMMIT
+                         │
+                         ▼
+                       PUSH
+                         │
+                         ▼
+                        PR
+                         │
+                         ▼
+                     MERGE MAIN
+                         │
+                         ▼
+                 BOTH MEMBERS SYNC
+                         │
+                         ▼
+              FULL PHASE INTEGRATION
+                         │
+                         ▼
+                   PHASE SIGN-OFF
+                         │
+                         ▼
+                    NEXT PHASE
+```
+
+---
+
+### 2.2 Before Every Phase
+Before starting ANY phase:
+```bash
+git status
+git fetch --all --prune
+git branch -a
+git log --oneline --decorate -15
+```
+Then synchronize with the latest `origin/main`. If working tree is clean:
+```bash
+git checkout main
+git pull --rebase origin main
+```
+Then create/update the feature branch for the phase. **Do NOT begin implementation until synchronization is complete.**
+
+---
+
+### 2.3 Before Every Task
+Even if the phase has started, before beginning each new task:
+```bash
+git status
+git fetch --all --prune
+git log --oneline --decorate -15
+```
+Check whether `main` has changed. Synchronize feature branch before implementing:
+```bash
+git fetch origin
+git rebase origin/main
+```
+Do not continue if there are unresolved conflicts.
+
+---
+
+### 2.4 Before Modifying Any File
+Before editing ANY existing file:
+```bash
+git status
+git fetch origin
+git diff
+git log --oneline -- <file>
+git diff origin/main...HEAD -- <file>
+```
+Then inspect the actual file and determine:
+- Is this file already modified locally?
+- Did the teammate recently modify it?
+- Has the file changed on `origin/main`?
+- Is the file shared/high-conflict?
+- Will my change conflict with teammate's work?
+- Can I avoid modifying this file?
+- Can I make a smaller, targeted change?
+
+---
+
+### 2.5 Never Blindly Overwrite
+Never replace an existing file wholesale simply because an AI generated a new version.
+**Preserve:**
+- Teammate changes
+- Existing functionality
+- Existing architecture
+- Existing components
+- Existing API contracts
+- Existing security controls
+- Existing documentation
+
+If a file contains changes from another developer, integrate with them rather than overwriting.
+
+---
+
+### 2.6 High-Conflict Files
+Always perform extra inspection before modifying:
+`pom.xml`, `package.json`, `package-lock.json`, `docker-compose.yml`, `application.yml`, `application.properties`, security configuration, Flyway migrations, GitHub Actions workflows, shared DTOs, API contracts, global exception handling, shared utilities, shared frontend components, routing, and design-system components.
+
+**Protocol for High-Conflict Files:**
+```text
+FETCH → INSPECT HISTORY → INSPECT CURRENT CHANGES → CHECK TEAMMATE WORK → MAKE MINIMAL CHANGE → TEST
+```
+
+---
+
+### 2.7 Handling Local Changes & Destructive Operations
+If `git status` shows modifications that were not created during the current task: **STOP before editing.**
+- ❌ **NEVER run:** `git reset --hard`, `git checkout .`, `git clean -fd`, `git push --force`.
+- First determine whether changes are previous work, teammate work, uncommitted work, or generated files. Preserve them.
+
+---
+
+### 2.8 Before Commit
+```bash
+git status
+git diff
+git diff --check
+```
+Review every changed file. Verify diff contains ONLY intended changes. No debug code, no secrets, no unintended dependencies. Run tests (`mvn test` / `npm test`).
+
+---
+
+### 2.9 Before Push
+```bash
+git fetch origin
+git status
+git diff
+git log --oneline --decorate -10
+```
+If `main` changed while working:
+```bash
+git fetch origin
+git rebase origin/main
+```
+Re-run tests after rebase, then:
+```bash
+git push -u origin <branch>
+```
+
+---
+
+### 2.10 Phase Transition Rule
+```text
+PHASE N IMPLEMENTATION ➔ MEMBER 1 & 2 COMPLETE ➔ PRs REVIEWED ➔ MERGED INTO MAIN ➔ BOTH MEMBERS SYNC (PULL MAIN) ➔ FULL INTEGRATION TEST ➔ SECURITY REVIEW ➔ STITCH UI REVIEW ➔ DOCS UPDATE ➔ PHASE SIGN-OFF ➔ START NEXT PHASE
+```
+
+---
+
+### 2.11 Mandatory Specs to Read
+Before coding in any domain, read:
+1. `README.md` & `PROJECT_STATUS.md`
+2. `docs/ARCHITECTURE.md` & `docs/SECURITY.md`
+3. `docs/DATABASE.md` & `docs/API.md`
+4. `docs/TEAM_OWNERSHIP.md` & `docs/GIT_WORKFLOW.md`
+5. `stitch_secretvault_devsecops_platfor/` (for UI screens)
 
 ---
 
