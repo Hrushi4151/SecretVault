@@ -5,11 +5,13 @@ import { RegisterScreen } from './components/auth/RegisterScreen';
 import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AppShell } from './components/layout/AppShell';
 import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
+import { ProjectsView } from './components/project/ProjectsView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects'
 
   if (isLoading) {
     return (
@@ -46,8 +48,8 @@ const MainRouter = () => {
   }
 
   return (
-    <AppShell>
-      <WorkspaceOverview />
+    <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
+      {currentTab === 'projects' ? <ProjectsView /> : <WorkspaceOverview />}
     </AppShell>
   );
 };
