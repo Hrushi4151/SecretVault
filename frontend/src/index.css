@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* Surface & Background Hierarchy */
+    --vault-canvas: #26000B;
+    --vault-canvas-dark: #0D0106;
+    --vault-sidebar: #1E000A;
+    --surface-lowest: #0D0106;
+    --surface-base: #30000F;
+    --surface-low: #3F0016;
+    --surface-mid: #4A001C;
+    --surface-high: #580023;
+    --surface-bright: #760031;
+    --surface-active: #800035;
+
+    /* Typography & Contrast Tokens */
+    --text-primary: #FFFFFF;
+    --text-secondary: #F4B5C8;
+    --text-secondary-alt: #E598AF;
+    --text-muted: #A26377;
+    --text-disabled: #5E3240;
+
+    /* Brand & Action Accent Tokens */
+    --brand-primary: #FF2D6D;
+    --brand-primary-deep: #E6004D;
+    --brand-hover: #FF4D85;
+    --brand-active: #B8003E;
+    --brand-subtle: rgba(255, 45, 109, 0.12);
+
+    /* Glass & Border Strokes */
+    --stroke-subtle: rgba(255, 255, 255, 0.08);
+    --stroke-rose: rgba(255, 180, 200, 0.14);
+    --stroke-rose-strong: rgba(255, 180, 200, 0.24);
+    --stroke-brand: rgba(255, 45, 109, 0.35);
+
+    /* Semantic State Tokens */
+    --state-optimal: #34D399;
+    --state-optimal-bg: rgba(52, 211, 153, 0.12);
+    --state-optimal-border: rgba(52, 211, 153, 0.24);
+
+    --state-warning: #FBBF24;
+    --state-warning-bg: rgba(251, 191, 36, 0.12);
+    --state-warning-border: rgba(251, 191, 36, 0.24);
+
+    --state-critical: #F87171;
+    --state-critical-bg: rgba(248, 113, 113, 0.15);
+    --state-critical-border: rgba(248, 113, 113, 0.32);
+
+    --state-info: #818CF8;
+    --state-info-alt: #60A5FA;
+    --state-info-bg: rgba(129, 140, 248, 0.12);
+    --state-info-border: rgba(129, 140, 248, 0.22);
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #26000B;
+    background-image:
+      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255, 45, 109, 0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 30% at 85% 15%, rgba(118, 0, 49, 0.12) 0%, transparent 60%),
+      linear-gradient(180deg, #26000B 0%, #150006 50%, #0D0106 100%);
+    background-attachment: fixed;
+    color: #FFFFFF;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: #FF2D6D;
+    color: #FFFFFF;
+  }
+
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #18000A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4A001C;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 180, 200, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #760031;
+}
+
+/* Micro-Glow and Surface Classes */
+.vault-card {
+  background-color: #30000F;
+  border: 1px solid rgba(255, 180, 200, 0.14);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 20px -8px rgba(255, 45, 109, 0.08);
+}
+
+.vault-card-elevated {
+  background-color: #3F0016;
+  border: 1px solid rgba(255, 180, 200, 0.18);
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.7), 0 0 25px -8px rgba(255, 45, 109, 0.12);
+}
+
+.vault-glow-primary {
+  box-shadow: 0 0 25px -3px rgba(255, 45, 109, 0.45);
+}
+
+.vault-glow-subtle {
+  box-shadow: 0 0 15px -3px rgba(255, 45, 109, 0.2);
+}
