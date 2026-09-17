@@ -135,8 +135,8 @@ Organization (Global Tenant Container)
 | `workspace` | Organization and workspace lifecycle, tenant membership, invitations, settings | Member 1 | 🟢 IMPLEMENTED |
 | `project` | Project container lifecycle, scoped member access, environments auto-provisioning | Member 1 | 🟢 IMPLEMENTED |
 | `environment` | Scoped access tiers, dev/staging/prod management, protection rules | Member 1 | 🟢 IMPLEMENTED |
-| `secret` | Secret CRUD, versioning, masking, rollback, secret diffing, rotation wizard | Member 1 | ⚪ PLANNED (PHASE 3) |
-| `encryption` | AES-256-GCM envelope encryption, DEK generation, KMS/HSM integration | Member 1 | ⚪ PLANNED (PHASE 3) |
+| `secret` | Secret CRUD, immutable versioning, masking, rollback, batch import | Member 1 | 🟢 IMPLEMENTED |
+| `encryption` | AES-256-GCM envelope encryption, DEK generation, AAD context binding, KMS/HSM integration | Member 1 | 🟢 IMPLEMENTED |
 | `access` | Granular RBAC, JIT access requests, approval workflows, access review campaigns | Member 1 | 🟢 IMPLEMENTED (RBAC Scope) |
 | `audit` | Non-repudiable audit ledger, event emission, compliance logs | Member 1 | 🟢 IMPLEMENTED |
 | `security` | Risk Center, secret leak scanner, blast radius graph, security policies | Member 1 | ⚪ PLANNED |
@@ -150,3 +150,56 @@ Organization (Global Tenant Container)
 | `deployment` | Cloud and self-hosted deployment profiles, cluster connectivity | Member 2 | ⚪ PLANNED |
 | `health` | Public health probes, Actuator observability indicators | Member 2 | 🟢 IMPLEMENTED |
 | `ai` | Outbound communication boundary to Python/FastAPI AI co-pilot | Member 2 | ⚪ PLANNED |
+
+---
+
+## 5. Cryptographic Envelope Encryption & Secret Lifecycle Engine [IMPLEMENTED]
+
+SecretVault implements hardware-grade envelope encryption with AEAD authenticated cipher suites and zero-plaintext guarantees:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Client / Developer
+    participant Ctrl as SecretController
+    participant Svc as SecretService
+    participant Enc as EnvelopeEncryptionService
+    participant KMS as KmsKeyProvider
+    participant DB as PostgreSQL (secrets, versions, audit)
+
+    Note over Dev, DB: Secret Creation & Version Mutation Flow
+    Dev->>Ctrl: POST .../secrets (Plaintext Value + Name)
+    Ctrl->>Svc: createSecret(workspaceId, projId, envId, req)
+    Svc->>Svc: Validate RBAC & Path Hierarchy
+    Svc->>Enc: encrypt(plaintextBytes, "secretId:envId:versionNum")
+    Enc->>Enc: Generate random 256-bit DEK & 96-bit IV
+    Enc->>Enc: AES-256-GCM Encrypt with AAD binding
+    Enc->>KMS: wrapKey(plaintextDek, keyReference)
+    KMS-->>Enc: encryptedDekBytes
+    Enc-->>Svc: EncryptedPayload (ciphertext, encryptedDek, iv, authTag)
+    Svc->>DB: INSERT secrets + INSERT secret_versions (v1)
+    Svc->>DB: INSERT audit_logs (SECRET_CREATED)
+    Svc-->>Ctrl: SecretMetadataResponse (zero plaintext)
+    Ctrl-->>Dev: 201 Created (Metadata Only)
+
+    Note over Dev, DB: Explicit Secret Reveal Flow
+    Dev->>Ctrl: POST .../secrets/{id}/reveal
+    Ctrl->>Svc: revealSecret(workspaceId, projId, envId, secretId)
+    Svc->>DB: SELECT current secret_version
+    Svc->>Enc: decrypt(payload, "secretId:envId:versionNum")
+    Enc->>KMS: unwrapKey(encryptedDek, keyReference)
+    KMS-->>Enc: plaintextDek
+    Enc->>Enc: AES-256-GCM Decrypt & Validate 128-bit Auth Tag
+    Enc-->>Svc: plaintextBytes
+    Svc->>DB: INSERT audit_logs (SECRET_REVEALED)
+    Svc-->>Ctrl: SecretRevealResponse (Plaintext)
+    Ctrl-->>Dev: 200 OK (Cache-Control: no-store, no-cache)
+```
+
+### Core Cryptographic Invariants:
+1. **Fresh DEK and IV Per Version:** Each encryption generates an ephemeral 256-bit AES key and a 96-bit nonce via `java.security.SecureRandom`. DEKs are never reused across versions or secrets.
+2. **Authenticated Additional Data (AAD) Context Binding:** Ciphertexts are cryptographically bound to the tuple `secretId:environmentId:versionNumber`. Swapping ciphertext into another environment or version immediately breaks AEAD tag validation.
+3. **Pluggable Master Key Provider (`KmsKeyProvider`):** Abstracted key wrapping SPI supporting local AES-KW / AES-GCM wrapping in development (`LocalDevKmsKeyProvider`) and AWS KMS / HashiCorp Vault HSM in production.
+4. **Immutable Version Ledger:** Secret values are write-once read-many (`secret_versions`). Updates increment `current_version_number` and insert a new version row. Historical versions remain intact for rollback and compliance.
+5. **No-Store HTTP Delivery:** Secret reveal endpoints return explicit HTTP `Cache-Control: no-store, no-cache, must-revalidate, private` and `Pragma: no-cache` headers to prevent proxy, CDN, or browser disk caching.
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { projectApi } from '../../api/projects';
 import { secretApi } from '../../api/secrets';
@@ -23,6 +23,7 @@ import {
   Clock,
   Shield,
   ChevronRight,
+  ChevronDown,
   Server,
   Filter,
 } from 'lucide-react';
@@ -38,6 +39,35 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+
+  // Project dropdown state
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const projectDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target)) {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+
+    if (isProjectDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isProjectDropdownOpen]);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -105,6 +135,11 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
   const currentProject = projects.find((p) => p.id === selectedProjectId);
   const currentEnvironments = currentProject?.environments || [];
   const currentEnvironment = currentEnvironments.find((e) => e.id === selectedEnvironmentId);
+
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(projectSearchQuery.toLowerCase()) ||
+    (p.slug && p.slug.toLowerCase().includes(projectSearchQuery.toLowerCase()))
+  );
 
   useEffect(() => {
     if (currentEnvironments.length > 0 && !currentEnvironments.some((e) => e.id === selectedEnvironmentId)) {
@@ -270,31 +305,120 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
       </section>
 
       {/* Project & Environment Hierarchical Selectors */}
-      <section className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/20 shadow-md">
-        {/* Project Dropdown / Pills */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 md:pb-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/15 text-xs text-[#A26377] font-mono shrink-0">
+      <section className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/20 shadow-md relative z-20">
+        {/* Project Dropdown */}
+        <div className="flex items-center gap-3 relative" ref={projectDropdownRef}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#30000F] border border-[#FFB4C8]/15 text-xs text-[#A26377] font-mono shrink-0">
             <Server className="w-4 h-4 text-[#FF2D6D]" />
             <span>Project:</span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {projects.map((proj) => {
-              const isSelected = proj.id === selectedProjectId;
-              return (
-                <button
-                  key={proj.id}
-                  onClick={() => setSelectedProjectId(proj.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#FF2D6D] text-white shadow-md shadow-[#FF2D6D]/20'
-                      : 'bg-[#30000F] text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] border border-[#FFB4C8]/15'
-                  }`}
-                >
-                  {proj.name}
-                </button>
-              );
-            })}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+              disabled={isLoadingProjects || projects.length === 0}
+              className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-xs text-white font-mono font-semibold transition-all border border-[#FFB4C8]/20 hover:border-[#FF2D6D]/50 shadow-sm min-w-[200px] sm:min-w-[240px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FolderGit2 className="w-4 h-4 text-[#FF2D6D] shrink-0" />
+                <span className="truncate font-bold text-white">
+                  {isLoadingProjects ? 'Loading projects...' : currentProject?.name || 'Select Project'}
+                </span>
+                {currentProject?.slug && (
+                  <span className="text-[10px] text-[#A26377] font-mono hidden sm:inline truncate">
+                    ({currentProject.slug})
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-[#F4B5C8] shrink-0 transition-transform duration-200 ${
+                  isProjectDropdownOpen ? 'rotate-180 text-[#FF2D6D]' : ''
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu Popup */}
+            {isProjectDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 z-50 w-72 sm:w-80 rounded-2xl bg-[#30000F]/98 border border-[#FFB4C8]/25 p-3 flex flex-col gap-2.5 text-white backdrop-blur-2xl shadow-2xl shadow-black/90 animate-scale-in">
+                {/* Dropdown Header */}
+                <div className="flex items-center justify-between px-1 pb-1 border-b border-[#FFB4C8]/15">
+                  <span className="text-xs font-mono font-bold tracking-wider text-[#A26377] uppercase">
+                    Projects ({projects.length})
+                  </span>
+                  <span className="text-[10px] font-mono text-[#F4B5C8]/60">
+                    Switch Vault Root
+                  </span>
+                </div>
+
+                {/* Filter input if multiple projects */}
+                {projects.length > 3 && (
+                  <div className="relative flex items-center">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#A26377] pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={projectSearchQuery}
+                      onChange={(e) => setProjectSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-[#3F0016] text-white placeholder:text-[#A26377] border border-[#FFB4C8]/20 focus:outline-none focus:border-[#FF2D6D]"
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                {/* Projects List */}
+                <div className="flex flex-col gap-1 max-h-60 overflow-y-auto pr-1">
+                  {filteredProjects.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-[#A26377] font-mono">
+                      No matching projects
+                    </div>
+                  ) : (
+                    filteredProjects.map((proj) => {
+                      const isSelected = proj.id === selectedProjectId;
+                      const envCount = proj.environments?.length || 0;
+                      return (
+                        <button
+                          key={proj.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedProjectId(proj.id);
+                            setIsProjectDropdownOpen(false);
+                          }}
+                          className={`flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[#4A001C] border-[#FF2D6D]/60 text-white shadow-sm'
+                              : 'bg-[#3F0016]/60 hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border-transparent hover:border-[#FFB4C8]/20'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                isSelected
+                                  ? 'bg-[#FF2D6D]/20 text-[#FF2D6D] border border-[#FF2D6D]/40'
+                                  : 'bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/10'
+                              }`}
+                            >
+                              <FolderGit2 className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-semibold font-mono text-white truncate">
+                                {proj.name}
+                              </span>
+                              <span className="text-[10px] font-mono text-[#A26377] truncate">
+                                {proj.slug} • {envCount} {envCount === 1 ? 'tier' : 'tiers'}
+                              </span>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-[#FF2D6D] shrink-0 ml-2" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

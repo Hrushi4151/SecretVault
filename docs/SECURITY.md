@@ -52,31 +52,35 @@ $$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} 
 
 ---
 
-## 4. Envelope Encryption Architecture (AES-256-GCM) [PHASE 3 PLANNED]
+## 4. Envelope Encryption Architecture (AES-256-GCM) [IMPLEMENTED]
 
 ```text
-[Plaintext Secret Payload] + [Unique 256-bit DEK] ──(AES-256-GCM)──> [Ciphertext] + [128-bit Tag] + [96-bit IV]
+[Plaintext Secret Payload] + [Unique 256-bit DEK] ──(AES-256-GCM + AAD Binding)──> [Ciphertext] + [128-bit Tag] + [96-bit IV]
                                      │
-   [Master KEK (KMS / HSM)] ─────────┴─(Encrypt DEK)──> [Encrypted DEK]
+   [Master KEK (KMS / HSM)] ─────────┴─(Key Wrapping)─────────────────────────> [Encrypted DEK]
 ```
 
-- **Key Encryption Key (KEK / Master Key):** Managed in KMS (AWS KMS, GCP Cloud KMS, Vault HSM) or provided via secure environment key.
-- **Data Encryption Key (DEK):** Cryptographically random 256-bit key uniquely generated for every secret version.
+- **Key Encryption Key (KEK / Master Key):** Managed through the pluggable `KmsKeyProvider` SPI (Local AES-KW/GCM wrapping in development; AWS KMS / HashiCorp Vault in production).
+- **Data Encryption Key (DEK):** Cryptographically secure, high-entropy 256-bit AES key generated uniquely per secret version via `SecureRandom`. DEKs are never reused or persisted in plaintext.
 - **Initialization Vector (IV):** Secure random 96-bit nonce generated per encryption operation.
-- **Integrity Tag:** 128-bit GCM authentication tag. Decryption strictly aborts if ciphertext is altered.
+- **Integrity Tag:** 128-bit GCM authentication tag. Decryption strictly fails closed if ciphertext or authentication tag is tampered with.
+- **Cryptographic AAD Context Binding:** Authenticated Additional Data binds `secretId:environmentId:versionNumber` into the AEAD calculation. Ciphertexts cannot be transplanted across secrets, environments, or version slots.
 
 ---
 
-## 5. Secret Reveal Safeguards [PHASE 3 PLANNED]
+## 5. Secret Reveal Safeguards [IMPLEMENTED]
 
-- **Default State:** Plaintext is masked (`••••••••`).
-- **Explicit User Action:** Decryption occurs only upon deliberate user request (`POST /api/v1/secrets/{id}/reveal`).
-- **Step-Up Authentication:** Optional policy requiring MFA re-verification before revealing production secrets.
-- **No Secret Transmission in:**
+- **Default Masked State:** Standard secret retrieval endpoints (`GET /secrets`, `GET /secrets/{id}`) and listing tables return only sanitized metadata (`SecretMetadataResponse`). Plaintext values are completely absent.
+- **Explicit In-Memory Decryption:** Decryption occurs strictly upon an explicit `POST /api/v1/.../secrets/{id}/reveal` request. The plaintext is decrypted transiently in JVM memory and immediately handed to the client response.
+- **Anti-Caching HTTP Headers:** Reveal responses include `Cache-Control: no-store, no-cache, must-revalidate, private` and `Pragma: no-cache` headers, preventing intermediate proxies, CDNs, or browser disk caches from recording plaintext.
+- **Non-Repudiable Audit Ledger:** Every reveal event generates an immutable `SECRET_REVEALED` row in `audit_logs` capturing actor identity, workspace, IP address, request ID, and timestamp.
+- **Zero Leakage Invariant:** Plaintext secrets, raw DEKs, and unencrypted master keys are NEVER transmitted in:
   - HTTP URLs or query parameters
-  - Browser console or analytics payloads
-  - Server application logs or APM spans
-  - AI prompts or external LLM APIs
+  - Browser console logs, localStorage, or sessionStorage
+  - Application error responses (`RFC-7807` standard error model)
+  - Server application logs, APM spans, or metrics
+  - AI prompts or external LLM service boundaries
+
 
 ---
 
