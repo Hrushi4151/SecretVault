@@ -27,11 +27,11 @@ import {
   Filter,
 } from 'lucide-react';
 
-export const SecretsView = () => {
+export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = null }) => {
   const { activeWorkspace } = useAuth();
   const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
+  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(initialEnvironmentId);
   const [secrets, setSecrets] = useState([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingSecrets, setIsLoadingSecrets] = useState(false);
@@ -48,6 +48,16 @@ export const SecretsView = () => {
   const [quickRevealedSecrets, setQuickRevealedSecrets] = useState({}); // { [secretId]: { value, expiresAt } }
   const [quickRevealingId, setQuickRevealingId] = useState(null);
 
+  // Handle external navigation / initial props change
+  useEffect(() => {
+    if (initialProjectId) {
+      setSelectedProjectId(initialProjectId);
+    }
+    if (initialEnvironmentId) {
+      setSelectedEnvironmentId(initialEnvironmentId);
+    }
+  }, [initialProjectId, initialEnvironmentId]);
+
   // Fetch Projects on workspace change
   useEffect(() => {
     const fetchProjects = async () => {
@@ -61,10 +71,19 @@ export const SecretsView = () => {
         setProjects(projectList);
 
         if (projectList.length > 0) {
-          const firstProj = projectList[0];
-          setSelectedProjectId(firstProj.id);
-          if (firstProj.environments && firstProj.environments.length > 0) {
-            setSelectedEnvironmentId(firstProj.environments[0].id);
+          const targetProj =
+            (initialProjectId && projectList.find((p) => p.id === initialProjectId)) ||
+            (selectedProjectId && projectList.find((p) => p.id === selectedProjectId)) ||
+            projectList[0];
+
+          setSelectedProjectId(targetProj.id);
+
+          if (targetProj.environments && targetProj.environments.length > 0) {
+            const targetEnv =
+              (initialEnvironmentId && targetProj.environments.find((e) => e.id === initialEnvironmentId)) ||
+              (selectedEnvironmentId && targetProj.environments.find((e) => e.id === selectedEnvironmentId)) ||
+              targetProj.environments[0];
+            setSelectedEnvironmentId(targetEnv.id);
           } else {
             setSelectedEnvironmentId(null);
           }

@@ -13,6 +13,14 @@ const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
   const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets'
+  const [targetProjectId, setTargetProjectId] = useState(null);
+  const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
+
+  const handleNavigateToSecrets = (projectId, environmentId = null) => {
+    setTargetProjectId(projectId);
+    setTargetEnvironmentId(environmentId);
+    setCurrentTab('secrets');
+  };
 
   if (isLoading) {
     return (
@@ -51,11 +59,14 @@ const MainRouter = () => {
   return (
     <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
       {currentTab === 'projects' ? (
-        <ProjectsView />
+        <ProjectsView onNavigateToSecrets={handleNavigateToSecrets} />
       ) : currentTab === 'secrets' ? (
-        <SecretsView />
+        <SecretsView
+          initialProjectId={targetProjectId}
+          initialEnvironmentId={targetEnvironmentId}
+        />
       ) : (
-        <WorkspaceOverview />
+        <WorkspaceOverview onNavigateToProjects={() => setCurrentTab('projects')} />
       )}
     </AppShell>
   );
