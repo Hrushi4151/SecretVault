@@ -8,24 +8,24 @@ export const Alert = ({
   message,
   requestId,
   onDismiss,
-  className,
+  className = '',
 }) => {
   const variantStyles = {
     danger: {
-      bg: 'bg-vault-danger/10 border-vault-danger/30 text-vault-danger',
-      icon: <AlertCircle className="w-4 h-4 shrink-0 text-vault-danger mt-0.5" />,
+      bg: 'bg-[#F87171]/15 border-[#F87171]/35 text-[#F87171]',
+      icon: <AlertCircle className="w-4 h-4 shrink-0 text-[#F87171] mt-0.5" />,
     },
     warning: {
-      bg: 'bg-vault-warning/10 border-vault-warning/30 text-vault-warning',
-      icon: <AlertTriangle className="w-4 h-4 shrink-0 text-vault-warning mt-0.5" />,
+      bg: 'bg-[#FBBF24]/15 border-[#FBBF24]/35 text-[#FBBF24]',
+      icon: <AlertTriangle className="w-4 h-4 shrink-0 text-[#FBBF24] mt-0.5" />,
     },
     success: {
-      bg: 'bg-vault-success/10 border-vault-success/30 text-vault-success',
-      icon: <CheckCircle2 className="w-4 h-4 shrink-0 text-vault-success mt-0.5" />,
+      bg: 'bg-[#34D399]/15 border-[#34D399]/35 text-[#34D399]',
+      icon: <CheckCircle2 className="w-4 h-4 shrink-0 text-[#34D399] mt-0.5" />,
     },
     info: {
-      bg: 'bg-vault-info/10 border-vault-info/30 text-vault-info',
-      icon: <Info className="w-4 h-4 shrink-0 text-vault-info mt-0.5" />,
+      bg: 'bg-[#818CF8]/15 border-[#818CF8]/35 text-[#818CF8]',
+      icon: <Info className="w-4 h-4 shrink-0 text-[#818CF8] mt-0.5" />,
     },
   };
 
@@ -34,17 +34,17 @@ export const Alert = ({
   return (
     <div
       className={clsx(
-        'w-full flex items-start gap-3 p-3.5 rounded-xl border text-xs leading-relaxed transition-all duration-150',
+        'w-full flex items-start gap-3 p-3.5 rounded-xl border text-xs leading-relaxed transition-all duration-150 font-body',
         current.bg,
         className
       )}
     >
       {current.icon}
       <div className="flex-1 flex flex-col gap-0.5">
-        {title && <span className="font-semibold">{title}</span>}
-        <span className="text-vault-text/90">{message}</span>
+        {title && <span className="font-semibold text-white">{title}</span>}
+        <span className="text-white/90">{message}</span>
         {requestId && (
-          <span className="text-[10px] font-mono text-vault-text-muted mt-1">
+          <span className="text-[10px] font-mono text-[#A26377] mt-1">
             Request ID: {requestId}
           </span>
         )}
@@ -52,7 +52,7 @@ export const Alert = ({
       {onDismiss && (
         <button
           onClick={onDismiss}
-          className="p-1 rounded hover:bg-white/[0.10] text-vault-text-muted hover:text-vault-text transition-colors"
+          className="p-1 rounded hover:bg-black/20 text-[#A26377] hover:text-white transition-colors"
         >
           <X className="w-3.5 h-3.5" />
         </button>

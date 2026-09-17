@@ -49,24 +49,23 @@ export const RegisterScreen = ({ onNavigateToLogin }) => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 bg-vault-bg overflow-hidden">
-      {/* Subtle Background Glows */}
-      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-vault-primary/15 blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-vault-primary/10 blur-[140px] pointer-events-none" />
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 bg-[#0D0106] text-white font-body overflow-hidden">
+      {/* Background Accent Gradients */}
+      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#760031]/30 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#580023]/40 blur-3xl pointer-events-none" />
 
       {/* Main Glass Card */}
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#0D1117]/85 border border-white/[0.12] p-8 backdrop-blur-2xl shadow-2xl shadow-black/80 flex flex-col gap-6 z-10 animate-fade-in">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#30000F]/95 backdrop-blur-2xl border border-[#FFB4C8]/25 p-8 shadow-2xl shadow-black/90 flex flex-col gap-6 z-10 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/[0.12] shadow-inner">
-            <Shield className="w-7 h-7 text-vault-primary" />
-            <div className="absolute -inset-1 rounded-2xl bg-vault-primary/20 blur-md -z-10" />
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-[#3F0016] border border-[#FF2D6D]/40 shadow-inner shadow-black">
+            <Shield className="w-7 h-7 text-[#FF2D6D]" />
           </div>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-vault-text font-sans">
+            <h1 className="text-2xl font-headline font-bold tracking-tight text-white">
               Create your SecretVault Account
             </h1>
-            <p className="text-xs text-vault-text-secondary">
+            <p className="text-xs text-[#F4B5C8]">
               Provision a zero-knowledge enclave and your multi-tenant workspace.
             </p>
           </div>
@@ -125,7 +124,7 @@ export const RegisterScreen = ({ onNavigateToLogin }) => {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="register-password"
-              className="text-xs font-medium text-vault-text-secondary"
+              className="text-xs font-semibold text-[#F4B5C8]"
             >
               Master Password
             </label>
@@ -140,7 +139,7 @@ export const RegisterScreen = ({ onNavigateToLogin }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1 hover:text-vault-text transition-colors"
+                  className="p-1 hover:text-white transition-colors text-[#A26377]"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -153,21 +152,21 @@ export const RegisterScreen = ({ onNavigateToLogin }) => {
             <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-mono">
               <span
                 className={`flex items-center gap-1 ${
-                  isPasswordLengthValid ? 'text-vault-success' : 'text-vault-text-muted'
+                  isPasswordLengthValid ? 'text-[#34D399] font-bold' : 'text-[#A26377]/60'
                 }`}
               >
                 <Check className="w-3 h-3" /> 8+ chars
               </span>
               <span
                 className={`flex items-center gap-1 ${
-                  hasUpperCase ? 'text-vault-success' : 'text-vault-text-muted'
+                  hasUpperCase ? 'text-[#34D399] font-bold' : 'text-[#A26377]/60'
                 }`}
               >
                 <Check className="w-3 h-3" /> Uppercase
               </span>
               <span
                 className={`flex items-center gap-1 ${
-                  hasNumber ? 'text-vault-success' : 'text-vault-text-muted'
+                  hasNumber ? 'text-[#34D399] font-bold' : 'text-[#A26377]/60'
                 }`}
               >
                 <Check className="w-3 h-3" /> Number
@@ -188,12 +187,12 @@ export const RegisterScreen = ({ onNavigateToLogin }) => {
         </form>
 
         {/* Footer */}
-        <div className="text-center pt-2 border-t border-white/[0.08] text-xs text-vault-text-secondary">
+        <div className="text-center pt-3 border-t border-[#FFB4C8]/15 text-xs text-[#F4B5C8]">
           Already have an account?{' '}
           <button
             type="button"
             onClick={onNavigateToLogin}
-            className="font-semibold text-vault-primary-light hover:text-vault-primary hover:underline transition-colors"
+            className="font-semibold text-[#FF2D6D] hover:text-[#FF4D85] hover:underline transition-colors"
           >
             Sign in
           </button>

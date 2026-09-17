@@ -13,13 +13,12 @@ const MainRouter = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-vault-bg gap-4">
-        <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/[0.12] shadow-inner text-vault-primary">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-surface-container-lowest gap-4 font-body">
+        <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-container-high border border-outline-variant text-brand-primary">
           <Shield className="w-7 h-7 animate-pulse" />
-          <div className="absolute -inset-1 rounded-2xl bg-vault-primary/20 blur-md -z-10" />
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-vault-text-muted">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-vault-primary" />
+        <div className="flex items-center gap-2 text-xs font-mono text-text-secondary">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-primary" />
           <span>Verifying cryptographic session...</span>
         </div>
       </div>

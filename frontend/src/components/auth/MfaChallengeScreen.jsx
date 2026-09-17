@@ -16,7 +16,6 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
 
   const handleDigitChange = (index, value) => {
     if (value.length > 1) {
-      // Handle paste
       const pasted = value.replace(/\D/g, '').slice(0, 6);
       if (pasted.length > 0) {
         const newDigits = [...digits];
@@ -68,47 +67,46 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 bg-vault-bg overflow-hidden">
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 bg-[#0D0106] text-white font-body overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-vault-primary/15 blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-vault-primary/10 blur-[140px] pointer-events-none" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[#760031]/30 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-[#580023]/40 blur-3xl pointer-events-none" />
 
       {/* Main Glass Card */}
-      <div className="relative w-full max-w-md rounded-2xl bg-[#0D1117]/85 border border-white/[0.12] p-8 backdrop-blur-2xl shadow-2xl shadow-black/80 flex flex-col gap-6 z-10 animate-fade-in">
+      <div className="relative w-full max-w-md rounded-2xl bg-[#30000F]/95 backdrop-blur-2xl border border-[#FFB4C8]/25 p-8 shadow-2xl shadow-black/90 flex flex-col gap-6 z-10 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-white/[0.05] border border-white/[0.12] shadow-inner text-vault-primary">
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-[#3F0016] border border-[#FF2D6D]/40 shadow-inner text-[#FF2D6D]">
             <KeyRound className="w-7 h-7" />
-            <div className="absolute -inset-1 rounded-2xl bg-vault-primary/20 blur-md -z-10" />
           </div>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight text-vault-text font-sans">
+            <h1 className="text-2xl font-headline font-bold tracking-tight text-white">
               Multi-Factor Authentication
             </h1>
-            <p className="text-xs text-vault-text-secondary">
+            <p className="text-xs text-[#F4B5C8]">
               Zero-Trust Enclave step-up verification required.
             </p>
           </div>
         </div>
 
         {/* Security Badge */}
-        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-vault-primary-subtle border border-vault-primary/30 text-[11px] text-vault-primary-light font-mono">
-          <span className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#3F0016] border border-[#FF2D6D]/30 text-[11px] text-[#FF2D6D] font-mono">
+          <span className="flex items-center gap-2">
+            <Shield className="w-3.5 h-3.5 text-[#FF2D6D]" />
             STEP-UP CHALLENGE
           </span>
-          <span className="text-vault-text-muted">EXP: 300s</span>
+          <span className="text-[#A26377]">EXP: 300s</span>
         </div>
 
         {/* Auth Method Selector */}
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#3F0016] border border-[#FFB4C8]/15">
           <button
             type="button"
             onClick={() => setAuthMethod('totp')}
             className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all ${
               authMethod === 'totp'
-                ? 'bg-vault-primary text-white shadow-md'
-                : 'text-vault-text-secondary hover:text-vault-text'
+                ? 'bg-[#FF2D6D] text-white font-bold shadow-md shadow-[#FF2D6D]/25'
+                : 'text-[#F4B5C8] hover:text-white hover:bg-[#4A001C]'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
@@ -119,8 +117,8 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
             onClick={() => setAuthMethod('hardware')}
             className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all ${
               authMethod === 'hardware'
-                ? 'bg-vault-primary text-white shadow-md'
-                : 'text-vault-text-secondary hover:text-vault-text'
+                ? 'bg-[#FF2D6D] text-white font-bold shadow-md shadow-[#FF2D6D]/25'
+                : 'text-[#F4B5C8] hover:text-white hover:bg-[#4A001C]'
             }`}
           >
             <Fingerprint className="w-3.5 h-3.5" />
@@ -133,7 +131,7 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
         {authMethod === 'totp' ? (
           <form onSubmit={handleVerify} className="flex flex-col gap-5">
             <div className="flex flex-col items-center gap-2">
-              <label className="text-xs font-medium text-vault-text-secondary">
+              <label className="text-xs font-semibold text-[#F4B5C8]">
                 Enter 6-digit TOTP code
               </label>
               <div className="flex items-center justify-center gap-2">
@@ -147,7 +145,7 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
                     value={digit}
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
-                    className="w-11 h-12 text-center text-lg font-mono font-bold rounded-xl bg-white/[0.04] text-vault-text border border-white/[0.12] focus:border-vault-primary focus:ring-2 focus:ring-vault-primary/20 focus:bg-white/[0.08] focus:outline-none transition-all"
+                    className="w-11 h-12 text-center text-lg font-mono font-bold rounded-xl bg-[#3F0016] text-white border border-[#FFB4C8]/25 focus:border-[#FF2D6D] focus:ring-2 focus:ring-[#FF2D6D]/25 focus:bg-[#4A001C] focus:outline-none transition-all"
                   />
                 ))}
               </div>
@@ -166,12 +164,12 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
           </form>
         ) : (
           <div className="flex flex-col items-center text-center py-4 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-vault-primary-subtle border border-vault-primary/30 flex items-center justify-center text-vault-primary animate-pulse">
+            <div className="w-16 h-16 rounded-2xl bg-[#3F0016] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D] animate-pulse">
               <Fingerprint className="w-8 h-8" />
             </div>
             <div className="flex flex-col gap-1">
-              <h4 className="text-sm font-semibold text-vault-text">Touch Security Key</h4>
-              <p className="text-xs text-vault-text-secondary">
+              <h4 className="text-sm font-semibold text-white">Touch Security Key</h4>
+              <p className="text-xs text-[#F4B5C8]">
                 Insert your YubiKey or touch your device biometric sensor.
               </p>
             </div>
@@ -187,11 +185,11 @@ export const MfaChallengeScreen = ({ onBackToLogin, onSuccess }) => {
         )}
 
         {/* Back Link */}
-        <div className="flex items-center justify-center pt-2 border-t border-white/[0.08]">
+        <div className="flex items-center justify-center pt-3 border-t border-[#FFB4C8]/15">
           <button
             type="button"
             onClick={onBackToLogin}
-            className="flex items-center gap-1.5 text-xs text-vault-text-muted hover:text-vault-text transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#A26377] hover:text-white transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to Sign In

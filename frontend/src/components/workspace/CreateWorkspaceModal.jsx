@@ -78,7 +78,7 @@ export const CreateWorkspaceModal = ({ isOpen, onClose, onSuccess }) => {
       description="Workspaces provide isolated cryptographic enclaves for environments, secrets, and member access."
       maxWidth="md"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-body text-white">
         {error && <Alert variant="danger" message={error} onDismiss={() => setError(null)} />}
 
         <Input
@@ -105,7 +105,7 @@ export const CreateWorkspaceModal = ({ isOpen, onClose, onSuccess }) => {
           required
         />
 
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.08]">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#FFB4C8]/15">
           <Button type="button" variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
