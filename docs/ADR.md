@@ -156,3 +156,42 @@ In multi-tenant secret management, ciphertext swapping attacks (where an attacke
 - **Positive:** Complete immunity against cross-tenant or cross-environment ciphertext replay/transplantation; total audit traceability; zero risk of stale HTTP cache leaks.
 - **Negative:** Storage grows with each secret version; requires version pruning/archival policies for high-frequency automated secret churn.
 
+---
+
+## ADR-011: 3-Way Branch Merging, Rollback-as-New-Version, and Cross-Environment Secret Promotion Engine
+
+### Status: Accepted
+### Date: 2026-09-17
+### Context:
+Modern DevSecOps workflows require secret experimentation in isolated feature branches, instant zero-downtime rollback upon misconfiguration, and verified cross-environment promotion (`Development -> Staging -> Production`). However, rolling back by mutating existing history breaks cryptographic immutability, naive promotions risk leaking development keys to production, and concurrent branch merges risk silent overwrite regressions.
+
+### Decision:
+1. **3-Way In-Memory Merge Engine:** Feature branches maintain their own version head without altering the main trunk current version pointer. During merge (`POST /branches/{id}/merge`), the server decrypts `BASE`, `OURS (main)`, and `THEIRS (branch)` in memory. If both branches have diverged with different edits since base, a `409 Conflict` is returned with full conflict details. Clean merges generate a new version on main with `versionType = MERGE`.
+2. **Rollback-as-New-Version ($v_N \to v_{N+1}$):** Rollbacks never delete or rewrite existing version records. The target version's value is decrypted in memory and immediately encrypted into a brand new version $v_{N+1}$ with fresh 256-bit DEK, 96-bit random IV, and new AAD context binding `secretId:environmentId:N+1`.
+3. **Cross-Environment Promotion Engine:** Promotion provides a dry-run preview (`POST /promote/preview`) classifying each secret as `ADDED`, `MODIFIED`, `UNCHANGED`, or `BLOCKED_DISABLED`. Execution (`POST /promote`) provisions destination secrets, re-encrypts with destination environment AAD, preserves lineage (`sourceEnvironmentId`, `sourceSecretId`, `sourceVersionId`), and skips duplicate unchanged writes.
+4. **DoS-Protected In-Memory Diffing:** Comparisons return metadata and entropy scores by default. Explicit line diffing enforces a strict 64KB size limit, never logs plaintexts, and zeroes memory buffers immediately after diff evaluation.
+
+### Consequences:
+- **Positive:** Complete cryptographic immutability preserved across rollbacks; full branch isolation; conflict-free 3-way merges; dry-run visibility before promoting to protected production enclaves.
+- **Negative:** Ephemeral in-memory decryption required during 3-way diffing and promotion preview. Mitigated by zeroization and strict memory isolation.
+
+---
+
+## ADR-012: Environment Branch Policy Hardening (Feature Branches in Development Only)
+
+### Status: Accepted
+### Date: 2026-09-18
+### Context:
+In DevSecOps governance, feature branches are a development experimentation and staging tool. Allowing feature branch creation, branch commits, or branch merges directly within `STAGING` or `PRODUCTION` environments creates severe compliance and security risks, including unauthorized configuration drift, untracked emergency bypasses, and unverified production changes.
+
+### Decision:
+1. **Server-Side Enforcement by Environment Type:** The backend strictly authorizes branch mutations (`createBranch`, `createBranchVersion`, `archiveBranch`, `mergeBranch`, `compareBranchWithMain`, `getBranchById`) only when `environment.envType == EnvType.DEVELOPMENT`.
+2. **Deterministic Rejection:** Any attempt to perform branch creation, commit, or merge in `STAGING` or `PRODUCTION` environments is rejected with HTTP 400 and error code `BRANCHES_NOT_ALLOWED_FOR_ENVIRONMENT`.
+3. **Canonical Trunk Only on Non-Dev:** Staging and Production environments only possess the single canonical `main` trunk. Queries to list branches on non-development environments return solely the canonical `main` branch descriptor without evaluating custom feature branches.
+4. **Promotion as the Sole Progression Pathway:** Production mutations must proceed strictly through verified `Promotion` (`Development -> Staging -> Production`). Promotion creates independent destination `SecretVersion` records with fresh encryption material, zero destination `branch_id`, and full source lineage preservation.
+5. **UI Policy Transparency:** Frontend components explicitly display environment branch status (`Branches: Enabled` for Development, `Branches: Disabled` for Staging/Production) and omit branch management controls on non-development environments.
+
+### Consequences:
+- **Positive:** Zero risk of production branch drift or rogue feature branches in production; guaranteed linear version progression in high-integrity enclaves; promotion pipeline remains the sole path to production.
+- **Negative:** Hotfixes must be applied either directly to `main` in Development and promoted through Staging, or via standard authorized single-secret update workflows in the designated environment.
+

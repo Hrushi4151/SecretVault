@@ -46,6 +46,14 @@ public class ApiException extends RuntimeException {
         return new ApiException(message, HttpStatus.BAD_REQUEST, code);
     }
 
+    public static ApiException branchesNotAllowed(String envName, Object envType) {
+        return new ApiException(
+                "Feature branches are only permitted in DEVELOPMENT environments. Environment [" + envName + "] is " + envType + ".",
+                HttpStatus.BAD_REQUEST,
+                "BRANCHES_NOT_ALLOWED_FOR_ENVIRONMENT"
+        );
+    }
+
     public static ApiException internal(String code, String message) {
         return new ApiException(message, HttpStatus.INTERNAL_SERVER_ERROR, code);
     }
