@@ -125,9 +125,9 @@ class SecretControllerTest {
         mockMvc.perform(get("/api/v1/workspaces/" + ctx.wsId + "/projects/" + ctx.projId + "/environments/" + ctx.envId + "/secrets/" + secretId + "/versions")
                         .header("Authorization", "Bearer " + ctx.token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].versionNumber").value(2))
-                .andExpect(jsonPath("$.data[1].versionNumber").value(1));
+                .andExpect(jsonPath("$.data.content", hasSize(2)))
+                .andExpect(jsonPath("$.data.content[0].versionNumber").value(2))
+                .andExpect(jsonPath("$.data.content[1].versionNumber").value(1));
 
         // 6. Reveal Historical Version 1
         mockMvc.perform(post("/api/v1/workspaces/" + ctx.wsId + "/projects/" + ctx.projId + "/environments/" + ctx.envId + "/secrets/" + secretId + "/reveal?version=1")

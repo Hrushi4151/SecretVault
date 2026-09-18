@@ -166,6 +166,52 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
     ```
   - **Response (200 OK):** `BatchImportResponse` detailing imported, updated, skipped, and failed keys.
 
+### 4.6 Secret Versions, Diffs, Tags & Rollback [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions` — Paginated version history.
+  - **Query Params:** `page`, `size`, `versionType` (`INITIAL`, `VALUE_UPDATE`, `ROLLBACK`, `PROMOTION`, `BRANCH_COMMIT`, `MERGE`).
+  - **Response (200 OK):** `Page<SecretVersionResponse>` with metadata, tags, and `isCurrent` boolean.
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/{versionNumber}` — Version metadata.
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/{versionNumber}/reveal` — Explicit historical reveal.
+  - **Response Headers:** `Cache-Control: no-store, no-cache, must-revalidate, private`.
+  - **Audit:** Emits `SECRET_HISTORICAL_REVEALED` event.
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/compare?from=1&to=2` — Metadata comparison & Shannon entropy analysis.
+
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/diff?from=1&to=2` — Secure value line-by-line diff.
+  - **Protection:** Enforces 64KB DoS ceiling (`PAYLOAD_TOO_LARGE` / 413) and zeroization.
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/rollback` — Rollback as new version ($v_N \to v_{N+1}$).
+  - **Request Body:**
+    ```json
+    {
+      "targetVersion": 1,
+      "expectedCurrentVersion": 3,
+      "reason": "Rollback following latency regression"
+    }
+    ```
+  - **Response (201 Created):** New `SecretVersionResponse` with `versionType: "ROLLBACK"`.
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/{vNum}/tags` — Add tag.
+- `DELETE /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/versions/{vNum}/tags/{name}` — Delete tag.
+
+### 4.7 Secret Feature Branching & 3-Way Merge [IMPLEMENTED]
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/branches` — Create feature branch.
+  - **Request Body:** `{ "name": "feature/auth-v2", "fromVersion": 2, "description": "Auth revamp" }`
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/branches` — List secret branches (including `main`).
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/branches/{bId}/versions` — Commit to branch (main trunk remains isolated).
+- `GET /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/branches/{bId}/compare` — Compare branch with main.
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets/{secretId}/branches/{bId}/merge` — 3-Way merge into main trunk with conflict detection (`409 Conflict`).
+
+### 4.8 Cross-Environment Secret Promotion [IMPLEMENTED]
+
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{sourceEnvId}/promote/preview` — Dry-run preview.
+  - **Request Body:** `{ "destinationEnvironmentId": "...", "secretNames": ["DATABASE_URL"] }`
+  - **Response (200 OK):** `PromotionPreviewResponse` with `ADDED`, `MODIFIED`, `UNCHANGED`, and `BLOCKED_DISABLED` counts.
+- `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{sourceEnvId}/promote` — Execute atomic promotion with fresh destination encryption keys and lineage binding.
 
 ---
 

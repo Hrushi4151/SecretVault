@@ -2,6 +2,8 @@ package com.secretvault.secret.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,6 +36,10 @@ public class SecretVersion {
     @Column(name = "version_number", nullable = false)
     private Integer versionNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "version_type", nullable = false, length = 32)
+    private VersionType versionType = VersionType.VALUE_UPDATE;
+
     @Column(name = "ciphertext", nullable = false)
     private byte[] ciphertext;
 
@@ -58,6 +64,18 @@ public class SecretVersion {
     @Column(name = "reason")
     private String reason;
 
+    @Column(name = "source_version_id")
+    private UUID sourceVersionId;
+
+    @Column(name = "source_secret_id")
+    private UUID sourceSecretId;
+
+    @Column(name = "source_environment_id")
+    private UUID sourceEnvironmentId;
+
+    @Column(name = "branch_id")
+    private UUID branchId;
+
     public SecretVersion() {
     }
 
@@ -72,8 +90,43 @@ public class SecretVersion {
             UUID createdBy,
             String reason
     ) {
+        this(secretId, versionNumber, VersionType.VALUE_UPDATE, ciphertext, encryptedDek, iv, authTag, keyReference, createdBy, reason, null, null, null, null);
+    }
+
+    public SecretVersion(
+            UUID secretId,
+            Integer versionNumber,
+            VersionType versionType,
+            byte[] ciphertext,
+            byte[] encryptedDek,
+            byte[] iv,
+            byte[] authTag,
+            String keyReference,
+            UUID createdBy,
+            String reason
+    ) {
+        this(secretId, versionNumber, versionType, ciphertext, encryptedDek, iv, authTag, keyReference, createdBy, reason, null, null, null, null);
+    }
+
+    public SecretVersion(
+            UUID secretId,
+            Integer versionNumber,
+            VersionType versionType,
+            byte[] ciphertext,
+            byte[] encryptedDek,
+            byte[] iv,
+            byte[] authTag,
+            String keyReference,
+            UUID createdBy,
+            String reason,
+            UUID sourceVersionId,
+            UUID sourceSecretId,
+            UUID sourceEnvironmentId,
+            UUID branchId
+    ) {
         this.secretId = secretId;
         this.versionNumber = versionNumber;
+        this.versionType = versionType != null ? versionType : VersionType.VALUE_UPDATE;
         this.ciphertext = ciphertext;
         this.encryptedDek = encryptedDek;
         this.iv = iv;
@@ -81,6 +134,10 @@ public class SecretVersion {
         this.keyReference = keyReference;
         this.createdBy = createdBy;
         this.reason = reason;
+        this.sourceVersionId = sourceVersionId;
+        this.sourceSecretId = sourceSecretId;
+        this.sourceEnvironmentId = sourceEnvironmentId;
+        this.branchId = branchId;
         this.createdAt = Instant.now();
     }
 
@@ -94,6 +151,10 @@ public class SecretVersion {
 
     public Integer getVersionNumber() {
         return versionNumber;
+    }
+
+    public VersionType getVersionType() {
+        return versionType;
     }
 
     public byte[] getCiphertext() {
@@ -126,5 +187,21 @@ public class SecretVersion {
 
     public String getReason() {
         return reason;
+    }
+
+    public UUID getSourceVersionId() {
+        return sourceVersionId;
+    }
+
+    public UUID getSourceSecretId() {
+        return sourceSecretId;
+    }
+
+    public UUID getSourceEnvironmentId() {
+        return sourceEnvironmentId;
+    }
+
+    public UUID getBranchId() {
+        return branchId;
     }
 }

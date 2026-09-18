@@ -25,6 +25,7 @@
 - `V3__projects_and_environments_schema.sql` — Projects and environments tables with UUID primary keys, foreign keys, unique slug constraints, and indexes
 - `V4__workspace_invitations_and_access_scoping.sql` — `workspace_invitations`, `project_access`, and `environment_access` tables for fine-grained multi-tier RBAC and invitation workflows
 - `V5__core_secret_management_schema.sql` — `secrets`, `secret_versions`, and `audit_logs` tables with envelope encryption columns, monotonic version constraints, foreign keys, and indexes
+- `V6__secret_versioning_branching_and_tags.sql` — `secret_branches`, `secret_version_tags`, and lineage/branching foreign keys on `secret_versions` for version control and cross-environment promotion
 
 ---
 
@@ -192,10 +193,40 @@ Immutable cryptographic ledger storing envelope-encrypted payloads.
 - `created_by` (UUID, FK -> `users(id)`)
 - `created_at` (TIMESTAMPTZ NOT NULL)
 - `reason` (TEXT, optional audit rotation note)
+- `version_type` (VARCHAR(32) NOT NULL, default `VALUE_UPDATE` — `INITIAL`, `VALUE_UPDATE`, `ROLLBACK`, `PROMOTION`, `BRANCH_COMMIT`, `MERGE`)
+- `source_version_id` (UUID, FK -> `secret_versions(id)`)
+- `source_secret_id` (UUID, FK -> `secrets(id)`)
+- `source_environment_id` (UUID, FK -> `environments(id)`)
+- `branch_id` (UUID, FK -> `secret_branches(id)`)
 - Constraints: `UNIQUE(secret_id, version_number)`
-- Indexes: `idx_secret_versions_secret_ver (secret_id, version_number DESC)`
+- Indexes: `idx_secret_versions_secret_ver (secret_id, version_number DESC)`, `idx_secret_versions_branch (branch_id)`
 
-### 4.3 `audit_logs` Table
+### 4.3 `secret_branches` Table [IMPLEMENTED]
+Isolated feature and experimentation branches for secrets.
+- `id` (UUID, PK)
+- `secret_id` (UUID NOT NULL, FK -> `secrets(id)`)
+- `name` (VARCHAR(255) NOT NULL)
+- `description` (TEXT)
+- `base_version_id` (UUID, FK -> `secret_versions(id)`)
+- `head_version_id` (UUID, FK -> `secret_versions(id)`)
+- `status` (VARCHAR(32) NOT NULL, default `ACTIVE` — `ACTIVE`, `MERGED`, `ARCHIVED`)
+- `created_by` (UUID, FK -> `users(id)`)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- `merged_at` (TIMESTAMPTZ), `merged_by` (UUID)
+- Constraints: `UNIQUE(secret_id, name)`
+- Indexes: `idx_secret_branches_secret (secret_id, status)`
+
+### 4.4 `secret_version_tags` Table [IMPLEMENTED]
+Immutable semantic metadata tags attached to historical versions (e.g. `production`, `stable`, `release-2026.09`).
+- `id` (UUID, PK)
+- `secret_version_id` (UUID NOT NULL, FK -> `secret_versions(id)`)
+- `name` (VARCHAR(64) NOT NULL)
+- `created_by` (UUID, FK -> `users(id)`)
+- `created_at` (TIMESTAMPTZ NOT NULL)
+- Constraints: `UNIQUE(secret_version_id, name)`
+- Indexes: `idx_secret_version_tags_version (secret_version_id)`
+
+### 4.5 `audit_logs` Table
 Append-only immutable record of all security-sensitive actions.
 - `id` (UUID, PK)
 - `organization_id`, `workspace_id` (UUID)
