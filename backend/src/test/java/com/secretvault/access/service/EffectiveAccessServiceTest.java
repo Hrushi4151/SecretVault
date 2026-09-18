@@ -332,4 +332,69 @@ class EffectiveAccessServiceTest {
         assertEquals("FORBIDDEN", ex.getCode());
         assertTrue(ex.getMessage().contains("VIEWER role is strictly forbidden"));
     }
+
+    @Test
+    @DisplayName("Edge Case: Auto-resolves environment and project when only secretId is supplied")
+    void testAutoResolveHierarchyFromSecretId() {
+        when(workspaceRepository.existsById(workspaceId)).thenReturn(true);
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId))
+                .thenReturn(Optional.of(new WorkspaceMembership(workspaceId, userId, WorkspaceRole.DEVELOPER)));
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(environmentRepository.findById(devEnvId)).thenReturn(Optional.of(devEnvironment));
+        when(projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)).thenReturn(Optional.of(project));
+
+        AccessDecision decision = accessService.evaluateAccess(workspaceId, null, null, secretId, AccessPermission.SECRET_READ, userId);
+
+        assertTrue(decision.allowed());
+        assertEquals(AccessScope.ENVIRONMENT, decision.scope());
+    }
+
+    @Test
+    @DisplayName("Edge Case: Deleted secret rejects update, delete, rollback, and branch mutations")
+    void testDeletedSecretRejectsMutations() {
+        secret.setStatus(com.secretvault.secret.entity.SecretStatus.DELETED);
+
+        when(workspaceRepository.existsById(workspaceId)).thenReturn(true);
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId))
+                .thenReturn(Optional.of(new WorkspaceMembership(workspaceId, userId, WorkspaceRole.ADMIN)));
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)).thenReturn(Optional.of(project));
+        when(environmentRepository.findByIdAndProjectId(devEnvId, projectId)).thenReturn(Optional.of(devEnvironment));
+
+        AccessDecision updateDec = accessService.evaluateAccess(workspaceId, projectId, devEnvId, secretId, AccessPermission.SECRET_UPDATE, userId);
+        assertFalse(updateDec.allowed());
+        assertTrue(updateDec.deniedReason().contains("deleted secret"));
+
+        AccessDecision rollbackDec = accessService.evaluateAccess(workspaceId, projectId, devEnvId, secretId, AccessPermission.SECRET_ROLLBACK, userId);
+        assertFalse(rollbackDec.allowed());
+        assertTrue(rollbackDec.deniedReason().contains("deleted secret"));
+    }
+
+    @Test
+    @DisplayName("Edge Case: Cross-hierarchy secret in mismatched environment is denied")
+    void testCrossHierarchySecretMismatchedEnvironment() {
+        UUID wrongEnvId = UUID.randomUUID();
+
+        when(workspaceRepository.existsById(workspaceId)).thenReturn(true);
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId))
+                .thenReturn(Optional.of(new WorkspaceMembership(workspaceId, userId, WorkspaceRole.ADMIN)));
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+
+        AccessDecision decision = accessService.evaluateAccess(workspaceId, projectId, wrongEnvId, secretId, AccessPermission.SECRET_READ, userId);
+        assertFalse(decision.allowed());
+        assertTrue(decision.deniedReason().contains("does not belong to the specified environment"));
+    }
+
+    @Test
+    @DisplayName("Edge Case: Null permission or unauthenticated actor fails closed")
+    void testNullInputsFailClosed() {
+        AccessDecision nullPerm = accessService.evaluateAccess(workspaceId, projectId, devEnvId, secretId, null, userId);
+        assertFalse(nullPerm.allowed());
+
+        AccessDecision nullActor = accessService.evaluateAccess(workspaceId, projectId, devEnvId, secretId, AccessPermission.SECRET_READ, null);
+        assertFalse(nullActor.allowed());
+
+        AccessDecision nullWs = accessService.evaluateAccess(null, projectId, devEnvId, secretId, AccessPermission.SECRET_READ, userId);
+        assertFalse(nullWs.allowed());
+    }
 }

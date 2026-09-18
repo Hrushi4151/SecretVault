@@ -19,6 +19,7 @@ import com.secretvault.project.access.service.ProjectAccessService;
 import com.secretvault.project.entity.Project;
 import com.secretvault.project.repository.ProjectRepository;
 import com.secretvault.secret.entity.Secret;
+import com.secretvault.secret.entity.SecretStatus;
 import com.secretvault.secret.repository.SecretRepository;
 import com.secretvault.workspace.entity.Workspace;
 import com.secretvault.workspace.entity.WorkspaceMembership;
@@ -107,7 +108,32 @@ public class EffectiveAccessService {
         WorkspaceMembership membership = membershipOpt.get();
         WorkspaceRole wsRole = membership.getRole();
 
-        // 2. Project Boundary Check (if projectId is specified)
+        // 2. Secret Auto-resolution / validation (if secretId given)
+        Secret secret = null;
+        if (secretId != null) {
+            Optional<Secret> sOpt = secretRepository.findById(secretId);
+            if (sOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Secret not found");
+            }
+            secret = sOpt.get();
+            if (environmentId != null && !secret.getEnvironmentId().equals(environmentId)) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Secret does not belong to the specified environment");
+            }
+            environmentId = secret.getEnvironmentId();
+        }
+
+        // 3. Environment Auto-resolution (if environmentId given but projectId missing)
+        Environment environment = null;
+        if (environmentId != null && projectId == null) {
+            Optional<Environment> eOpt = environmentRepository.findById(environmentId);
+            if (eOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.ENVIRONMENT, "Environment not found");
+            }
+            environment = eOpt.get();
+            projectId = environment.getProjectId();
+        }
+
+        // 4. Project Boundary Validation
         Project project = null;
         if (projectId != null) {
             Optional<Project> projOpt = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId);
@@ -117,12 +143,8 @@ public class EffectiveAccessService {
             project = projOpt.get();
         }
 
-        // 3. Environment Boundary Check (if environmentId is specified)
-        Environment environment = null;
-        if (environmentId != null) {
-            if (projectId == null) {
-                return AccessDecision.deny(permission, AccessScope.ENVIRONMENT, "Project context required when evaluating environment access");
-            }
+        // 5. Environment Boundary Validation
+        if (environmentId != null && environment == null) {
             Optional<Environment> envOpt = environmentRepository.findByIdAndProjectId(environmentId, projectId);
             if (envOpt.isEmpty()) {
                 return AccessDecision.deny(permission, AccessScope.ENVIRONMENT, "Environment not found in this project");
@@ -130,20 +152,16 @@ public class EffectiveAccessService {
             environment = envOpt.get();
         }
 
-        // 4. Secret Boundary Check (if secretId is specified)
-        Secret secret = null;
-        if (secretId != null) {
-            if (environmentId == null) {
-                return AccessDecision.deny(permission, AccessScope.SECRET, "Environment context required when evaluating secret access");
+        // 6. Hard Security Invariants Check (Phase 4 Branch Policy & Deleted Status)
+        if (secret != null && secret.getStatus() == SecretStatus.DELETED) {
+            if (permission == AccessPermission.SECRET_UPDATE ||
+                    permission == AccessPermission.SECRET_DELETE ||
+                    permission == AccessPermission.SECRET_ROLLBACK ||
+                    permission == AccessPermission.SECRET_BRANCH) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Cannot perform mutations on a deleted secret");
             }
-            Optional<Secret> secretOpt = secretRepository.findByIdAndEnvironmentId(secretId, environmentId);
-            if (secretOpt.isEmpty()) {
-                return AccessDecision.deny(permission, AccessScope.SECRET, "Secret not found in this environment");
-            }
-            secret = secretOpt.get();
         }
 
-        // 5. Hard Security Invariants Check (Phase 4 Branch Policy & Production Rules)
         if (permission == AccessPermission.SECRET_BRANCH && environment != null) {
             if (environment.getEnvType() != EnvType.DEVELOPMENT) {
                 return AccessDecision.deny(
@@ -154,7 +172,7 @@ public class EffectiveAccessService {
             }
         }
 
-        // 6. Compute Effective Standing RBAC Hierarchy
+        // 7. Compute Effective Standing RBAC Hierarchy
         WorkspaceRole effProjectRole = null;
         if (projectId != null) {
             Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
@@ -173,7 +191,7 @@ public class EffectiveAccessService {
             );
         }
 
-        // 7. Evaluate Permission Against Standing Scoped Access
+        // 8. Evaluate Permission Against Standing Scoped Access
         AccessDecision standingDecision = evaluateStandingPermission(
                 permission, wsRole, effProjectRole, effEnvPerm, project, environment, secret
         );
@@ -181,7 +199,7 @@ public class EffectiveAccessService {
             return standingDecision;
         }
 
-        // 8. Future Granular Grant Extension Point (Phase 5.2 Hook)
+        // 9. Future Granular Grant Extension Point (Phase 5.2 Hook)
         AccessDecision granularDecision = evaluateGranularGrantExtension(
                 workspaceId, projectId, environmentId, secretId, permission, userId
         );
@@ -189,7 +207,7 @@ public class EffectiveAccessService {
             return granularDecision;
         }
 
-        // 9. Future JIT Elevation Extension Point (Phase 5.3 Hook)
+        // 10. Future JIT Elevation Extension Point (Phase 5.3 Hook)
         AccessDecision jitDecision = evaluateJitGrantExtension(
                 workspaceId, projectId, environmentId, secretId, permission, userId
         );
@@ -197,7 +215,7 @@ public class EffectiveAccessService {
             return jitDecision;
         }
 
-        // 10. Default Deny
+        // 11. Default Deny
         return standingDecision;
     }
 
