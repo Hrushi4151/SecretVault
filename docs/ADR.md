@@ -195,3 +195,24 @@ In DevSecOps governance, feature branches are a development experimentation and 
 - **Positive:** Zero risk of production branch drift or rogue feature branches in production; guaranteed linear version progression in high-integrity enclaves; promotion pipeline remains the sole path to production.
 - **Negative:** Hotfixes must be applied either directly to `main` in Development and promoted through Staging, or via standard authorized single-secret update workflows in the designated environment.
 
+---
+
+## ADR-013: Centralized Authorization Foundation, Effective Permission Pipeline & "Why Access" Lineage
+
+### Status: Accepted
+### Date: 2026-09-18
+### Context:
+As SecretVault expands with granular resource access grants (Phase 5.2), Just-In-Time temporary elevations (Phase 5.3), and periodic access review campaigns (Phase 5.4), scattered authorization checks across individual controllers risk security drift, bypasses of protected environment rules, and lack of lineage transparency.
+
+### Decision:
+1. **Canonical Permission Registry (`AccessPermission`):** Standardized machine-readable permission codes (`secret.read`, `secret.create`, `secret.update`, `secret.delete`, `secret.reveal`, `secret.rollback`, `secret.branch`, `environment.promote`, `environment.manage`, `access.manage`, `jit.request`, `jit.approve`, `access_review.manage`).
+2. **Deterministic Evaluation Pipeline (`EffectiveAccessService`):** All access decisions evaluate sequentially:
+   `Authentication -> Tenant/Workspace Boundary -> Project Boundary -> Environment Boundary -> Hard Invariants (e.g. Development-only branches) -> Standing Scoped RBAC -> [Future Granular Grants & JIT Hooks] -> Default Deny`.
+3. **No Automatic Root Bypass:** `OWNER` and `ADMIN` roles do not receive indiscriminate root bypasses that undermine granular governance, audit trails, or protected environment rules.
+4. **"Why Do I Have Access?" Transparency (`explainAccess`):** Every authorization decision captures composite source attribution (`WORKSPACE_ROLE`, `PROJECT_ACCESS`, `ENVIRONMENT_ACCESS`, `GRANULAR_GRANT`, `JIT_GRANT`) and human-readable operational rationale, establishing the foundation for access certification reviews.
+5. **Zero Plaintext Invariant:** Plaintext secret values, cryptographic keys, and sensitive tokens are strictly prohibited from authorization decision records, error messages, exceptions, and audit logs.
+
+### Consequences:
+- **Positive:** Centralized, fail-closed authorization engine; zero duplicate authorization logic; seamless extension points for Phase 5.2 granular grants and Phase 5.3 JIT elevations; full audit lineage.
+- **Negative:** Evaluating deep hierarchies incurs minor object traversal overhead, mitigated by JPA indexed lookups.
+
