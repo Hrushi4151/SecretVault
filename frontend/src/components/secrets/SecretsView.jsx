@@ -4,6 +4,8 @@ import { projectApi } from '../../api/projects';
 import { secretApi } from '../../api/secrets';
 import { CreateSecretModal } from './CreateSecretModal';
 import { SecretDetailsModal } from './SecretDetailsModal';
+import SecretBranchesModal from './SecretBranchesModal';
+import EnvironmentPromotionModal from './EnvironmentPromotionModal';
 import {
   Key,
   Plus,
@@ -26,6 +28,8 @@ import {
   ChevronDown,
   Server,
   Filter,
+  GitBranch,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = null }) => {
@@ -72,6 +76,8 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedSecretForDetails, setSelectedSecretForDetails] = useState(null);
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
+  const [branchModalSecret, setBranchModalSecret] = useState(null);
   const [copiedKeyName, setCopiedKeyName] = useState(null);
 
   // Quick reveal state per secret row
@@ -269,6 +275,13 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
               <span className="w-1.5 h-1.5 rounded-full bg-[#FF2D6D] mr-1.5 animate-pulse" />
               AES-256-GCM ENVELOPE ENCRYPTION
             </span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+              currentEnvironment?.envType === 'DEVELOPMENT'
+                ? 'bg-[#4ADE80]/15 text-[#4ADE80] border-[#4ADE80]/30'
+                : 'bg-[#30000F] text-[#A26377] border-[#FFB4C8]/20'
+            }`}>
+              BRANCHES: {currentEnvironment?.envType === 'DEVELOPMENT' ? 'ENABLED' : 'DISABLED'}
+            </span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tight text-white">
@@ -291,6 +304,17 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF2D6D]' : ''}`} />
             <span>Sync Vault</span>
           </button>
+
+          {currentEnvironments.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setIsPromotionModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-tertiary hover:text-white text-xs font-mono font-semibold tracking-wide flex items-center gap-2 transition-all border border-tertiary/30 active:scale-95 shadow-sm cursor-pointer"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              <span>Promote Secrets</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -703,9 +727,20 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
                       {/* Actions */}
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          {currentEnvironment?.envType === 'DEVELOPMENT' && (
+                            <button
+                              onClick={() => setBranchModalSecret(s)}
+                              className="px-2.5 py-1 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-tertiary hover:text-white border border-tertiary/20 text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                              title="Manage Feature Branches"
+                            >
+                              <GitBranch className="w-3 h-3" />
+                              <span>Branches</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => setSelectedSecretForDetails(s)}
-                            className="px-3 py-1 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1.5"
+                            className="px-3 py-1 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                           >
                             <Eye className="w-3 h-3 text-[#FF2D6D]" />
                             <span>Details</span>
@@ -744,8 +779,41 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
           projectId={selectedProjectId}
           environmentId={selectedEnvironmentId}
           environmentName={currentEnvironment?.name || 'Production'}
+          environmentType={currentEnvironment?.envType || 'DEVELOPMENT'}
           onSecretUpdated={handleSecretUpdated}
           onSecretDeleted={handleSecretDeleted}
+        />
+      )}
+
+      {/* Environment Promotion Modal */}
+      {isPromotionModalOpen && (
+        <EnvironmentPromotionModal
+          isOpen={isPromotionModalOpen}
+          onClose={() => setIsPromotionModalOpen(false)}
+          environments={currentEnvironments}
+          currentEnvironmentId={selectedEnvironmentId}
+          workspaceId={activeWorkspace?.id}
+          projectId={selectedProjectId}
+          onPromotionCompleted={() => {
+            handleRefresh();
+          }}
+        />
+      )}
+
+      {/* Secret Branches & 3-Way Merge Modal */}
+      {branchModalSecret && selectedEnvironmentId && (
+        <SecretBranchesModal
+          isOpen={!!branchModalSecret}
+          onClose={() => setBranchModalSecret(null)}
+          secret={branchModalSecret}
+          workspaceId={activeWorkspace?.id}
+          projectId={selectedProjectId}
+          environmentId={selectedEnvironmentId}
+          environmentName={currentEnvironment?.name || 'Development'}
+          environmentType={currentEnvironment?.envType || 'DEVELOPMENT'}
+          onBranchMerged={() => {
+            handleRefresh();
+          }}
         />
       )}
     </div>

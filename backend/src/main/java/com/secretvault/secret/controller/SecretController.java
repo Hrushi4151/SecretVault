@@ -87,22 +87,6 @@ public class SecretController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/{secretId}/versions")
-    @Operation(summary = "Get immutable version history for a secret")
-    public ResponseEntity<ApiResponse<List<SecretVersionResponse>>> getSecretVersions(
-            @PathVariable UUID workspaceId,
-            @PathVariable UUID projectId,
-            @PathVariable UUID environmentId,
-            @PathVariable UUID secretId,
-            @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        validateWorkspaceHeader(workspaceId, headerWorkspaceId);
-        List<SecretVersionResponse> versions = secretService.getSecretVersions(
-                workspaceId, projectId, environmentId, secretId, principal.getId()
-        );
-        return ResponseEntity.ok(ApiResponse.success(versions));
-    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

@@ -3,6 +3,12 @@ spring:
     activate:
       on-profile: local
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:ep-blue-mouse-b4y5wu9d-pooler.c-6.us-east-2.aws.neon.tech}:${DB_PORT:5432}/${DB_NAME:SecureVault}?sslmode=require&channelBinding=require}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:neondb_owner}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:npg_a8uPcUoR4rgT}}
+    driver-class-name: org.postgresql.Driver
+
 logging:
   level:
     root: INFO

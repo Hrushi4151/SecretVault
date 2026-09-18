@@ -23,12 +23,12 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 11 | Create Project | Projects | Modal/Form to add new project | `POST /projects` | Name validation; unique slug | `project` | NOT STARTED |
 | 12 | Project Overview | Projects | Project metrics, health, envs | `GET /projects/{id}` | Workspace authorization | `project` | NOT STARTED |
 | 13 | Environment Overview | Environments | Secrets, providers, drift in env | `GET /environments/{id}` | Environment-level RBAC | `environment` | NOT STARTED |
-| 14 | Secrets List | Secret Engine | Data table of secrets (masked) | `GET /environments/{id}/secrets` | Values masked by default (`••••`) | `secret` | NOT STARTED |
-| 15 | Create Secret | Secret Engine | Modal/Form to create secret | `POST /environments/{id}/secrets` | Payload encrypted before storage | `secret` | NOT STARTED |
-| 16 | Secret Details | Secret Engine | Metadata, tags, version summary | `GET /secrets/{id}` | Audited metadata access | `secret` | NOT STARTED |
-| 17 | Secret Reveal | Secret Engine | Protected reveal modal/flow | `POST /secrets/{id}/reveal` | `secret.reveal` permission + MFA | `secret` | NOT STARTED |
-| 18 | Secret Versions | Secret Engine | Immutable version history table | `GET /secrets/{id}/versions` | Immutable history; no plaintexts | `secret` | NOT STARTED |
-| 19 | Secret Activity | Secret Engine | Audit log timeline for a secret | `GET /secrets/{id}/activity` | Append-only audit events | `audit` | NOT STARTED |
+| 14 | Secrets List | Secret Engine | Data table of secrets (masked) | `GET /environments/{id}/secrets` | Values masked by default (`••••`) | `secret` | IMPLEMENTED |
+| 15 | Create Secret | Secret Engine | Modal/Form to create secret | `POST /environments/{id}/secrets` | Payload encrypted before storage | `secret` | IMPLEMENTED |
+| 16 | Secret Details | Secret Engine | Metadata, tags, version summary | `GET /secrets/{id}` | Audited metadata access | `secret` | IMPLEMENTED |
+| 17 | Secret Reveal | Secret Engine | Protected reveal modal/flow | `POST /secrets/{id}/reveal` | `secret.reveal` permission + MFA | `secret` | IMPLEMENTED |
+| 18 | Secret Versions | Secret Engine | Immutable version history table | `GET /secrets/{id}/versions` | Immutable history; no plaintexts | `secret` | IMPLEMENTED |
+| 19 | Secret Activity | Secret Engine | Audit log timeline for a secret | `GET /secrets/{id}/activity` | Append-only audit events | `audit` | IMPLEMENTED |
 | 20 | Integration Marketplace | Integrations | Catalog of supported providers | `GET /integrations/catalog` | Metadata catalog | `integration` | NOT STARTED |
 | 21 | Connect Provider | Integrations | Provider setup wizard | `POST /integrations/connect` | Encrypted provider token storage | `integration` | NOT STARTED |
 | 22 | Provider Details | Integrations | Connection health and configs | `GET /integrations/{id}` | Admin permission required | `integration` | NOT STARTED |
@@ -82,9 +82,9 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 70 | Service Accounts | Identity | Machine identity management | `GET /identity/service-accounts`| Scoped service account tokens | `identity` | NOT STARTED |
 | 71 | Create Service Account | Identity | Provision new machine identity | `POST /identity/service-accounts`| Least privilege scope assignment | `identity` | NOT STARTED |
 | 72 | Service Account Details | Identity | Token rotation & usage metrics | `GET /identity/service-accounts/{id}` | Token hash display | `identity` | NOT STARTED |
-| 73 | Secret Branches | Versioning | Git-like secret branching | `GET /secrets/branches` | Branch isolation | `secret` | NOT STARTED |
-| 74 | Secret Diff | Versioning | Version & branch diff engine | `POST /secrets/diff` | Diffs metadata, not plaintext | `secret` | NOT STARTED |
-| 75 | Environment Promotion | Versioning | Promote secrets Dev -> Staging -> Prod | `POST /environments/promote` | Production approval gate | `secret` | NOT STARTED |
+| 73 | Secret Branches | Versioning | Git-like secret branching | `GET /secrets/branches` | Branch isolation | `secret` | IMPLEMENTED |
+| 74 | Secret Diff | Versioning | Version & branch diff engine | `POST /secrets/diff` | Diffs metadata, not plaintext | `secret` | IMPLEMENTED |
+| 75 | Environment Promotion | Versioning | Promote secrets Dev -> Staging -> Prod | `POST /environments/promote` | Production approval gate | `secret` | IMPLEMENTED |
 | 76 | Rotation Center | Rotation | Credential rotation dashboard | `GET /rotation/overview` | Rotation health monitoring | `secret` | NOT STARTED |
 | 77 | Rotation Policy | Rotation | Auto-rotation schedules | `POST /rotation/policies` | Expiration alerts | `secret` | NOT STARTED |
 | 78 | Shadow Rotation | Rotation | Staged validation engine | `POST /rotation/shadow` | Validates before cutover | `secret` | NOT STARTED |
@@ -120,8 +120,8 @@ The SecretVault Web Dashboard encompasses **126 distinct application screens** d
 | 108 | CLI Diagnostics | Developer | Workstation health & doctor | `GET /developer/cli/doctor` | Connection test | `runtime` | NOT STARTED |
 | 109 | CLI Terminal UI | Developer | Browser-based terminal simulator| N/A (Interactive UI) | Client-side sandbox | `runtime` | NOT STARTED |
 | 110 | Local Audit | Developer | Workstation CLI event ledger | `GET /audit/local` | Local event trace | `audit` | NOT STARTED |
-| 111 | Secret History | Secret Engine | Detailed version timeline | `GET /secrets/{id}/history` | Immutable version entries | `secret` | NOT STARTED |
-| 112 | Secret Rollback | Secret Engine | Rollback impact inspector | `POST /secrets/{id}/rollback` | Creates audit & new version | `secret` | NOT STARTED |
+| 111 | Secret History | Secret Engine | Detailed version timeline | `GET /secrets/{id}/history` | Immutable version entries | `secret` | IMPLEMENTED |
+| 112 | Secret Rollback | Secret Engine | Rollback impact inspector | `POST /secrets/{id}/rollback` | Creates audit & new version | `secret` | IMPLEMENTED |
 | 113 | Developer Overview | Developer | Developer platform hub | `GET /developer/overview` | Developer quick links | `runtime` | NOT STARTED |
 | 114 | Workspace Switcher | Navigation | Multi-tenant tenant navigator | `GET /workspaces` | Workspace membership check | `workspace` | IMPLEMENTED |
 | 115 | Workspace Management | Workspace | Identity governance & telemetry | `GET /workspaces/{id}` | Workspace admin check | `workspace` | IMPLEMENTED |
