@@ -4,6 +4,7 @@ import { WorkspaceSwitcher } from '../workspace/WorkspaceSwitcher';
 import { WorkspaceMembersDialog } from '../workspace/WorkspaceMembersDialog';
 import {
   Shield,
+  ShieldCheck,
   LayoutGrid,
   FolderGit2,
   Key,
@@ -41,6 +42,7 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutGrid className="w-4 h-4" /> },
     { id: 'projects', label: 'Projects', icon: <FolderGit2 className="w-4 h-4" /> },
     { id: 'secrets', label: 'Secrets', icon: <Key className="w-4 h-4" />, badge: 'Phase 3' },
+    { id: 'access', label: 'Access & JIT', icon: <ShieldCheck className="w-4 h-4 text-[#FF85A2]" />, badge: 'Phase 5' },
     { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4" />, badge: 'Phase 3' },
     { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4" />, badge: 'Phase 3' },
   ];

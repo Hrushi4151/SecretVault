@@ -63,6 +63,12 @@ class EffectiveAccessServiceTest {
     @Mock
     private EnvironmentAccessRepository environmentAccessRepository;
 
+    @Mock
+    private com.secretvault.access.grant.repository.AccessGrantRepository accessGrantRepository;
+
+    @Mock
+    private com.secretvault.access.jit.repository.JitAccessRequestRepository jitRepository;
+
     @InjectMocks
     private EffectiveAccessService accessService;
 

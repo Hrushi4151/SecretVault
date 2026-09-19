@@ -216,3 +216,31 @@ As SecretVault expands with granular resource access grants (Phase 5.2), Just-In
 - **Positive:** Centralized, fail-closed authorization engine; zero duplicate authorization logic; seamless extension points for Phase 5.2 granular grants and Phase 5.3 JIT elevations; full audit lineage.
 - **Negative:** Evaluating deep hierarchies incurs minor object traversal overhead, mitigated by JPA indexed lookups.
 
+---
+
+## ADR-014: Granular Access Control, JIT Temporary Access & Access Reviews (Phase 5)
+
+### Status: Accepted
+### Date: 2026-09-19
+### Context:
+Modern enterprise compliance frameworks (SOC 2, ISO 27001, HIPAA) require eliminating static permanent administrative credentials (Zero Standing Privilege), enforcing strict dual-custody approval for high-risk actions, and conducting regular periodic access reviews with automated remediation.
+
+### Decision:
+1. **Granular Resource-Level Grants (`access_grants`):**
+   - Supports explicit permission overrides at `WORKSPACE`, `PROJECT`, `ENVIRONMENT`, or `SECRET` levels.
+   - Enforces hierarchical check constraints preventing orphaned or cross-tenant assignments.
+2. **Just-In-Time (JIT) Temporary Elevation (`jit_access_requests`):**
+   - Ephemeral elevation with strict TTL (5 to 240 minutes) and automated expiry evaluation.
+   - **Anti-Self-Approval Enforcement:** Users are cryptographically and server-side barred from approving their own elevation requests, enforcing true dual-custody separation of duties.
+   - **Pessimistic Concurrency Locking:** `findByIdAndWorkspaceIdForUpdate` prevents race conditions during concurrent approval or revocation calls.
+3. **Access Review Certification Campaigns (`access_review_campaigns` & `access_review_items`):**
+   - Automated point-in-time snapshotting of all standing workspace roles, scoped project/environment grants, granular grants, and active JIT elevations.
+   - Lineage attribution ("Why Access?") presented directly to auditors and certifiers.
+   - **Targeted Revocation:** Deciding `REVOKE` on any review item immediately executes domain-specific revocation against the referenced standing grant or JIT record.
+   - **Cryptographic Attestation Ledger:** Finalizing a completed campaign seals an immutable compliance record with certifier identity, timestamp, item count breakdown, and SHA-256 integrity reference.
+
+### Consequences:
+- **Positive:** Complete Zero Standing Privilege (ZSP) architecture; automated compliance certification; zero-trust ephemeral elevations with live countdown timers; full auditability.
+- **Negative:** Additional database tables and index maintenance; periodic review campaigns require administrative attention.
+
+

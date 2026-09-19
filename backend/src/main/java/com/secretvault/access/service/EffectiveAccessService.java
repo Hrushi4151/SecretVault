@@ -1,6 +1,10 @@
 package com.secretvault.access.service;
 
 import com.secretvault.access.dto.EffectiveAccessExplanation;
+import com.secretvault.access.grant.entity.AccessGrant;
+import com.secretvault.access.grant.repository.AccessGrantRepository;
+import com.secretvault.access.jit.entity.JitAccessRequest;
+import com.secretvault.access.jit.repository.JitAccessRequestRepository;
 import com.secretvault.access.model.AccessDecision;
 import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.model.AccessScope;
@@ -31,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -41,7 +46,7 @@ import java.util.UUID;
 /**
  * Authoritative, centralized authorization decision engine for SecretVault.
  * Evaluates tenant, project, and environment boundaries, security invariants,
- * standing RBAC scoping, and future granular/JIT extension points.
+ * standing RBAC scoping, granular resource grants, and active JIT temporary elevations.
  */
 @Service
 public class EffectiveAccessService {
@@ -55,6 +60,8 @@ public class EffectiveAccessService {
     private final SecretRepository secretRepository;
     private final ProjectAccessRepository projectAccessRepository;
     private final EnvironmentAccessRepository environmentAccessRepository;
+    private final AccessGrantRepository accessGrantRepository;
+    private final JitAccessRequestRepository jitRepository;
 
     public EffectiveAccessService(
             WorkspaceRepository workspaceRepository,
@@ -63,7 +70,9 @@ public class EffectiveAccessService {
             EnvironmentRepository environmentRepository,
             SecretRepository secretRepository,
             ProjectAccessRepository projectAccessRepository,
-            EnvironmentAccessRepository environmentAccessRepository
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository
     ) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
@@ -72,6 +81,8 @@ public class EffectiveAccessService {
         this.secretRepository = secretRepository;
         this.projectAccessRepository = projectAccessRepository;
         this.environmentAccessRepository = environmentAccessRepository;
+        this.accessGrantRepository = accessGrantRepository;
+        this.jitRepository = jitRepository;
     }
 
     /**
@@ -199,7 +210,7 @@ public class EffectiveAccessService {
             return standingDecision;
         }
 
-        // 9. Future Granular Grant Extension Point (Phase 5.2 Hook)
+        // 9. Granular Access Grants Extension Point (Phase 5.2)
         AccessDecision granularDecision = evaluateGranularGrantExtension(
                 workspaceId, projectId, environmentId, secretId, permission, userId
         );
@@ -207,7 +218,7 @@ public class EffectiveAccessService {
             return granularDecision;
         }
 
-        // 10. Future JIT Elevation Extension Point (Phase 5.3 Hook)
+        // 10. Just-In-Time (JIT) Temporary Elevation Extension Point (Phase 5.3)
         AccessDecision jitDecision = evaluateJitGrantExtension(
                 workspaceId, projectId, environmentId, secretId, permission, userId
         );
@@ -483,8 +494,7 @@ public class EffectiveAccessService {
     }
 
     /**
-     * Extension point hook for Phase 5.2 Granular Access Grants.
-     * Will query granular grants table once implemented in Phase 5.2.
+     * Evaluates Granular Access Grants (Phase 5.2).
      */
     private AccessDecision evaluateGranularGrantExtension(
             UUID workspaceId,
@@ -494,13 +504,66 @@ public class EffectiveAccessService {
             AccessPermission permission,
             UUID userId
     ) {
-        // Extension point: Phase 5.2 will inject GranularGrantRepository and evaluate specific grants here.
+        if (accessGrantRepository == null) {
+            return null;
+        }
+
+        List<AccessGrant> grants = accessGrantRepository.findByWorkspaceIdAndUserIdAndPermission(workspaceId, userId, permission);
+        if (grants.isEmpty()) {
+            return null;
+        }
+
+        for (AccessGrant grant : grants) {
+            switch (grant.getScopeType()) {
+                case WORKSPACE -> {
+                    return AccessDecision.allow(
+                            permission,
+                            AccessScope.WORKSPACE,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit workspace granular grant authorizes " + permission.getCode()
+                    );
+                }
+                case PROJECT -> {
+                    if (projectId != null && projectId.equals(grant.getProjectId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.PROJECT,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit project granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+                case ENVIRONMENT -> {
+                    if (environmentId != null && environmentId.equals(grant.getEnvironmentId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.ENVIRONMENT,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit environment granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+                case SECRET -> {
+                    if (secretId != null && secretId.equals(grant.getSecretId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.SECRET,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit secret granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+            }
+        }
         return null;
     }
 
     /**
-     * Extension point hook for Phase 5.3 Just-In-Time (JIT) Temporary Access.
-     * Will query active, non-expired JIT requests once implemented in Phase 5.3.
+     * Evaluates active Just-In-Time (JIT) Temporary Elevations (Phase 5.3).
      */
     private AccessDecision evaluateJitGrantExtension(
             UUID workspaceId,
@@ -510,7 +573,25 @@ public class EffectiveAccessService {
             AccessPermission permission,
             UUID userId
     ) {
-        // Extension point: Phase 5.3 will inject JitAccessRequestRepository and evaluate active JIT elevations here.
+        if (jitRepository == null || environmentId == null) {
+            return null;
+        }
+
+        List<JitAccessRequest> activeGrants = jitRepository.findActiveGrantsForEnvAndPerm(
+                workspaceId, userId, environmentId, permission, Instant.now()
+        );
+
+        for (JitAccessRequest req : activeGrants) {
+            if (req.getSecretId() == null || (secretId != null && req.getSecretId().equals(secretId))) {
+                return AccessDecision.allow(
+                        permission,
+                        AccessScope.ENVIRONMENT,
+                        AccessSourceType.JIT_GRANT,
+                        req.getId().toString(),
+                        "Active JIT temporary elevation authorizes " + permission.getCode() + " until " + req.getExpiresAt()
+                );
+            }
+        }
         return null;
     }
 }
