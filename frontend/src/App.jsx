@@ -7,12 +7,13 @@ import { AppShell } from './components/layout/AppShell';
 import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
 import { ProjectsView } from './components/project/ProjectsView';
 import { SecretsView } from './components/secrets/SecretsView';
+import { AccessControlCenterView } from './components/access/AccessControlCenterView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets'
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access'
   const [targetProjectId, setTargetProjectId] = useState(null);
   const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
 
@@ -65,6 +66,8 @@ const MainRouter = () => {
           initialProjectId={targetProjectId}
           initialEnvironmentId={targetEnvironmentId}
         />
+      ) : currentTab === 'access' ? (
+        <AccessControlCenterView />
       ) : (
         <WorkspaceOverview onNavigateToProjects={() => setCurrentTab('projects')} />
       )}
