@@ -1,7 +1,7 @@
 package com.secretvault.audit.entity;
 
 /**
- * Enumeration of audited security and lifecycle actions.
+ * Enumeration of audited security, lifecycle, and access governance actions.
  */
 public enum AuditAction {
     SECRET_CREATED,
@@ -22,5 +22,17 @@ public enum AuditAction {
     SECRET_PROMOTION_COMPLETED,
     WORKSPACE_SETTINGS_UPDATED,
     ENVIRONMENT_ACCESS_GRANTED,
-    ENVIRONMENT_ACCESS_REVOKED
+    ENVIRONMENT_ACCESS_REVOKED,
+
+    // Phase 5 Access Control, JIT & Reviews
+    ACCESS_GRANT_CREATED,
+    ACCESS_GRANT_REVOKED,
+    JIT_ACCESS_REQUESTED,
+    JIT_ACCESS_APPROVED,
+    JIT_ACCESS_REJECTED,
+    JIT_ACCESS_REVOKED,
+    JIT_ACCESS_CANCELLED,
+    ACCESS_REVIEW_CAMPAIGN_CREATED,
+    ACCESS_REVIEW_ITEM_DECIDED,
+    ACCESS_REVIEW_CAMPAIGN_COMPLETED
 }

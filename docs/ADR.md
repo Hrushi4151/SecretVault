@@ -195,3 +195,52 @@ In DevSecOps governance, feature branches are a development experimentation and 
 - **Positive:** Zero risk of production branch drift or rogue feature branches in production; guaranteed linear version progression in high-integrity enclaves; promotion pipeline remains the sole path to production.
 - **Negative:** Hotfixes must be applied either directly to `main` in Development and promoted through Staging, or via standard authorized single-secret update workflows in the designated environment.
 
+---
+
+## ADR-013: Centralized Authorization Foundation, Effective Permission Pipeline & "Why Access" Lineage
+
+### Status: Accepted
+### Date: 2026-09-18
+### Context:
+As SecretVault expands with granular resource access grants (Phase 5.2), Just-In-Time temporary elevations (Phase 5.3), and periodic access review campaigns (Phase 5.4), scattered authorization checks across individual controllers risk security drift, bypasses of protected environment rules, and lack of lineage transparency.
+
+### Decision:
+1. **Canonical Permission Registry (`AccessPermission`):** Standardized machine-readable permission codes (`secret.read`, `secret.create`, `secret.update`, `secret.delete`, `secret.reveal`, `secret.rollback`, `secret.branch`, `environment.promote`, `environment.manage`, `access.manage`, `jit.request`, `jit.approve`, `access_review.manage`).
+2. **Deterministic Evaluation Pipeline (`EffectiveAccessService`):** All access decisions evaluate sequentially:
+   `Authentication -> Tenant/Workspace Boundary -> Project Boundary -> Environment Boundary -> Hard Invariants (e.g. Development-only branches) -> Standing Scoped RBAC -> [Future Granular Grants & JIT Hooks] -> Default Deny`.
+3. **No Automatic Root Bypass:** `OWNER` and `ADMIN` roles do not receive indiscriminate root bypasses that undermine granular governance, audit trails, or protected environment rules.
+4. **"Why Do I Have Access?" Transparency (`explainAccess`):** Every authorization decision captures composite source attribution (`WORKSPACE_ROLE`, `PROJECT_ACCESS`, `ENVIRONMENT_ACCESS`, `GRANULAR_GRANT`, `JIT_GRANT`) and human-readable operational rationale, establishing the foundation for access certification reviews.
+5. **Zero Plaintext Invariant:** Plaintext secret values, cryptographic keys, and sensitive tokens are strictly prohibited from authorization decision records, error messages, exceptions, and audit logs.
+
+### Consequences:
+- **Positive:** Centralized, fail-closed authorization engine; zero duplicate authorization logic; seamless extension points for Phase 5.2 granular grants and Phase 5.3 JIT elevations; full audit lineage.
+- **Negative:** Evaluating deep hierarchies incurs minor object traversal overhead, mitigated by JPA indexed lookups.
+
+---
+
+## ADR-014: Granular Access Control, JIT Temporary Access & Access Reviews (Phase 5)
+
+### Status: Accepted
+### Date: 2026-09-19
+### Context:
+Modern enterprise compliance frameworks (SOC 2, ISO 27001, HIPAA) require eliminating static permanent administrative credentials (Zero Standing Privilege), enforcing strict dual-custody approval for high-risk actions, and conducting regular periodic access reviews with automated remediation.
+
+### Decision:
+1. **Granular Resource-Level Grants (`access_grants`):**
+   - Supports explicit permission overrides at `WORKSPACE`, `PROJECT`, `ENVIRONMENT`, or `SECRET` levels.
+   - Enforces hierarchical check constraints preventing orphaned or cross-tenant assignments.
+2. **Just-In-Time (JIT) Temporary Elevation (`jit_access_requests`):**
+   - Ephemeral elevation with strict TTL (5 to 240 minutes) and automated expiry evaluation.
+   - **Anti-Self-Approval Enforcement:** Users are cryptographically and server-side barred from approving their own elevation requests, enforcing true dual-custody separation of duties.
+   - **Pessimistic Concurrency Locking:** `findByIdAndWorkspaceIdForUpdate` prevents race conditions during concurrent approval or revocation calls.
+3. **Access Review Certification Campaigns (`access_review_campaigns` & `access_review_items`):**
+   - Automated point-in-time snapshotting of all standing workspace roles, scoped project/environment grants, granular grants, and active JIT elevations.
+   - Lineage attribution ("Why Access?") presented directly to auditors and certifiers.
+   - **Targeted Revocation:** Deciding `REVOKE` on any review item immediately executes domain-specific revocation against the referenced standing grant or JIT record.
+   - **Cryptographic Attestation Ledger:** Finalizing a completed campaign seals an immutable compliance record with certifier identity, timestamp, item count breakdown, and SHA-256 integrity reference.
+
+### Consequences:
+- **Positive:** Complete Zero Standing Privilege (ZSP) architecture; automated compliance certification; zero-trust ephemeral elevations with live countdown timers; full auditability.
+- **Negative:** Additional database tables and index maintenance; periodic review campaigns require administrative attention.
+
+

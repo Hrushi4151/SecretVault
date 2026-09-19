@@ -213,6 +213,33 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
   - **Response (200 OK):** `PromotionPreviewResponse` with `ADDED`, `MODIFIED`, `UNCHANGED`, and `BLOCKED_DISABLED` counts.
 - `POST /api/v1/workspaces/{wId}/projects/{pId}/environments/{sourceEnvId}/promote` — Execute atomic promotion with fresh destination encryption keys and lineage binding.
 
+### 4.9 Granular Access Control & Effective Permissions [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/access/grants` — List explicit granular grants.
+- `POST /api/v1/workspaces/{wId}/access/grants` — Create granular resource grant (`WORKSPACE`, `PROJECT`, `ENVIRONMENT`, or `SECRET`).
+- `DELETE /api/v1/workspaces/{wId}/access/grants/{grantId}` — Revoke granular grant.
+- `GET /api/v1/workspaces/{wId}/access/effective` — Explain 11-step effective permissions & lineage attribution for all 13 canonical permissions on a target.
+
+### 4.10 Just-In-Time (JIT) Temporary Access [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/jit/requests` — List JIT requests (with optional `status` filter).
+- `GET /api/v1/workspaces/{wId}/jit/active` — List active non-expired JIT elevations for the caller.
+- `POST /api/v1/workspaces/{wId}/jit/requests` — Submit temporary elevation request with operational justification.
+- `POST /api/v1/workspaces/{wId}/jit/requests/{requestId}/approve` — Dual-custody approval (anti-self-approval enforced).
+- `POST /api/v1/workspaces/{wId}/jit/requests/{requestId}/reject` — Rejection with reviewer rationale.
+- `POST /api/v1/workspaces/{wId}/jit/requests/{requestId}/revoke` — Immediate revocation of active elevation.
+- `POST /api/v1/workspaces/{wId}/jit/requests/{requestId}/cancel` — Cancellation by requester.
+
+### 4.11 Access Review Campaigns & Certification [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/access-reviews` — List certification campaigns.
+- `POST /api/v1/workspaces/{wId}/access-reviews` — Launch campaign with point-in-time privilege snapshotting.
+- `GET /api/v1/workspaces/{wId}/access-reviews/{campaignId}` — Get campaign progress and metadata.
+- `GET /api/v1/workspaces/{wId}/access-reviews/{campaignId}/items` — List snapshotted items with "Why Access?" lineage.
+- `POST /api/v1/workspaces/{wId}/access-reviews/{campaignId}/items/{itemId}/decide` — Record `KEEP` or `REVOKE` decision (with automated targeted revocation).
+- `POST /api/v1/workspaces/{wId}/access-reviews/{campaignId}/complete` — Finalize campaign & seal compliance attestation.
+- `GET /api/v1/workspaces/{wId}/access-reviews/{campaignId}/attestation` — Retrieve cryptographic attestation report.
+
 ---
 
 ## 5. Pagination, Sorting & Filtering
