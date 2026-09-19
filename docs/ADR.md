@@ -263,5 +263,26 @@ Permanent administrative and reveal privileges on production secrets increase th
 - **Positive:** Enforces Zero Standing Privilege (ZSP); eliminates self-approval risks; provides immediate revocation capabilities; guarantees strict audit trails for SOC 2 and ISO 27001 compliance.
 - **Negative:** Requires approver intervention for elevated privileges; short TTLs require timely execution of incident tasks.
 
+---
+
+## ADR-016: Access Reviews and Effective Access Certification (Phase 5.4)
+
+### Status: Accepted
+### Date: 2026-09-19
+### Context:
+Continuous compliance frameworks (SOC 2 Type II, ISO 27001, HIPAA) mandate regular periodic access certification. Organizations must prove who has access to which secrets, why that access was granted, and remediate stale or excessive privileges without disrupting valid baseline standing memberships.
+
+### Decision:
+1. **Point-in-Time Effective Access Snapshotting:** Initiating an `AccessReviewCampaign` generates immutable `AccessReviewItem` snapshot records capturing effective permissions from standing RBAC, scoped project/environment grants, granular grants, and active JIT elevations.
+2. **Snapshot Immutability vs Live State:** The historical review baseline is preserved immutably. Changes to live user access after campaign creation are separately attributed in the UI/API without modifying historical snapshot data.
+3. **Targeted Remediation & Revocation:** Deciding `REVOKE` on a review item targets the exact underlying authorization source (`GRANULAR_GRANT`, `JIT_GRANT`, `ENVIRONMENT_ACCESS`, `PROJECT_ACCESS`) rather than executing global destructive account removals.
+4. **Anti-Self-Review Protection:** Reviewers are strictly barred from certifying their own elevated privileges (`ADMIN`, `OWNER`, `access.manage`, `secret.reveal`).
+5. **Audited Attestation Ledger:** Campaign completion generates an immutable attestation report sealing total items, kept count, revoked count, and certifier identity for external auditor inspection.
+
+### Consequences:
+- **Positive:** Provides defensible, automated access certification audit trails; protects against privilege accumulation and access drift; cleanly decouples review governance from day-to-day authorization.
+- **Negative:** Requires administrative effort to review items before campaign due dates.
+
+
 
 
