@@ -62,6 +62,7 @@ public class EffectiveAccessService {
     private final EnvironmentAccessRepository environmentAccessRepository;
     private final AccessGrantRepository accessGrantRepository;
     private final JitAccessRequestRepository jitRepository;
+    private final java.time.Clock clock;
 
     public EffectiveAccessService(
             WorkspaceRepository workspaceRepository,
@@ -74,6 +75,24 @@ public class EffectiveAccessService {
             AccessGrantRepository accessGrantRepository,
             JitAccessRequestRepository jitRepository
     ) {
+        this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
+             secretRepository, projectAccessRepository, environmentAccessRepository,
+             accessGrantRepository, jitRepository, java.time.Clock.systemUTC());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public EffectiveAccessService(
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            SecretRepository secretRepository,
+            ProjectAccessRepository projectAccessRepository,
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository,
+            java.time.Clock clock
+    ) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
         this.projectRepository = projectRepository;
@@ -83,6 +102,7 @@ public class EffectiveAccessService {
         this.environmentAccessRepository = environmentAccessRepository;
         this.accessGrantRepository = accessGrantRepository;
         this.jitRepository = jitRepository;
+        this.clock = clock != null ? clock : java.time.Clock.systemUTC();
     }
 
     /**
@@ -578,7 +598,7 @@ public class EffectiveAccessService {
         }
 
         List<JitAccessRequest> activeGrants = jitRepository.findActiveGrantsForEnvAndPerm(
-                workspaceId, userId, environmentId, permission, Instant.now()
+                workspaceId, userId, environmentId, permission, clock.instant()
         );
 
         for (JitAccessRequest req : activeGrants) {
