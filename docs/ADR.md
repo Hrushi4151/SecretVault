@@ -243,4 +243,25 @@ Modern enterprise compliance frameworks (SOC 2, ISO 27001, HIPAA) require elimin
 - **Positive:** Complete Zero Standing Privilege (ZSP) architecture; automated compliance certification; zero-trust ephemeral elevations with live countdown timers; full auditability.
 - **Negative:** Additional database tables and index maintenance; periodic review campaigns require administrative attention.
 
+---
+
+## ADR-015: Just-In-Time (JIT) Temporary Access and Ephemeral Privilege Elevation (Phase 5.3)
+
+### Status: Accepted
+### Date: 2026-09-19
+### Context:
+Permanent administrative and reveal privileges on production secrets increase the attack surface and violate the principle of least privilege. Engineers require temporary access to investigate incidents and perform critical operations without accumulating standing privileges.
+
+### Decision:
+1. **Time-Bound Ephemeral Elevation (`jit_access_requests`):** JIT grants are strictly time-bound (5 to 240 minutes), evaluated on-the-fly against real-time UTC clock boundaries (`clock.instant() < expiresAt`). Expired grants immediately cease authorizing operations without relying solely on background schedulers.
+2. **Mandatory Separation of Duties (Anti-Self-Approval):** Requesters are strictly prohibited from approving their own JIT requests, regardless of their workspace role (including `OWNER` and `ADMIN`).
+3. **Scoped Approval Authority Containment:** An approver may only approve requests within their authorized management boundary (Workspace > Project > Environment > Secret). Lower-scoped approvers cannot approve broader-scoped requests.
+4. **Pessimistic Concurrency Locking:** Concurrent approval, rejection, cancellation, and revocation state transitions utilize pessimistic database locks (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) to eliminate race conditions.
+5. **Audited Lifecycle State Machine:** Explicit transitions (`PENDING -> APPROVED / REJECTED / CANCELLED`, `APPROVED -> REVOKED / EXPIRED`) emit structured audit records with operational justification and zero secret plaintext.
+
+### Consequences:
+- **Positive:** Enforces Zero Standing Privilege (ZSP); eliminates self-approval risks; provides immediate revocation capabilities; guarantees strict audit trails for SOC 2 and ISO 27001 compliance.
+- **Negative:** Requires approver intervention for elevated privileges; short TTLs require timely execution of incident tasks.
+
+
 

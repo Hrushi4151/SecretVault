@@ -6,9 +6,13 @@ import com.secretvault.access.jit.dto.RejectJitRequest;
 import com.secretvault.access.jit.dto.SubmitJitRequest;
 import com.secretvault.access.jit.entity.JitStatus;
 import com.secretvault.access.jit.service.JitAccessService;
+import com.secretvault.access.model.AccessPermission;
 import com.secretvault.auth.security.UserPrincipal;
 import com.secretvault.common.dto.ApiResponse;
+import com.secretvault.common.dto.PageResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,32 +22,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/workspaces/{workspaceId}/jit")
+@RequestMapping("/api/v1/workspaces/{workspaceId}/access/jit")
 public class JitAccessController {
 
-    private final JitAccessService jitAccessService;
+    private final JitAccessService jitService;
 
-    public JitAccessController(JitAccessService jitAccessService) {
-        this.jitAccessService = jitAccessService;
-    }
-
-    @GetMapping("/requests")
-    public ResponseEntity<ApiResponse<List<JitAccessRequestResponse>>> listRequests(
-            @PathVariable UUID workspaceId,
-            @RequestParam(required = false) JitStatus status,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        List<JitAccessRequestResponse> requests = jitAccessService.listRequests(workspaceId, status, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(requests));
-    }
-
-    @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<JitAccessRequestResponse>>> getActiveGrants(
-            @PathVariable UUID workspaceId,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        List<JitAccessRequestResponse> active = jitAccessService.getActiveGrants(workspaceId, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(active));
+    public JitAccessController(JitAccessService jitService) {
+        this.jitService = jitService;
     }
 
     @PostMapping("/requests")
@@ -52,40 +37,57 @@ public class JitAccessController {
             @Valid @RequestBody SubmitJitRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        JitAccessRequestResponse response = jitAccessService.submitRequest(workspaceId, request, principal.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "JIT access request submitted successfully"));
+        JitAccessRequestResponse response = jitService.submitRequest(workspaceId, request, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "JIT temporary access request submitted"));
+    }
+
+    @GetMapping("/requests")
+    public ResponseEntity<ApiResponse<PageResponse<JitAccessRequestResponse>>> listRequests(
+            @PathVariable UUID workspaceId,
+            @RequestParam(required = false) JitStatus status,
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) AccessPermission permission,
+            @RequestParam(required = false) UUID projectId,
+            @RequestParam(required = false) UUID environmentId,
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        PageResponse<JitAccessRequestResponse> response = jitService.listRequestsPaginated(
+                workspaceId, status, userId, permission, projectId, environmentId, pageable, principal.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/requests/{requestId}")
+    public ResponseEntity<ApiResponse<JitAccessRequestResponse>> getRequestById(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID requestId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        JitAccessRequestResponse response = jitService.getRequestById(workspaceId, requestId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping("/requests/{requestId}/approve")
     public ResponseEntity<ApiResponse<JitAccessRequestResponse>> approveRequest(
             @PathVariable UUID workspaceId,
             @PathVariable UUID requestId,
-            @Valid @RequestBody(required = false) ApproveJitRequest body,
+            @RequestBody(required = false) ApproveJitRequest body,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        JitAccessRequestResponse response = jitAccessService.approveRequest(workspaceId, requestId, body, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(response, "JIT access request approved successfully"));
+        JitAccessRequestResponse response = jitService.approveRequest(workspaceId, requestId, body, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response, "JIT request approved and temporary elevation granted"));
     }
 
     @PostMapping("/requests/{requestId}/reject")
     public ResponseEntity<ApiResponse<JitAccessRequestResponse>> rejectRequest(
             @PathVariable UUID workspaceId,
             @PathVariable UUID requestId,
-            @Valid @RequestBody RejectJitRequest body,
+            @RequestBody(required = false) RejectJitRequest body,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        JitAccessRequestResponse response = jitAccessService.rejectRequest(workspaceId, requestId, body, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(response, "JIT access request rejected"));
-    }
-
-    @PostMapping("/requests/{requestId}/revoke")
-    public ResponseEntity<ApiResponse<Void>> revokeGrant(
-            @PathVariable UUID workspaceId,
-            @PathVariable UUID requestId,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        jitAccessService.revokeGrant(workspaceId, requestId, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(null, "Active JIT grant revoked successfully"));
+        JitAccessRequestResponse response = jitService.rejectRequest(workspaceId, requestId, body, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response, "JIT request rejected"));
     }
 
     @PostMapping("/requests/{requestId}/cancel")
@@ -94,7 +96,26 @@ public class JitAccessController {
             @PathVariable UUID requestId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        jitAccessService.cancelRequest(workspaceId, requestId, principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(null, "JIT request cancelled successfully"));
+        jitService.cancelRequest(workspaceId, requestId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(null, "JIT request cancelled"));
+    }
+
+    @PostMapping("/requests/{requestId}/revoke")
+    public ResponseEntity<ApiResponse<Void>> revokeGrant(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID requestId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        jitService.revokeGrant(workspaceId, requestId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(null, "Active JIT elevation revoked successfully"));
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<List<JitAccessRequestResponse>>> getActiveGrants(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        List<JitAccessRequestResponse> active = jitService.getActiveGrants(workspaceId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(active));
     }
 }
