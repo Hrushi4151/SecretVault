@@ -25,7 +25,8 @@
 - `V3__projects_and_environments_schema.sql` — Projects and environments tables with UUID primary keys, foreign keys, unique slug constraints, and indexes
 - `V4__workspace_invitations_and_access_scoping.sql` — `workspace_invitations`, `project_access`, and `environment_access` tables for fine-grained multi-tier RBAC and invitation workflows
 - `V5__core_secret_management_schema.sql` — `secrets`, `secret_versions`, and `audit_logs` tables with envelope encryption columns, monotonic version constraints, foreign keys, and indexes
-- `V6__secret_versioning_branching_and_tags.sql` — `secret_branches`, `secret_version_tags`, and lineage/branching foreign keys on `secret_versions` for version control and cross-environment promotion
+- `V6__versioning_branching_and_promotion_schema.sql` — `secret_branches`, `secret_version_tags`, and lineage/branching foreign keys on `secret_versions` for version control and cross-environment promotion
+- `V7__access_control_and_jit_schema.sql` — `access_grants`, `jit_access_requests`, `access_review_campaigns`, and `access_review_items` for granular access control, dual-custody JIT elevation, and periodic certification campaigns
 
 ---
 

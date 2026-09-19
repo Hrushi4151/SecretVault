@@ -90,6 +90,18 @@ public class AuditService {
         );
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public AuditLog logSuccess(
+            AuditAction action,
+            String resourceType,
+            UUID resourceId,
+            UUID actorId,
+            UUID workspaceId,
+            String description
+    ) {
+        return recordAudit(null, workspaceId, actorId, "USER", action, resourceType, resourceId, null, null, "SUCCESS");
+    }
+
     @Transactional(readOnly = true)
     public List<AuditLog> getWorkspaceAuditLogs(UUID workspaceId) {
         return auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
