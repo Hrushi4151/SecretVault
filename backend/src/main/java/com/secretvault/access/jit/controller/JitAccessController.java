@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/workspaces/{workspaceId}/access/jit")
+@RequestMapping({"/api/v1/workspaces/{workspaceId}/access/jit", "/api/v1/workspaces/{workspaceId}/jit"})
 public class JitAccessController {
 
     private final JitAccessService jitService;
