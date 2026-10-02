@@ -26,7 +26,9 @@ export const WhyAccess = ({ explanation }) => {
     );
   }
 
-  const isAllowed = explanation.allowed;
+  const isAllowed = explanation.granted !== undefined ? explanation.granted : explanation.allowed;
+  const rationale = explanation.reason || (isAllowed ? explanation.explanation : (explanation.deniedReason || explanation.explanation));
+  const sourceRef = explanation.sourceReference || explanation.sourceReferenceId;
 
   const getSourceIcon = (sourceType) => {
     switch (sourceType) {
@@ -67,9 +69,9 @@ export const WhyAccess = ({ explanation }) => {
           </div>
         </div>
 
-        {explanation.permission && (
+        {(explanation.permission || explanation.permissionCode) && (
           <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-[#2C0012] text-[#FF85A2] border border-[#FFB4C8]/20">
-            {explanation.permission}
+            {explanation.permissionCode || explanation.permission}
           </span>
         )}
       </div>
@@ -93,19 +95,25 @@ export const WhyAccess = ({ explanation }) => {
           </div>
         )}
 
-        {explanation.sourceReferenceId && (
+        {sourceRef && (
           <div className="p-3 rounded-xl bg-[#26000F] border border-[#FFB4C8]/10 space-y-1 sm:col-span-2">
-            <span className="text-[10px] font-mono text-[#F4B5C8]/50 uppercase block">Source Reference ID</span>
-            <span className="font-mono text-[11px] text-[#F4B5C8]/80 break-all">{explanation.sourceReferenceId}</span>
+            <span className="text-[10px] font-mono text-[#F4B5C8]/50 uppercase block">Source Reference</span>
+            <span className="font-mono text-[11px] text-[#F4B5C8]/80 break-all">{sourceRef}</span>
           </div>
         )}
       </div>
 
       {/* Rationale Explanation */}
-      {explanation.explanation && (
-        <div className="p-3.5 rounded-xl bg-[#2C0012]/60 border border-[#FFB4C8]/15 text-xs text-[#F4B5C8]/90 leading-relaxed">
-          <span className="text-[10px] font-mono text-[#F4B5C8]/50 uppercase block mb-1">Audit Rationale</span>
-          {explanation.explanation}
+      {rationale && (
+        <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
+          isAllowed
+            ? 'bg-[#00C853]/10 border-[#00C853]/20 text-[#A7FFEB]'
+            : 'bg-[#D50000]/10 border-[#D50000]/20 text-[#FFCDD2]'
+        }`}>
+          <span className="text-[10px] font-mono uppercase tracking-wider block mb-1 opacity-70">
+            {isAllowed ? 'Evaluation Reasoning' : 'Access Denial Reason'}
+          </span>
+          {rationale}
         </div>
       )}
     </div>
