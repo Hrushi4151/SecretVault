@@ -51,7 +51,7 @@ public class UnusedGrantRule implements SecurityDetectionRule {
 
         List<AccessGrant> grants = grantRepository.findByWorkspaceId(wsId);
         for (AccessGrant grant : grants) {
-            if (grant.getCreatedAt().isBefore(fourteenDaysAgo)) {
+            if (grant.getCreatedAt() != null && grant.getCreatedAt().isBefore(fourteenDaysAgo)) {
                 List<SecurityEvent> userEvents = eventRepository.findByWorkspaceIdAndActorUserIdSince(
                         wsId, grant.getUserId(), fourteenDaysAgo
                 );

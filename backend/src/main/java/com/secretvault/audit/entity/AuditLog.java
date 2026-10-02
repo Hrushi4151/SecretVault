@@ -21,7 +21,7 @@ public class AuditLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @Column(name = "organization_id")
     private UUID organizationId;
@@ -87,6 +87,10 @@ public class AuditLog {
 
     public UUID getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public UUID getOrganizationId() {

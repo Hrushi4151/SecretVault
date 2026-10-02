@@ -21,7 +21,7 @@ public class AccessGrant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @Column(name = "workspace_id", nullable = false)
     private UUID workspaceId;

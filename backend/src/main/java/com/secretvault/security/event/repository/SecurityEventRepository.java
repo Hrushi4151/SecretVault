@@ -49,7 +49,7 @@ public interface SecurityEventRepository extends JpaRepository<SecurityEvent, UU
     @Query("""
         SELECT COUNT(e) FROM SecurityEvent e
         WHERE e.workspaceId = :workspaceId
-          AND e.outcome = 'DENIED'
+          AND e.outcome = com.secretvault.security.event.model.SecurityEventOutcome.DENIED
           AND e.timestamp >= :since
     """)
     long countAuthorizationDenialsSince(@Param("workspaceId") UUID workspaceId, @Param("since") Instant since);
@@ -58,10 +58,13 @@ public interface SecurityEventRepository extends JpaRepository<SecurityEvent, UU
         SELECT COUNT(e) FROM SecurityEvent e
         WHERE e.workspaceId = :workspaceId
           AND e.eventType IN (
-            'MEMBER_ADDED', 'MEMBER_REMOVED', 'MEMBER_ROLE_CHANGED',
-            'PROJECT_ACCESS_CHANGED', 'ENVIRONMENT_ACCESS_CHANGED',
-            'ACCESS_GRANT_CREATED', 'ACCESS_GRANT_REVOKED',
-            'WORKSPACE_SETTINGS_UPDATED'
+            com.secretvault.security.event.model.SecurityEventType.MEMBER_ADDED,
+            com.secretvault.security.event.model.SecurityEventType.MEMBER_REMOVED,
+            com.secretvault.security.event.model.SecurityEventType.MEMBER_ROLE_CHANGED,
+            com.secretvault.security.event.model.SecurityEventType.PROJECT_ACCESS_CHANGED,
+            com.secretvault.security.event.model.SecurityEventType.ENVIRONMENT_ACCESS_CHANGED,
+            com.secretvault.security.event.model.SecurityEventType.ACCESS_GRANT_CREATED,
+            com.secretvault.security.event.model.SecurityEventType.ACCESS_GRANT_REVOKED
           )
           AND e.timestamp >= :since
     """)
@@ -70,7 +73,13 @@ public interface SecurityEventRepository extends JpaRepository<SecurityEvent, UU
     @Query("""
         SELECT COUNT(e) FROM SecurityEvent e
         WHERE e.workspaceId = :workspaceId
-          AND e.eventType IN ('JIT_REQUESTED', 'JIT_APPROVED', 'JIT_REJECTED', 'JIT_EXPIRED', 'JIT_REVOKED')
+          AND e.eventType IN (
+            com.secretvault.security.event.model.SecurityEventType.JIT_REQUESTED,
+            com.secretvault.security.event.model.SecurityEventType.JIT_APPROVED,
+            com.secretvault.security.event.model.SecurityEventType.JIT_REJECTED,
+            com.secretvault.security.event.model.SecurityEventType.JIT_EXPIRED,
+            com.secretvault.security.event.model.SecurityEventType.JIT_REVOKED
+          )
           AND e.timestamp >= :since
     """)
     long countJitActivitySince(@Param("workspaceId") UUID workspaceId, @Param("since") Instant since);
