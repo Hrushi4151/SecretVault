@@ -60,12 +60,12 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("Should reject expired tokens")
     void testRejectExpiredToken() throws InterruptedException {
-        JwtTokenProvider shortLivedProvider = new JwtTokenProvider(testSecret, 1);
+        JwtTokenProvider shortLivedProvider = new JwtTokenProvider(testSecret, 2);
         UUID userId = UUID.randomUUID();
         String token = shortLivedProvider.generateAccessToken(userId, "bob@example.com", "Bob");
 
         assertTrue(shortLivedProvider.validateToken(token));
-        Thread.sleep(1100);
+        Thread.sleep(2200);
         assertFalse(shortLivedProvider.validateToken(token));
     }
 }

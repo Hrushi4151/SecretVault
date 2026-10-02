@@ -98,7 +98,8 @@ class MfaServiceTest {
                 recoveryCodeService,
                 encryptionService,
                 securityStateStore,
-                auditService
+                auditService,
+                passwordEncoder
         );
 
         userId = UUID.randomUUID();
@@ -107,6 +108,8 @@ class MfaServiceTest {
 
         testSecret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
         testSecretBytes = Base32.decode(testSecret);
+
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         samplePayload = new EncryptedPayload(
                 "cipher".getBytes(StandardCharsets.UTF_8),
@@ -363,7 +366,7 @@ class MfaServiceTest {
     // ==========================================
 
     @Test
-    @DisplayName("disableMfa removes recovery codes and disables UserMfa state")
+    @DisplayName("disableMfa removes recovery codes and disables UserMfa state via admin override")
     void testDisableMfaSuccess() {
         UserMfa activeMfa = new UserMfa(userId, samplePayload);
         activeMfa.setId(UUID.randomUUID());
@@ -379,6 +382,44 @@ class MfaServiceTest {
         assertThat(user.isMfaEnabled()).isFalse();
 
         verify(recoveryCodeRepository).deleteByUserMfaId(activeMfa.getId());
+        verify(auditService).recordAudit(any(), any(), eq(userId), eq("USER"), eq(AuditAction.MFA_DISABLED), any(), eq(activeMfa.getId()), any(), any(), eq("ADMIN_OVERRIDE"));
+    }
+
+    @Test
+    @DisplayName("disableMfa with step-up succeeds with valid password and TOTP code")
+    void testDisableMfaStepUpWithTotpSuccess() {
+        user.setPasswordHash(passwordEncoder.encode("SecurePass123!"));
+
+        UserMfa activeMfa = new UserMfa(userId, samplePayload);
+        activeMfa.setId(UUID.randomUUID());
+        activeMfa.enable();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userMfaRepository.findByUserId(userId)).thenReturn(Optional.of(activeMfa));
+        when(encryptionService.decrypt(any(EncryptedPayload.class), eq("user-mfa:" + userId))).thenReturn(testSecretBytes);
+
+        String currentCode = totpService.generateCode(testSecret);
+
+        mfaService.disableMfa(userId, "SecurePass123!", currentCode, null);
+
+        assertThat(activeMfa.isEnabled()).isFalse();
+        assertThat(activeMfa.getStatus()).isEqualTo(MfaStatus.DISABLED);
+        assertThat(user.isMfaEnabled()).isFalse();
+
+        verify(recoveryCodeRepository).deleteByUserMfaId(activeMfa.getId());
         verify(auditService).recordAudit(any(), any(), eq(userId), eq("USER"), eq(AuditAction.MFA_DISABLED), any(), eq(activeMfa.getId()), any(), any(), eq("SUCCESS"));
+    }
+
+    @Test
+    @DisplayName("disableMfa with step-up throws when password is invalid")
+    void testDisableMfaStepUpInvalidPassword() {
+        user.setPasswordHash(passwordEncoder.encode("SecurePass123!"));
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                mfaService.disableMfa(userId, "WrongPassword!", "123456", null))
+                .isInstanceOf(com.secretvault.common.exception.ApiException.class)
+                .hasMessageContaining("Invalid current password");
     }
 }
