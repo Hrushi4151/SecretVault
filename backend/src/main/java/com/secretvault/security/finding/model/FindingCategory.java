@@ -43,6 +43,14 @@ public enum FindingCategory {
     AUTHENTICATION_ANOMALY(
             "Authentication Anomaly",
             "Multiple consecutive authentication failures, rapid IP transitions, or account lockout alerts."
+    ),
+    PROVIDER_DRIFT_DETECTED(
+            "External Provider Secret Drift",
+            "Discrepancy detected between desired SecretVault state and actual provider deployment state."
+    ),
+    PROVIDER_CREDENTIAL_FAILURE(
+            "External Provider Credential Failure",
+            "External provider credentials rejected, invalid, or lacking necessary permissions."
     );
 
     private final String displayName;
