@@ -295,6 +295,38 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
 - `DELETE /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}/secrets/{secretId}` — Delete secret from remote provider.
 - `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}/secrets` — List remote provider secret metadata (no plaintext values).
 
+### 4.14 Sync Engine & Drift Detection (Phase 8) [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/drift` — List detected drift records across workspace with pagination and filters (`status`, `severity`, `driftType`, `projectId`, `environmentId`, `integrationId`).
+- `GET /api/v1/workspaces/{wId}/drift/{driftId}` — Get detailed drift record and occurrence history.
+- `PATCH /api/v1/workspaces/{wId}/drift/{driftId}/status` — Update drift record lifecycle status (`OPEN`, `ACKNOWLEDGED`, `SYNC_PENDING`, `RESOLVED`, `IGNORED`).
+- `POST /api/v1/workspaces/{wId}/drift/detect` — Trigger on-demand drift detection scan across workspace or scoped targets.
+- `POST /api/v1/workspaces/{wId}/sync/dry-run` — Simulate sync and calculate delta execution plan without modifying provider state.
+  - **Request Body:**
+    ```json
+    {
+      "scope": "WORKSPACE",
+      "reconciliationPolicy": "SAFE_RECONCILIATION"
+    }
+    ```
+  - **Response (200 OK):** `SyncPlan` containing operations (`CREATE`, `UPDATE`, `DELETE`, `NO_OP`, `BLOCKED`, `ERROR`), statistics, and warnings.
+- `POST /api/v1/workspaces/{wId}/sync` — Execute synchronous or asynchronous provider synchronization.
+  - **Request Body:**
+    ```json
+    {
+      "scope": "PROJECT",
+      "projectId": "11111111-1111-1111-1111-111111111111",
+      "reconciliationPolicy": "SAFE_RECONCILIATION",
+      "dryRun": false
+    }
+    ```
+  - **Response (200 OK):** `SyncJobResponse` with job progress, total operations, and per-operation status.
+- `GET /api/v1/workspaces/{wId}/sync/jobs` — List past and active sync jobs with pagination and status filters.
+- `GET /api/v1/workspaces/{wId}/sync/jobs/{jobId}` — Get detailed sync job execution status, counters, and errors.
+- `GET /api/v1/workspaces/{wId}/sync/jobs/{jobId}/operations` — List detailed operations associated with a sync job.
+- `POST /api/v1/workspaces/{wId}/projects/{projectId}/sync/dry-run` — Project-scoped sync dry-run simulation.
+- `POST /api/v1/workspaces/{wId}/environments/{environmentId}/sync/dry-run` — Environment-scoped sync dry-run simulation.
+
 ---
 
 ## 5. Pagination, Sorting & Filtering
@@ -304,4 +336,5 @@ Collection endpoints accept standard query parameters:
 - `size`: Items per page (default: `20`, maximum: `100`).
 - `sort`: Comma-separated sort expressions (e.g. `sort=createdAt,desc`).
 - `search`: Filter by project name, tag, or description.
+
 

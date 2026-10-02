@@ -141,10 +141,11 @@ To integrate a new provider (e.g., `AWS`, `CLOUDFLARE`, `GITHUB`, `RAILWAY`):
 
 ## 6. Phase Boundaries
 
-### 6.1 Phase 8 Boundary (Synchronization & Drift Engine)
-- **Phase 7 Owns:** On-demand synchronous push/delete primitives, credential encryption, resource mappings, and discovery APIs.
-- **Phase 8 Owns:** Asynchronous Redis sync queue, background worker reconcilers, periodic drift comparison engine, and drift remediation policies.
+### 6.1 Phase 8 Integration (Sync Engine & Drift Detection) [COMPLETED]
+- **Phase 7 Layer:** Provider SPI abstractions (`ProviderAdapter`, `ProviderAdapterRegistry`), credential envelope encryption (`ProviderCredentialService`), and on-demand secret push (`ProviderSecretSyncService`).
+- **Phase 8 Layer:** `DesiredStateResolver`, `ActualStateResolver`, `DriftDetectionEngine`, `SyncPlanningEngine`, `SyncExecutionEngine`, persistent deduplicated `DriftRecord` ledger, `SyncJob` execution tracking, dry-run simulation, and `SyncDriftScheduler`.
 
 ### 6.2 Phase 14 Boundary (Automated Secret Rotation)
-- **Phase 7 Owns:** Atomic credential replacement API and safe single-variable updates.
+- **Phase 7 & 8 Own:** Credential encryption, safe secret writes, drift detection, and state reconciliation.
 - **Phase 14 Owns:** Automated rotation schedules, dual-key shadow deployment, and rotation rollback policies.
+

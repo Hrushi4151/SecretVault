@@ -85,3 +85,25 @@ Every secret version is encrypted with an independent, single-use Data Encryptio
   4. In `finally` blocks, memory byte references are cleared and zeroized.
   5. No secret plaintexts or provider tokens are written to disk, database columns, audit logs, or HTTP response payloads.
 - **Canary Security Verification:** Continuous automated unit tests verify that canary secrets (`SUPER_SECRET_CANARY_123`) never leak into logs, exceptions, audit records, or API responses.
+
+---
+
+## 6. Sync Engine & Drift Detection Security Architecture (Phase 8)
+
+### 6.1 Plaintext-Free Drift Detection & State Comparison
+- **Fingerprint-Based Comparison**: Desired and provider states are represented via deterministic SHA-256 fingerprints.
+- **Ephemeral In-Memory Handling**: When providers do not supply remote hashes, secrets are decrypted into memory solely for byte comparison and zeroized immediately in `finally` blocks.
+- **Zero Plaintext Persistence**: Plaintext secret values, provider authorization headers, and raw tokens are never written to `drift_records`, `sync_jobs`, `sync_operations`, audit logs, or security telemetry payloads.
+
+### 6.2 Conservative Deletion Policy
+- To prevent operational outages, unexpected provider-side secrets (`EXTRA_IN_PROVIDER`) are flagged as drift records and security findings but are **never deleted automatically** by the Sync Engine unless an explicit destructive reconciliation policy is specified with authorized permissions.
+
+### 6.3 Concurrency & Lock Safety
+- Sync executions enforce mutex locking on `(workspaceId, mappingId)`.
+- Prevents concurrent race conditions against the same provider target.
+- Database locks are never held across external HTTP provider API calls.
+
+### 6.4 Security Telemetry & Finding Automation
+- High-severity drift (e.g., `VALUE_MISMATCH` in production, `PERMISSION_DENIED` on active integrations) automatically registers a `SecurityFinding` in the Phase 6 Security Intelligence Engine.
+- Emits sanitized `DRIFT_DETECTED`, `DRIFT_RESOLVED`, `SYNC_STARTED`, `SYNC_COMPLETED`, and `SYNC_FAILED` events.
+
