@@ -49,6 +49,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "auth_login",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            message = "Too many login attempts. Please try again later."
+    )
     @Operation(summary = "Authenticate User", description = "Validates credentials and issues access and refresh tokens.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Authentication successful"),
@@ -60,6 +67,13 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "auth_refresh",
+            limit = 30,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            message = "Too many token refresh attempts. Please try again later."
+    )
     @Operation(summary = "Rotate & Refresh Token", description = "Exchanges a valid refresh token for a newly rotated access and refresh token pair.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token refreshed successfully"),

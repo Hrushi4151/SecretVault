@@ -26,3 +26,12 @@ logging:
   level:
     root: WARN
     com.secretvault: INFO
+
+secretvault:
+  redis:
+    environment: test
+    rate-limit:
+      enabled: true
+      fail-open: true
+    cache:
+      enabled: true

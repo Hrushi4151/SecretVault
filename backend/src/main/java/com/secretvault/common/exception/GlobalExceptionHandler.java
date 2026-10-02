@@ -24,6 +24,22 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String CORRELATION_ID_KEY = "correlationId";
 
+    @ExceptionHandler(com.secretvault.common.ratelimit.RateLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitException(com.secretvault.common.ratelimit.RateLimitExceededException ex) {
+        String requestId = getOrCreateRequestId();
+        log.warn("Rate Limit Exception [{}]: {} (Retry-After: {}s)", ex.getCode(), ex.getMessage(), ex.getRetryAfterSeconds());
+
+        ErrorResponse response = new ErrorResponse(
+                ex.getStatus().value(),
+                ex.getCode(),
+                ex.getMessage(),
+                requestId
+        );
+        return ResponseEntity.status(ex.getStatus())
+                .header(org.springframework.http.HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(response);
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
         String requestId = getOrCreateRequestId();

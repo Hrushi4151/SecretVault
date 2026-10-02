@@ -72,6 +72,13 @@ public class WorkspaceInvitationController {
     }
 
     @PostMapping("/workspaces/{workspaceId}/invitations")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "invitation_create",
+            limit = 20,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many invitation requests. Please try again later."
+    )
     @Operation(summary = "Invite Member to Workspace", description = "Generates a single-use cryptographically random invitation token and records pending invite. (Requires OWNER or ADMIN).")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Invitation created"),
@@ -127,6 +134,13 @@ public class WorkspaceInvitationController {
     }
 
     @PostMapping("/invitations/{id}/accept")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "invitation_accept",
+            limit = 15,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.USER_ID,
+            message = "Too many invitation acceptance attempts. Please try again later."
+    )
     @Operation(summary = "Accept In-App Invitation", description = "Accepts a pending workspace invitation in-app directly by invitation ID.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Invitation accepted"),
@@ -157,6 +171,13 @@ public class WorkspaceInvitationController {
     }
 
     @PostMapping("/invitations/accept")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "invitation_accept",
+            limit = 15,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            message = "Too many invitation acceptance attempts. Please try again later."
+    )
     @Operation(summary = "Accept Workspace Invitation with Token", description = "Consumes a one-time invitation token to join the target workspace.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Invitation accepted"),
