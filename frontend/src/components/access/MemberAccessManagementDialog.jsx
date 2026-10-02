@@ -39,11 +39,14 @@ export const MemberAccessManagementDialog = ({
   isOpen,
   onClose,
   targetMember,
-  onAccessUpdated
+  member,
+  workspaceId: propWorkspaceId,
+  onAccessUpdated,
 }) => {
   const { activeWorkspace } = useAuth();
-  const workspaceId = activeWorkspace?.id;
-  const userId = targetMember?.userId || targetMember?.id;
+  const effectiveMember = targetMember || member;
+  const workspaceId = propWorkspaceId || activeWorkspace?.id;
+  const userId = effectiveMember?.userId || effectiveMember?.id;
 
   const [activeTab, setActiveTab] = useState('matrix'); // 'matrix' | 'grants' | 'effective' | 'jit'
   const [viewMode, setViewMode] = useState('tree'); // 'tree' | 'compact'
@@ -335,26 +338,34 @@ export const MemberAccessManagementDialog = ({
       onClose={onClose}
       title="Member Access & Governance Management"
       description="Configure scoped project, environment, and granular permissions without altering global workspace identity."
-      maxWidth="3xl"
+      maxWidth="5xl"
     >
       <div className="flex flex-col gap-5 font-body text-white">
         {/* Target Member Profile Header Card */}
         <div className="p-4 rounded-2xl bg-[#1C000A] border border-[#FFB4C8]/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF2D6D] to-[#990033] border border-[#FF85A2]/30 flex items-center justify-center font-bold text-white text-base shadow-md">
-              {targetMember?.fullName
-                ? targetMember.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-                : targetMember?.email?.slice(0, 2).toUpperCase() || 'U'}
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF2D6D] to-[#990033] border border-[#FF85A2]/30 flex items-center justify-center font-bold text-white text-base shadow-md shrink-0">
+              {(() => {
+                const name = accessOverview?.member?.fullName || effectiveMember?.fullName || effectiveMember?.name;
+                const email = accessOverview?.member?.email || effectiveMember?.email;
+                if (name && typeof name === 'string' && name.trim()) {
+                  return name.split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+                }
+                if (email && typeof email === 'string' && email.trim()) {
+                  return email.slice(0, 2).toUpperCase();
+                }
+                return 'U';
+              })()}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold font-headline text-white">
-                  {targetMember?.fullName || 'Team Member'}
+                  {accessOverview?.member?.fullName || effectiveMember?.fullName || effectiveMember?.name || 'Workspace Member'}
                 </h3>
-                <RoleBadge role={accessOverview?.member?.workspaceRole || targetMember?.role || 'DEVELOPER'} />
+                <RoleBadge role={accessOverview?.member?.workspaceRole || effectiveMember?.role || 'DEVELOPER'} />
               </div>
               <p className="text-xs text-[#F4B5C8]/70 font-mono mt-0.5">
-                {targetMember?.email || 'No email specified'}
+                {accessOverview?.member?.email || effectiveMember?.email || 'No email specified'}
               </p>
             </div>
           </div>
@@ -394,12 +405,12 @@ export const MemberAccessManagementDialog = ({
         {successMsg && <Alert variant="success" message={successMsg} onDismiss={() => setSuccessMsg(null)} />}
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-[#28000C] border border-[#FFB4C8]/15 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-[#28000C] border border-[#FFB4C8]/15 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('matrix')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'matrix'
-                ? 'bg-[#FF2D6D] text-white shadow-md'
+                ? 'bg-[#FF2D6D] text-white shadow-md font-bold'
                 : 'text-[#F4B5C8]/80 hover:text-white hover:bg-[#3F0016]'
             }`}
           >
@@ -409,9 +420,9 @@ export const MemberAccessManagementDialog = ({
 
           <button
             onClick={() => setActiveTab('grants')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'grants'
-                ? 'bg-[#FF2D6D] text-white shadow-md'
+                ? 'bg-[#FF2D6D] text-white shadow-md font-bold'
                 : 'text-[#F4B5C8]/80 hover:text-white hover:bg-[#3F0016]'
             }`}
           >
@@ -421,9 +432,9 @@ export const MemberAccessManagementDialog = ({
 
           <button
             onClick={() => setActiveTab('effective')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'effective'
-                ? 'bg-[#FF2D6D] text-white shadow-md'
+                ? 'bg-[#FF2D6D] text-white shadow-md font-bold'
                 : 'text-[#F4B5C8]/80 hover:text-white hover:bg-[#3F0016]'
             }`}
           >
@@ -433,9 +444,9 @@ export const MemberAccessManagementDialog = ({
 
           <button
             onClick={() => setActiveTab('jit')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'jit'
-                ? 'bg-[#FF2D6D] text-white shadow-md'
+                ? 'bg-[#FF2D6D] text-white shadow-md font-bold'
                 : 'text-[#F4B5C8]/80 hover:text-white hover:bg-[#3F0016]'
             }`}
           >
@@ -456,39 +467,39 @@ export const MemberAccessManagementDialog = ({
                   placeholder="Filter projects by name or slug..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9.5 pr-4 py-2 rounded-xl bg-[#1C000A] border border-[#FFB4C8]/20 text-xs text-white placeholder:text-[#F4B5C8]/40 focus:outline-none focus:border-[#FF2D6D]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1C000A] border border-[#FFB4C8]/20 text-xs text-white placeholder:text-[#F4B5C8]/40 focus:outline-none focus:border-[#FF2D6D]"
                 />
               </div>
 
               <div className="flex items-center gap-2 self-stretch sm:self-auto">
-                <div className="flex items-center bg-[#1C000A] border border-[#FFB4C8]/20 rounded-xl p-0.5 text-xs">
+                <div className="flex items-center bg-[#1C000A] border border-[#FFB4C8]/20 rounded-xl p-1 text-xs">
                   <button
                     onClick={() => setFilterMode('ALL')}
-                    className={`px-2.5 py-1 rounded-lg transition-all ${
-                      filterMode === 'ALL' ? 'bg-[#FF2D6D] text-white font-semibold' : 'text-[#F4B5C8]/70 hover:text-white'
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      filterMode === 'ALL' ? 'bg-[#FF2D6D] text-white font-semibold shadow-sm' : 'text-[#F4B5C8]/70 hover:text-white'
                     }`}
                   >
                     All ({accessOverview?.projects?.length || 0})
                   </button>
                   <button
                     onClick={() => setFilterMode('OVERRIDDEN')}
-                    className={`px-2.5 py-1 rounded-lg transition-all ${
-                      filterMode === 'OVERRIDDEN' ? 'bg-[#FF2D6D] text-white font-semibold' : 'text-[#F4B5C8]/70 hover:text-white'
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      filterMode === 'OVERRIDDEN' ? 'bg-[#FF2D6D] text-white font-semibold shadow-sm' : 'text-[#F4B5C8]/70 hover:text-white'
                     }`}
                   >
                     Overridden
                   </button>
                   <button
                     onClick={() => setFilterMode('PROD_ACCESS')}
-                    className={`px-2.5 py-1 rounded-lg transition-all ${
-                      filterMode === 'PROD_ACCESS' ? 'bg-[#FF2D6D] text-white font-semibold' : 'text-[#F4B5C8]/70 hover:text-white'
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      filterMode === 'PROD_ACCESS' ? 'bg-[#FF2D6D] text-white font-semibold shadow-sm' : 'text-[#F4B5C8]/70 hover:text-white'
                     }`}
                   >
                     Production
                   </button>
                 </div>
 
-                <div className="flex items-center bg-[#1C000A] border border-[#FFB4C8]/20 rounded-xl p-0.5 text-xs">
+                <div className="flex items-center bg-[#1C000A] border border-[#FFB4C8]/20 rounded-xl p-1 text-xs">
                   <button
                     onClick={() => setViewMode('tree')}
                     title="Tree Accordion View"
