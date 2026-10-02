@@ -35,7 +35,18 @@ mvn spring-boot:run
 
 The server listens on `http://localhost:8080`.
 
-### 4. Verify Local Health & Swagger
+### 4. Build & Run the Frontend
+```bash
+# Install dependencies and start Vite dev server
+cd frontend
+npm install
+npm run dev
+```
+
+The web dashboard is available at `http://localhost:3000`.
+
+### 5. Verify Local Health & Swagger
+- **Web Dashboard:** `http://localhost:3000`
 - **Public Baseline Health:** `http://localhost:8080/api/v1/health`
 - **Actuator Health Probe:** `http://localhost:8080/actuator/health`
 - **OpenAPI Swagger UI:** `http://localhost:8080/swagger-ui.html`
