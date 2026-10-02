@@ -7,11 +7,16 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import java.time.Clock;
 
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 /**
  * SecretVault — DevSecOps Secret Management &amp; Security Control Plane.
  * Main entry point for the Spring Boot modular monolith application.
  */
 @SpringBootApplication
+@EnableScheduling
+@EnableAsync
 @ConfigurationPropertiesScan
 public class SecretVaultApplication {
 
