@@ -114,13 +114,29 @@ public class MemberAccessService {
         WorkspaceRole wsRole = targetMembership.getRole();
 
         List<Project> workspaceProjects = projectRepository.findByWorkspaceId(workspaceId);
+        if (workspaceProjects == null) {
+            workspaceProjects = Collections.emptyList();
+        }
+
         List<ProjectAccess> userProjectAccesses = projectAccessRepository.findByUserId(targetUserId);
-        Map<UUID, WorkspaceRole> projectRoleMap = userProjectAccesses.stream()
-                .collect(Collectors.toMap(ProjectAccess::getProjectId, ProjectAccess::getRole, (a, b) -> b));
+        Map<UUID, WorkspaceRole> projectRoleMap = new java.util.HashMap<>();
+        if (userProjectAccesses != null) {
+            for (ProjectAccess pa : userProjectAccesses) {
+                if (pa.getProjectId() != null && pa.getRole() != null) {
+                    projectRoleMap.put(pa.getProjectId(), pa.getRole());
+                }
+            }
+        }
 
         List<EnvironmentAccess> userEnvAccesses = environmentAccessRepository.findByUserId(targetUserId);
-        Map<UUID, PermissionLevel> envPermMap = userEnvAccesses.stream()
-                .collect(Collectors.toMap(EnvironmentAccess::getEnvironmentId, EnvironmentAccess::getPermissionLevel, (a, b) -> b));
+        Map<UUID, PermissionLevel> envPermMap = new java.util.HashMap<>();
+        if (userEnvAccesses != null) {
+            for (EnvironmentAccess ea : userEnvAccesses) {
+                if (ea.getEnvironmentId() != null && ea.getPermissionLevel() != null) {
+                    envPermMap.put(ea.getEnvironmentId(), ea.getPermissionLevel());
+                }
+            }
+        }
 
         List<MemberAccessOverviewResponse.ProjectAccessSummary> projectSummaries = new ArrayList<>();
 
@@ -129,11 +145,16 @@ public class MemberAccessService {
             WorkspaceRole effectiveProjRole = ProjectAccessService.computeEffectiveRole(wsRole, explicitProjRole != null ? explicitProjRole : wsRole);
 
             List<Environment> environments = environmentRepository.findByProjectId(project.getId());
+            if (environments == null) {
+                environments = Collections.emptyList();
+            }
+
             List<MemberAccessOverviewResponse.EnvironmentAccessSummary> envSummaries = new ArrayList<>();
 
             for (Environment env : environments) {
                 PermissionLevel explicitEnvPerm = envPermMap.get(env.getId());
                 boolean isProd = env.getEnvType() == EnvType.PRODUCTION;
+                boolean isProtected = env.isProtected() || isProd;
                 PermissionLevel effectiveEnvPerm = EnvironmentAccessService.computeEffectivePermission(
                         effectiveProjRole,
                         explicitEnvPerm
@@ -143,6 +164,7 @@ public class MemberAccessService {
                         env.getName(),
                         env.getEnvType(),
                         isProd,
+                        isProtected,
                         explicitEnvPerm,
                         effectiveEnvPerm
                 ));
@@ -164,8 +186,12 @@ public class MemberAccessService {
                 ? accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
                 : Collections.emptyList();
 
-        Map<UUID, String> projectNames = workspaceProjects.stream()
-                .collect(Collectors.toMap(Project::getId, Project::getName, (a, b) -> b));
+        Map<UUID, String> projectNames = new java.util.HashMap<>();
+        for (Project p : workspaceProjects) {
+            if (p.getId() != null) {
+                projectNames.put(p.getId(), p.getName() != null ? p.getName() : "Unnamed Project");
+            }
+        }
 
         List<AccessGrantResponse> grantResponses = grants.stream().map(g -> {
             String pName = g.getProjectId() != null ? projectNames.get(g.getProjectId()) : null;
@@ -190,7 +216,6 @@ public class MemberAccessService {
             String approverEmail = j.getApproverId() != null ? userRepository.findById(j.getApproverId()).map(User::getEmail).orElse(null) : null;
             return JitAccessRequestResponse.fromEntity(j, targetUser.getEmail(), targetUser.getFullName(), pName, eName, isProt, sKey, approverEmail);
         }).toList();
-
 
         MemberAccessOverviewResponse.MemberSummary memberSummary = new MemberAccessOverviewResponse.MemberSummary(
                 targetUser.getId(),

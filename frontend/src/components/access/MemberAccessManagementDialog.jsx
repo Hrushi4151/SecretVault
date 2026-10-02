@@ -84,18 +84,20 @@ export const MemberAccessManagementDialog = ({
           const envMap = {};
           if (p.environments) {
             p.environments.forEach((e) => {
-              envMap[e.environmentId] = e.explicitPermissionLevel || null;
+              envMap[e.environmentId] = e.environmentPermission || e.explicitPermissionLevel || null;
             });
           }
           initialConfigs[p.projectId] = {
-            role: p.explicitProjectRole || null,
+            role: p.projectRole || p.explicitProjectRole || null,
             environments: envMap,
           };
         });
       }
       setProjectConfigs(initialConfigs);
     } catch (err) {
+      console.error('Failed to load member access configuration:', err);
       setError(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load member access configuration.');
+      setAccessOverview(null);
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +118,12 @@ export const MemberAccessManagementDialog = ({
     for (const p of accessOverview.projects) {
       const current = projectConfigs[p.projectId];
       if (!current) continue;
-      if ((current.role || null) !== (p.explicitProjectRole || null)) return true;
+      const originalProjRole = p.projectRole || p.explicitProjectRole || null;
+      if ((current.role || null) !== originalProjRole) return true;
 
       for (const e of p.environments || []) {
         const currentEnvPerm = current.environments?.[e.environmentId] || null;
-        const originalEnvPerm = e.explicitPermissionLevel || null;
+        const originalEnvPerm = e.environmentPermission || e.explicitPermissionLevel || null;
         if (currentEnvPerm !== originalEnvPerm) return true;
       }
     }
@@ -167,11 +170,11 @@ export const MemberAccessManagementDialog = ({
       const envMap = {};
       if (p.environments) {
         p.environments.forEach((e) => {
-          envMap[e.environmentId] = e.explicitPermissionLevel || null;
+          envMap[e.environmentId] = e.environmentPermission || e.explicitPermissionLevel || null;
         });
       }
       initialConfigs[p.projectId] = {
-        role: p.explicitProjectRole || null,
+        role: p.projectRole || p.explicitProjectRole || null,
         environments: envMap,
       };
     });
@@ -190,15 +193,14 @@ export const MemberAccessManagementDialog = ({
       // Format payload for backend batch update
       const formattedProjectConfigs = Object.entries(projectConfigs).map(([projId, config]) => {
         const envConfigs = Object.entries(config.environments || {})
-          .filter(([_, perm]) => perm !== null)
           .map(([envId, perm]) => ({
             environmentId: envId,
-            permissionLevel: perm,
+            permissionLevel: perm === 'INHERIT' ? null : (perm || null),
           }));
 
         return {
           projectId: projId,
-          role: config.role || null,
+          role: config.role === 'INHERIT' ? null : (config.role || null),
           environmentConfigs: envConfigs,
         };
       });
@@ -213,10 +215,29 @@ export const MemberAccessManagementDialog = ({
       // Update data state
       const data = updated?.data || updated;
       setAccessOverview(data);
+
+      const initialConfigs = {};
+      if (data?.projects) {
+        data.projects.forEach((p) => {
+          const envMap = {};
+          if (p.environments) {
+            p.environments.forEach((e) => {
+              envMap[e.environmentId] = e.environmentPermission || e.explicitPermissionLevel || null;
+            });
+          }
+          initialConfigs[p.projectId] = {
+            role: p.projectRole || p.explicitProjectRole || null,
+            environments: envMap,
+          };
+        });
+      }
+      setProjectConfigs(initialConfigs);
+
       if (onAccessUpdated) {
         onAccessUpdated(data);
       }
     } catch (err) {
+      console.error('Failed to save access changes:', err);
       setError(err.payload?.message || err.response?.data?.message || err.message || 'Failed to save access changes.');
     } finally {
       setIsSaving(false);
@@ -225,9 +246,9 @@ export const MemberAccessManagementDialog = ({
 
   // Compute live local effective role preview
   const getComputedEffectiveProjectRole = (proj) => {
-    const wsRole = accessOverview?.member?.workspaceRole || 'DEVELOPER';
+    const wsRole = accessOverview?.member?.workspaceRole || targetMember?.role || 'DEVELOPER';
     const currentExplicitRole = projectConfigs[proj.projectId]?.role;
-    if (!currentExplicitRole) return wsRole;
+    if (!currentExplicitRole || currentExplicitRole === 'INHERIT') return wsRole;
     
     // Effective is min(workspaceRole, explicitRole)
     const roleRank = { VIEWER: 1, DEVELOPER: 2, ADMIN: 3, OWNER: 4 };
@@ -495,19 +516,30 @@ export const MemberAccessManagementDialog = ({
                 <Loader2 className="w-7 h-7 text-[#FF2D6D] animate-spin" />
                 <span className="text-xs text-[#F4B5C8]/70 font-mono">Loading access matrix hierarchy...</span>
               </div>
+            ) : error && !accessOverview ? (
+              <div className="p-10 rounded-2xl bg-[#1C000A] border border-[#FF2D6D]/30 text-center space-y-3">
+                <AlertTriangle className="w-8 h-8 text-[#FF2D6D] mx-auto" />
+                <p className="text-sm font-semibold text-white">Failed to load member access matrix</p>
+                <p className="text-xs text-[#F4B5C8]/70 max-w-md mx-auto">{error}</p>
+                <Button variant="secondary" size="sm" onClick={loadMemberAccess} className="text-xs mx-auto">
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                  Retry Loading
+                </Button>
+              </div>
             ) : filteredProjects.length === 0 ? (
               <div className="p-10 rounded-2xl bg-[#1C000A] border border-[#FFB4C8]/10 text-center space-y-2">
                 <Layers className="w-8 h-8 text-[#FF85A2]/40 mx-auto" />
                 <p className="text-sm font-semibold text-white">No projects found</p>
                 <p className="text-xs text-[#F4B5C8]/60">
-                  {searchQuery ? 'Try adjusting your search query or filter.' : 'Create projects in this workspace to configure access.'}
+                  {searchQuery || filterMode !== 'ALL'
+                    ? 'Try adjusting your search query or filter.'
+                    : 'Create projects in this workspace to configure access.'}
                 </p>
               </div>
             ) : viewMode === 'tree' ? (
               /* Tree Accordion Matrix View */
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                 {filteredProjects.map((proj) => {
-                  const isCollapsed = collapsedProjects[proj.projectId];
                   const currentRole = projectConfigs[proj.projectId]?.role || 'INHERIT';
                   const effectiveRole = getComputedEffectiveProjectRole(proj);
                   const isOverridden = currentRole !== 'INHERIT';
@@ -531,7 +563,7 @@ export const MemberAccessManagementDialog = ({
                             type="button"
                             className="p-1 rounded-lg text-[#F4B5C8]/70 hover:text-white hover:bg-[#3F0016]"
                           >
-                            {isCollapsed ? (
+                            {collapsedProjects[proj.projectId] ? (
                               <ChevronRight className="w-4 h-4" />
                             ) : (
                               <ChevronDown className="w-4 h-4" />
@@ -571,7 +603,7 @@ export const MemberAccessManagementDialog = ({
                             onChange={(e) => handleProjectRoleChange(proj.projectId, e.target.value)}
                             className="px-3 py-1.5 rounded-xl bg-[#140007] border border-[#FFB4C8]/30 text-xs text-white font-semibold focus:outline-none focus:border-[#FF2D6D]"
                           >
-                            <option value="INHERIT">Inherit Workspace ({accessOverview?.member?.workspaceRole})</option>
+                            <option value="INHERIT">Inherit Workspace ({accessOverview?.member?.workspaceRole || targetMember?.role})</option>
                             <option value="VIEWER">VIEWER (READ Only)</option>
                             <option value="DEVELOPER">DEVELOPER (READ / WRITE)</option>
                             <option value="ADMIN">ADMIN (MANAGE)</option>
@@ -580,7 +612,7 @@ export const MemberAccessManagementDialog = ({
                       </div>
 
                       {/* Nested Environments Container */}
-                      {!isCollapsed && (
+                      {!collapsedProjects[proj.projectId] && (
                         <div className="p-4 bg-[#140007]/80 border-t border-[#FFB4C8]/10 space-y-2.5">
                           <div className="text-[11px] font-mono uppercase tracking-wider text-[#F4B5C8]/50 px-2 flex justify-between">
                             <span>Environment Hierarchy</span>
@@ -591,6 +623,7 @@ export const MemberAccessManagementDialog = ({
                             const currentEnvPerm = projectConfigs[proj.projectId]?.environments?.[env.environmentId] || 'INHERIT';
                             const effectiveEnvPerm = getComputedEffectiveEnvPermission(proj, env);
                             const isEnvOverridden = currentEnvPerm !== 'INHERIT';
+                            const isProtected = env.isProtected || env.isProduction || env.envType === 'PRODUCTION';
 
                             return (
                               <div
@@ -603,11 +636,11 @@ export const MemberAccessManagementDialog = ({
                               >
                                 <div className="flex items-center gap-2.5">
                                   <div className={`p-1.5 rounded-lg border ${
-                                    env.isProtected || env.envType === 'PRODUCTION'
+                                    isProtected
                                       ? 'bg-[#D50000]/15 border-[#D50000]/30 text-[#FF5252]'
                                       : 'bg-[#00C853]/15 border-[#00C853]/30 text-[#00E676]'
                                   }`}>
-                                    {env.isProtected || env.envType === 'PRODUCTION' ? (
+                                    {isProtected ? (
                                       <Lock className="w-3.5 h-3.5" />
                                     ) : (
                                       <Unlock className="w-3.5 h-3.5" />
@@ -628,7 +661,7 @@ export const MemberAccessManagementDialog = ({
                                       }`}>
                                         {env.envType}
                                       </span>
-                                      {env.isProtected && (
+                                      {isProtected && (
                                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF2D6D]/20 text-[#FF85A2] font-mono">
                                           Protected
                                         </span>
@@ -877,21 +910,21 @@ export const MemberAccessManagementDialog = ({
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white font-mono">{grant.permission}</span>
+                          <span className="font-bold text-white font-mono">{grant.permissionCode || grant.permission}</span>
                           <span className="text-[10px] px-2 py-0.5 rounded bg-[#2C0012] text-[#FF85A2] font-mono border border-[#FFB4C8]/20">
-                            {grant.scope}
+                            {grant.scope || grant.scopeType}
                           </span>
                         </div>
                         <div className="text-[11px] text-[#F4B5C8]/60 mt-0.5">
                           {grant.projectName && <span>Project: {grant.projectName} </span>}
                           {grant.environmentName && <span>• Env: {grant.environmentName} </span>}
-                          {grant.secretName && <span>• Secret: {grant.secretName}</span>}
+                          {(grant.secretKey || grant.secretName) && <span>• Secret: {grant.secretKey || grant.secretName}</span>}
                         </div>
                       </div>
                     </div>
 
                     <button
-                      onClick={() => handleRevokeGranularGrant(grant.id, grant.permission)}
+                      onClick={() => handleRevokeGranularGrant(grant.id, grant.permissionCode || grant.permission)}
                       className="p-1.5 rounded-lg text-[#FF5252] hover:bg-[#D50000]/20 transition-colors"
                       title="Revoke Grant"
                     >
@@ -955,12 +988,12 @@ export const MemberAccessManagementDialog = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#FFD600] font-mono">{jit.permission}</span>
+                        <span className="font-bold text-[#FFD600] font-mono">{jit.permissionCode || jit.requestedPermission || jit.permission}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded bg-[#FFD600]/20 text-[#FFD600] font-mono">
                           ACTIVE JIT
                         </span>
                       </div>
-                      <p className="text-xs text-white">Reason: {jit.justification}</p>
+                      <p className="text-xs text-white">Reason: {jit.reason || jit.justification || 'Emergency elevation'}</p>
                       <p className="text-[11px] text-[#F4B5C8]/60 font-mono">
                         Expires: {new Date(jit.expiresAt).toLocaleString()}
                       </p>

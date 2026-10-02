@@ -243,4 +243,73 @@ class MemberAccessServiceTest {
         );
         assertEquals("Only OWNER or ADMIN can configure member project and environment access", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("CASE 1 & 2: Target member with zero explicit project access still retrieves ALL workspace projects with INHERIT")
+    void testGetMemberAccess_ZeroExplicitAccess_ShowsAllProjectsWithInherit() {
+        WorkspaceMembership ownerMem = new WorkspaceMembership(workspaceId, ownerId, WorkspaceRole.OWNER);
+        WorkspaceMembership rahulMem = new WorkspaceMembership(workspaceId, rahulId, WorkspaceRole.DEVELOPER);
+
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)).thenReturn(Optional.of(ownerMem));
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, rahulId)).thenReturn(Optional.of(rahulMem));
+        when(userRepository.findById(rahulId)).thenReturn(Optional.of(rahulUser));
+
+        when(projectRepository.findByWorkspaceId(workspaceId)).thenReturn(List.of(projectA, projectB));
+        when(projectAccessRepository.findByUserId(rahulId)).thenReturn(Collections.emptyList());
+        when(environmentAccessRepository.findByUserId(rahulId)).thenReturn(Collections.emptyList());
+
+        when(environmentRepository.findByProjectId(projectAId)).thenReturn(List.of(envA1, envA2));
+        when(environmentRepository.findByProjectId(projectBId)).thenReturn(Collections.emptyList());
+
+        MemberAccessOverviewResponse result = memberAccessService.getMemberAccess(workspaceId, rahulId, ownerId);
+
+        assertNotNull(result);
+        assertEquals(2, result.projects().size());
+
+        for (MemberAccessOverviewResponse.ProjectAccessSummary p : result.projects()) {
+            assertNull(p.projectRole(), "Project role override should be null (INHERIT)");
+            assertEquals(WorkspaceRole.DEVELOPER, p.effectiveProjectRole(), "Effective role should inherit workspace role");
+        }
+
+        MemberAccessOverviewResponse.ProjectAccessSummary pA = result.projects().stream()
+                .filter(p -> p.projectId().equals(projectAId)).findFirst().orElseThrow();
+        assertEquals(2, pA.environments().size());
+        for (MemberAccessOverviewResponse.EnvironmentAccessSummary envSummary : pA.environments()) {
+            assertNull(envSummary.environmentPermission(), "Environment permission override should be null (INHERIT)");
+            assertEquals(PermissionLevel.WRITE, envSummary.effectivePermission(), "Effective env permission should inherit DEVELOPER WRITE");
+        }
+    }
+
+    @Test
+    @DisplayName("CASE 4: Workspace has no projects returns empty project list without error")
+    void testGetMemberAccess_ZeroProjectsInWorkspace() {
+        WorkspaceMembership ownerMem = new WorkspaceMembership(workspaceId, ownerId, WorkspaceRole.OWNER);
+        WorkspaceMembership rahulMem = new WorkspaceMembership(workspaceId, rahulId, WorkspaceRole.DEVELOPER);
+
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)).thenReturn(Optional.of(ownerMem));
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, rahulId)).thenReturn(Optional.of(rahulMem));
+        when(userRepository.findById(rahulId)).thenReturn(Optional.of(rahulUser));
+
+        when(projectRepository.findByWorkspaceId(workspaceId)).thenReturn(Collections.emptyList());
+        when(projectAccessRepository.findByUserId(rahulId)).thenReturn(Collections.emptyList());
+        when(environmentAccessRepository.findByUserId(rahulId)).thenReturn(Collections.emptyList());
+
+        MemberAccessOverviewResponse result = memberAccessService.getMemberAccess(workspaceId, rahulId, ownerId);
+
+        assertNotNull(result);
+        assertTrue(result.projects().isEmpty());
+    }
+
+    @Test
+    @DisplayName("CASE 5: Non-existent target user or non-member throws not found")
+    void testGetMemberAccess_TargetMemberNotFound_ThrowsNotFound() {
+        WorkspaceMembership ownerMem = new WorkspaceMembership(workspaceId, ownerId, WorkspaceRole.OWNER);
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)).thenReturn(Optional.of(ownerMem));
+        when(membershipRepository.findByWorkspaceIdAndUserId(workspaceId, rahulId)).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                memberAccessService.getMemberAccess(workspaceId, rahulId, ownerId)
+        );
+        assertEquals("Target member not found in this workspace", ex.getMessage());
+    }
 }
