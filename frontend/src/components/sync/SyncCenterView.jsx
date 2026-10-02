@@ -26,6 +26,7 @@ import {
   Shield,
   Activity,
   Zap,
+  FolderGit2,
 } from 'lucide-react';
 
 export const SyncCenterView = () => {
@@ -34,6 +35,7 @@ export const SyncCenterView = () => {
   const [driftRecords, setDriftRecords] = useState([]);
   const [syncJobs, setSyncJobs] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [environmentsMap, setEnvironmentsMap] = useState({}); // projectId -> environments[]
   const [isLoading, setIsLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
@@ -85,8 +87,25 @@ export const SyncCenterView = () => {
 
       const projList = Array.isArray(projRes) ? projRes : (projRes?.items || projRes?.content || []);
       setProjects(projList);
+
+      // Preload environments
+      const envMap = {};
+      for (const p of projList) {
+        try {
+          const eRes = await environmentApi.list(activeWorkspace.id, p.id);
+          envMap[p.id] = Array.isArray(eRes) ? eRes : (eRes?.items || eRes?.content || []);
+        } catch (err) {
+          envMap[p.id] = [];
+        }
+      }
+      setEnvironmentsMap(envMap);
+
       if (projList.length > 0 && !simProjectId) {
-        setSimProjectId(projList[0].id);
+        const firstPId = projList[0].id;
+        setSimProjectId(firstPId);
+        if (envMap[firstPId] && envMap[firstPId].length > 0) {
+          setSimEnvironmentId(envMap[firstPId][0].id);
+        }
       }
     } catch (err) {
       showFeedback('error', err.message || 'Failed to load sync engine state.');
@@ -600,12 +619,39 @@ export const SyncCenterView = () => {
                   <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">Target Project</label>
                   <select
                     value={simProjectId}
-                    onChange={(e) => setSimProjectId(e.target.value)}
+                    onChange={(e) => {
+                      const pId = e.target.value;
+                      setSimProjectId(pId);
+                      const envList = environmentsMap[pId] || [];
+                      if (envList.length > 0) {
+                        setSimEnvironmentId(envList[0].id);
+                      } else {
+                        setSimEnvironmentId('');
+                      }
+                    }}
                     className="px-3 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
                   >
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Environment picker if ENVIRONMENT scoped */}
+              {simScope === 'ENVIRONMENT' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">Target Environment</label>
+                  <select
+                    value={simEnvironmentId}
+                    onChange={(e) => setSimEnvironmentId(e.target.value)}
+                    className="px-3 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
+                  >
+                    {(environmentsMap[simProjectId] || []).map((env) => (
+                      <option key={env.id} value={env.id}>
+                        {env.name}
                       </option>
                     ))}
                   </select>
@@ -669,13 +715,13 @@ export const SyncCenterView = () => {
 
                 <div className="flex items-center gap-2 font-mono text-xs">
                   <span className="px-2.5 py-1 rounded bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30">
-                    +{dryRunResult.createdCount || 0} CREATE
+                    +{dryRunResult.createCount || 0} CREATE
                   </span>
                   <span className="px-2.5 py-1 rounded bg-[#818CF8]/15 text-[#818CF8] border border-[#818CF8]/30">
-                    ~{dryRunResult.updatedCount || 0} UPDATE
+                    ~{dryRunResult.updateCount || 0} UPDATE
                   </span>
                   <span className="px-2.5 py-1 rounded bg-[#F87171]/15 text-[#F87171] border border-[#F87171]/30">
-                    -{dryRunResult.deletedCount || 0} DELETE
+                    -{dryRunResult.deleteCount || 0} DELETE
                   </span>
                   <span className="px-2.5 py-1 rounded bg-[#3F0016] text-[#A26377] border border-[#FFB4C8]/10">
                     ={dryRunResult.noOpCount || 0} NO_OP
