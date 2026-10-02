@@ -468,10 +468,17 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
               )}
 
               {lookupStatus === 'found' && lookupResult?.user && (
-                <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-[#063319]/80 border border-[#22C55E]/40 text-xs">
-                  <div className="flex items-center gap-2 font-semibold text-[#4ADE80]">
-                    <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-                    <span>🟢 User found</span>
+                <div
+                  onClick={() => setInviteEmail(lookupResult.user.email)}
+                  className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-[#063319]/80 border border-[#22C55E]/40 text-xs cursor-pointer hover:bg-[#063319] transition-all"
+                  title="Click to select this user"
+                >
+                  <div className="flex items-center justify-between font-semibold text-[#4ADE80]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+                      <span>🟢 User found</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#86EFAC]/80">Click to select</span>
                   </div>
                   <div className="flex items-center gap-3 p-2 rounded-lg bg-[#0F4A26]/50 border border-[#22C55E]/20 mt-1">
                     <div className="w-8 h-8 rounded-lg bg-[#166534] border border-[#4ADE80]/40 flex items-center justify-center font-bold text-xs text-white">
@@ -479,7 +486,7 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="font-semibold text-white text-xs truncate">
-                        {lookupResult.user.name}
+                        {lookupResult.user.name || 'SecretVault User'}
                       </span>
                       <span className="font-mono text-[11px] text-[#86EFAC] truncate">
                         {lookupResult.user.email}
