@@ -16,6 +16,7 @@ import com.secretvault.project.access.repository.ProjectAccessRepository;
 import com.secretvault.project.access.service.ProjectAccessService;
 import com.secretvault.project.entity.Project;
 import com.secretvault.project.repository.ProjectRepository;
+import com.secretvault.project.service.ProjectService;
 import com.secretvault.secret.dto.CreateSecretRequest;
 import com.secretvault.secret.dto.SecretMetadataResponse;
 import com.secretvault.secret.dto.SecretRevealResponse;
@@ -65,6 +66,7 @@ public class SecretService {
     private final WorkspaceMembershipRepository membershipRepository;
     private final ProjectAccessRepository projectAccessRepository;
     private final EnvironmentAccessRepository environmentAccessRepository;
+    private final ProjectService projectService;
 
     public SecretService(
             SecretRepository secretRepository,
@@ -78,6 +80,25 @@ public class SecretService {
             ProjectAccessRepository projectAccessRepository,
             EnvironmentAccessRepository environmentAccessRepository
     ) {
+        this(secretRepository, secretVersionRepository, encryptionService, auditService,
+             environmentRepository, projectRepository, workspaceRepository, membershipRepository,
+             projectAccessRepository, environmentAccessRepository, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SecretService(
+            SecretRepository secretRepository,
+            SecretVersionRepository secretVersionRepository,
+            EncryptionService encryptionService,
+            AuditService auditService,
+            EnvironmentRepository environmentRepository,
+            ProjectRepository projectRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectAccessRepository projectAccessRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) EnvironmentAccessRepository environmentAccessRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectService projectService
+    ) {
         this.secretRepository = secretRepository;
         this.secretVersionRepository = secretVersionRepository;
         this.encryptionService = encryptionService;
@@ -88,6 +109,7 @@ public class SecretService {
         this.membershipRepository = membershipRepository;
         this.projectAccessRepository = projectAccessRepository;
         this.environmentAccessRepository = environmentAccessRepository;
+        this.projectService = projectService;
     }
 
     /**
@@ -548,6 +570,10 @@ public class SecretService {
 
         Environment environment = environmentRepository.findByIdAndProjectId(environmentId, projectId)
                 .orElseThrow(() -> ApiException.notFound("Environment not found in this project"));
+
+        if (projectService != null && !projectService.isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+            throw ApiException.forbidden("You are not authorized to access this project");
+        }
 
         return new WorkspaceContext(workspace, membership);
     }
