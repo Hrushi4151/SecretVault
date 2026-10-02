@@ -69,7 +69,11 @@ const MainRouter = () => {
       ) : currentTab === 'access' ? (
         <AccessControlCenterView />
       ) : (
-        <WorkspaceOverview onNavigateToProjects={() => setCurrentTab('projects')} />
+        <WorkspaceOverview
+          onNavigateToProjects={() => setCurrentTab('projects')}
+          onNavigateToSecrets={handleNavigateToSecrets}
+          onNavigateToAccess={() => setCurrentTab('access')}
+        />
       )}
     </AppShell>
   );
