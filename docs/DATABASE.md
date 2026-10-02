@@ -321,6 +321,68 @@ Tenant-isolated linkages between SecretVault environments and external cloud res
 - Constraints: `uq_prm_int_env UNIQUE (integration_id, environment_id)`
 - Indexes: `idx_prm_ws (workspace_id)`, `idx_prm_int (integration_id)`, `idx_prm_proj_env (project_id, environment_id)`
 
+### 4.10 `drift_records` Table (Phase 8) [IMPLEMENTED]
+Deduplicated, fingerprinted drift ledger tracking deviations between SecretVault desired state and external provider actual state.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)` ON DELETE CASCADE)
+- `project_id` (UUID NOT NULL, FK -> `projects(id)` ON DELETE CASCADE)
+- `environment_id` (UUID NOT NULL, FK -> `environments(id)` ON DELETE CASCADE)
+- `integration_id` (UUID NOT NULL, FK -> `provider_integrations(id)` ON DELETE CASCADE)
+- `mapping_id` (UUID NOT NULL, FK -> `provider_resource_mappings(id)` ON DELETE CASCADE)
+- `secret_id` (UUID, FK -> `secrets(id)` ON DELETE SET NULL)
+- `secret_name` (VARCHAR(255) NOT NULL)
+- `provider_secret_identifier` (VARCHAR(255))
+- `drift_type` (VARCHAR(64) NOT NULL, `MISSING_FROM_PROVIDER` | `EXTRA_IN_PROVIDER` | `VALUE_MISMATCH` | `NAME_MISMATCH` | `ENVIRONMENT_MISMATCH` | `RESOURCE_MAPPING_MISMATCH` | `PROVIDER_UNAVAILABLE` | `PERMISSION_DENIED` | `UNSUPPORTED`)
+- `severity` (VARCHAR(32) NOT NULL, `CRITICAL` | `HIGH` | `MEDIUM` | `LOW` | `INFO`)
+- `status` (VARCHAR(32) NOT NULL, `OPEN` | `ACKNOWLEDGED` | `SYNC_PENDING` | `RESOLVED` | `IGNORED` | `ERROR`)
+- `desired_fingerprint` (VARCHAR(128))
+- `observed_fingerprint` (VARCHAR(128))
+- `fingerprint` (VARCHAR(64) NOT NULL, SHA-256 natural key)
+- `first_detected_at`, `last_detected_at` (TIMESTAMPTZ NOT NULL)
+- `occurrence_count` (INT NOT NULL DEFAULT 1)
+- `resolved_at` (TIMESTAMPTZ)
+- `resolved_by` (UUID, FK -> `users(id)` ON DELETE SET NULL)
+- `resolution_reason` (TEXT)
+- `error_code` (VARCHAR(64))
+- `details_json` (TEXT)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- Constraints: `uq_drift_records_ws_fp UNIQUE (workspace_id, fingerprint)`
+- Indexes: `idx_drift_ws (workspace_id)`, `idx_drift_ws_status (workspace_id, status)`, `idx_drift_mapping (mapping_id)`, `idx_drift_proj_env (project_id, environment_id)`, `idx_drift_sev (workspace_id, severity)`, `idx_drift_type (workspace_id, drift_type)`
+
+### 4.11 `sync_jobs` Table (Phase 8) [IMPLEMENTED]
+Audit and lifecycle records for dry-run simulations and active synchronization executions.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)` ON DELETE CASCADE)
+- `scope` (VARCHAR(32) NOT NULL, `WORKSPACE` | `PROJECT` | `ENVIRONMENT` | `MAPPING` | `SECRET`)
+- `scope_resource_id` (UUID)
+- `status` (VARCHAR(32) NOT NULL, `QUEUED` | `RUNNING` | `COMPLETED` | `PARTIAL` | `FAILED` | `CANCELLED`)
+- `dry_run` (BOOLEAN NOT NULL DEFAULT FALSE)
+- `reconciliation_policy` (VARCHAR(64) NOT NULL)
+- `requested_by` (UUID NOT NULL, FK -> `users(id)` ON DELETE CASCADE)
+- `started_at`, `completed_at` (TIMESTAMPTZ)
+- `total_operations`, `successful_operations`, `failed_operations`, `blocked_operations`, `drift_count` (INT NOT NULL)
+- `error_summary` (TEXT)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- Indexes: `idx_sync_jobs_ws (workspace_id)`, `idx_sync_jobs_ws_status (workspace_id, status)`, `idx_sync_jobs_created (workspace_id, created_at DESC)`
+
+### 4.12 `sync_operations` Table (Phase 8) [IMPLEMENTED]
+Granular, per-secret operation tracking within a synchronization job.
+- `id` (UUID, PK)
+- `job_id` (UUID NOT NULL, FK -> `sync_jobs(id)` ON DELETE CASCADE)
+- `secret_id` (UUID, FK -> `secrets(id)` ON DELETE SET NULL)
+- `secret_name` (VARCHAR(255) NOT NULL)
+- `mapping_id` (UUID NOT NULL, FK -> `provider_resource_mappings(id)` ON DELETE CASCADE)
+- `integration_id` (UUID NOT NULL, FK -> `provider_integrations(id)` ON DELETE CASCADE)
+- `operation_type` (VARCHAR(32) NOT NULL, `CREATE` | `UPDATE` | `DELETE` | `NO_OP` | `BLOCKED` | `ERROR`)
+- `status` (VARCHAR(32) NOT NULL, `PENDING` | `IN_PROGRESS` | `COMPLETED` | `FAILED` | `SKIPPED`)
+- `desired_fingerprint` (VARCHAR(128))
+- `observed_fingerprint` (VARCHAR(128))
+- `reason` (TEXT)
+- `error_code` (VARCHAR(64))
+- `error_message` (TEXT)
+- `executed_at`, `created_at` (TIMESTAMPTZ NOT NULL)
+- Indexes: `idx_sync_op_job (job_id)`, `idx_sync_op_secret (secret_id)`, `idx_sync_op_mapping (mapping_id)`
+
 ---
 
 ## 5. Audit Log Retention & Immutability
@@ -328,7 +390,6 @@ Tenant-isolated linkages between SecretVault environments and external cloud res
 - `audit_logs` records are **append-only**.
 - PostgreSQL permissions for application users must omit `UPDATE` and `DELETE` privileges on `audit_logs`.
 - Minimum retention: 365 days for standard tiers; 7 years for enterprise compliance tiers.
-
 
 ---
 
@@ -340,3 +401,4 @@ Tenant-isolated linkages between SecretVault environments and external cloud res
 | `sync:lock:{env_id}:{provider_id}` | Distributed mutex for external provider synchronization | 5 minutes |
 | `jit:grant:{grant_id}` | Active ephemeral Just-In-Time access grant token | 1–8 hours |
 | `token:blacklist:{jti}` | Revoked JWT tokens | Remaining token lifespan |
+

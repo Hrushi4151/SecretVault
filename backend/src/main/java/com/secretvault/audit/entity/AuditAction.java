@@ -51,6 +51,17 @@ public enum AuditAction {
     PROVIDER_SECRET_DELETED,
     PROVIDER_OPERATION_FAILED,
 
+    // Phase 8 Sync Engine & Drift Detection
+    SYNC_REQUESTED,
+    SYNC_DRY_RUN_EXECUTED,
+    SYNC_EXECUTED,
+    SYNC_COMPLETED,
+    SYNC_FAILED,
+    DRIFT_DETECTED,
+    DRIFT_RESOLVED,
+    DRIFT_STATUS_UPDATED,
+    RECONCILIATION_EXECUTED,
+
     // Team Invitations & Member Governance
     INVITATION_CREATED,
     INVITATION_ACCEPTED,

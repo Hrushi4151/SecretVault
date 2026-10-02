@@ -100,6 +100,31 @@ public enum AccessPermission {
     INTEGRATION_SYNC(
             "integration.sync",
             "Synchronize and push secrets to external platform providers"
+    ),
+
+    SYNC_VIEW(
+            "sync.view",
+            "View sync status, dry-run reports, and sync jobs"
+    ),
+
+    SYNC_DRY_RUN(
+            "sync.dry_run",
+            "Run dry-run drift simulation and sync planning"
+    ),
+
+    SYNC_EXECUTE(
+            "sync.execute",
+            "Execute live synchronization to external providers"
+    ),
+
+    DRIFT_VIEW(
+            "drift.view",
+            "View detected drift records and comparison metrics"
+    ),
+
+    DRIFT_MANAGE(
+            "drift.manage",
+            "Acknowledge, ignore, and manage drift record status"
     );
 
     private final String code;
