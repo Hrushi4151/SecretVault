@@ -27,6 +27,9 @@ public class RefreshToken {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "session_id")
+    private UUID sessionId;
+
     @Column(name = "token_hash", nullable = false, unique = true, length = 255)
     private String tokenHash;
 
@@ -44,6 +47,14 @@ public class RefreshToken {
 
     public RefreshToken(UUID userId, String tokenHash, Instant expiresAt) {
         this.userId = userId;
+        this.tokenHash = tokenHash;
+        this.expiresAt = expiresAt;
+        this.revoked = false;
+    }
+
+    public RefreshToken(UUID userId, UUID sessionId, String tokenHash, Instant expiresAt) {
+        this.userId = userId;
+        this.sessionId = sessionId;
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
         this.revoked = false;
@@ -80,6 +91,14 @@ public class RefreshToken {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public UUID getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getTokenHash() {

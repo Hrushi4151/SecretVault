@@ -98,9 +98,9 @@ public class AuthController {
 
     @PostMapping("/logout")
     @SecurityRequirement(name = "BearerAuth")
-    @Operation(summary = "Sign Out & Invalidate Session", description = "Revokes refresh tokens for the authenticated user.")
+    @Operation(summary = "Sign Out & Invalidate Session", description = "Revokes active session and refresh tokens for the authenticated user.")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserPrincipal principal) {
-        authService.logout(principal.getId());
+        authService.logout(principal.getId(), principal.getSessionIdentifier());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

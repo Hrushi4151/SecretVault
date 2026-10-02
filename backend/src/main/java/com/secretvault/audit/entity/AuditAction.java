@@ -81,6 +81,14 @@ public enum AuditAction {
     MFA_CHALLENGE_LOCKED,
     MFA_RECOVERY_CODE_USED,
 
+    // Phase 5.8.1 Session Management & Session Security
+    SESSION_CREATED,
+    SESSION_REFRESHED,
+    SESSION_REVOKED,
+    SESSION_REVOKED_ALL_OTHERS,
+    SESSION_REVOKED_ALL,
+    SESSION_REFRESH_REJECTED,
+
     // Phase 9 Machine Identity & OIDC Workload Auth
     MACHINE_IDENTITY_CREATED,
     MACHINE_IDENTITY_UPDATED,

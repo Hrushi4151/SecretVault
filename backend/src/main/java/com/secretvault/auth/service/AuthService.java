@@ -16,6 +16,10 @@ import com.secretvault.auth.mfa.service.MfaService;
 import com.secretvault.auth.repository.RefreshTokenRepository;
 import com.secretvault.auth.repository.UserRepository;
 import com.secretvault.auth.security.JwtTokenProvider;
+import com.secretvault.auth.session.entity.UserSession;
+import com.secretvault.auth.session.enums.AuthMethod;
+import com.secretvault.auth.session.service.SessionService;
+import com.secretvault.auth.session.util.UserAgentParser;
 import com.secretvault.common.exception.ApiException;
 import com.secretvault.organization.entity.Organization;
 import com.secretvault.organization.repository.OrganizationRepository;
@@ -25,21 +29,26 @@ import com.secretvault.workspace.entity.WorkspaceMembership;
 import com.secretvault.workspace.entity.WorkspaceRole;
 import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Service managing user lifecycle, authentication, credential validation,
- * token generation, multi-tenant organization/workspace bootstrap, and MFA login flow.
+ * token generation, session lifecycle binding, multi-tenant organization/workspace bootstrap,
+ * and MFA login flow.
  */
 @Service
 public class AuthService {
@@ -55,6 +64,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final MfaService mfaService;
+    private final SessionService sessionService;
 
     public AuthService(
             UserRepository userRepository,
@@ -64,7 +74,8 @@ public class AuthService {
             WorkspaceMembershipRepository membershipRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
-            MfaService mfaService) {
+            MfaService mfaService,
+            SessionService sessionService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.organizationRepository = organizationRepository;
@@ -73,11 +84,12 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.mfaService = mfaService;
+        this.sessionService = sessionService;
     }
 
     /**
      * Registers a new user account, provisions their primary organization and default workspace,
-     * assigns OWNER role, and issues initial access + refresh tokens.
+     * assigns OWNER role, establishes an authenticated session, and issues initial access + refresh tokens.
      */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -113,13 +125,13 @@ public class AuthService {
         log.info("Registered new user [{}] with organization [{}] and default workspace [{}]",
                 user.getId(), organization.getId(), defaultWorkspace.getId());
 
-        // 5. Generate Access and Refresh Tokens
-        return generateAuthResponse(user, defaultWorkspace, WorkspaceRole.OWNER);
+        // 5. Generate Session, Access and Refresh Tokens
+        return generateAuthResponse(user, defaultWorkspace, WorkspaceRole.OWNER, AuthMethod.PASSWORD, null);
     }
 
     /**
      * Authenticates existing user credentials, validates account status,
-     * and either issues tokens (if MFA disabled) or creates and returns an MFA challenge.
+     * and either issues tokens and establishes a session (if MFA disabled) or creates and returns an MFA challenge.
      */
     @Transactional
     public AuthResponse login(LoginRequest request) {
@@ -144,18 +156,19 @@ public class AuthService {
             return AuthResponse.mfaRequired(challenge.challengeId(), challenge.expiresAt());
         }
 
-        // MFA is disabled - complete single-factor authentication
+        // MFA is disabled - complete single-factor authentication and establish session
         WorkspaceMembership primaryMembership = resolvePrimaryMembership(user.getId());
         Workspace workspace = workspaceRepository.findById(primaryMembership.getWorkspaceId())
                 .orElseThrow(() -> ApiException.notFound("Assigned workspace could not be found"));
 
         log.info("User [{}] authenticated successfully without MFA. Active workspace: [{}]", user.getId(), workspace.getId());
 
-        return generateAuthResponse(user, workspace, primaryMembership.getRole());
+        return generateAuthResponse(user, workspace, primaryMembership.getRole(), AuthMethod.PASSWORD, null);
     }
 
     /**
-     * Completes authentication by verifying a TOTP code against an active MFA login challenge.
+     * Completes authentication by verifying a TOTP code against an active MFA login challenge,
+     * establishing an authenticated session with MFA TOTP metadata.
      */
     @Transactional
     public AuthResponse completeMfaTotpLogin(MfaTotpVerifyRequest request) {
@@ -179,11 +192,12 @@ public class AuthService {
         log.info("User [{}] successfully verified TOTP challenge [{}]. Session tokens issued.",
                 user.getId(), request.challengeId());
 
-        return generateAuthResponse(user, workspace, primaryMembership.getRole());
+        return generateAuthResponse(user, workspace, primaryMembership.getRole(), AuthMethod.PASSWORD_MFA_TOTP, null);
     }
 
     /**
-     * Completes authentication by verifying a backup recovery code against an active MFA login challenge.
+     * Completes authentication by verifying a backup recovery code against an active MFA login challenge,
+     * establishing an authenticated session with MFA Recovery metadata.
      */
     @Transactional
     public AuthResponse completeMfaRecoveryLogin(MfaRecoveryVerifyRequest request) {
@@ -207,35 +221,56 @@ public class AuthService {
         log.info("User [{}] successfully verified recovery code challenge [{}]. Session tokens issued.",
                 user.getId(), request.challengeId());
 
-        return generateAuthResponse(user, workspace, primaryMembership.getRole());
+        return generateAuthResponse(user, workspace, primaryMembership.getRole(), AuthMethod.PASSWORD_MFA_RECOVERY, null);
     }
 
     /**
-     * Rotates refresh token and issues a fresh JWT access token.
+     * Rotates refresh token, validates bound session status and user account state,
+     * updates session activity, and issues a fresh JWT access token.
      */
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
         String hashedToken = tokenProvider.hashToken(request.refreshToken().trim());
 
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHashAndRevokedFalse(hashedToken)
+        // 1. Atomic Revocation: Guarantee only one concurrent caller can consume this active token
+        int consumed = refreshTokenRepository.markRevokedIfActive(hashedToken);
+        if (consumed != 1) {
+            // Either does not exist, or was already revoked (replay attack / concurrent use)
+            Optional<RefreshToken> tokenOpt = refreshTokenRepository.findByTokenHash(hashedToken);
+            if (tokenOpt.isPresent() && tokenOpt.get().isRevoked()) {
+                log.warn("Replay attack detected: Attempt to reuse revoked refresh token for user [{}]", tokenOpt.get().getUserId());
+                if (tokenOpt.get().getSessionId() != null) {
+                    sessionService.findById(tokenOpt.get().getSessionId()).ifPresent(s -> {
+                        if (!s.isRevoked()) {
+                            sessionService.revokeSession(s.getUserId(), s.getSessionIdentifier());
+                        }
+                    });
+                }
+            }
+            throw ApiException.unauthorized("Invalid or expired refresh token");
+        }
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(hashedToken)
                 .orElseThrow(() -> ApiException.unauthorized("Invalid or expired refresh token"));
 
         if (refreshToken.isExpired()) {
-            refreshToken.setRevoked(true);
-            refreshTokenRepository.save(refreshToken);
             throw ApiException.unauthorized("Refresh token has expired");
+        }
+
+        // Validate session validity if token is bound to a session
+        if (refreshToken.getSessionId() != null) {
+            Optional<UserSession> sessionOpt = sessionService.findById(refreshToken.getSessionId());
+            if (sessionOpt.isEmpty() || !sessionOpt.get().isActive()) {
+                throw ApiException.unauthorized("Session has been revoked or expired");
+            }
         }
 
         User user = userRepository.findById(refreshToken.getUserId())
                 .orElseThrow(() -> ApiException.unauthorized("User associated with token not found"));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw ApiException.forbidden("User account is inactive");
+            throw ApiException.forbidden("User account is " + user.getStatus().name().toLowerCase(Locale.ROOT));
         }
-
-        // Revoke the used refresh token (strict token rotation)
-        refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
 
         // Resolve workspace
         List<WorkspaceMembership> memberships = membershipRepository.findByUserId(user.getId());
@@ -245,7 +280,7 @@ public class AuthService {
                 : null;
         WorkspaceRole role = primaryMembership != null ? primaryMembership.getRole() : WorkspaceRole.VIEWER;
 
-        return generateAuthResponse(user, workspace, role);
+        return generateAuthResponse(user, workspace, role, null, refreshToken.getSessionId());
     }
 
     /**
@@ -259,12 +294,25 @@ public class AuthService {
     }
 
     /**
-     * Revokes active refresh tokens for the user upon sign out.
+     * Revokes a specific session or all active sessions and refresh tokens for the user upon sign out.
+     */
+    @Transactional
+    public void logout(UUID userId, String sessionIdentifier) {
+        if (sessionIdentifier != null && !sessionIdentifier.isBlank()) {
+            sessionService.revokeSession(userId, sessionIdentifier);
+            log.info("Revoked active session [{}] for user [{}]", sessionIdentifier, userId);
+        } else {
+            sessionService.revokeAllSessions(userId);
+            log.info("Revoked all active sessions and refresh tokens for user [{}]", userId);
+        }
+    }
+
+    /**
+     * Legacy/default logout revoking all active sessions for the user.
      */
     @Transactional
     public void logout(UUID userId) {
-        refreshTokenRepository.revokeAllByUserId(userId);
-        log.info("Revoked all active refresh tokens for user [{}]", userId);
+        logout(userId, null);
     }
 
     private WorkspaceMembership resolvePrimaryMembership(UUID userId) {
@@ -282,14 +330,52 @@ public class AuthService {
                 .orElse(memberships.getFirst());
     }
 
-    private AuthResponse generateAuthResponse(User user, Workspace workspace, WorkspaceRole role) {
-        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getFullName());
+    private AuthResponse generateAuthResponse(
+            User user,
+            Workspace workspace,
+            WorkspaceRole role,
+            AuthMethod authMethod,
+            UUID existingSessionId) {
+
+        HttpServletRequest currentRequest = getCurrentHttpRequest();
+        String clientIp = UserAgentParser.extractClientIp(currentRequest);
+        String userAgent = currentRequest != null ? currentRequest.getHeader("User-Agent") : null;
+
+        Instant refreshExpiry = Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION_DAYS * 86400L);
+
+        UserSession session;
+        if (existingSessionId != null) {
+            session = sessionService.recordSessionActivity(existingSessionId, clientIp, userAgent);
+            if (session == null || !session.isActive()) {
+                throw ApiException.unauthorized("Session has been revoked or expired");
+            }
+        } else {
+            session = sessionService.createSession(
+                    user.getId(),
+                    authMethod != null ? authMethod : AuthMethod.PASSWORD,
+                    clientIp,
+                    userAgent,
+                    refreshExpiry
+            );
+        }
+
         String rawRefreshToken = tokenProvider.generateRefreshToken();
         String hashedRefreshToken = tokenProvider.hashToken(rawRefreshToken);
 
-        Instant refreshExpiry = Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION_DAYS * 86400L);
-        RefreshToken refreshTokenEntity = new RefreshToken(user.getId(), hashedRefreshToken, refreshExpiry);
+        RefreshToken refreshTokenEntity = new RefreshToken(
+                user.getId(),
+                session.getId(),
+                hashedRefreshToken,
+                refreshExpiry
+        );
         refreshTokenRepository.save(refreshTokenEntity);
+
+        String accessToken = tokenProvider.generateAccessToken(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                session.getSessionIdentifier()
+        );
 
         UserResponse userResponse = UserResponse.fromEntity(user);
         WorkspaceResponse workspaceResponse = (workspace != null)
@@ -303,6 +389,11 @@ public class AuthService {
                 userResponse,
                 workspaceResponse
         );
+    }
+
+    private HttpServletRequest getCurrentHttpRequest() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest() : null;
     }
 
     private String generateSlug(String input) {

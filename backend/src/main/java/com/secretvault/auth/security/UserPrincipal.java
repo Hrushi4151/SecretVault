@@ -22,25 +22,31 @@ public class UserPrincipal implements UserDetails {
     private final String fullName;
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
+    private final String sessionIdentifier;
     private final boolean isMachine;
     private final UUID workspaceId;
 
-    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities) {
-        this(id, email, password, fullName, enabled, authorities, false, null);
-    }
-
-    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities, boolean isMachine, UUID workspaceId) {
+    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities, String sessionIdentifier, boolean isMachine, UUID workspaceId) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.fullName = fullName;
         this.enabled = enabled;
         this.authorities = authorities;
+        this.sessionIdentifier = sessionIdentifier;
         this.isMachine = isMachine;
         this.workspaceId = workspaceId;
     }
 
-    public static UserPrincipal create(User user) {
+    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities, String sessionIdentifier) {
+        this(id, email, password, fullName, enabled, authorities, sessionIdentifier, false, null);
+    }
+
+    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities) {
+        this(id, email, password, fullName, enabled, authorities, null, false, null);
+    }
+
+    public static UserPrincipal create(User user, String sessionIdentifier) {
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         boolean isEnabled = user.getStatus() == UserStatus.ACTIVE;
         return new UserPrincipal(
@@ -50,9 +56,14 @@ public class UserPrincipal implements UserDetails {
                 user.getFullName(),
                 isEnabled,
                 authorities,
+                sessionIdentifier,
                 false,
                 null
         );
+    }
+
+    public static UserPrincipal create(User user) {
+        return create(user, null);
     }
 
     public static UserPrincipal createMachine(com.secretvault.machine.entity.MachineIdentity machine) {
@@ -65,6 +76,7 @@ public class UserPrincipal implements UserDetails {
                 "Machine: " + machine.getName(),
                 isEnabled,
                 authorities,
+                null,
                 true,
                 machine.getWorkspaceId()
         );
@@ -84,6 +96,10 @@ public class UserPrincipal implements UserDetails {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public String getSessionIdentifier() {
+        return sessionIdentifier;
     }
 
     @Override
