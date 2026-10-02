@@ -120,14 +120,14 @@ class MfaServiceConcurrencyTest {
     }
 
     @Test
-    @DisplayName("20 concurrent threads verifying the EXACT SAME login challenge: EXACTLY ONE succeeds")
+    @DisplayName("25 concurrent threads verifying the EXACT SAME login challenge: EXACTLY ONE succeeds")
     void testConcurrentChallengeVerification() throws Exception {
         UUID userId = testUser.getId();
         MfaChallengeInfo challenge = mfaService.createLoginChallenge(userId);
         String challengeId = challenge.challengeId();
         String validTotp = totpService.generateCode(secret);
 
-        int concurrency = 20;
+        int concurrency = 25;
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
@@ -163,7 +163,7 @@ class MfaServiceConcurrencyTest {
     }
 
     @Test
-    @DisplayName("20 concurrent threads attempting to consume the EXACT SAME recovery code: EXACTLY ONE succeeds")
+    @DisplayName("25 concurrent threads attempting to consume the EXACT SAME recovery code: EXACTLY ONE succeeds")
     void testConcurrentRecoveryCodeConsumption() throws Exception {
         UUID userId = testUser.getId();
 
@@ -173,13 +173,13 @@ class MfaServiceConcurrencyTest {
         MfaActivationResult activation = mfaService.activateMfa(userId, totpService.generateCode(enrollment.secret()));
         String targetRecoveryCode = activation.recoveryCodes().getFirst();
 
-        int concurrency = 20;
+        int concurrency = 25;
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
         TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 
-        // Pre-create 20 individual challenges for the user
+        // Pre-create 25 individual challenges for the user
         List<String> challengeIds = new ArrayList<>();
         for (int i = 0; i < concurrency; i++) {
             challengeIds.add(mfaService.createLoginChallenge(userId).challengeId());
