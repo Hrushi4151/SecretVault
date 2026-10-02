@@ -2,45 +2,68 @@
 
 ## 1. Overview & Vision
 
-The **SecretVault CLI** (`secretvault`) is a primary developer interface designed to inject secrets directly into child process memory at runtime, completely eliminating the need to write plaintext `.env` files to disk.
+The **SecretVault CLI** (`secretvault`) is the enterprise developer interface designed to inject secrets directly into child process memory at runtime, completely eliminating the need to write plaintext `.env` files to disk.
 
-> **Status:** Phase 8/9 Roadmap (PLANNED).
+> **Status:** Phase 10 — Implemented & Production Ready.
+
+For complete Phase 10 documentation, see:
+- [Phase 10 Overview](./phase10/README.md)
+- [Installation Guide](./phase10/INSTALLATION.md)
+- [Authentication & Profiles](./phase10/AUTHENTICATION.md)
+- [Command Reference](./phase10/COMMANDS.md)
+- [Local Development Guide](./phase10/LOCAL_DEVELOPMENT.md)
+- [Environment Files (.env)](./phase10/ENV_FILES.md)
+- [Security & Threat Model](./phase10/SECURITY.md)
+- [CI/CD & Headless Execution](./phase10/CI_USAGE.md)
+- [Architecture & Design](./phase10/ARCHITECTURE.md)
+- [Troubleshooting](./phase10/TROUBLESHOOTING.md)
 
 ---
 
-## 2. Comprehensive Command Catalog [PLANNED]
+## 2. Comprehensive Command Catalog
 
 ### 2.1 Authentication & Configuration
-- `secretvault login` — Interactive OAuth/browser login or API token prompt.
-- `secretvault logout` — Clears stored local session tokens.
-- `secretvault init` — Links local git repository to a SecretVault project.
-- `secretvault status` — Displays active organization, project, environment, and CLI version.
+- `secretvault auth login` — Interactive non-echo login or stdin prompt with server/profile selection.
+- `secretvault auth logout` — Securely revokes refresh tokens and clears local credentials.
+- `secretvault auth status` — Displays active organization, profile, target server, and token expiration state.
+- `secretvault auth whoami` — Displays authenticated caller identity, permissions status, and workspace.
+- `secretvault auth profiles` — Lists all configured profile definitions.
+- `secretvault auth switch <profile>` — Switches active profile.
 
 ### 2.2 Project & Environment Navigation
-- `secretvault project select <project-slug>` — Switches active project context.
-- `secretvault env switch <development|staging|production>` — Switches active environment.
+- `secretvault workspace list` — Lists authorized workspaces.
+- `secretvault project list` — Lists accessible projects within workspace.
+- `secretvault environment list` — Lists project deployment environments and protection tiers.
+- `secretvault context get` / `secretvault context set` — Manages hierarchical context bindings.
+- `secretvault dev init` — Bootstraps `.secretvault/project.json` in local directory.
 
 ### 2.3 Secret Management & Diffing
-- `secretvault secrets list` — Lists secret keys, descriptions, and sync status (values masked).
-- `secretvault secrets get <KEY_NAME>` — Fetches decrypted secret value to terminal (requires `secret.reveal` permission).
-- `secretvault secrets set <KEY>=<VALUE>` — Creates or updates a secret version.
-- `secretvault secrets delete <KEY>` — Deletes a secret with confirmation prompt.
-- `secretvault diff --env staging --env production` — Diffs secret keys and versions across environments (no plaintext revealed).
-- `secretvault history <KEY>` — Displays version history and change reasons.
-- `secretvault rollback <KEY> --version <V>` — Rolls back secret to a specified prior version.
+- `secretvault secret list` — Lists secret keys, versions, and statuses (values strictly masked).
+- `secretvault secret get <KEY>` — Fetches secret metadata.
+- `secretvault secret reveal <KEY>` — Explicitly decrypts secret to stdout (requires confirmation unless `--yes`/`--raw`).
+- `secretvault secret create <KEY>` — Creates a new secret version 1 (supports `--stdin`, `--from-file`, `--value-from-env`).
+- `secretvault secret set <KEY>` — Creates or updates secret version.
+- `secretvault secret update <KEY>` — Appends new version with audit reason.
+- `secretvault secret delete <KEY>` — Soft-deletes secret with confirmation prompt.
+- `secretvault secret versions <KEY>` — Immutable version history.
+- `secretvault secret rollback <KEY> --version <V>` — Rolls back secret to historical version as vN+1.
 
 ### 2.4 Runtime In-Memory Injection (`secretvault run`)
-- **Syntax:** `secretvault run --env <environment> -- <command>`
-- **Example:** `secretvault run --env development -- npm run dev`
+- **Syntax:** `secretvault run [--secret <KEY>...] -- <command> [args...]`
+- **Example:** `secretvault run -- npm run dev`
 - **Behavior:**
   1. Authenticates against SecretVault API.
-  2. Fetches and decrypts environment secrets directly in RAM.
-  3. Spawns child process (`npm run dev`) and passes secrets via process environment block.
-  4. Plaintext secrets are never written to disk or recorded in `.bash_history`.
-  5. On child process termination, memory buffers are wiped.
+  2. Fetches and decrypts authorized secrets directly in RAM.
+  3. Spawns child process (`npm run dev`) with injected environment block (no shell wrapper).
+  4. Plaintext secrets are never written to disk or recorded in history.
+  5. Forwards process signals (`SIGINT`, `SIGTERM`) cleanly and propagates exact child exit codes.
+  6. On child process termination, memory buffers are wiped.
 
-### 2.5 Diagnostics, Security & CI Headless Mode
-- `secretvault doctor` — Verifies workstation health, network latency, and token validity.
-- `secretvault scan` — Scans local repository for hardcoded secrets and API keys before commit.
-- `secretvault audit` — Displays recent local developer actions.
-- `secretvault run --ci` — Headless execution utilizing machine identity tokens (`SECRETVault_SA_KEY` or OIDC).
+### 2.5 Safe `.env` Synchronization
+- `secretvault env pull` — Safely pulls secrets into stdout or file (with `.gitignore` check and `chmod 600`).
+- `secretvault env push` — Parses `.env` data safely (no shell evaluation) with `--dry-run` diff preview.
+
+### 2.6 Diagnostics & Shell Autocompletion
+- `secretvault doctor` — Runs end-to-end environment, network, latency, and credential health checks.
+- `secretvault version` — Displays CLI and server versions.
+- `secretvault completion <shell>` — Generates completion scripts for `bash`, `zsh`, `fish`, and `powershell`.
