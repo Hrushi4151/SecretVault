@@ -68,7 +68,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/refresh"
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/mfa/verify-totp",
+                                "/api/v1/auth/mfa/verify-recovery"
                         ).permitAll()
 
                         // All other endpoints require authentication

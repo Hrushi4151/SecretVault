@@ -51,11 +51,21 @@ public interface MfaService {
     MfaVerificationResult verifyLoginTotp(String challengeId, UUID userId, String code);
 
     /**
+     * Verifies a TOTP verification code against an active login challenge by resolving the user from the challenge.
+     */
+    MfaVerificationResult verifyLoginTotp(String challengeId, String code);
+
+    /**
      * Verifies a single-use backup recovery code against an active login challenge.
      * On success, atomically marks the recovery code as used in PostgreSQL,
      * atomically consumes the Redis challenge, and marks the MFA session verified.
      */
     MfaVerificationResult verifyLoginRecoveryCode(String challengeId, UUID userId, String recoveryCode);
+
+    /**
+     * Verifies a single-use backup recovery code against an active login challenge by resolving the user from the challenge.
+     */
+    MfaVerificationResult verifyLoginRecoveryCode(String challengeId, String recoveryCode);
 
     /**
      * Disables MFA for a user.

@@ -8,6 +8,11 @@ import com.secretvault.auth.dto.UserResponse;
 import com.secretvault.auth.entity.RefreshToken;
 import com.secretvault.auth.entity.User;
 import com.secretvault.auth.entity.UserStatus;
+import com.secretvault.auth.mfa.dto.MfaRecoveryVerifyRequest;
+import com.secretvault.auth.mfa.dto.MfaTotpVerifyRequest;
+import com.secretvault.auth.mfa.model.MfaChallengeInfo;
+import com.secretvault.auth.mfa.model.MfaVerificationResult;
+import com.secretvault.auth.mfa.service.MfaService;
 import com.secretvault.auth.repository.RefreshTokenRepository;
 import com.secretvault.auth.repository.UserRepository;
 import com.secretvault.auth.security.JwtTokenProvider;
@@ -34,7 +39,7 @@ import java.util.UUID;
 
 /**
  * Service managing user lifecycle, authentication, credential validation,
- * token generation, and multi-tenant organization/workspace bootstrap.
+ * token generation, multi-tenant organization/workspace bootstrap, and MFA login flow.
  */
 @Service
 public class AuthService {
@@ -49,6 +54,7 @@ public class AuthService {
     private final WorkspaceMembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final MfaService mfaService;
 
     public AuthService(
             UserRepository userRepository,
@@ -57,7 +63,8 @@ public class AuthService {
             WorkspaceRepository workspaceRepository,
             WorkspaceMembershipRepository membershipRepository,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider tokenProvider) {
+            JwtTokenProvider tokenProvider,
+            MfaService mfaService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.organizationRepository = organizationRepository;
@@ -65,6 +72,7 @@ public class AuthService {
         this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.mfaService = mfaService;
     }
 
     /**
@@ -111,7 +119,7 @@ public class AuthService {
 
     /**
      * Authenticates existing user credentials, validates account status,
-     * and issues a new session with JWT and refresh token.
+     * and either issues tokens (if MFA disabled) or creates and returns an MFA challenge.
      */
     @Transactional
     public AuthResponse login(LoginRequest request) {
@@ -128,25 +136,76 @@ public class AuthService {
             throw ApiException.unauthorized("Invalid email or password");
         }
 
-        // Find primary/default workspace for user
-        List<WorkspaceMembership> memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
-            throw ApiException.notFound("No active workspace found for user");
+        // Check if MFA is active on user account
+        if (mfaService.isMfaEnabled(user.getId())) {
+            MfaChallengeInfo challenge = mfaService.createLoginChallenge(user.getId());
+            log.info("User [{}] authenticated with primary credentials; MFA challenge [{}] issued.",
+                    user.getId(), challenge.challengeId());
+            return AuthResponse.mfaRequired(challenge.challengeId(), challenge.expiresAt());
         }
 
-        // Prefer default workspace or first membership
-        WorkspaceMembership primaryMembership = memberships.stream()
-                .filter(m -> {
-                    Workspace w = workspaceRepository.findById(m.getWorkspaceId()).orElse(null);
-                    return w != null && w.isDefault();
-                })
-                .findFirst()
-                .orElse(memberships.getFirst());
-
+        // MFA is disabled - complete single-factor authentication
+        WorkspaceMembership primaryMembership = resolvePrimaryMembership(user.getId());
         Workspace workspace = workspaceRepository.findById(primaryMembership.getWorkspaceId())
                 .orElseThrow(() -> ApiException.notFound("Assigned workspace could not be found"));
 
-        log.info("User [{}] authenticated successfully. Active workspace: [{}]", user.getId(), workspace.getId());
+        log.info("User [{}] authenticated successfully without MFA. Active workspace: [{}]", user.getId(), workspace.getId());
+
+        return generateAuthResponse(user, workspace, primaryMembership.getRole());
+    }
+
+    /**
+     * Completes authentication by verifying a TOTP code against an active MFA login challenge.
+     */
+    @Transactional
+    public AuthResponse completeMfaTotpLogin(MfaTotpVerifyRequest request) {
+        MfaVerificationResult result = mfaService.verifyLoginTotp(request.challengeId(), request.code());
+        if (!result.success()) {
+            String errorMsg = result.errorMessage() != null ? result.errorMessage() : "MFA TOTP verification failed";
+            throw ApiException.unauthorized(errorMsg);
+        }
+
+        User user = userRepository.findById(result.userId())
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw ApiException.forbidden("User account is " + user.getStatus().name().toLowerCase(Locale.ROOT));
+        }
+
+        WorkspaceMembership primaryMembership = resolvePrimaryMembership(user.getId());
+        Workspace workspace = workspaceRepository.findById(primaryMembership.getWorkspaceId())
+                .orElseThrow(() -> ApiException.notFound("Assigned workspace could not be found"));
+
+        log.info("User [{}] successfully verified TOTP challenge [{}]. Session tokens issued.",
+                user.getId(), request.challengeId());
+
+        return generateAuthResponse(user, workspace, primaryMembership.getRole());
+    }
+
+    /**
+     * Completes authentication by verifying a backup recovery code against an active MFA login challenge.
+     */
+    @Transactional
+    public AuthResponse completeMfaRecoveryLogin(MfaRecoveryVerifyRequest request) {
+        MfaVerificationResult result = mfaService.verifyLoginRecoveryCode(request.challengeId(), request.recoveryCode());
+        if (!result.success()) {
+            String errorMsg = result.errorMessage() != null ? result.errorMessage() : "MFA recovery verification failed";
+            throw ApiException.unauthorized(errorMsg);
+        }
+
+        User user = userRepository.findById(result.userId())
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw ApiException.forbidden("User account is " + user.getStatus().name().toLowerCase(Locale.ROOT));
+        }
+
+        WorkspaceMembership primaryMembership = resolvePrimaryMembership(user.getId());
+        Workspace workspace = workspaceRepository.findById(primaryMembership.getWorkspaceId())
+                .orElseThrow(() -> ApiException.notFound("Assigned workspace could not be found"));
+
+        log.info("User [{}] successfully verified recovery code challenge [{}]. Session tokens issued.",
+                user.getId(), request.challengeId());
 
         return generateAuthResponse(user, workspace, primaryMembership.getRole());
     }
@@ -206,6 +265,21 @@ public class AuthService {
     public void logout(UUID userId) {
         refreshTokenRepository.revokeAllByUserId(userId);
         log.info("Revoked all active refresh tokens for user [{}]", userId);
+    }
+
+    private WorkspaceMembership resolvePrimaryMembership(UUID userId) {
+        List<WorkspaceMembership> memberships = membershipRepository.findByUserId(userId);
+        if (memberships.isEmpty()) {
+            throw ApiException.notFound("No active workspace found for user");
+        }
+
+        return memberships.stream()
+                .filter(m -> {
+                    Workspace w = workspaceRepository.findById(m.getWorkspaceId()).orElse(null);
+                    return w != null && w.isDefault();
+                })
+                .findFirst()
+                .orElse(memberships.getFirst());
     }
 
     private AuthResponse generateAuthResponse(User user, Workspace workspace, WorkspaceRole role) {

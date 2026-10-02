@@ -7,6 +7,12 @@ import com.secretvault.auth.dto.RegisterRequest;
 import com.secretvault.auth.entity.RefreshToken;
 import com.secretvault.auth.entity.User;
 import com.secretvault.auth.entity.UserStatus;
+import com.secretvault.auth.mfa.dto.MfaRecoveryVerifyRequest;
+import com.secretvault.auth.mfa.dto.MfaTotpVerifyRequest;
+import com.secretvault.auth.mfa.model.AuthenticationState;
+import com.secretvault.auth.mfa.model.MfaChallengeInfo;
+import com.secretvault.auth.mfa.model.MfaVerificationResult;
+import com.secretvault.auth.mfa.service.MfaService;
 import com.secretvault.auth.repository.RefreshTokenRepository;
 import com.secretvault.auth.repository.UserRepository;
 import com.secretvault.auth.security.JwtTokenProvider;
@@ -60,6 +66,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider tokenProvider;
+
+    @Mock
+    private MfaService mfaService;
 
     @InjectMocks
     private AuthService authService;
@@ -135,12 +144,13 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should authenticate user with valid credentials")
-    void testLoginSuccess() {
+    @DisplayName("Should authenticate user and issue tokens when MFA is disabled")
+    void testLoginSuccessMfaDisabled() {
         LoginRequest request = new LoginRequest("alice@example.com", "Password123!");
 
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("Password123!", "hashed_password")).thenReturn(true);
+        when(mfaService.isMfaEnabled(userId)).thenReturn(false);
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
         when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("mock.jwt.token");
@@ -151,8 +161,33 @@ class AuthServiceTest {
         AuthResponse response = authService.login(request);
 
         assertNotNull(response);
+        assertFalse(response.mfaRequired());
+        assertNull(response.mfaChallengeId());
         assertEquals("mock.jwt.token", response.accessToken());
         assertEquals(testUser.getEmail(), response.user().email());
+    }
+
+    @Test
+    @DisplayName("Should return MFA challenge without issuing tokens when MFA is enabled")
+    void testLoginSuccessMfaEnabled() {
+        LoginRequest request = new LoginRequest("alice@example.com", "Password123!");
+        Instant expiry = Instant.now().plusSeconds(300);
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("Password123!", "hashed_password")).thenReturn(true);
+        when(mfaService.isMfaEnabled(userId)).thenReturn(true);
+        when(mfaService.createLoginChallenge(userId)).thenReturn(new MfaChallengeInfo("challenge-123", userId, expiry, AuthenticationState.MFA_REQUIRED));
+
+        AuthResponse response = authService.login(request);
+
+        assertNotNull(response);
+        assertTrue(response.mfaRequired());
+        assertEquals("challenge-123", response.mfaChallengeId());
+        assertEquals(expiry, response.mfaExpiresAt());
+        assertNull(response.accessToken(), "Access token MUST NOT be issued prior to MFA verification");
+        assertNull(response.refreshToken(), "Refresh token MUST NOT be issued prior to MFA verification");
+        assertNull(response.user());
+        assertNull(response.activeWorkspace());
     }
 
     @Test
@@ -165,6 +200,80 @@ class AuthServiceTest {
 
         ApiException ex = assertThrows(ApiException.class, () -> authService.login(request));
         assertEquals("UNAUTHORIZED", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Should successfully complete MFA TOTP login and issue tokens")
+    void testCompleteMfaTotpLoginSuccess() {
+        MfaTotpVerifyRequest request = new MfaTotpVerifyRequest("challenge-123", "123456");
+
+        when(mfaService.verifyLoginTotp("challenge-123", "123456"))
+                .thenReturn(MfaVerificationResult.success(userId));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
+        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("mfa.jwt.token");
+        when(tokenProvider.generateRefreshToken()).thenReturn("mfa_refresh_token");
+        when(tokenProvider.hashToken(anyString())).thenReturn("hashed_mfa_refresh_token");
+        when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
+
+        AuthResponse response = authService.completeMfaTotpLogin(request);
+
+        assertNotNull(response);
+        assertFalse(response.mfaRequired());
+        assertEquals("mfa.jwt.token", response.accessToken());
+        assertEquals("mfa_refresh_token", response.refreshToken());
+        assertEquals("alice@example.com", response.user().email());
+    }
+
+    @Test
+    @DisplayName("Should reject MFA TOTP login when verification fails")
+    void testCompleteMfaTotpLoginFailed() {
+        MfaTotpVerifyRequest request = new MfaTotpVerifyRequest("challenge-123", "000000");
+
+        when(mfaService.verifyLoginTotp("challenge-123", "000000"))
+                .thenReturn(MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Invalid TOTP code"));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.completeMfaTotpLogin(request));
+        assertEquals("UNAUTHORIZED", ex.getCode());
+        verify(tokenProvider, never()).generateAccessToken(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Should successfully complete MFA recovery code login and issue tokens")
+    void testCompleteMfaRecoveryLoginSuccess() {
+        MfaRecoveryVerifyRequest request = new MfaRecoveryVerifyRequest("challenge-123", "2345-6789-ABCD");
+
+        when(mfaService.verifyLoginRecoveryCode("challenge-123", "2345-6789-ABCD"))
+                .thenReturn(MfaVerificationResult.success(userId));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
+        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("recovery.jwt.token");
+        when(tokenProvider.generateRefreshToken()).thenReturn("recovery_refresh_token");
+        when(tokenProvider.hashToken(anyString())).thenReturn("hashed_recovery_refresh_token");
+        when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
+
+        AuthResponse response = authService.completeMfaRecoveryLogin(request);
+
+        assertNotNull(response);
+        assertFalse(response.mfaRequired());
+        assertEquals("recovery.jwt.token", response.accessToken());
+        assertEquals("recovery_refresh_token", response.refreshToken());
+        assertEquals("alice@example.com", response.user().email());
+    }
+
+    @Test
+    @DisplayName("Should reject MFA recovery code login when verification fails")
+    void testCompleteMfaRecoveryLoginFailed() {
+        MfaRecoveryVerifyRequest request = new MfaRecoveryVerifyRequest("challenge-123", "INVALID-CODE");
+
+        when(mfaService.verifyLoginRecoveryCode("challenge-123", "INVALID-CODE"))
+                .thenReturn(MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Invalid recovery code"));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.completeMfaRecoveryLogin(request));
+        assertEquals("UNAUTHORIZED", ex.getCode());
+        verify(tokenProvider, never()).generateAccessToken(any(), any(), any());
     }
 
     @Test
