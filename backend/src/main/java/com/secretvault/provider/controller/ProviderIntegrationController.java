@@ -45,13 +45,16 @@ public class ProviderIntegrationController {
 
     private final ProviderIntegrationService integrationService;
     private final ProviderResourceMappingService mappingService;
+    private final com.secretvault.provider.service.ProviderSecretSyncService syncService;
 
     public ProviderIntegrationController(
             ProviderIntegrationService integrationService,
-            ProviderResourceMappingService mappingService
+            ProviderResourceMappingService mappingService,
+            com.secretvault.provider.service.ProviderSecretSyncService syncService
     ) {
         this.integrationService = integrationService;
         this.mappingService = mappingService;
+        this.syncService = syncService;
     }
 
     @PostMapping
@@ -210,5 +213,49 @@ public class ProviderIntegrationController {
     ) {
         mappingService.deleteMapping(workspaceId, integrationId, mappingId, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PostMapping("/{integrationId}/mappings/{mappingId}/push/{secretId}")
+    @Operation(summary = "Decrypt and synchronize a secret directly to the mapped external provider")
+    public ResponseEntity<ApiResponse<com.secretvault.provider.dto.PushSecretToProviderResponse>> pushSecret(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID integrationId,
+            @PathVariable UUID mappingId,
+            @PathVariable UUID secretId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        com.secretvault.provider.dto.PushSecretToProviderResponse response = syncService.pushSecretToProvider(
+                workspaceId, integrationId, mappingId, secretId, principal.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @DeleteMapping("/{integrationId}/mappings/{mappingId}/secrets/{secretKey}")
+    @Operation(summary = "Delete an environment variable from the external provider")
+    public ResponseEntity<ApiResponse<com.secretvault.provider.model.ProviderSecretOperationResult>> deleteProviderSecret(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID integrationId,
+            @PathVariable UUID mappingId,
+            @PathVariable String secretKey,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        com.secretvault.provider.model.ProviderSecretOperationResult response = syncService.deleteSecretFromProvider(
+                workspaceId, integrationId, mappingId, secretKey, principal.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{integrationId}/mappings/{mappingId}/secrets")
+    @Operation(summary = "List secret metadata present on the mapped external provider environment")
+    public ResponseEntity<ApiResponse<List<com.secretvault.provider.model.ProviderSecretMetadata>>> listProviderSecrets(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID integrationId,
+            @PathVariable UUID mappingId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        List<com.secretvault.provider.model.ProviderSecretMetadata> response = syncService.listProviderSecrets(
+                workspaceId, integrationId, mappingId, principal.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
