@@ -88,3 +88,10 @@ secretvault:
       step-up: 600s
       metadata-cache: 300s
       idempotency: 120s
+  mfa:
+    totp:
+      algorithm: SHA1
+      digits: 6
+      period-seconds: 30
+      allowed-drift-steps: 1
+      issuer: SecretVault
