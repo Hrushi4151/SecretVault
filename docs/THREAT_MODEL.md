@@ -13,6 +13,8 @@
 5. **Authorization Decisions & Lineage:** Granular grants, JIT records, role bindings.
 6. **Audit Logs & Attestation Ledgers:** Immutable compliance records.
 7. **Security Telemetry & Findings:** Structured security events, risk scores, and fingerprinted vulnerabilities.
+8. **Provider Integration Credentials:** External platform API tokens (Vercel, Render) encrypted with AES-256-GCM.
+9. **Provider Resource Mappings:** Tenant-isolated mappings linking internal environments to external cloud resources.
 
 ---
 
@@ -51,28 +53,33 @@
   - Zero plaintext secrets logged in audit trails.
 
 ### 4. Information Disclosure
-- **Threat:** Secret plaintext leaking in error stack traces, server logs, security event metadata, or finding descriptions.
+- **Threat:** Secret plaintext leaking in error stack traces, server logs, security event metadata, finding descriptions, or provider synchronization traffic.
 - **Mitigation:**
   - `SafeEventMetadataSanitizer` automatically redacts sensitive substrings (`secret`, `token`, `password`, `key`, `credential`) from telemetry payloads.
   - `GlobalExceptionHandler` sanitizes all HTTP error responses.
   - Zero `logger.info/debug` calls contain secret plaintext.
   - Secret reveal endpoints operate strictly via POST with `Cache-Control: no-store`.
+  - In-memory provider secret push immediately wipes plaintext byte arrays and never logs Authorization headers or secret bodies.
+  - Write-only credential input and masked hint responses (`••••••••••••5ab1`).
 
 ### 5. Denial of Service (DoS)
-- **Threat:** Flooding JIT elevation requests, triggering intensive security scans, or sorting on unindexed finding columns.
+- **Threat:** Flooding JIT elevation requests, triggering intensive security scans, or flooding external provider APIs to exhaust rate limits.
 - **Mitigation:**
   - Per-workspace concurrency locking prevents concurrent overlapping security analysis scans.
   - Max duration cap (240 minutes) on JIT requests.
   - Strict sort field whitelisting on finding and event query endpoints.
   - Database pagination with capped page sizes (max 100).
+  - Provider adapters enforce bounded timeouts (5s connect, 15s read) and handle 429 rate limit responses gracefully without infinite retry loops.
 
-### 6. Elevation of Privilege
-- **Threat:** Developer approving their own JIT request, or dismissing their own excessive privilege security findings.
+### 6. Elevation of Privilege / Cross-Tenant IDOR
+- **Threat:** Developer approving their own JIT request, dismissing security findings, or manipulating provider integrations / mappings in another tenant workspace.
 - **Mitigation:**
   - Anti-Self-Approval guard (`request.getUserId().equals(approverUserId)` -> `403 Forbidden`).
   - Anti-Self-Review guard in Access Reviews.
   - Strict hierarchical scope containment (`EffectiveAccessService.checkPermission`).
   - `SECURITY_MANAGE` permission required to dismiss findings, assign owners, or ingest telemetry.
+  - `INTEGRATION_MANAGE` and `INTEGRATION_SYNC` permissions required for provider operations.
+  - Explicit workspace ID validation and AAD context binding on all provider integration and mapping queries prevents IDOR attacks.
 
 ---
 

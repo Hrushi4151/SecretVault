@@ -68,3 +68,20 @@ Every secret version is encrypted with an independent, single-use Data Encryptio
 - **Snapshot Immutability:** Initiating a review campaign captures a point-in-time snapshot of effective permissions.
 - **Targeted Remediation:** Revoking an item targets the exact underlying grant or JIT elevation without deleting broader standing workspace memberships.
 - **Attestation Ledger:** Finalizing a campaign generates an immutable compliance record sealing total items reviewed, decisions recorded, and certifier identity.
+
+---
+
+## 5. Provider Credential Protection & In-Memory Synchronization (Phase 7)
+
+- **Envelope Encryption for Third-Party Tokens:** External provider credentials (e.g. Vercel, Render tokens) are encrypted with `AES/GCM/NoPadding` (256-bit key) using `ProviderCredentialService`.
+- **Cryptographic AAD Context Binding:**
+  $$\text{AAD} = \text{workspaceId} + ":" + \text{providerType} + ":" + \text{integrationId}$$
+  Decryption attempts with mismatched workspace or integration IDs fail GCM tag validation immediately, preventing cross-tenant ciphertext translocation attacks.
+- **Write-Only Credential Entry & Redaction:** API responses return masked hints (e.g., `"••••••••••••5ab1"`). Plaintext tokens are strictly write-only upon creation or atomic replacement.
+- **In-Memory Secret Push & Memory Hygiene:** When pushing secrets to an external provider:
+  1. SecretVault retrieves the encrypted secret version and decrypts the DEK in memory.
+  2. The plaintext secret payload is decrypted into memory.
+  3. The HTTPS request is dispatched to the provider over TLS.
+  4. In `finally` blocks, memory byte references are cleared and zeroized.
+  5. No secret plaintexts or provider tokens are written to disk, database columns, audit logs, or HTTP response payloads.
+- **Canary Security Verification:** Continuous automated unit tests verify that canary secrets (`SUPER_SECRET_CANARY_123`) never leak into logs, exceptions, audit records, or API responses.

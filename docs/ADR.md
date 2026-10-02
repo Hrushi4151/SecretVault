@@ -304,6 +304,30 @@ Organizations managing multi-tier environments and secrets need automated, conti
 - **Positive:** Zero LLM hallucinations or unpredictable scoring; deterministic deduplication; clear remediation guidance; complete auditability for security teams and compliance auditors.
 - **Negative:** Rule definitions must be explicitly maintained and extended as new access patterns or resource types are added.
 
+---
+
+## ADR-018: Extensible Provider Integration Framework and In-Memory Secret Synchronization Architecture (Phase 7)
+
+### Status: Accepted
+### Date: 2026-10-02
+### Context:
+Modern web applications and microservices deploy across a variety of cloud and platform providers (e.g. Vercel, Render, AWS, Kubernetes). Storing and rotating secrets across these third-party platforms manually results in developer toil, configuration drift, and catastrophic credential leakage. SecretVault must integrate directly with external platform APIs to synchronize secrets securely while maintaining strict tenant isolation, zero plaintext persistence, and clean architectural boundaries.
+
+### Decision:
+1. **Generic Service Provider Interface (SPI):** Provider adapters implement a unified `ProviderAdapter` interface declaring supported capabilities (`READ_SECRETS`, `WRITE_SECRETS`, `DELETE_SECRETS`, `LIST_PROJECTS`, `LIST_ENVIRONMENTS`). All provider-specific REST client schemas, URLs, headers, and pagination rules remain encapsulated within their respective adapters (`VercelProviderAdapter`, `RenderProviderAdapter`).
+2. **Dynamic SPI Registry (`ProviderAdapterRegistry`):** Adapters are discovered and auto-registered at application startup via Spring dependency injection. Adding future providers (AWS, GCP, Azure, GitHub, Cloudflare, Railway) requires implementing the SPI without modifying core domain entities or controllers.
+3. **AES-256-GCM Envelope Encryption with AAD Context Binding:** Provider credentials are never stored in plaintext. They are encrypted using `ProviderCredentialService` with Authenticated Additional Data:
+   $$\text{AAD} = \text{workspaceId} + ":" + \text{providerType} + ":" + \text{integrationId}$$
+   Decryption attempts across different workspaces or integration IDs immediately fail GCM authentication.
+4. **Zero-Plaintext In-Memory Secret Push & Memory Hygiene:** During secret push operations, SecretVault decrypts the secret version DEK and plaintext in RAM, immediately dispatches the HTTPS request to the external provider API, and wipes plaintext byte arrays in `finally` blocks. Neither database logs, audit records, nor API responses ever receive plaintext secret values or credentials.
+5. **Multi-Tenant Scoped Resource Mappings:** External provider resources are linked to internal SecretVault projects and environments via explicit `ProviderResourceMapping` records. Mappings enforce workspace-level tenant isolation, RBAC validation via `EffectiveAccessService` (`INTEGRATION_MANAGE`, `INTEGRATION_SYNC`), and optimistic concurrency control.
+6. **Normalized Error Handling & Resilience:** Provider-specific HTTP error codes (401, 403, 404, 409, 429, 5xx) and timeouts are mapped to normalized SecretVault exceptions (`ProviderAuthenticationException`, `ProviderRateLimitedException`, etc.) with sanitized error messages. Retries are strictly bounded and applied only to idempotent operations.
+7. **Phase Boundary Enforcement:** Phase 7 provides on-demand push/delete/list synchronization primitives and validation APIs. The asynchronous Redis drift engine and background reconciliation scheduler are decoupled and reserved for Phase 8.
+
+### Consequences:
+- **Positive:** Zero plaintext credential or secret leakage; extensible plug-and-play architecture for any cloud/platform provider; complete tenant isolation; robust audit logging and security telemetry.
+- **Negative:** External provider API rate limits and network latency must be handled gracefully during interactive synchronization calls.
+
 
 
 
