@@ -20,6 +20,10 @@ vi.mock('../api/auth', () => ({
     enrollMfa: vi.fn(),
     activateMfa: vi.fn(),
     disableMfa: vi.fn(),
+    getSessions: vi.fn().mockResolvedValue([]),
+    revokeSession: vi.fn(),
+    revokeOtherSessions: vi.fn(),
+    revokeAllSessions: vi.fn(),
   },
 }));
 

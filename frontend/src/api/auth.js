@@ -76,4 +76,28 @@ export const authApi = {
       body: JSON.stringify(body),
     });
   },
+
+  getSessions: async () => {
+    return apiClient.request('/auth/sessions', {
+      method: 'GET',
+    });
+  },
+
+  revokeSession: async (sessionId) => {
+    return apiClient.request(`/auth/sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  revokeOtherSessions: async () => {
+    return apiClient.request('/auth/sessions/revoke-others', {
+      method: 'POST',
+    });
+  },
+
+  revokeAllSessions: async () => {
+    return apiClient.request('/auth/sessions/revoke-all', {
+      method: 'POST',
+    });
+  },
 };

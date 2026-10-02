@@ -14,10 +14,13 @@
 | **Phase 3** | Secret Versioning, Feature Branching, 3-Way Merge, Lineage | **COMPLETED** | 100% |
 | **Phase 4** | Cross-Environment Promotion, Approval Workflows | **COMPLETED** | 100% |
 | **Phase 5** | Granular RBAC, JIT Elevation, Access Review Certification, Anti-Self-Approval | **COMPLETED** | 100% |
+| **Phase 5.7** | Multi-Factor Authentication (TOTP, Recovery Codes, Challenge State Machine) | **COMPLETED** | 100% |
+| **Phase 5.8.1** | Session Management, Refresh-Token Binding, Device Telemetry, Revocation Governance | **COMPLETED** | 100% |
 | **Phase 6** | Security Intelligence, Security Center, Posture, Dynamic Risk Engine | **COMPLETED** | 100% |
 | **Phase 7** | Provider Integration Framework SPI, Vercel/Render Adapters, Credential AAD Binding | **COMPLETED** | 100% |
 | **Phase 8** | Sync Engine, Drift Detection, Reconciliation, Fingerprint Deduplication, Scheduler | **COMPLETED** | 100% |
 | **Phase 9+** | CLI, SDKs, Repo Leak Detection, Secret Rotation, AI Operations | *PLANNED* | — |
+
 
 ---
 

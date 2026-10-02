@@ -67,11 +67,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } else if (tokenProvider.validateToken(bearerToken)) {
                 // Standard Human User JWT Authentication Flow
                 UUID userId = tokenProvider.getUserIdFromToken(bearerToken);
+                String sessionIdentifier = tokenProvider.getSessionIdentifierFromToken(bearerToken);
 
                 Optional<User> userOptional = userRepository.findById(userId);
                 if (userOptional.isPresent()) {
                     User user = userOptional.get();
-                    UserPrincipal principal = UserPrincipal.create(user);
+                    UserPrincipal principal = UserPrincipal.create(user, sessionIdentifier);
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             principal,

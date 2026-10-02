@@ -6,6 +6,7 @@ import { Alert } from '../common/Alert';
 import { MfaEnrollmentModal } from './mfa/MfaEnrollmentModal';
 import { MfaDisableModal } from './mfa/MfaDisableModal';
 import { MfaSecurityDetailsModal } from './mfa/MfaSecurityDetailsModal';
+import { SessionsView } from './session/SessionsView';
 import {
   Shield,
   ShieldCheck,
@@ -272,23 +273,8 @@ export const AccountSecurityView = () => {
         )}
       </div>
 
-      {/* 3. Session Controls Card */}
-      <div className="p-6 rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/15 flex flex-col gap-4 shadow-xl shadow-black/40">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <h3 className="text-sm font-headline font-bold text-white flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#FF2D6D]" />
-              Active Session Governance
-            </h3>
-            <p className="text-xs text-[#A26377]">
-              Terminate current authentication session and clear all cryptographic credentials.
-            </p>
-          </div>
-          <Button variant="secondary" size="sm" onClick={logout}>
-            Sign Out
-          </Button>
-        </div>
-      </div>
+      {/* 3. Session Governance & Device Management Section */}
+      <SessionsView />
 
       {/* Modals */}
       <MfaEnrollmentModal

@@ -48,20 +48,33 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Generates a signed JWT access token with standard claims.
+     * Generates a signed JWT access token with standard claims and session identifier.
      */
-    public String generateAccessToken(UUID userId, String email, String fullName) {
+    public String generateAccessToken(UUID userId, String email, String fullName, String sessionIdentifier) {
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(expirationSeconds);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
-                .claim("fullName", fullName)
+                .claim("fullName", fullName);
+
+        if (sessionIdentifier != null && !sessionIdentifier.isBlank()) {
+            builder.claim("sid", sessionIdentifier);
+        }
+
+        return builder
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(key)
                 .compact();
+    }
+
+    /**
+     * Generates a signed JWT access token with standard claims.
+     */
+    public String generateAccessToken(UUID userId, String email, String fullName) {
+        return generateAccessToken(userId, email, fullName, null);
     }
 
     /**
@@ -118,6 +131,14 @@ public class JwtTokenProvider {
     public String getEmailFromToken(String token) {
         Claims claims = extractAllClaims(token);
         return claims.get("email", String.class);
+    }
+
+    /**
+     * Extracts session identifier from token claims if present.
+     */
+    public String getSessionIdentifierFromToken(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("sid", String.class);
     }
 
     public long getExpirationSeconds() {

@@ -16,6 +16,9 @@ import com.secretvault.auth.mfa.service.MfaService;
 import com.secretvault.auth.repository.RefreshTokenRepository;
 import com.secretvault.auth.repository.UserRepository;
 import com.secretvault.auth.security.JwtTokenProvider;
+import com.secretvault.auth.session.entity.UserSession;
+import com.secretvault.auth.session.enums.AuthMethod;
+import com.secretvault.auth.session.service.SessionService;
 import com.secretvault.common.exception.ApiException;
 import com.secretvault.organization.entity.Organization;
 import com.secretvault.organization.repository.OrganizationRepository;
@@ -41,6 +44,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,22 +74,28 @@ class AuthServiceTest {
     @Mock
     private MfaService mfaService;
 
+    @Mock
+    private SessionService sessionService;
+
     @InjectMocks
     private AuthService authService;
 
     private UUID userId;
     private UUID orgId;
     private UUID workspaceId;
+    private UUID sessionId;
     private User testUser;
     private Organization testOrg;
     private Workspace testWorkspace;
     private WorkspaceMembership testMembership;
+    private UserSession testSession;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
         orgId = UUID.randomUUID();
         workspaceId = UUID.randomUUID();
+        sessionId = UUID.randomUUID();
 
         testUser = new User("alice@example.com", "hashed_password", "Alice Vance");
         testUser.setId(userId);
@@ -97,10 +107,23 @@ class AuthServiceTest {
         testWorkspace.setId(workspaceId);
 
         testMembership = new WorkspaceMembership(workspaceId, userId, WorkspaceRole.OWNER);
+
+        testSession = new UserSession(
+                userId,
+                "sess_test1234567890",
+                AuthMethod.PASSWORD,
+                "127.0.0.1",
+                "JUnit Test Client",
+                "JUnit Device",
+                "Chrome",
+                "Windows",
+                Instant.now().plusSeconds(86400 * 30)
+        );
+        testSession.setId(sessionId);
     }
 
     @Test
-    @DisplayName("Should register new user, provision org, default workspace, and issue tokens")
+    @DisplayName("Should register new user, provision org, default workspace, establish session, and issue tokens")
     void testRegisterSuccess() {
         RegisterRequest request = new RegisterRequest("alice@example.com", "Password123!", "Alice Vance", null);
 
@@ -111,7 +134,10 @@ class AuthServiceTest {
         when(organizationRepository.save(any(Organization.class))).thenReturn(testOrg);
         when(workspaceRepository.save(any(Workspace.class))).thenReturn(testWorkspace);
         when(membershipRepository.save(any(WorkspaceMembership.class))).thenReturn(testMembership);
-        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("mock.jwt.token");
+        when(sessionService.createSession(eq(userId), eq(AuthMethod.PASSWORD), any(), any(), any()))
+                .thenReturn(testSession);
+        when(tokenProvider.generateAccessToken(eq(userId), eq("alice@example.com"), eq("Alice Vance"), eq("sess_test1234567890")))
+                .thenReturn("mock.jwt.token");
         when(tokenProvider.generateRefreshToken()).thenReturn("mock_refresh_token");
         when(tokenProvider.hashToken(anyString())).thenReturn("hashed_refresh_token");
         when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
@@ -129,6 +155,7 @@ class AuthServiceTest {
         verify(organizationRepository).save(any(Organization.class));
         verify(workspaceRepository).save(any(Workspace.class));
         verify(membershipRepository).save(any(WorkspaceMembership.class));
+        verify(sessionService).createSession(eq(userId), eq(AuthMethod.PASSWORD), any(), any(), any());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
@@ -141,10 +168,11 @@ class AuthServiceTest {
         ApiException ex = assertThrows(ApiException.class, () -> authService.register(request));
         assertEquals("RESOURCE_CONFLICT", ex.getCode());
         verify(userRepository, never()).save(any());
+        verify(sessionService, never()).createSession(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should authenticate user and issue tokens when MFA is disabled")
+    @DisplayName("Should authenticate user, establish session, and issue tokens when MFA is disabled")
     void testLoginSuccessMfaDisabled() {
         LoginRequest request = new LoginRequest("alice@example.com", "Password123!");
 
@@ -153,7 +181,10 @@ class AuthServiceTest {
         when(mfaService.isMfaEnabled(userId)).thenReturn(false);
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
-        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("mock.jwt.token");
+        when(sessionService.createSession(eq(userId), eq(AuthMethod.PASSWORD), any(), any(), any()))
+                .thenReturn(testSession);
+        when(tokenProvider.generateAccessToken(eq(userId), eq("alice@example.com"), eq("Alice Vance"), eq("sess_test1234567890")))
+                .thenReturn("mock.jwt.token");
         when(tokenProvider.generateRefreshToken()).thenReturn("mock_refresh_token");
         when(tokenProvider.hashToken(anyString())).thenReturn("hashed_refresh_token");
         when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
@@ -165,10 +196,11 @@ class AuthServiceTest {
         assertNull(response.mfaChallengeId());
         assertEquals("mock.jwt.token", response.accessToken());
         assertEquals(testUser.getEmail(), response.user().email());
+        verify(sessionService).createSession(eq(userId), eq(AuthMethod.PASSWORD), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should return MFA challenge without issuing tokens when MFA is enabled")
+    @DisplayName("Should return MFA challenge without creating session or tokens when MFA is enabled")
     void testLoginSuccessMfaEnabled() {
         LoginRequest request = new LoginRequest("alice@example.com", "Password123!");
         Instant expiry = Instant.now().plusSeconds(300);
@@ -188,6 +220,7 @@ class AuthServiceTest {
         assertNull(response.refreshToken(), "Refresh token MUST NOT be issued prior to MFA verification");
         assertNull(response.user());
         assertNull(response.activeWorkspace());
+        verify(sessionService, never()).createSession(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -200,10 +233,11 @@ class AuthServiceTest {
 
         ApiException ex = assertThrows(ApiException.class, () -> authService.login(request));
         assertEquals("UNAUTHORIZED", ex.getCode());
+        verify(sessionService, never()).createSession(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should successfully complete MFA TOTP login and issue tokens")
+    @DisplayName("Should successfully complete MFA TOTP login, establish session, and issue tokens")
     void testCompleteMfaTotpLoginSuccess() {
         MfaTotpVerifyRequest request = new MfaTotpVerifyRequest("challenge-123", "123456");
 
@@ -212,7 +246,10 @@ class AuthServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
-        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("mfa.jwt.token");
+        when(sessionService.createSession(eq(userId), eq(AuthMethod.PASSWORD_MFA_TOTP), any(), any(), any()))
+                .thenReturn(testSession);
+        when(tokenProvider.generateAccessToken(eq(userId), eq("alice@example.com"), eq("Alice Vance"), eq("sess_test1234567890")))
+                .thenReturn("mfa.jwt.token");
         when(tokenProvider.generateRefreshToken()).thenReturn("mfa_refresh_token");
         when(tokenProvider.hashToken(anyString())).thenReturn("hashed_mfa_refresh_token");
         when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
@@ -224,6 +261,7 @@ class AuthServiceTest {
         assertEquals("mfa.jwt.token", response.accessToken());
         assertEquals("mfa_refresh_token", response.refreshToken());
         assertEquals("alice@example.com", response.user().email());
+        verify(sessionService).createSession(eq(userId), eq(AuthMethod.PASSWORD_MFA_TOTP), any(), any(), any());
     }
 
     @Test
@@ -236,11 +274,12 @@ class AuthServiceTest {
 
         ApiException ex = assertThrows(ApiException.class, () -> authService.completeMfaTotpLogin(request));
         assertEquals("UNAUTHORIZED", ex.getCode());
-        verify(tokenProvider, never()).generateAccessToken(any(), any(), any());
+        verify(tokenProvider, never()).generateAccessToken(any(), any(), any(), any());
+        verify(sessionService, never()).createSession(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should successfully complete MFA recovery code login and issue tokens")
+    @DisplayName("Should successfully complete MFA recovery code login, establish session, and issue tokens")
     void testCompleteMfaRecoveryLoginSuccess() {
         MfaRecoveryVerifyRequest request = new MfaRecoveryVerifyRequest("challenge-123", "2345-6789-ABCD");
 
@@ -249,7 +288,10 @@ class AuthServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
-        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("recovery.jwt.token");
+        when(sessionService.createSession(eq(userId), eq(AuthMethod.PASSWORD_MFA_RECOVERY), any(), any(), any()))
+                .thenReturn(testSession);
+        when(tokenProvider.generateAccessToken(eq(userId), eq("alice@example.com"), eq("Alice Vance"), eq("sess_test1234567890")))
+                .thenReturn("recovery.jwt.token");
         when(tokenProvider.generateRefreshToken()).thenReturn("recovery_refresh_token");
         when(tokenProvider.hashToken(anyString())).thenReturn("hashed_recovery_refresh_token");
         when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
@@ -261,6 +303,7 @@ class AuthServiceTest {
         assertEquals("recovery.jwt.token", response.accessToken());
         assertEquals("recovery_refresh_token", response.refreshToken());
         assertEquals("alice@example.com", response.user().email());
+        verify(sessionService).createSession(eq(userId), eq(AuthMethod.PASSWORD_MFA_RECOVERY), any(), any(), any());
     }
 
     @Test
@@ -273,21 +316,26 @@ class AuthServiceTest {
 
         ApiException ex = assertThrows(ApiException.class, () -> authService.completeMfaRecoveryLogin(request));
         assertEquals("UNAUTHORIZED", ex.getCode());
-        verify(tokenProvider, never()).generateAccessToken(any(), any(), any());
+        verify(tokenProvider, never()).generateAccessToken(any(), any(), any(), any());
+        verify(sessionService, never()).createSession(any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Should rotate refresh token and issue new token pair")
+    @DisplayName("Should rotate refresh token, update session activity, and issue new token pair")
     void testRefreshTokenRotation() {
         RefreshTokenRequest request = new RefreshTokenRequest("valid_raw_refresh_token");
-        RefreshToken oldToken = new RefreshToken(userId, "hashed_old_token", Instant.now().plusSeconds(3600));
+        RefreshToken oldToken = new RefreshToken(userId, sessionId, "hashed_old_token", Instant.now().plusSeconds(3600));
 
         when(tokenProvider.hashToken("valid_raw_refresh_token")).thenReturn("hashed_old_token");
-        when(refreshTokenRepository.findByTokenHashAndRevokedFalse("hashed_old_token")).thenReturn(Optional.of(oldToken));
+        when(refreshTokenRepository.markRevokedIfActive("hashed_old_token")).thenReturn(1);
+        when(refreshTokenRepository.findByTokenHash("hashed_old_token")).thenReturn(Optional.of(oldToken));
+        when(sessionService.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(sessionService.recordSessionActivity(eq(sessionId), any(), any())).thenReturn(testSession);
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(testMembership));
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(testWorkspace));
-        when(tokenProvider.generateAccessToken(any(), any(), any())).thenReturn("new.jwt.token");
+        when(tokenProvider.generateAccessToken(eq(userId), eq("alice@example.com"), eq("Alice Vance"), eq("sess_test1234567890")))
+                .thenReturn("new.jwt.token");
         when(tokenProvider.generateRefreshToken()).thenReturn("new_raw_refresh_token");
         when(tokenProvider.hashToken("new_raw_refresh_token")).thenReturn("hashed_new_token");
         when(tokenProvider.getExpirationSeconds()).thenReturn(86400L);
@@ -297,6 +345,72 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("new.jwt.token", response.accessToken());
         assertEquals("new_raw_refresh_token", response.refreshToken());
-        assertTrue(oldToken.isRevoked(), "Old refresh token must be revoked upon rotation");
+        verify(sessionService).recordSessionActivity(eq(sessionId), any(), any());
+    }
+
+    @Test
+    @DisplayName("Should reject refresh when associated session is revoked")
+    void testRefreshRejectedWhenSessionRevoked() {
+        RefreshTokenRequest request = new RefreshTokenRequest("valid_raw_refresh_token");
+        RefreshToken token = new RefreshToken(userId, sessionId, "hashed_old_token", Instant.now().plusSeconds(3600));
+        testSession.revoke("USER_REVOKED");
+
+        when(tokenProvider.hashToken("valid_raw_refresh_token")).thenReturn("hashed_old_token");
+        when(refreshTokenRepository.markRevokedIfActive("hashed_old_token")).thenReturn(1);
+        when(refreshTokenRepository.findByTokenHash("hashed_old_token")).thenReturn(Optional.of(token));
+        when(sessionService.findById(sessionId)).thenReturn(Optional.of(testSession));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.refresh(request));
+        assertEquals("UNAUTHORIZED", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Should reject refresh when refresh token is already revoked (replay protection)")
+    void testRefreshReplayProtection() {
+        RefreshTokenRequest request = new RefreshTokenRequest("reused_raw_refresh_token");
+        RefreshToken revokedToken = new RefreshToken(userId, sessionId, "hashed_reused_token", Instant.now().plusSeconds(3600));
+        revokedToken.setRevoked(true);
+
+        when(tokenProvider.hashToken("reused_raw_refresh_token")).thenReturn("hashed_reused_token");
+        when(refreshTokenRepository.markRevokedIfActive("hashed_reused_token")).thenReturn(0);
+        when(refreshTokenRepository.findByTokenHash("hashed_reused_token")).thenReturn(Optional.of(revokedToken));
+        when(sessionService.findById(sessionId)).thenReturn(Optional.of(testSession));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.refresh(request));
+        assertEquals("UNAUTHORIZED", ex.getCode());
+        verify(sessionService).revokeSession(eq(userId), eq("sess_test1234567890"));
+    }
+
+    @Test
+    @DisplayName("Should reject refresh when user account is deactivated or suspended")
+    void testRefreshDisabledAccount() {
+        RefreshTokenRequest request = new RefreshTokenRequest("valid_raw_refresh_token");
+        RefreshToken token = new RefreshToken(userId, sessionId, "hashed_old_token", Instant.now().plusSeconds(3600));
+        testUser.setStatus(UserStatus.SUSPENDED);
+
+        when(tokenProvider.hashToken("valid_raw_refresh_token")).thenReturn("hashed_old_token");
+        when(refreshTokenRepository.markRevokedIfActive("hashed_old_token")).thenReturn(1);
+        when(refreshTokenRepository.findByTokenHash("hashed_old_token")).thenReturn(Optional.of(token));
+        when(sessionService.findById(sessionId)).thenReturn(Optional.of(testSession));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        ApiException ex = assertThrows(ApiException.class, () -> authService.refresh(request));
+        assertEquals("FORBIDDEN", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Should delegate logout with sessionIdentifier to SessionService")
+    void testLogoutWithSession() {
+        authService.logout(userId, "sess_test1234567890");
+        verify(sessionService).revokeSession(userId, "sess_test1234567890");
+        verify(sessionService, never()).revokeAllSessions(any());
+    }
+
+    @Test
+    @DisplayName("Should delegate global logout without sessionIdentifier to SessionService")
+    void testLogoutGlobal() {
+        authService.logout(userId, null);
+        verify(sessionService).revokeAllSessions(userId);
+        verify(sessionService, never()).revokeSession(any(), any());
     }
 }
