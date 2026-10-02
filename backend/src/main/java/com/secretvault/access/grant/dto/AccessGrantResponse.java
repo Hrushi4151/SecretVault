@@ -34,6 +34,7 @@ public record AccessGrantResponse(
             String environmentName,
             String secretKey
     ) {
+        String code = grant.getPermission() != null ? grant.getPermission().getCode() : null;
         return new AccessGrantResponse(
                 grant.getId(),
                 grant.getWorkspaceId(),
@@ -48,7 +49,7 @@ public record AccessGrantResponse(
                 grant.getSecretId(),
                 secretKey,
                 grant.getPermission(),
-                grant.getPermission().getCode(),
+                code,
                 grant.getGrantedBy(),
                 grant.getCreatedAt(),
                 grant.getUpdatedAt()

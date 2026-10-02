@@ -46,6 +46,7 @@ public record MemberAccessOverviewResponse(
             String name,
             EnvType envType,
             boolean isProduction,
+            boolean isProtected,
             PermissionLevel environmentPermission,
             PermissionLevel effectivePermission
     ) {}
