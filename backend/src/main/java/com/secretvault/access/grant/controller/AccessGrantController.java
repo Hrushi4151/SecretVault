@@ -84,13 +84,15 @@ public class AccessGrantController {
     @GetMapping("/effective")
     public ResponseEntity<ApiResponse<List<EffectiveAccessExplanation>>> getEffectivePermissions(
             @PathVariable UUID workspaceId,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) UUID projectId,
             @RequestParam(required = false) UUID environmentId,
             @RequestParam(required = false) UUID secretId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
+        UUID targetUserId = (userId != null) ? userId : principal.getId();
         List<EffectiveAccessExplanation> explanations = effectiveAccessService.explainAccess(
-                workspaceId, projectId, environmentId, secretId, principal.getId()
+                workspaceId, projectId, environmentId, secretId, targetUserId
         );
         return ResponseEntity.ok(ApiResponse.success(explanations));
     }

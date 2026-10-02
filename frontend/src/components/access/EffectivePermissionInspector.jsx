@@ -16,7 +16,7 @@ import {
   Layers
 } from 'lucide-react';
 
-export const EffectivePermissionInspector = ({ workspaceId }) => {
+export const EffectivePermissionInspector = ({ workspaceId, userId = null }) => {
   const [projects, setProjects] = useState([]);
   const [environments, setEnvironments] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -30,7 +30,7 @@ export const EffectivePermissionInspector = ({ workspaceId }) => {
     if (workspaceId) {
       loadProjects();
     }
-  }, [workspaceId]);
+  }, [workspaceId, userId]);
 
   const loadProjects = async () => {
     try {
@@ -66,12 +66,14 @@ export const EffectivePermissionInspector = ({ workspaceId }) => {
       setIsLoading(true);
       setErrorMessage(null);
       const res = await accessApi.getEffectivePermissions(workspaceId, {
+        userId: userId || undefined,
         projectId: pId || undefined,
         environmentId: eId || undefined
       });
-      setExplanations(res.data?.data || res.data || []);
+      const data = res?.data?.data || res?.data || res || [];
+      setExplanations(Array.isArray(data) ? data : []);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to evaluate effective permissions');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to evaluate effective permissions');
     } finally {
       setIsLoading(false);
     }

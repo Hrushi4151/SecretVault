@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.secretvault.audit.entity.AuditAction;
+import com.secretvault.audit.service.AuditService;
+
 /**
  * Service managing workspace lifecycle, multi-tenant workspace isolation,
  * membership administration, and role-based access control.
@@ -35,14 +38,25 @@ public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMembershipRepository membershipRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     public WorkspaceService(
             WorkspaceRepository workspaceRepository,
             WorkspaceMembershipRepository membershipRepository,
             UserRepository userRepository) {
+        this(workspaceRepository, membershipRepository, userRepository, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkspaceService(
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            UserRepository userRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) AuditService auditService) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
         this.userRepository = userRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -298,6 +312,21 @@ public class WorkspaceService {
         if (StringUtils.hasText(request.name())) {
             workspace.setName(request.name().trim());
             workspace = workspaceRepository.save(workspace);
+        }
+
+        if (auditService != null) {
+            auditService.recordAudit(
+                    workspace.getOrganizationId(),
+                    workspaceId,
+                    actorUserId,
+                    "USER",
+                    AuditAction.WORKSPACE_SETTINGS_UPDATED,
+                    "WORKSPACE",
+                    workspaceId,
+                    null,
+                    null,
+                    "SUCCESS"
+            );
         }
 
         log.info("Updated workspace settings for [{}] by actor [{}]", workspaceId, actorUserId);

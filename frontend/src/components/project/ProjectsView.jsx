@@ -19,9 +19,10 @@ import {
   Sparkles,
   Key,
   ArrowRight,
+  Settings,
 } from 'lucide-react';
 
-export const ProjectsView = ({ onNavigateToSecrets }) => {
+export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings }) => {
   const { activeWorkspace } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -399,6 +400,19 @@ export const ProjectsView = ({ onNavigateToSecrets }) => {
                   </button>
 
                   <div className="flex items-center gap-2">
+                    {onNavigateToProjectSettings && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigateToProjectSettings(project.id);
+                        }}
+                        title="Project Settings"
+                        className="p-1.5 rounded-lg text-[#F4B5C8] hover:text-[#FF2D6D] hover:bg-[#3F0016] transition-colors border border-transparent hover:border-[#FF2D6D]/30"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => handleDeleteProject(project.id, e)}
                       disabled={deletingProjectId === project.id}

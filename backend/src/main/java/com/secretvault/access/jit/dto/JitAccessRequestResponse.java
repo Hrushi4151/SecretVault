@@ -46,6 +46,7 @@ public record JitAccessRequestResponse(
             String approverEmail
     ) {
         boolean active = request.isCurrentlyActive();
+        String code = request.getRequestedPermission() != null ? request.getRequestedPermission().getCode() : null;
         return new JitAccessRequestResponse(
                 request.getId(),
                 request.getWorkspaceId(),
@@ -60,7 +61,7 @@ public record JitAccessRequestResponse(
                 request.getSecretId(),
                 secretKey,
                 request.getRequestedPermission(),
-                request.getRequestedPermission().getCode(),
+                code,
                 request.getDurationMinutes(),
                 request.getReason(),
                 request.getStatus(),

@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import com.secretvault.access.jit.entity.JitStatus;
 
 /**
  * Authoritative, centralized authorization decision engine for SecretVault.
@@ -206,6 +208,26 @@ public class EffectiveAccessService {
         // 7. Compute Effective Standing RBAC Hierarchy
         WorkspaceRole effProjectRole = null;
         if (projectId != null) {
+            if (wsRole != WorkspaceRole.OWNER && wsRole != WorkspaceRole.ADMIN) {
+                if (!isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+                    // Actor has no standing authorization for this project.
+                    // Still evaluate granular grants or active JIT elevations if any exist specifically for this resource target.
+                    AccessDecision granularDecision = evaluateGranularGrantExtension(
+                            workspaceId, projectId, environmentId, secretId, permission, userId
+                    );
+                    if (granularDecision != null && granularDecision.allowed()) {
+                        return granularDecision;
+                    }
+                    AccessDecision jitDecision = evaluateJitGrantExtension(
+                            workspaceId, projectId, environmentId, secretId, permission, userId
+                    );
+                    if (jitDecision != null && jitDecision.allowed()) {
+                        return jitDecision;
+                    }
+                    return AccessDecision.deny(permission, AccessScope.PROJECT, "You are not authorized to access this project");
+                }
+            }
+
             Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
             effProjectRole = ProjectAccessService.computeEffectiveRole(
                     wsRole,
@@ -638,5 +660,107 @@ public class EffectiveAccessService {
             }
         }
         return null;
+    }
+
+    /**
+     * Determines whether a user has authorized access or involvement in a project.
+     * Evaluates:
+     * 1. Full workspace administrators (OWNER, ADMIN) -> always true.
+     * 2. Explicit ProjectAccess record on project -> true.
+     * 3. Explicit EnvironmentAccess record on any environment in project -> true.
+     * 4. Granular AccessGrant scoped to project or any of its environments -> true.
+     * 5. Active unexpired JIT access request for project or any of its environments -> true.
+     * 6. If user has any scoped access records elsewhere in this workspace -> false (unassigned project).
+     * 7. Standing unrestricted workspace member with no scoped assignments in workspace -> true.
+     */
+    public boolean isUserAuthorizedForProject(UUID workspaceId, Project project, WorkspaceMembership membership, UUID userId) {
+        WorkspaceRole wsRole = membership.getRole();
+        if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN) {
+            return true;
+        }
+
+        UUID projectId = project.getId();
+
+        // 1. Explicit ProjectAccess
+        if (projectAccessRepository != null) {
+            Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
+            if (projAccess.isPresent() && projAccess.get().getRole() != null) {
+                return true;
+            }
+        }
+
+        // 2. Explicit EnvironmentAccess on any project environment
+        List<Environment> projectEnvironments = environmentRepository.findByProjectId(projectId);
+        List<UUID> projectEnvIds = projectEnvironments.stream().map(Environment::getId).toList();
+
+        if (environmentAccessRepository != null && !projectEnvIds.isEmpty()) {
+            List<EnvironmentAccess> userEnvAccesses = environmentAccessRepository.findByUserId(userId);
+            boolean hasEnvAccess = userEnvAccesses.stream()
+                    .anyMatch(ea -> projectEnvIds.contains(ea.getEnvironmentId()) && ea.getPermissionLevel() != null);
+            if (hasEnvAccess) {
+                return true;
+            }
+        }
+
+        // 3. Granular AccessGrants
+        if (accessGrantRepository != null) {
+            List<AccessGrant> userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            boolean hasProjectGrant = userGrants.stream().anyMatch(g ->
+                    (g.getProjectId() != null && g.getProjectId().equals(projectId)) ||
+                    (g.getEnvironmentId() != null && projectEnvIds.contains(g.getEnvironmentId()))
+            );
+            if (hasProjectGrant) {
+                return true;
+            }
+        }
+
+        // 4. Active unexpired JIT grant
+        if (jitRepository != null) {
+            List<JitAccessRequest> userJits = jitRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            Instant now = clock.instant();
+            boolean hasActiveJit = userJits.stream().anyMatch(j ->
+                    j.getStatus() == JitStatus.APPROVED &&
+                    j.getExpiresAt() != null && j.getExpiresAt().isAfter(now) &&
+                    ((j.getProjectId() != null && j.getProjectId().equals(projectId)) ||
+                     (j.getEnvironmentId() != null && projectEnvIds.contains(j.getEnvironmentId())))
+            );
+            if (hasActiveJit) {
+                return true;
+            }
+        }
+
+        // 5. Scoped check: if user has any scoped records in this workspace, unassigned projects are false
+        if (hasAnyScopedAccessInWorkspace(workspaceId, userId)) {
+            return false;
+        }
+
+        // 6. Standing unrestricted member
+        return true;
+    }
+
+    public boolean hasAnyScopedAccessInWorkspace(UUID workspaceId, UUID userId) {
+        if (projectAccessRepository != null) {
+            List<ProjectAccess> userProjAccesses = projectAccessRepository.findByUserId(userId);
+            List<Project> wsProjects = projectRepository.findByWorkspaceId(workspaceId);
+            Set<UUID> wsProjIds = wsProjects.stream().map(Project::getId).collect(Collectors.toSet());
+            boolean hasProjInWs = userProjAccesses.stream().anyMatch(pa -> wsProjIds.contains(pa.getProjectId()));
+            if (hasProjInWs) return true;
+
+            if (environmentAccessRepository != null) {
+                List<EnvironmentAccess> userEnvAccesses = environmentAccessRepository.findByUserId(userId);
+                List<UUID> wsEnvIds = new ArrayList<>();
+                for (Project p : wsProjects) {
+                    wsEnvIds.addAll(environmentRepository.findByProjectId(p.getId()).stream().map(Environment::getId).toList());
+                }
+                boolean hasEnvInWs = userEnvAccesses.stream().anyMatch(ea -> wsEnvIds.contains(ea.getEnvironmentId()));
+                if (hasEnvInWs) return true;
+            }
+
+            if (accessGrantRepository != null) {
+                List<AccessGrant> userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+                if (!userGrants.isEmpty()) return true;
+            }
+        }
+        return false;
     }
 }

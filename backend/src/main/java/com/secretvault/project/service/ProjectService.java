@@ -1,9 +1,19 @@
 package com.secretvault.project.service;
 
+import com.secretvault.access.grant.entity.AccessGrant;
+import com.secretvault.access.grant.repository.AccessGrantRepository;
+import com.secretvault.access.jit.entity.JitAccessRequest;
+import com.secretvault.access.jit.entity.JitStatus;
+import com.secretvault.access.jit.repository.JitAccessRequestRepository;
+import com.secretvault.access.service.EffectiveAccessService;
 import com.secretvault.common.exception.ApiException;
+import com.secretvault.environment.access.entity.EnvironmentAccess;
+import com.secretvault.environment.access.repository.EnvironmentAccessRepository;
 import com.secretvault.environment.entity.EnvType;
 import com.secretvault.environment.entity.Environment;
 import com.secretvault.environment.repository.EnvironmentRepository;
+import com.secretvault.project.access.entity.ProjectAccess;
+import com.secretvault.project.access.repository.ProjectAccessRepository;
 import com.secretvault.project.dto.CreateProjectRequest;
 import com.secretvault.project.dto.EnvironmentSummaryResponse;
 import com.secretvault.project.dto.ProjectResponse;
@@ -12,6 +22,7 @@ import com.secretvault.project.entity.Project;
 import com.secretvault.project.entity.ProjectStatus;
 import com.secretvault.project.repository.ProjectRepository;
 import com.secretvault.workspace.entity.WorkspaceMembership;
+import com.secretvault.workspace.entity.WorkspaceRole;
 import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
 import org.slf4j.Logger;
@@ -20,10 +31,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service managing Project lifecycle, hierarchy validation,
@@ -38,29 +53,75 @@ public class ProjectService {
     private final EnvironmentRepository environmentRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMembershipRepository membershipRepository;
+    private final ProjectAccessRepository projectAccessRepository;
+    private final EnvironmentAccessRepository environmentAccessRepository;
+    private final AccessGrantRepository accessGrantRepository;
+    private final JitAccessRequestRepository jitRepository;
+    private final EffectiveAccessService effectiveAccessService;
 
     public ProjectService(
             ProjectRepository projectRepository,
             EnvironmentRepository environmentRepository,
             WorkspaceRepository workspaceRepository,
-            WorkspaceMembershipRepository membershipRepository) {
+            WorkspaceMembershipRepository membershipRepository
+    ) {
+        this(projectRepository, environmentRepository, workspaceRepository, membershipRepository,
+             null, null, null, null, null);
+    }
+
+    public ProjectService(
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            ProjectAccessRepository projectAccessRepository,
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository
+    ) {
+        this(projectRepository, environmentRepository, workspaceRepository, membershipRepository,
+             projectAccessRepository, environmentAccessRepository, accessGrantRepository, jitRepository, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ProjectService(
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectAccessRepository projectAccessRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) EnvironmentAccessRepository environmentAccessRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) AccessGrantRepository accessGrantRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) JitAccessRequestRepository jitRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) EffectiveAccessService effectiveAccessService
+    ) {
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
+        this.projectAccessRepository = projectAccessRepository;
+        this.environmentAccessRepository = environmentAccessRepository;
+        this.accessGrantRepository = accessGrantRepository;
+        this.jitRepository = jitRepository;
+        this.effectiveAccessService = effectiveAccessService;
     }
 
     /**
      * Lists all projects within a workspace accessible to the authenticated member.
+     * Evaluates server-side project authorization so unassigned/unauthorized projects are not exposed.
      */
     @Transactional(readOnly = true)
     public List<ProjectResponse> getProjects(UUID workspaceId, UUID userId) {
-        verifyWorkspaceAccess(workspaceId, userId);
+        WorkspaceMembership membership = verifyWorkspaceAccess(workspaceId, userId);
 
         List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
         List<ProjectResponse> responses = new ArrayList<>();
 
         for (Project project : projects) {
+            if (!isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+                continue;
+            }
+
             List<EnvironmentSummaryResponse> envs = environmentRepository.findByProjectId(project.getId())
                     .stream()
                     .map(EnvironmentSummaryResponse::fromEntity)
@@ -73,13 +134,18 @@ public class ProjectService {
 
     /**
      * Retrieves details for a specific project within a workspace.
+     * Enforces IDOR protection by rejecting requests for unauthorized projects.
      */
     @Transactional(readOnly = true)
     public ProjectResponse getProjectById(UUID workspaceId, UUID projectId, UUID userId) {
-        verifyWorkspaceAccess(workspaceId, userId);
+        WorkspaceMembership membership = verifyWorkspaceAccess(workspaceId, userId);
 
         Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Project not found in this workspace"));
+
+        if (!isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+            throw ApiException.forbidden("You are not authorized to access this project");
+        }
 
         List<EnvironmentSummaryResponse> envs = environmentRepository.findByProjectId(project.getId())
                 .stream()
@@ -87,6 +153,112 @@ public class ProjectService {
                 .toList();
 
         return ProjectResponse.fromEntity(project, envs);
+    }
+
+    /**
+     * Evaluates whether a user has authorized access or involvement in a project.
+     */
+    public boolean isUserAuthorizedForProject(
+            UUID workspaceId,
+            Project project,
+            WorkspaceMembership membership,
+            UUID userId
+    ) {
+        if (effectiveAccessService != null) {
+            return effectiveAccessService.isUserAuthorizedForProject(workspaceId, project, membership, userId);
+        }
+
+        WorkspaceRole wsRole = membership.getRole();
+        if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN) {
+            return true;
+        }
+
+        UUID projectId = project.getId();
+
+        // 1. Check explicit ProjectAccess
+        if (projectAccessRepository != null) {
+            Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
+            if (projAccess.isPresent() && projAccess.get().getRole() != null) {
+                return true;
+            }
+        }
+
+        // 2. Check explicit EnvironmentAccess on any of this project's environments
+        List<Environment> projectEnvironments = environmentRepository.findByProjectId(projectId);
+        List<UUID> projectEnvIds = projectEnvironments.stream().map(Environment::getId).toList();
+
+        if (environmentAccessRepository != null && !projectEnvIds.isEmpty()) {
+            List<EnvironmentAccess> userEnvAccesses = environmentAccessRepository.findByUserId(userId);
+            boolean hasEnvAccess = userEnvAccesses.stream()
+                    .anyMatch(ea -> projectEnvIds.contains(ea.getEnvironmentId()) && ea.getPermissionLevel() != null);
+            if (hasEnvAccess) {
+                return true;
+            }
+        }
+
+        // 3. Check Granular AccessGrants
+        if (accessGrantRepository != null) {
+            List<AccessGrant> userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            boolean hasProjectGrant = userGrants.stream().anyMatch(g ->
+                    (g.getProjectId() != null && g.getProjectId().equals(projectId)) ||
+                    (g.getEnvironmentId() != null && projectEnvIds.contains(g.getEnvironmentId()))
+            );
+            if (hasProjectGrant) {
+                return true;
+            }
+        }
+
+        // 4. Check active unexpired JIT access requests
+        if (jitRepository != null) {
+            List<JitAccessRequest> userJits = jitRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            Instant now = Instant.now();
+            boolean hasActiveJit = userJits.stream().anyMatch(j ->
+                    j.getStatus() == JitStatus.APPROVED &&
+                    j.getExpiresAt() != null && j.getExpiresAt().isAfter(now) &&
+                    ((j.getProjectId() != null && j.getProjectId().equals(projectId)) ||
+                     (j.getEnvironmentId() != null && projectEnvIds.contains(j.getEnvironmentId())))
+            );
+            if (hasActiveJit) {
+                return true;
+            }
+        }
+
+        // 5. Check if user has ANY scoped access records in this workspace.
+        // If user has scoped records on other projects/environments in this workspace,
+        // then access is constrained to only authorized targets (this project is unassigned -> false).
+        boolean hasAnyScopedRecordsInWorkspace = hasAnyScopedAccessInWorkspace(workspaceId, userId);
+        if (hasAnyScopedRecordsInWorkspace) {
+            return false;
+        }
+
+        // 6. Default fallback: Unrestricted standing member has default access
+        return true;
+    }
+
+    private boolean hasAnyScopedAccessInWorkspace(UUID workspaceId, UUID userId) {
+        if (projectAccessRepository != null) {
+            List<ProjectAccess> userProjAccesses = projectAccessRepository.findByUserId(userId);
+            List<Project> wsProjects = projectRepository.findByWorkspaceId(workspaceId);
+            Set<UUID> wsProjIds = wsProjects.stream().map(Project::getId).collect(Collectors.toSet());
+            boolean hasProjInWs = userProjAccesses.stream().anyMatch(pa -> wsProjIds.contains(pa.getProjectId()));
+            if (hasProjInWs) return true;
+
+            if (environmentAccessRepository != null) {
+                List<EnvironmentAccess> userEnvAccesses = environmentAccessRepository.findByUserId(userId);
+                List<UUID> wsEnvIds = new ArrayList<>();
+                for (Project p : wsProjects) {
+                    wsEnvIds.addAll(environmentRepository.findByProjectId(p.getId()).stream().map(Environment::getId).toList());
+                }
+                boolean hasEnvInWs = userEnvAccesses.stream().anyMatch(ea -> wsEnvIds.contains(ea.getEnvironmentId()));
+                if (hasEnvInWs) return true;
+            }
+
+            if (accessGrantRepository != null) {
+                List<AccessGrant> userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+                if (!userGrants.isEmpty()) return true;
+            }
+        }
+        return false;
     }
 
     /**

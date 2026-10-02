@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { workspaceApi } from '../../api/workspaces';
 import { WorkspaceSwitcher } from '../workspace/WorkspaceSwitcher';
 import { WorkspaceMembersDialog } from '../workspace/WorkspaceMembersDialog';
+import { PendingInvitationsDialog } from '../workspace/PendingInvitationsDialog';
 import {
   Shield,
   ShieldCheck,
@@ -20,13 +22,32 @@ import {
   X,
   Lock,
   Sparkles,
+  MailCheck,
 } from 'lucide-react';
 
 export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => {
-  const { user, activeWorkspace, logout } = useAuth();
+  const { user, activeWorkspace, logout, refreshWorkspaces, switchWorkspace } = useAuth();
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+  const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  const fetchInvitationsCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await workspaceApi.getMyInvitations();
+      setPendingInvitationsCount(data?.items?.length || 0);
+    } catch (err) {
+      // Ignore background poll errors
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchInvitationsCount();
+    const interval = setInterval(fetchInvitationsCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchInvitationsCount]);
 
   const getInitials = (name, email) => {
     if (name && name.trim().length > 0) {
@@ -61,8 +82,25 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
   ];
 
   const orgNavItems = [
-    { label: 'Team', icon: <Users className="w-4 h-4" />, active: false, action: () => setIsMembersModalOpen(true) },
-    { label: 'Settings', icon: <FolderGit2 className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    {
+      id: 'team',
+      label: 'Team Members',
+      icon: <Users className="w-4 h-4" />,
+      action: () => setIsMembersModalOpen(true),
+    },
+    {
+      id: 'invitations',
+      label: 'Invitations',
+      icon: <MailCheck className="w-4 h-4 text-[#FF2D6D]" />,
+      badge: pendingInvitationsCount > 0 ? `${pendingInvitationsCount} New` : null,
+      action: () => setIsInvitationsModalOpen(true),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <FolderGit2 className="w-4 h-4 text-[#FF85A2]" />,
+      action: () => onSelectTab && onSelectTab('settings'),
+    },
   ];
 
   return (
@@ -76,6 +114,19 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
           <span className="font-headline font-bold text-sm text-white">SecretVault</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsInvitationsModalOpen(true)}
+            className="relative p-2 rounded-xl bg-[#30000F] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15"
+            title="Pending Invitations"
+          >
+            <Bell className="w-4 h-4" />
+            {pendingInvitationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#FF2D6D] text-[9px] font-bold text-white flex items-center justify-center shadow-md animate-pulse">
+                {pendingInvitationsCount}
+              </span>
+            )}
+          </button>
           <WorkspaceSwitcher onOpenMembers={() => setIsMembersModalOpen(true)} />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -204,24 +255,33 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
                 Organization
               </span>
               <div className="flex flex-col gap-1">
-                {orgNavItems.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={item.action}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all text-left"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[#F4B5C8]">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {orgNavItems.map((item) => {
+                  const isActive = item.id === activeTab;
+                  return (
+                    <button
+                      key={item.id || item.label}
+                      type="button"
+                      onClick={item.action}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all text-left cursor-pointer ${
+                        isActive
+                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
+                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </nav>
@@ -290,11 +350,16 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
 
             <button
               type="button"
-              className="relative p-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all border border-transparent hover:border-[#FFB4C8]/20"
-              title="Notifications"
+              onClick={() => setIsInvitationsModalOpen(true)}
+              className="relative p-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all border border-transparent hover:border-[#FFB4C8]/20 cursor-pointer"
+              title="Notifications & Invitations"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF2D6D]" />
+              {pendingInvitationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#FF2D6D] text-[9px] font-bold text-white flex items-center justify-center shadow-md animate-pulse">
+                  {pendingInvitationsCount}
+                </span>
+              )}
             </button>
 
             <div className="relative">
@@ -309,7 +374,7 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
               </button>
 
               {isProfileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#30000F]/95 border border-[#FFB4C8]/25 p-2 shadow-2xl backdrop-blur-2xl z-50 text-xs flex flex-col gap-1 animate-scale-in">
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#30000F]/95 border border-[#FFB4C8]/25 p-2 shadow-2xl backdrop-blur-2xl z-50 text-xs flex flex-col gap-1 animate-scale-in">
                   <div className="px-3 py-2 border-b border-[#FFB4C8]/15 flex flex-col">
                     <span className="font-semibold text-white">{user?.fullName}</span>
                     <span className="text-[10px] font-mono text-[#A26377] truncate">
@@ -320,12 +385,41 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
+                      setIsInvitationsModalOpen(true);
+                    }}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MailCheck className="w-4 h-4 text-[#FF2D6D]" />
+                      <span>Pending Invitations</span>
+                    </div>
+                    {pendingInvitationsCount > 0 && (
+                      <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-[#FF2D6D] text-white">
+                        {pendingInvitationsCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
                       setIsMembersModalOpen(true);
                     }}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] transition-colors text-left"
                   >
                     <Users className="w-4 h-4 text-[#FF2D6D]" />
                     <span>Manage Workspace Members</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onSelectTab && onSelectTab('settings');
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] transition-colors text-left"
+                  >
+                    <FolderGit2 className="w-4 h-4 text-[#FF85A2]" />
+                    <span>Workspace &amp; Project Settings</span>
                   </button>
 
                   <button
@@ -353,6 +447,21 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
       <WorkspaceMembersDialog
         isOpen={isMembersModalOpen}
         onClose={() => setIsMembersModalOpen(false)}
+      />
+
+      <PendingInvitationsDialog
+        isOpen={isInvitationsModalOpen}
+        onClose={() => {
+          setIsInvitationsModalOpen(false);
+          fetchInvitationsCount();
+        }}
+        onInvitationAccepted={async (inv) => {
+          await fetchInvitationsCount();
+          await refreshWorkspaces();
+          if (inv?.workspaceId) {
+            switchWorkspace(inv.workspaceId);
+          }
+        }}
       />
     </div>
   );
