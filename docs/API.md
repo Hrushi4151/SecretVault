@@ -253,6 +253,48 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
 - `POST /api/v1/workspaces/{wId}/security/events` — Ingest sanitized security telemetry event.
 - `GET /api/v1/workspaces/{wId}/security/events` — Paginated and filterable security event audit log.
 
+### 4.13 Provider Integrations & Deployment Synchronization (Phase 7) [IMPLEMENTED]
+
+- `POST /api/v1/workspaces/{wId}/integrations` — Register and validate a new cloud/platform provider integration (`VERCEL`, `RENDER`).
+  - **Request Body:**
+    ```json
+    {
+      "providerType": "VERCEL",
+      "displayName": "Vercel Production Team",
+      "credential": "vcp_1234567890abcdef...",
+      "configuration": "{\"teamId\":\"team_abc\"}"
+    }
+    ```
+  - **Response (201 Created):** `ProviderIntegrationResponse` with `redactedCredentialHint` (e.g. `"••••••••••••cdef"`, zero plaintext credentials returned).
+- `GET /api/v1/workspaces/{wId}/integrations` — List all registered provider integrations in workspace.
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}` — Get integration details and connection status.
+- `PATCH /api/v1/workspaces/{wId}/integrations/{integrationId}` — Update integration configuration, display name, status, or atomically rotate credentials.
+- `DELETE /api/v1/workspaces/{wId}/integrations/{integrationId}` — Remove integration and cascade delete associated resource mappings.
+- `POST /api/v1/workspaces/{wId}/integrations/{integrationId}/validate` — Trigger active connection and credential validation handshake with provider API.
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/capabilities` — Retrieve supported capabilities for provider (`WRITE_SECRETS`, `LIST_PROJECTS`, etc.).
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/resources` — Discover available remote projects/services in provider account.
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/resources/{resourceId}/environments` — Discover available deployment environments for a provider resource.
+- `POST /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings` — Map SecretVault Project & Environment to Provider Resource & Target Environment.
+  - **Request Body:**
+    ```json
+    {
+      "projectId": "11111111-1111-1111-1111-111111111111",
+      "environmentId": "22222222-2222-2222-2222-222222222222",
+      "providerResourceType": "PROJECT",
+      "providerResourceId": "prj_xyz123",
+      "providerResourceName": "my-web-app",
+      "providerEnvironment": "production",
+      "autoSyncOnSecretChange": false
+    }
+    ```
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings` — List mappings for an integration.
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}` — Get resource mapping details.
+- `PATCH /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}` — Update resource mapping settings.
+- `DELETE /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}` — Remove resource mapping.
+- `POST /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}/secrets/{secretId}/push` — Decrypt in memory and push secret to provider.
+- `DELETE /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}/secrets/{secretId}` — Delete secret from remote provider.
+- `GET /api/v1/workspaces/{wId}/integrations/{integrationId}/mappings/{mappingId}/secrets` — List remote provider secret metadata (no plaintext values).
+
 ---
 
 ## 5. Pagination, Sorting & Filtering

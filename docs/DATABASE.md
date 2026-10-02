@@ -28,6 +28,7 @@
 - `V6__versioning_branching_and_promotion_schema.sql` — `secret_branches`, `secret_version_tags`, and lineage/branching foreign keys on `secret_versions` for version control and cross-environment promotion
 - `V7__access_control_and_jit_schema.sql` — `access_grants`, `jit_access_requests`, `access_review_campaigns`, and `access_review_items` for granular access control, dual-custody JIT elevation, and periodic certification campaigns
 - `V8__security_intelligence_schema.sql` — `security_events` and `security_findings` tables with deterministic fingerprint unique constraints and tenant-scoped indexes for threat detection and posture management
+- `V9__provider_integrations_schema.sql` — `provider_integrations` and `provider_resource_mappings` tables for external deployment platform integrations, encrypted credential storage, and tenant-scoped resource/environment mappings.
 
 
 ---
@@ -283,6 +284,42 @@ Deduplicated, fingerprinted security risk and access vulnerability inventory.
 - `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
 - Constraints: `uq_sec_findings_ws_fp UNIQUE (workspace_id, fingerprint)`
 - Indexes: `idx_sec_findings_ws_status (workspace_id, status)`, `idx_sec_findings_ws_sev (workspace_id, severity)`
+
+### 4.8 `provider_integrations` Table [IMPLEMENTED]
+Encrypted provider connections and platform metadata per workspace.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)` ON DELETE CASCADE)
+- `provider_type` (VARCHAR(32) NOT NULL, `VERCEL` | `RENDER`)
+- `display_name` (VARCHAR(100) NOT NULL)
+- `status` (VARCHAR(32) NOT NULL, `ACTIVE` | `DISABLED` | `ERROR` | `VALIDATING` | `REVOKED`)
+- `configuration` (TEXT, provider non-sensitive JSON payload)
+- `encrypted_credential_ref` (TEXT NOT NULL, AES-256-GCM encrypted JSON payload)
+- `redacted_credential_hint` (VARCHAR(64), masked display hint)
+- `created_by` (UUID NOT NULL, FK -> `users(id)`)
+- `last_validated_at` (TIMESTAMPTZ)
+- `last_error_at` (TIMESTAMPTZ)
+- `last_error_code` (VARCHAR(64))
+- `metadata` (TEXT, extensible JSON metadata)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- Constraints: `uq_provider_integrations_ws_name UNIQUE (workspace_id, display_name)`
+- Indexes: `idx_provider_int_ws (workspace_id)`, `idx_provider_int_ws_type (workspace_id, provider_type)`, `idx_provider_int_status (status)`
+
+### 4.9 `provider_resource_mappings` Table [IMPLEMENTED]
+Tenant-isolated linkages between SecretVault environments and external cloud resources.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)` ON DELETE CASCADE)
+- `integration_id` (UUID NOT NULL, FK -> `provider_integrations(id)` ON DELETE CASCADE)
+- `project_id` (UUID NOT NULL, FK -> `projects(id)` ON DELETE CASCADE)
+- `environment_id` (UUID NOT NULL, FK -> `environments(id)` ON DELETE CASCADE)
+- `provider_resource_type` (VARCHAR(64) NOT NULL, `PROJECT` | `SERVICE`)
+- `provider_resource_id` (VARCHAR(255) NOT NULL, external provider resource ID)
+- `provider_resource_name` (VARCHAR(255) NOT NULL, external display name)
+- `provider_environment` (VARCHAR(64) NOT NULL, external deployment tier)
+- `auto_sync_on_secret_change` (BOOLEAN NOT NULL DEFAULT FALSE)
+- `metadata` (TEXT, adapter-specific JSON)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- Constraints: `uq_prm_int_env UNIQUE (integration_id, environment_id)`
+- Indexes: `idx_prm_ws (workspace_id)`, `idx_prm_int (integration_id)`, `idx_prm_proj_env (project_id, environment_id)`
 
 ---
 
