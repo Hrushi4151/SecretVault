@@ -54,7 +54,7 @@ public class DormantPrivilegedAccessRule implements SecurityDetectionRule {
         for (WorkspaceMembership member : members) {
             if (member.getRole() == WorkspaceRole.OWNER || member.getRole() == WorkspaceRole.ADMIN) {
                 // If member was created more than 30 days ago
-                if (member.getCreatedAt().isBefore(thirtyDaysAgo)) {
+                if (member.getCreatedAt() != null && member.getCreatedAt().isBefore(thirtyDaysAgo)) {
                     List<SecurityEvent> recentActivity = eventRepository.findByWorkspaceIdAndActorUserIdSince(
                             wsId, member.getUserId(), thirtyDaysAgo
                     );

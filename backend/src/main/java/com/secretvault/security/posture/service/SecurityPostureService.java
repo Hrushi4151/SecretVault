@@ -115,12 +115,12 @@ public class SecurityPostureService {
 
         Instant fourteenDaysAgo = Instant.now().minus(Duration.ofDays(14));
         long unusedGrants = grantRepository.findByWorkspaceId(workspaceId).stream()
-                .filter(g -> g.getCreatedAt().isBefore(fourteenDaysAgo))
+                .filter(g -> g.getCreatedAt() != null && g.getCreatedAt().isBefore(fourteenDaysAgo))
                 .count();
 
         Instant thirtyDaysAgo = Instant.now().minus(Duration.ofDays(30));
         long dormantPrivileged = members.stream()
-                .filter(m -> (m.getRole() == WorkspaceRole.OWNER || m.getRole() == WorkspaceRole.ADMIN) && m.getCreatedAt().isBefore(thirtyDaysAgo))
+                .filter(m -> (m.getRole() == WorkspaceRole.OWNER || m.getRole() == WorkspaceRole.ADMIN) && m.getCreatedAt() != null && m.getCreatedAt().isBefore(thirtyDaysAgo))
                 .filter(m -> eventRepository.findByWorkspaceIdAndActorUserIdSince(workspaceId, m.getUserId(), thirtyDaysAgo).isEmpty())
                 .count();
 

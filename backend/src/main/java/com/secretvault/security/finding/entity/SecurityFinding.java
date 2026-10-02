@@ -31,7 +31,7 @@ public class SecurityFinding {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @Column(name = "workspace_id", nullable = false)
     private UUID workspaceId;
@@ -140,6 +140,10 @@ public class SecurityFinding {
 
     public UUID getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public UUID getWorkspaceId() {

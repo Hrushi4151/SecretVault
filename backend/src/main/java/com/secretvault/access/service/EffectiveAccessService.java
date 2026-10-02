@@ -498,7 +498,7 @@ public class EffectiveAccessService {
                             "Workspace governance role authorizes security and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Security administration requires OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance and access administration require OWNER or ADMIN authority");
 
             case JIT_REQUEST:
             case SECURITY_VIEW:
