@@ -8,13 +8,15 @@ import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
 import { ProjectsView } from './components/project/ProjectsView';
 import { SecretsView } from './components/secrets/SecretsView';
 import { AccessControlCenterView } from './components/access/AccessControlCenterView';
+import { IntegrationsView } from './components/integrations/IntegrationsView';
+import { SyncCenterView } from './components/sync/SyncCenterView';
 import { SettingsView } from './components/settings/SettingsView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access' | 'settings'
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access' | 'integrations' | 'sync-center' | 'settings'
   const [targetProjectId, setTargetProjectId] = useState(null);
   const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
   const [settingsSection, setSettingsSection] = useState('workspace'); // 'workspace' | 'project' | 'profile'
@@ -84,6 +86,10 @@ const MainRouter = () => {
         />
       ) : currentTab === 'access' ? (
         <AccessControlCenterView />
+      ) : currentTab === 'integrations' ? (
+        <IntegrationsView />
+      ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
+        <SyncCenterView />
       ) : currentTab === 'settings' ? (
         <SettingsView
           initialSection={settingsSection}

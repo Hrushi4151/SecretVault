@@ -34,8 +34,7 @@ public interface ProviderIntegrationRepository extends JpaRepository<ProviderInt
         WHERE p.workspaceId = :workspaceId
           AND (:providerType IS NULL OR p.providerType = :providerType)
           AND (:status IS NULL OR p.status = :status)
-          AND (:search IS NULL OR LOWER(p.displayName) LIKE LOWER(CONCAT('%', :search, '%')))
-        ORDER BY p.createdAt DESC
+          AND (:search IS NULL OR LOWER(p.displayName) LIKE :search)
     """)
     Page<ProviderIntegration> searchIntegrations(
             @Param("workspaceId") UUID workspaceId,

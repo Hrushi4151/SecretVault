@@ -375,7 +375,7 @@ public class ProviderIntegrationService {
                 "createdAt",
                 org.springframework.data.domain.Sort.Direction.DESC
         );
-        String cleanSearch = search != null && !search.isBlank() ? search.trim() : null;
+        String cleanSearch = (search != null && !search.isBlank()) ? "%" + search.trim().toLowerCase() + "%" : null;
 
         return integrationRepository.searchIntegrations(workspaceId, providerType, status, cleanSearch, pageable)
                 .map(ProviderIntegrationResponse::fromEntity);

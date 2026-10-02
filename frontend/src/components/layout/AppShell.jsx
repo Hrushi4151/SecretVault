@@ -64,15 +64,21 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     { id: 'projects', label: 'Projects', icon: <FolderGit2 className="w-4 h-4" /> },
     { id: 'secrets', label: 'Secrets', icon: <Key className="w-4 h-4" />, badge: 'Phase 3' },
     { id: 'access', label: 'Access & JIT', icon: <ShieldCheck className="w-4 h-4 text-[#FF85A2]" />, badge: 'Phase 5' },
-    { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4" />, badge: 'Phase 3' },
-    { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4" />, badge: 'Phase 3' },
+    { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Phase 7' },
+    { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 8' },
   ];
 
   const securityNavItems = [
     { label: 'Security Overview', icon: <Shield className="w-4 h-4" />, active: false, badge: 'Phase 2' },
     { label: 'Risk Center', icon: <ShieldAlert className="w-4 h-4" />, active: false, badge: 'Phase 2' },
     { label: 'Secret Leaks', icon: <Lock className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Drift Detection', icon: <RefreshCw className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    {
+      id: 'drift',
+      label: 'Drift Detection',
+      icon: <RefreshCw className="w-4 h-4 text-[#34D399]" />,
+      badge: 'Phase 8',
+      action: () => onSelectTab && onSelectTab('sync-center'),
+    },
     { label: 'Audit Logs', icon: <FileText className="w-4 h-4" />, active: false, badge: 'Phase 2' },
   ];
 
@@ -203,23 +209,33 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
                 Security
               </span>
               <div className="flex flex-col gap-1">
-                {securityNavItems.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className="flex items-center justify-between px-3 py-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[#F4B5C8]">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {securityNavItems.map((item) => {
+                  const isActive = item.id && (item.id === activeTab || (item.id === 'drift' && activeTab === 'sync-center'));
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={item.action}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
+                        item.action ? 'cursor-pointer' : 'cursor-default'
+                      } ${
+                        isActive
+                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
+                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
