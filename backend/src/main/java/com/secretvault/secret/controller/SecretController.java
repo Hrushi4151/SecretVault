@@ -154,6 +154,13 @@ public class SecretController {
     }
 
     @PostMapping("/{secretId}/reveal")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_reveal",
+            limit = 60,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many secret reveal attempts. Please try again later."
+    )
     @Operation(summary = "Explicit reveal endpoint decrypting secret in-memory")
     public ResponseEntity<ApiResponse<SecretRevealResponse>> revealSecret(
             @PathVariable UUID workspaceId,

@@ -172,6 +172,13 @@ public class SecretVersionController {
     }
 
     @PostMapping("/rollback")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_rollback",
+            limit = 20,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many secret rollback requests. Please try again later."
+    )
     @Operation(summary = "Rollback secret to a historical version as a brand new version (vN+1)")
     public ResponseEntity<ApiResponse<SecretVersionResponse>> rollbackSecret(
             @PathVariable UUID workspaceId,

@@ -75,3 +75,16 @@ secretvault:
     jwt:
       secret: ${JWT_SECRET:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
       expiration-seconds: 86400
+  redis:
+    environment: ${REDIS_ENV:${SPRING_PROFILES_ACTIVE:local}}
+    rate-limit:
+      enabled: true
+      fail-open: false
+    cache:
+      enabled: true
+    ttl:
+      default-rate-limit: 60s
+      mfa-challenge: 300s
+      step-up: 600s
+      metadata-cache: 300s
+      idempotency: 120s

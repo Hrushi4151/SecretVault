@@ -56,6 +56,13 @@ public class SecretPromotionController {
     }
 
     @PostMapping
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_promote",
+            limit = 20,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many secret promotion requests. Please try again later."
+    )
     @Operation(summary = "Execute atomic cross-environment secret promotion with fresh destination encryption")
     public ResponseEntity<ApiResponse<PromotionResultResponse>> executePromotion(
             @PathVariable UUID workspaceId,
