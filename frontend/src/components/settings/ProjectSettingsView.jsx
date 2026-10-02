@@ -1110,6 +1110,7 @@ export const ProjectSettingsView = ({ initialProjectId, onNavigateToSecrets, onN
       {selectedMemberForAccessMatrix && (
         <MemberAccessManagementDialog
           isOpen={Boolean(selectedMemberForAccessMatrix)}
+          targetMember={selectedMemberForAccessMatrix}
           member={selectedMemberForAccessMatrix}
           workspaceId={activeWorkspace?.id}
           onClose={() => setSelectedMemberForAccessMatrix(null)}
