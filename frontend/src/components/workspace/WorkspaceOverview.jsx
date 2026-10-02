@@ -32,9 +32,15 @@ import {
   FolderGit2,
   AlertCircle,
   Loader2,
+  Settings,
 } from 'lucide-react';
 
-export const WorkspaceOverview = ({ onNavigateToProjects, onNavigateToSecrets, onNavigateToAccess }) => {
+export const WorkspaceOverview = ({
+  onNavigateToProjects,
+  onNavigateToSecrets,
+  onNavigateToAccess,
+  onNavigateToWorkspaceSettings,
+}) => {
   const { user, activeWorkspace, workspaces } = useAuth();
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -254,6 +260,16 @@ export const WorkspaceOverview = ({ onNavigateToProjects, onNavigateToSecrets, o
             >
               Team ({members.length})
             </Button>
+            {onNavigateToWorkspaceSettings && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onNavigateToWorkspaceSettings}
+                leftIcon={<Settings className="w-4 h-4 text-[#FF2D6D]" />}
+              >
+                Workspace Settings
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"

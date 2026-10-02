@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -169,6 +170,89 @@ class WorkspaceControllerTest {
                         .header("Authorization", "Bearer " + tokenB)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(illegalAddReq)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    @DisplayName("Workspace settings: Owner can get and update settings; Developer cannot modify")
+    void testWorkspaceSettingsWorkflow() throws Exception {
+        // 1. Register Owner
+        String ownerEmail = "ws_owner_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest registerReq = new RegisterRequest(ownerEmail, "Password123!Secure", "Settings Owner", "Corp Gamma");
+        MvcResult regResult = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String ownerToken = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+
+        // 2. Create Workspace
+        CreateWorkspaceRequest createWsReq = new CreateWorkspaceRequest("Settings Test Vault", "settings-test-vault");
+        MvcResult wsRes = mockMvc.perform(post("/api/v1/workspaces")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createWsReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String workspaceId = objectMapper.readTree(wsRes.getResponse().getContentAsString())
+                .path("data").path("id").asText();
+
+        // 3. Register Developer
+        String devEmail = "ws_dev_" + UUID.randomUUID() + "@example.com";
+        RegisterRequest devRegReq = new RegisterRequest(devEmail, "Password123!Secure", "Dev User", "Corp Gamma");
+        MvcResult devRegRes = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(devRegReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String devToken = objectMapper.readTree(devRegRes.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+
+        // Add developer to workspace
+        com.secretvault.workspace.dto.AddMemberRequest addMemberReq = new com.secretvault.workspace.dto.AddMemberRequest(
+                devEmail,
+                WorkspaceRole.DEVELOPER
+        );
+        mockMvc.perform(post("/api/v1/workspaces/" + workspaceId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(addMemberReq)))
+                .andExpect(status().isCreated());
+
+        // 4. Owner reads workspace settings
+        mockMvc.perform(get("/api/v1/workspaces/" + workspaceId + "/settings")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Settings Test Vault"))
+                .andExpect(jsonPath("$.data.slug").value("settings-test-vault"))
+                .andExpect(jsonPath("$.data.projectCreationPolicy").value("ALL_MEMBERS"))
+                .andExpect(jsonPath("$.data.environmentCreationPolicy").value("ADMIN_ONLY"));
+
+        // 5. Developer can read settings
+        mockMvc.perform(get("/api/v1/workspaces/" + workspaceId + "/settings")
+                        .header("Authorization", "Bearer " + devToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Settings Test Vault"));
+
+        // 6. Owner updates settings
+        com.secretvault.workspace.dto.UpdateWorkspaceSettingsRequest updateReq = new com.secretvault.workspace.dto.UpdateWorkspaceSettingsRequest(
+                "Renamed Test Vault", "ADMIN_ONLY", "ADMIN_ONLY", true
+        );
+        mockMvc.perform(patch("/api/v1/workspaces/" + workspaceId + "/settings")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Renamed Test Vault"))
+                .andExpect(jsonPath("$.data.projectCreationPolicy").value("ADMIN_ONLY"));
+
+        // 7. Developer attempts to update settings -> MUST FAIL with 403 Forbidden
+        mockMvc.perform(patch("/api/v1/workspaces/" + workspaceId + "/settings")
+                        .header("Authorization", "Bearer " + devToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateReq)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
