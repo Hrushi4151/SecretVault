@@ -36,11 +36,49 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
   const [createdToken, setCreatedToken] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  // Live Lookup State
+  const [lookupStatus, setLookupStatus] = useState('idle'); // 'idle' | 'loading' | 'found' | 'already_member' | 'already_pending' | 'not_found' | 'error'
+  const [lookupResult, setLookupResult] = useState(null);
+
   // Feedback State
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
   const canManage = activeWorkspace?.role === 'OWNER' || activeWorkspace?.role === 'ADMIN';
+
+  // Debounced User Lookup
+  useEffect(() => {
+    const trimmed = inviteEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!trimmed || !emailRegex.test(trimmed) || !activeWorkspace?.id || !canManage || activeTab !== 'invite') {
+      setLookupStatus('idle');
+      setLookupResult(null);
+      return;
+    }
+
+    setLookupStatus('loading');
+    const timer = setTimeout(async () => {
+      try {
+        const result = await workspaceApi.lookupUser(activeWorkspace.id, trimmed);
+        setLookupResult(result);
+        if (result.isMember) {
+          setLookupStatus('already_member');
+        } else if (result.hasPendingInvitation) {
+          setLookupStatus('already_pending');
+        } else if (result.exists) {
+          setLookupStatus('found');
+        } else {
+          setLookupStatus('not_found');
+        }
+      } catch (err) {
+        setLookupStatus('error');
+        setLookupResult(null);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [inviteEmail, activeWorkspace?.id, canManage, activeTab]);
 
   const loadData = useCallback(async () => {
     if (!activeWorkspace?.id) return;
@@ -384,10 +422,10 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
         {/* Tab: Create Invitation */}
         {activeTab === 'invite' && (
           <form onSubmit={handleCreateInvitation} className="flex flex-col gap-4">
-            <div className="p-4 rounded-xl bg-[#3F0016] border border-[#FFB4C8]/20 flex flex-col gap-3">
+            <div className="p-4 rounded-xl bg-[#3F0016] border border-[#FFB4C8]/20 flex flex-col gap-3.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-white">
                 <Send className="w-4 h-4 text-[#FF2D6D]" />
-                <span>Issue Cryptographically Secure Invitation</span>
+                <span>Issue In-App Workspace Invitation</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -414,10 +452,78 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
                     <option value="VIEWER">VIEWER (Read-only)</option>
                     <option value="DEVELOPER">DEVELOPER (Read &amp; Write)</option>
                     <option value="ADMIN">ADMIN (Full Config)</option>
-                    <option value="OWNER">OWNER (Primary Tenant)</option>
+                    {activeWorkspace?.role === 'OWNER' && (
+                      <option value="OWNER">OWNER (Co-Owner)</option>
+                    )}
                   </select>
                 </div>
               </div>
+
+              {/* Live Directory Lookup Status Card */}
+              {lookupStatus === 'loading' && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-[#30000F] border border-[#FFB4C8]/15 text-xs text-[#F4B5C8]">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#FF2D6D]" />
+                  <span>Checking SecretVault directory...</span>
+                </div>
+              )}
+
+              {lookupStatus === 'found' && lookupResult?.user && (
+                <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-[#063319]/80 border border-[#22C55E]/40 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-[#4ADE80]">
+                    <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+                    <span>🟢 User found</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-2 rounded-lg bg-[#0F4A26]/50 border border-[#22C55E]/20 mt-1">
+                    <div className="w-8 h-8 rounded-lg bg-[#166534] border border-[#4ADE80]/40 flex items-center justify-center font-bold text-xs text-white">
+                      {getInitials(lookupResult.user.name, lookupResult.user.email)}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-white text-xs truncate">
+                        {lookupResult.user.name}
+                      </span>
+                      <span className="font-mono text-[11px] text-[#86EFAC] truncate">
+                        {lookupResult.user.email}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-[#BBF7D0]/90 mt-0.5">
+                    Invitation will be delivered directly to the user's in-app notification center.
+                  </span>
+                </div>
+              )}
+
+              {lookupStatus === 'already_member' && (
+                <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-[#3F1200]/80 border border-[#F97316]/50 text-xs text-white">
+                  <div className="flex items-center gap-2 font-semibold text-[#FB923C]">
+                    <span>⚠️ Already a member of this workspace</span>
+                  </div>
+                  <p className="text-[11px] text-[#FED7AA]">
+                    {lookupResult?.user?.name || inviteEmail} is already enrolled in this workspace. You can update their role or access in the <strong>Active Members</strong> tab.
+                  </p>
+                </div>
+              )}
+
+              {lookupStatus === 'already_pending' && (
+                <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-[#3F1A00]/80 border border-[#EAB308]/50 text-xs text-white">
+                  <div className="flex items-center gap-2 font-semibold text-[#FACC15]">
+                    <span>⚠️ Invitation already pending</span>
+                  </div>
+                  <p className="text-[11px] text-[#FEF08A]">
+                    An active invitation has already been issued to {inviteEmail}. You can review or revoke it in the <strong>Pending Invitations</strong> tab.
+                  </p>
+                </div>
+              )}
+
+              {lookupStatus === 'not_found' && (
+                <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 text-xs text-[#F4B5C8]">
+                  <span className="font-semibold text-white">
+                    No existing SecretVault account found.
+                  </span>
+                  <p className="text-[11px] text-[#A26377]">
+                    You can still invite this email address. The recipient will be enrolled when they create their account and accept.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-[#F4B5C8] mb-1.5">
@@ -436,13 +542,25 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" variant="primary" size="sm" isLoading={isSubmitting}>
-                  Generate Invitation Token
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  isLoading={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    lookupStatus === 'loading' ||
+                    lookupStatus === 'already_member' ||
+                    lookupStatus === 'already_pending' ||
+                    !inviteEmail.trim()
+                  }
+                >
+                  Send In-App Invitation
                 </Button>
               </div>
             </div>
 
-            {/* Generated Token Display */}
+            {/* Generated Token Backup Display */}
             {createdToken && (
               <div className="p-4 rounded-xl bg-[#28000C] border border-[#FF2D6D]/40 flex flex-col gap-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-[#FF2D6D]">
@@ -450,7 +568,7 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
                   <span>Single-Use Invitation Token Generated</span>
                 </div>
                 <p className="text-[11px] text-[#F4B5C8]/80 font-mono">
-                  This raw token is displayed only once. Copy and share it securely with the invitee.
+                  The invitation is live in-app for registered users. You may also share this single-use token as a backup.
                 </p>
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#3F0016] border border-[#FFB4C8]/20">
                   <span className="text-xs font-mono text-white truncate select-all flex-1">
@@ -469,6 +587,7 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
             )}
           </form>
         )}
+
 
         <div className="flex justify-end pt-3 border-t border-[#FFB4C8]/15">
           <Button variant="secondary" size="sm" onClick={onClose}>

@@ -6,6 +6,8 @@ import com.secretvault.workspace.dto.WorkspaceResponse;
 import com.secretvault.workspace.invitation.dto.AcceptInvitationRequest;
 import com.secretvault.workspace.invitation.dto.CreateInvitationRequest;
 import com.secretvault.workspace.invitation.dto.InvitationResponse;
+import com.secretvault.workspace.invitation.dto.UserInvitationsListResponse;
+import com.secretvault.workspace.invitation.dto.UserLookupResponse;
 import com.secretvault.workspace.invitation.service.WorkspaceInvitationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,12 +30,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * REST API for Workspace Invitations and Onboarding.
+ * REST API for Workspace Invitations, In-App Delivery, User Lookup, and Member Onboarding.
  */
 @RestController
 @RequestMapping("/api/v1")
 @SecurityRequirement(name = "BearerAuth")
-@Tag(name = "Workspace Invitations", description = "Endpoints for inviting members and token acceptance")
+@Tag(name = "Workspace Invitations", description = "Endpoints for inviting members, debounced user lookup, and in-app invitation delivery/acceptance")
 public class WorkspaceInvitationController {
 
     private final WorkspaceInvitationService invitationService;
@@ -41,8 +44,35 @@ public class WorkspaceInvitationController {
         this.invitationService = invitationService;
     }
 
+    @GetMapping("/workspaces/{workspaceId}/invitations/lookup")
+    @Operation(summary = "Lookup User for Workspace Invitation", description = "Checks whether an email belongs to an existing user and inspects membership/pending state. (Requires OWNER or ADMIN).")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lookup result"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Insufficient permissions to lookup users")
+    })
+    public ResponseEntity<ApiResponse<UserLookupResponse>> lookupUser(
+            @PathVariable UUID workspaceId,
+            @RequestParam String email,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        UserLookupResponse result = invitationService.lookupUser(workspaceId, email, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/users/lookup")
+    @Operation(summary = "Lookup User by Email", description = "General user lookup by email for authenticated members.")
+    public ResponseEntity<ApiResponse<UserLookupResponse>> lookupUserGlobal(
+            @RequestParam String email,
+            @RequestParam(required = false) UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        if (workspaceId != null) {
+            UserLookupResponse result = invitationService.lookupUser(workspaceId, email, principal.getId());
+            return ResponseEntity.ok(ApiResponse.success(result));
+        }
+        return ResponseEntity.ok(ApiResponse.success(UserLookupResponse.notFound(false, false)));
+    }
+
     @PostMapping("/workspaces/{workspaceId}/invitations")
-    @Operation(summary = "Invite Member to Workspace", description = "Generates a single-use cryptographically random invitation token. (Requires OWNER or ADMIN).")
+    @Operation(summary = "Invite Member to Workspace", description = "Generates a single-use cryptographically random invitation token and records pending invite. (Requires OWNER or ADMIN).")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Invitation created"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
@@ -58,7 +88,7 @@ public class WorkspaceInvitationController {
     }
 
     @GetMapping("/workspaces/{workspaceId}/invitations")
-    @Operation(summary = "List Pending Invitations", description = "Retrieves all active pending invitations for the workspace.")
+    @Operation(summary = "List Pending Invitations for Workspace", description = "Retrieves all active pending invitations for the workspace.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pending invitations list"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Caller is not a member of the workspace")
@@ -85,11 +115,53 @@ public class WorkspaceInvitationController {
         return ResponseEntity.ok(ApiResponse.success(Map.of("message", "Invitation successfully revoked", "invitationId", invitationId)));
     }
 
+    @GetMapping("/invitations/me")
+    @Operation(summary = "List Pending In-App Invitations for Authenticated User", description = "Returns all active pending invitations sent to the authenticated user's email across all workspaces.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User pending invitations list")
+    })
+    public ResponseEntity<ApiResponse<UserInvitationsListResponse>> getMyInvitations(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        UserInvitationsListResponse response = invitationService.getMyPendingInvitations(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/invitations/{id}/accept")
+    @Operation(summary = "Accept In-App Invitation", description = "Accepts a pending workspace invitation in-app directly by invitation ID.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Invitation accepted"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired invitation"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Invitation was issued to a different user"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Invitation or workspace not found")
+    })
+    public ResponseEntity<ApiResponse<WorkspaceResponse>> acceptInvitationById(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        WorkspaceResponse workspace = invitationService.acceptInvitationById(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(workspace));
+    }
+
+    @PostMapping("/invitations/{id}/decline")
+    @Operation(summary = "Decline In-App Invitation", description = "Declines a pending workspace invitation in-app directly by invitation ID.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Invitation declined"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired invitation"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Invitation was issued to a different user"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Invitation not found")
+    })
+    public ResponseEntity<ApiResponse<Map<String, Object>>> declineInvitationById(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        invitationService.declineInvitationById(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(Map.of("message", "Invitation declined successfully", "invitationId", id)));
+    }
+
     @PostMapping("/invitations/accept")
-    @Operation(summary = "Accept Workspace Invitation", description = "Consumes a one-time invitation token to join the target workspace.")
+    @Operation(summary = "Accept Workspace Invitation with Token", description = "Consumes a one-time invitation token to join the target workspace.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Invitation accepted"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Invitation was issued to a different email"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Workspace not found")
     })
     public ResponseEntity<ApiResponse<WorkspaceResponse>> acceptInvitation(
