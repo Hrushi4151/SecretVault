@@ -37,7 +37,7 @@ public class OidcTrustPolicyController {
         this.effectiveAccessService = effectiveAccessService;
     }
 
-    @PostMapping("/machine-identities/{machineId}/trust-policies")
+    @PostMapping({"/machine-identities/{machineId}/trust-policies", "/machines/{machineId}/trust-policies"})
     public ResponseEntity<ApiResponse<OidcDtos.OidcTrustPolicyResponse>> createTrustPolicy(
             @PathVariable UUID workspaceId,
             @PathVariable UUID machineId,
@@ -49,7 +49,7 @@ public class OidcTrustPolicyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "OIDC trust policy created successfully"));
     }
 
-    @GetMapping("/machine-identities/{machineId}/trust-policies")
+    @GetMapping({"/machine-identities/{machineId}/trust-policies", "/machines/{machineId}/trust-policies"})
     public ResponseEntity<ApiResponse<List<OidcDtos.OidcTrustPolicyResponse>>> listTrustPolicies(
             @PathVariable UUID workspaceId,
             @PathVariable UUID machineId,

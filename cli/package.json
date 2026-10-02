@@ -1,0 +1,48 @@
+{
+  "name": "@secretvault/cli",
+  "version": "1.0.0",
+  "description": "Official CLI for SecretVault — secure multi-tenant secret management, runtime injection, context management, and OIDC workload authentication",
+  "main": "index.js",
+  "bin": {
+    "secretvault": "bin/secretvault.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build:java": "mvn clean package -DskipTests",
+    "prepack": "node scripts/prepare-dist.js",
+    "test": "node test/launcher.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hrushi4151/SecretVault.git",
+    "directory": "cli"
+  },
+  "keywords": [
+    "secretvault",
+    "secrets",
+    "security",
+    "devsecops",
+    "oidc",
+    "keyless",
+    "cli"
+  ],
+  "author": "SecretVault Security Engineering",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

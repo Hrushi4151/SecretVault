@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/workspaces/{workspaceId}/machine-identities")
+@RequestMapping({"/api/v1/workspaces/{workspaceId}/machine-identities", "/api/v1/workspaces/{workspaceId}/machines"})
 public class MachineIdentityController {
 
     private final MachineIdentityService machineService;
@@ -135,7 +135,7 @@ public class MachineIdentityController {
 
     // --- Granular Permissions Management ---
 
-    @GetMapping("/{id}/permissions")
+    @GetMapping({"/{id}/permissions", "/{id}/grants"})
     public ResponseEntity<ApiResponse<List<MachineDtos.MachineGrantResponse>>> listPermissions(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,
@@ -145,7 +145,7 @@ public class MachineIdentityController {
         return ResponseEntity.ok(ApiResponse.success(grants));
     }
 
-    @PostMapping("/{id}/permissions")
+    @PostMapping({"/{id}/permissions", "/{id}/grants"})
     public ResponseEntity<ApiResponse<MachineDtos.MachineGrantResponse>> addPermission(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,
@@ -157,7 +157,7 @@ public class MachineIdentityController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(grant, "Machine grant added successfully"));
     }
 
-    @DeleteMapping("/{id}/permissions/{grantId}")
+    @DeleteMapping({"/{id}/permissions/{grantId}", "/{id}/grants/{grantId}"})
     public ResponseEntity<ApiResponse<Void>> removePermission(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,

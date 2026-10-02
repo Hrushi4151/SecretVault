@@ -201,7 +201,7 @@ public class OidcTokenExchangeService {
             throw ApiException.unauthorized("OIDC authentication failed: machine identity is " + machine.getStatus());
         }
 
-        // 7. Issue Short-Lived Machine Session (900 seconds / 15 minutes TTL)
+        // 7. Issue Short-Lived Machine Session (600 seconds / 10 minutes TTL)
         MachineSessionService.MachineTokenResult tokenResult = machineSessionService.createSession(
                 provider.getWorkspaceId(),
                 machine.getId(),
@@ -213,7 +213,7 @@ public class OidcTokenExchangeService {
                         "providerType", provider.getProviderType().name(),
                         "trustPolicyId", matchedPolicy != null ? matchedPolicy.getId().toString() : ""
                 ),
-                900
+                600
         );
 
         // Update provider stats

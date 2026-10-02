@@ -32,6 +32,9 @@ import com.secretvault.workspace.entity.WorkspaceMembership;
 import com.secretvault.workspace.entity.WorkspaceRole;
 import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
+import com.secretvault.access.model.AccessPermission;
+import com.secretvault.access.service.EffectiveAccessService;
+import com.secretvault.machine.repository.MachineIdentityRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -67,6 +70,8 @@ public class SecretService {
     private final ProjectAccessRepository projectAccessRepository;
     private final EnvironmentAccessRepository environmentAccessRepository;
     private final ProjectService projectService;
+    private final EffectiveAccessService effectiveAccessService;
+    private final MachineIdentityRepository machineIdentityRepository;
 
     public SecretService(
             SecretRepository secretRepository,
@@ -82,7 +87,7 @@ public class SecretService {
     ) {
         this(secretRepository, secretVersionRepository, encryptionService, auditService,
              environmentRepository, projectRepository, workspaceRepository, membershipRepository,
-             projectAccessRepository, environmentAccessRepository, null);
+             projectAccessRepository, environmentAccessRepository, null, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -97,7 +102,9 @@ public class SecretService {
             WorkspaceMembershipRepository membershipRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectAccessRepository projectAccessRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) EnvironmentAccessRepository environmentAccessRepository,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectService projectService
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectService projectService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) EffectiveAccessService effectiveAccessService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) MachineIdentityRepository machineIdentityRepository
     ) {
         this.secretRepository = secretRepository;
         this.secretVersionRepository = secretVersionRepository;
@@ -110,6 +117,8 @@ public class SecretService {
         this.projectAccessRepository = projectAccessRepository;
         this.environmentAccessRepository = environmentAccessRepository;
         this.projectService = projectService;
+        this.effectiveAccessService = effectiveAccessService;
+        this.machineIdentityRepository = machineIdentityRepository;
     }
 
     /**
@@ -562,16 +571,31 @@ public class SecretService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Workspace not found"));
 
-        WorkspaceMembership membership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
-
         Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Project not found in this workspace"));
 
         Environment environment = environmentRepository.findByIdAndProjectId(environmentId, projectId)
                 .orElseThrow(() -> ApiException.notFound("Environment not found in this project"));
 
-        if (projectService != null && !projectService.isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+        // If EffectiveAccessService is present, evaluate unified permission model
+        if (effectiveAccessService != null) {
+            effectiveAccessService.checkPermission(workspaceId, projectId, environmentId, null, AccessPermission.SECRET_READ, userId);
+        }
+
+        Optional<WorkspaceMembership> membershipOpt = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+        WorkspaceMembership membership = membershipOpt.orElse(null);
+
+        if (membership == null) {
+            boolean isMachine = machineIdentityRepository != null && machineIdentityRepository.existsByIdAndWorkspaceIdAndDeletedAtIsNull(userId, workspaceId);
+            if (isMachine) {
+                return new WorkspaceContext(workspace, null);
+            }
+            if (effectiveAccessService == null) {
+                throw ApiException.forbidden("You are not a member of this workspace");
+            }
+        }
+
+        if (membership != null && projectService != null && !projectService.isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
             throw ApiException.forbidden("You are not authorized to access this project");
         }
 
@@ -584,6 +608,15 @@ public class SecretService {
 
     private WorkspaceContext verifyHierarchyAndWriteAccess(UUID workspaceId, UUID projectId, UUID environmentId, UUID userId) {
         WorkspaceContext context = verifyHierarchy(workspaceId, projectId, environmentId, userId);
+        if (effectiveAccessService != null) {
+            effectiveAccessService.checkPermission(workspaceId, projectId, environmentId, null, AccessPermission.SECRET_CREATE, userId);
+            return context;
+        }
+
+        if (context.membership() == null) {
+            return context;
+        }
+
         WorkspaceRole wsRole = context.membership().getRole();
 
         // 1. VIEWER cannot write
@@ -622,6 +655,15 @@ public class SecretService {
 
     private WorkspaceContext verifyHierarchyAndRevealAccess(UUID workspaceId, UUID projectId, UUID environmentId, UUID userId) {
         WorkspaceContext context = verifyHierarchy(workspaceId, projectId, environmentId, userId);
+        if (effectiveAccessService != null) {
+            effectiveAccessService.checkPermission(workspaceId, projectId, environmentId, null, AccessPermission.SECRET_REVEAL, userId);
+            return context;
+        }
+
+        if (context.membership() == null) {
+            return context;
+        }
+
         WorkspaceRole wsRole = context.membership().getRole();
 
         // 1. VIEWER role is strictly forbidden from revealing secrets

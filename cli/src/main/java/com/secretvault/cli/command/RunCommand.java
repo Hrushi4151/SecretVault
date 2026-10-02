@@ -23,7 +23,7 @@ public class RunCommand extends BaseCommand {
     @Option(names = {"--secret", "-S"}, description = "Explicit secret keys to inject (can be specified multiple times)")
     private List<String> explicitSecrets;
 
-    @Option(names = {"--override"}, defaultValue = "true", description = "Override host environment variables with SecretVault secrets (default: true)")
+    @Option(names = {"--override"}, negatable = true, defaultValue = "true", description = "Override host environment variables with SecretVault secrets (default: true, use --no-override to preserve host values)")
     private boolean overrideExistingEnv;
 
     @Parameters(description = "Command and arguments to execute (use '--' before command, e.g., 'secretvault run -- npm start')")

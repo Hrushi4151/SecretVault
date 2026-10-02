@@ -81,7 +81,11 @@ public class AuditLog {
         this.resourceId = resourceId;
         this.requestId = requestId;
         this.ipAddress = ipAddress;
-        this.outcome = outcome != null ? outcome : "SUCCESS";
+        if (outcome != null) {
+            this.outcome = outcome.length() > 32 ? outcome.substring(0, 32) : outcome;
+        } else {
+            this.outcome = "SUCCESS";
+        }
         this.createdAt = Instant.now();
     }
 
