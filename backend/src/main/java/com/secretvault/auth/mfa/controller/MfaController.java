@@ -57,7 +57,9 @@ public class MfaController {
     })
     public ResponseEntity<ApiResponse<MfaStatusResponse>> getStatus(@AuthenticationPrincipal UserPrincipal principal) {
         MfaStatusInfo info = mfaService.getStatus(principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(MfaStatusResponse.from(info)));
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(MfaStatusResponse.from(info)));
     }
 
     @PostMapping("/enroll")
@@ -77,7 +79,9 @@ public class MfaController {
     })
     public ResponseEntity<ApiResponse<MfaEnrollResponse>> enroll(@AuthenticationPrincipal UserPrincipal principal) {
         MfaEnrollmentResponse response = mfaService.beginEnrollment(principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(MfaEnrollResponse.from(response)));
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(MfaEnrollResponse.from(response)));
     }
 
     @PostMapping("/activate")
@@ -99,7 +103,9 @@ public class MfaController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody MfaActivateRequest request) {
         MfaActivationResult result = mfaService.activateMfa(principal.getId(), request.code());
-        return ResponseEntity.ok(ApiResponse.success(MfaActivateResponse.from(result)));
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(MfaActivateResponse.from(result)));
     }
 
     @PostMapping("/verify-totp")
@@ -118,7 +124,9 @@ public class MfaController {
     })
     public ResponseEntity<ApiResponse<AuthResponse>> verifyTotp(@Valid @RequestBody MfaTotpVerifyRequest request) {
         AuthResponse response = authService.completeMfaTotpLogin(request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(response));
     }
 
     @PostMapping("/verify-recovery")
@@ -137,7 +145,9 @@ public class MfaController {
     })
     public ResponseEntity<ApiResponse<AuthResponse>> verifyRecovery(@Valid @RequestBody MfaRecoveryVerifyRequest request) {
         AuthResponse response = authService.completeMfaRecoveryLogin(request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(response));
     }
 
     @PostMapping("/disable")
@@ -149,15 +159,18 @@ public class MfaController {
             type = RateLimitIdentifierType.USER_ID,
             message = "Too many MFA disable attempts. Please try again later."
     )
-    @Operation(summary = "Disable MFA", description = "Disables MFA protection and revokes all active backup recovery codes for the authenticated user.")
+    @Operation(summary = "Disable MFA", description = "Disables MFA protection with step-up identity verification and revokes all active backup recovery codes.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "MFA disabled successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized or invalid credentials")
     })
     public ResponseEntity<ApiResponse<Void>> disable(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestBody(required = false) MfaDisableRequest request) {
-        mfaService.disableMfa(principal.getId());
-        return ResponseEntity.ok(ApiResponse.success(null));
+            @Valid @RequestBody MfaDisableRequest request) {
+        mfaService.disableMfa(principal.getId(), request.password(), request.code(), request.recoveryCode());
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success(null));
     }
 }

@@ -124,9 +124,10 @@ class MfaControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/auth/mfa/disable should disable MFA")
+    @DisplayName("POST /api/v1/auth/mfa/disable with valid password and TOTP should disable MFA")
     void testDisableMfaWorkflow() throws Exception {
         String email = "mfa_disable_" + UUID.randomUUID() + "@example.com";
+        String password = "Password123!Secure";
         String token = registerAndGetToken(email);
 
         // Enroll and activate
@@ -145,9 +146,29 @@ class MfaControllerTest {
                         .content(objectMapper.writeValueAsString(new MfaActivateRequest(validCode))))
                 .andExpect(status().isOk());
 
-        // Disable
+        // 1. Attempt disable with wrong password -> MUST FAIL with 401
+        com.secretvault.auth.mfa.dto.MfaDisableRequest badPassReq = new com.secretvault.auth.mfa.dto.MfaDisableRequest("WrongPassword!", validCode, null);
         mockMvc.perform(post("/api/v1/auth/mfa/disable")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(badPassReq)))
+                .andExpect(status().isUnauthorized());
+
+        // 2. Attempt disable with wrong TOTP -> MUST FAIL with 401
+        com.secretvault.auth.mfa.dto.MfaDisableRequest badCodeReq = new com.secretvault.auth.mfa.dto.MfaDisableRequest(password, "000000", null);
+        mockMvc.perform(post("/api/v1/auth/mfa/disable")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(badCodeReq)))
+                .andExpect(status().isUnauthorized());
+
+        // 3. Disable with valid password and fresh TOTP code
+        String freshCode = totpService.generateCode(secret);
+        com.secretvault.auth.mfa.dto.MfaDisableRequest goodReq = new com.secretvault.auth.mfa.dto.MfaDisableRequest(password, freshCode, null);
+        mockMvc.perform(post("/api/v1/auth/mfa/disable")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(goodReq)))
                 .andExpect(status().isOk());
 
         // Verify status is DISABLED
@@ -172,7 +193,9 @@ class MfaControllerTest {
                         .content("{\"code\":\"123456\"}"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/api/v1/auth/mfa/disable"))
+        mockMvc.perform(post("/api/v1/auth/mfa/disable")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"pass\",\"code\":\"123456\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

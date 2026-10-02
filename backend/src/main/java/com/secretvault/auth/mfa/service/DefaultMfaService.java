@@ -59,6 +59,7 @@ public class DefaultMfaService implements MfaService {
     private final EncryptionService encryptionService;
     private final SecurityStateStore securityStateStore;
     private final AuditService auditService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public DefaultMfaService(
             UserMfaRepository userMfaRepository,
@@ -68,7 +69,8 @@ public class DefaultMfaService implements MfaService {
             RecoveryCodeService recoveryCodeService,
             EncryptionService encryptionService,
             SecurityStateStore securityStateStore,
-            AuditService auditService
+            AuditService auditService,
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder
     ) {
         this.userMfaRepository = Objects.requireNonNull(userMfaRepository, "UserMfaRepository must not be null");
         this.recoveryCodeRepository = Objects.requireNonNull(recoveryCodeRepository, "MfaRecoveryCodeRepository must not be null");
@@ -78,6 +80,7 @@ public class DefaultMfaService implements MfaService {
         this.encryptionService = Objects.requireNonNull(encryptionService, "EncryptionService must not be null");
         this.securityStateStore = Objects.requireNonNull(securityStateStore, "SecurityStateStore must not be null");
         this.auditService = Objects.requireNonNull(auditService, "AuditService must not be null");
+        this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "PasswordEncoder must not be null");
     }
 
     @Override
@@ -117,6 +120,10 @@ public class DefaultMfaService implements MfaService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> ApiException.notFound("User not found"));
+
+        if (user.getStatus() != com.secretvault.auth.entity.UserStatus.ACTIVE) {
+            throw ApiException.forbidden("User account is inactive");
+        }
 
         Optional<UserMfa> existingMfa = userMfaRepository.findByUserId(userId);
         if (existingMfa.isPresent() && existingMfa.get().isEnabled()) {
@@ -180,6 +187,10 @@ public class DefaultMfaService implements MfaService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> ApiException.notFound("User not found"));
+
+        if (user.getStatus() != com.secretvault.auth.entity.UserStatus.ACTIVE) {
+            throw ApiException.forbidden("User account is inactive");
+        }
 
         UserMfa userMfa = userMfaRepository.findByUserId(userId)
                 .orElseThrow(() -> ApiException.badRequest("No pending MFA enrollment found for user"));
@@ -295,7 +306,12 @@ public class DefaultMfaService implements MfaService {
             return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Invalid MFA challenge purpose");
         }
 
-        // 2. Load active MFA configuration
+        // 2. Validate User account active and MFA enabled
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null || user.getStatus() != com.secretvault.auth.entity.UserStatus.ACTIVE) {
+            return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "User account is inactive or not found");
+        }
+
         UserMfa userMfa = userMfaRepository.findByUserId(userId).orElse(null);
         if (userMfa == null || !userMfa.isEnabled()) {
             return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "MFA is not enabled for this user");
@@ -369,6 +385,11 @@ public class DefaultMfaService implements MfaService {
 
         if (!PURPOSE_LOGIN_MFA.equals(challenge.purpose())) {
             return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Invalid MFA challenge purpose");
+        }
+
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null || user.getStatus() != com.secretvault.auth.entity.UserStatus.ACTIVE) {
+            return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "User account is inactive or not found");
         }
 
         UserMfa userMfa = userMfaRepository.findByUserId(userId).orElse(null);
@@ -468,6 +489,72 @@ public class DefaultMfaService implements MfaService {
 
     @Override
     @Transactional
+    public void disableMfa(UUID userId, String password, String code, String recoveryCode) {
+        Objects.requireNonNull(userId, "userId must not be null");
+
+        if (password == null || password.isBlank()) {
+            throw ApiException.badRequest("Current password is required to disable MFA");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_VERIFICATION_FAILED, "USER_MFA", userId, null, null, "INVALID_PASSWORD");
+            throw ApiException.unauthorized("Invalid current password");
+        }
+
+        UserMfa userMfa = userMfaRepository.findByUserId(userId)
+                .orElseThrow(() -> ApiException.badRequest("MFA is not configured for user"));
+
+        if (!userMfa.isEnabled()) {
+            throw ApiException.badRequest("MFA is not currently enabled");
+        }
+
+        // Step-up verification: either TOTP or Recovery Code
+        boolean factorVerified = false;
+        if (code != null && !code.isBlank()) {
+            String aad = "user-mfa:" + userId;
+            byte[] rawSecretBytes;
+            try {
+                rawSecretBytes = encryptionService.decrypt(userMfa.toEncryptedPayload(), aad);
+                String base32Secret = Base32.encode(rawSecretBytes, false);
+                factorVerified = totpService.verifyCode(base32Secret, code.trim());
+            } catch (Exception ex) {
+                log.error("Failed to decrypt MFA secret during disable operation for user [{}]", userId);
+                factorVerified = false;
+            }
+        } else if (recoveryCode != null && !recoveryCode.isBlank()) {
+            List<MfaRecoveryCode> unusedCodes = recoveryCodeRepository.findByUserMfaIdAndUsedFalseOrderByCodeIndexAsc(userMfa.getId());
+            for (MfaRecoveryCode candidate : unusedCodes) {
+                if (recoveryCodeService.matches(recoveryCode.trim(), candidate.getCodeHash())) {
+                    recoveryCodeRepository.markUsedIfUnused(candidate.getId(), Instant.now());
+                    factorVerified = true;
+                    break;
+                }
+            }
+        } else {
+            throw ApiException.badRequest("Either a valid TOTP code or backup recovery code is required to disable MFA");
+        }
+
+        if (!factorVerified) {
+            auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_VERIFICATION_FAILED, "USER_MFA", userMfa.getId(), null, null, "INVALID_FACTOR");
+            throw ApiException.unauthorized("Invalid MFA verification code or recovery code");
+        }
+
+        // Purge all recovery codes and transition state to DISABLED
+        recoveryCodeRepository.deleteByUserMfaId(userMfa.getId());
+        userMfa.disable();
+        userMfaRepository.save(userMfa);
+
+        user.setMfaEnabled(false);
+        userRepository.save(user);
+
+        auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_DISABLED, "USER_MFA", userMfa.getId(), null, null, "SUCCESS");
+    }
+
+    @Override
+    @Transactional
     public void disableMfa(UUID userId) {
         Objects.requireNonNull(userId, "userId must not be null");
 
@@ -488,6 +575,6 @@ public class DefaultMfaService implements MfaService {
         user.setMfaEnabled(false);
         userRepository.save(user);
 
-        auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_DISABLED, "USER_MFA", userMfa.getId(), null, null, "SUCCESS");
+        auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_DISABLED, "USER_MFA", userMfa.getId(), null, null, "ADMIN_OVERRIDE");
     }
 }

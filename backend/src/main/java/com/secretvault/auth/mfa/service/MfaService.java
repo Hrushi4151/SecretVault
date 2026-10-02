@@ -68,7 +68,14 @@ public interface MfaService {
     MfaVerificationResult verifyLoginRecoveryCode(String challengeId, String recoveryCode);
 
     /**
-     * Disables MFA for a user.
+     * Disables MFA for a user with step-up verification.
+     * Validates current password and either a valid TOTP code or an unused recovery code.
+     * Purges recovery codes and transitions UserMfa status to DISABLED.
+     */
+    void disableMfa(UUID userId, String password, String code, String recoveryCode);
+
+    /**
+     * Disables MFA for a user (administrative / internal override).
      * Purges recovery codes and transitions UserMfa status to DISABLED.
      */
     void disableMfa(UUID userId);
