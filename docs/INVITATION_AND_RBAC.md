@@ -335,11 +335,13 @@ All invitation and membership lifecycle actions emit structured, immutable audit
 
 ### 9.1 Test Suite Status
 
-The test suite contains 207 automated tests across units, integration flows, concurrency, and security boundaries:
+The test suite contains 212 automated tests across units, integration flows, concurrency, and security boundaries:
 
-* **Backend Test Suite:** `207 / 207 Passing` (0 failures, 0 errors, 0 skipped).
-* **Frontend Production Bundle:** `1638 modules transformed`, clean production build (`dist/assets/index-Dz-OO2Cf.js`).
+* **Backend Test Suite:** `212 / 212 Passing` (0 failures, 0 errors, 0 skipped).
+* **Frontend Production Bundle:** `1639 modules transformed`, clean production build (`dist/assets/index-wGhmg3pp.js`).
 * **Test Classes:**
+  * `MemberAccessServiceTest`: Unit testing of complete project & environment access matrix calculation, batch updates, cross-workspace hierarchy tampering rejection, and permission checks.
+  * `MemberAccessControllerTest`: Full HTTP MockMvc end-to-end multi-project access configuration, persistence verification, live effective permission inspection, and unauthorized developer rejection.
   * `WorkspaceInvitationServiceTest`: Unit testing of lookup states, in-app delivery filtering, target email verification, token hashing, expiration, and conflict management.
   * `WorkspaceInvitationControllerTest`: Full HTTP integration flow covering user lookup $\to$ invitation creation $\to$ target mismatch rejection $\to$ in-app acceptance $\to$ role change $\to$ member removal.
   * `WorkspaceServiceTest`: Unit testing of membership management, role validation, and last-owner protection.
@@ -351,3 +353,133 @@ The test suite contains 207 automated tests across units, integration flows, con
 
 1. **Pre-Registration Invitations:** If an email is invited before the user registers a SecretVault account, the invitation is persisted with `status = PENDING`. Once the user registers with the matching email, the pending invitation will automatically appear in their `/api/v1/invitations/me` list.
 2. **Session Role Freshness:** Workspace switching and role updates reload the active workspace context in the frontend without requiring the user to log out or log back in.
+
+---
+
+## 11. Per-Member Project → Environment → Permission Access Governance
+
+### 11.1 Architecture & Core Principle
+
+SecretVault enables authorized administrators (`OWNER` and `ADMIN`) to configure fine-grained, per-member access across projects, environments, and granular permissions without mutating the user's global standing workspace role.
+
+```text
+Workspace (Standing Role: DEVELOPER)
+    ↓
+Project A (E-Commerce: VIEWER / READ)
+    ├── Development   → READ
+    ├── Staging       → READ
+    └── Production    → No Access
+    ↓
+Project B (Payment API: DEVELOPER / WRITE)
+    ├── Development   → READ / WRITE
+    ├── Staging       → READ / WRITE
+    └── Production    → READ
+    ↓
+Project C (Admin Portal: VIEWER / READ)
+    ├── Development   → READ
+    ├── Staging       → No Access
+    └── Production    → READ
+```
+
+### 11.2 Authoritative Decision Engine & Inheritance Invariants
+
+Authorization decisions are computed strictly by `EffectiveAccessService` using the following hierarchy:
+
+1. **Project Effective Role:**
+   $$\text{EffectiveProjectRole} = \min(\text{WorkspaceRole}, \text{ProjectRole})$$
+   * A member with workspace role `DEVELOPER` assigned `VIEWER` on Project A is effectively a `VIEWER` for Project A.
+   * A member with workspace role `VIEWER` can never receive `DEVELOPER` or `ADMIN` effective capabilities on a project.
+
+2. **Environment Effective Permission:**
+   $$\text{EffectiveEnvPermission} = \min(\text{EffectiveProjectRole}, \text{EnvGrant})$$
+   * `VIEWER` effective project role restricts all environments to at most `READ`.
+   * `DEVELOPER` effective project role restricts all environments to at most `WRITE` (cannot receive `MANAGE`).
+   * `OWNER` / `ADMIN` workspace role can configure any valid scope.
+
+3. **Granular Grants & Sensitive Actions:**
+   * Secret plaintext reveal (`SECRET_REVEAL`) remains independently governed by granular grants or Just-In-Time (JIT) access approvals and is never automatically implied by metadata `READ` access.
+
+### 11.3 Real-World Multi-Project Configuration Example
+
+| Workspace | User | Workspace Role | Project | Project Access | Environment | Environment Permission | Effective Permissions |
+|---|---|---|---|---|---|---|---|
+| **Acme** | **Rahul Sharma** | `DEVELOPER` | **E-Commerce** | `VIEWER` | Development | `READ` | `secret.read` (✓), `secret.reveal` (✗), `secret.create` (✗) |
+| | | | | | Staging | `READ` | `secret.read` (✓), `secret.reveal` (✗), `secret.create` (✗) |
+| | | | | | Production | `NONE` | All Denied (✗) |
+| | | | **Payment API** | `DEVELOPER` | Development | `WRITE` | `secret.read` (✓), `secret.reveal` (✓), `secret.create` (✓), `secret.update` (✓) |
+| | | | | | Staging | `WRITE` | `secret.read` (✓), `secret.reveal` (✓), `secret.create` (✓), `secret.update` (✓) |
+| | | | | | Production | `READ` | `secret.read` (✓), `secret.reveal` (✗), `secret.create` (✗) |
+| | | | **Admin Portal**| `VIEWER` | Development | `READ` | `secret.read` (✓), `secret.reveal` (✗), `secret.create` (✗) |
+| | | | | | Staging | `NONE` | All Denied (✗) |
+| | | | | | Production | `READ` | `secret.read` (✓), `secret.reveal` (✗), `secret.create` (✗) |
+
+### 11.4 Backend REST API Endpoints
+
+#### 1. Retrieve Member Access Overview Matrix
+* **`GET /api/v1/workspaces/{workspaceId}/members/{userId}/access`**
+* **Headers:** `Authorization: Bearer <JWT>`
+* **Response `200 OK`:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "member": {
+        "id": "4896a26f-3dc2-4395-b0eb-c00c82d974d9",
+        "email": "rahul@example.com",
+        "fullName": "Rahul Sharma",
+        "workspaceRole": "DEVELOPER"
+      },
+      "projects": [
+        {
+          "projectId": "d329210e-1610-4e33-9be0-7ce8f73252d2",
+          "projectName": "E-Commerce",
+          "projectSlug": "e-comm",
+          "explicitProjectRole": "VIEWER",
+          "effectiveProjectRole": "VIEWER",
+          "environments": [
+            {
+              "environmentId": "84cecabf-a8d1-4ad0-b330-4457dcac8363",
+              "name": "Development",
+              "envType": "DEVELOPMENT",
+              "isProtected": false,
+              "explicitPermissionLevel": "READ",
+              "effectivePermissionLevel": "READ"
+            }
+          ]
+        }
+      ],
+      "granularGrants": [],
+      "activeJitGrants": []
+    }
+  }
+  ```
+
+#### 2. Atomic Batch Update Member Access
+* **`PUT /api/v1/workspaces/{workspaceId}/members/{userId}/access`**
+* **Headers:** `Authorization: Bearer <JWT>`, `Content-Type: application/json`
+* **Request Body:**
+  ```json
+  {
+    "projectConfigs": [
+      {
+        "projectId": "d329210e-1610-4e33-9be0-7ce8f73252d2",
+        "role": "VIEWER",
+        "environmentConfigs": [
+          { "environmentId": "84cecabf-a8d1-4ad0-b330-4457dcac8363", "permissionLevel": "READ" }
+        ]
+      }
+    ]
+  }
+  ```
+
+#### 3. Inspect Effective Permissions & Why-Access Lineage
+* **`GET /api/v1/workspaces/{workspaceId}/access/effective?userId={userId}&projectId={projectId}&environmentId={envId}`**
+* **Headers:** `Authorization: Bearer <JWT>`
+* **Response `200 OK`:** Returns array of `EffectiveAccessExplanation` records detailing decision (`ALLOW` / `DENY`), source type (`WORKSPACE_ROLE`, `PROJECT_ACCESS`, `ENVIRONMENT_ACCESS`, `GRANULAR_GRANT`, `JIT_GRANT`), source reference, and reasoning.
+
+### 11.5 Security & Hierarchy Invariants
+
+* **Tenant Isolation:** Rejects any request where the target user, project, or environment does not belong to the specified workspace (`400 BAD_REQUEST` / `404 NOT_FOUND`).
+* **Hierarchy Validation:** Rejects any attempt to configure an environment under a project to which it does not belong.
+* **Mass-Assignment Protection:** Explicit role and permission inputs are strictly validated against supported enumerations and the caller's authorization rank.
+* **Auditability:** Emits immutable `PROJECT_ACCESS_GRANTED`, `PROJECT_ACCESS_REVOKED`, `ENVIRONMENT_ACCESS_GRANTED`, `ENVIRONMENT_ACCESS_REVOKED` audit events containing target and actor principal IDs without leaking sensitive metadata or plaintext.
