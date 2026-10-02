@@ -25,7 +25,12 @@ export const LoginScreen = ({ onNavigateToRegister, onNavigateToMfa }) => {
     }
 
     try {
-      await login({ email: email.trim(), password });
+      const res = await login({ email: email.trim(), password });
+      if (res && res.mfaRequired && res.mfaChallengeId) {
+        if (onNavigateToMfa) {
+          onNavigateToMfa(res.mfaChallengeId);
+        }
+      }
     } catch (err) {
       // Handled by context
     }
@@ -150,22 +155,11 @@ export const LoginScreen = ({ onNavigateToRegister, onNavigateToMfa }) => {
             <button
               type="button"
               onClick={onNavigateToRegister}
-              className="font-semibold text-[#FF2D6D] hover:text-[#FF4D85] hover:underline transition-colors"
+              className="font-semibold text-[#FF2D6D] hover:text-[#FF4D85] hover:underline transition-colors cursor-pointer"
             >
               Sign up now
             </button>
           </div>
-
-          {onNavigateToMfa && (
-            <button
-              type="button"
-              onClick={onNavigateToMfa}
-              className="text-[11px] text-[#A26377] hover:text-white flex items-center gap-1 transition-colors"
-            >
-              <Sparkles className="w-3 h-3 text-[#FF2D6D]" />
-              Hardware MFA Step-Up Mode
-            </button>
-          )}
         </div>
       </div>
 
