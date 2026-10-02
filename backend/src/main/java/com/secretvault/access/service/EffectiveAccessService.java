@@ -510,24 +510,26 @@ public class EffectiveAccessService {
             case ACCESS_MANAGE:
             case JIT_APPROVE:
             case ACCESS_REVIEW_MANAGE:
+            case SECURITY_MANAGE:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN || (effProjectRole == WorkspaceRole.ADMIN)) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace governance role authorizes access administration"
+                            "Workspace governance role authorizes security and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Governance permissions require OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance and access administration require OWNER or ADMIN authority");
 
             case JIT_REQUEST:
+            case SECURITY_VIEW:
                 return AccessDecision.allow(
                         permission,
                         AccessScope.WORKSPACE,
                         AccessSourceType.WORKSPACE_ROLE,
                         wsRole.name(),
-                        "Active workspace members are permitted to submit JIT access requests"
+                        "Active workspace members are permitted to view security posture and submit JIT requests"
                 );
 
             default:

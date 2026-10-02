@@ -283,6 +283,28 @@ Continuous compliance frameworks (SOC 2 Type II, ISO 27001, HIPAA) mandate regul
 - **Positive:** Provides defensible, automated access certification audit trails; protects against privilege accumulation and access drift; cleanly decouples review governance from day-to-day authorization.
 - **Negative:** Requires administrative effort to review items before campaign due dates.
 
+---
+
+## ADR-017: Deterministic Security Intelligence and Risk Assessment Engine (Phase 6)
+
+### Status: Accepted
+### Date: 2026-10-02
+### Context:
+Organizations managing multi-tier environments and secrets need automated, continuous detection of anomalous access patterns, dormant privileges, excessive permissions, and compliance drift. Black-box statistical or non-deterministic LLM-based detection systems create alert fatigue, false positives, and audit opacity.
+
+### Decision:
+1. **100% Deterministic Rule Engine:** All 10 detection rules (`EXCESSIVE_PRIVILEGE`, `PRIVILEGE_ESCALATION_PATTERN`, `SUSPICIOUS_JIT_ACTIVITY`, `REPEATED_AUTHORIZATION_FAILURES`, `UNUSUAL_ADMIN_ACTIVITY`, `DORMANT_PRIVILEGED_ACCESS`, `ACCESS_REVIEW_OVERDUE`, `UNUSED_GRANULAR_GRANT`, `ACCESS_CONCENTRATION`, `AUTHENTICATION_ANOMALY`) evaluate deterministic boolean predicates against active database state and sanitized security event telemetry.
+2. **Deterministic SHA-256 Fingerprint Deduplication:** Findings are uniquely fingerprinted based on `SHA256(workspaceId:category:targetKey)`. Subsequent rule executions increment occurrence counts and update observation timestamps rather than inserting duplicate findings.
+3. **Bounded Explainable Risk Scoring ($0–100$):** Workspace risk is calculated via an exact additive penalty model with mitigating factors bounded between $0$ and $100$. Every score includes complete factor attribution explaining why points were added or deducted.
+4. **Strict Sanitization of Event Telemetry:** `SafeEventMetadataSanitizer` redacts any sensitive keys containing secret, token, password, or key substrings before persistence, ensuring that security telemetry never acts as an information leak channel.
+5. **Decoupled Governance vs Authorization:** Security intelligence findings provide advisory detection and governance workflow. Authorization enforcement remains strictly owned by `EffectiveAccessService`.
+6. **Per-Workspace Scheduled & On-Demand Analysis:** Background analysis runs periodically via `SecurityIntelligenceScheduler` with per-workspace concurrency locks, preventing race conditions between background cron jobs and on-demand trigger APIs.
+
+### Consequences:
+- **Positive:** Zero LLM hallucinations or unpredictable scoring; deterministic deduplication; clear remediation guidance; complete auditability for security teams and compliance auditors.
+- **Negative:** Rule definitions must be explicitly maintained and extended as new access patterns or resource types are added.
+
+
 
 
 

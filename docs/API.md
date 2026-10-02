@@ -240,6 +240,19 @@ All secret endpoints operate under strict hierarchical scoping: `/api/v1/workspa
 - `POST /api/v1/workspaces/{wId}/access-reviews/{campaignId}/complete` — Finalize campaign & seal compliance attestation.
 - `GET /api/v1/workspaces/{wId}/access-reviews/{campaignId}/attestation` — Retrieve cryptographic attestation report.
 
+### 4.12 Security Intelligence & Security Center [IMPLEMENTED]
+
+- `GET /api/v1/workspaces/{wId}/security/overview` — Get executive security posture, overall risk score, top findings, and recent timeline snippets.
+- `GET /api/v1/workspaces/{wId}/security/posture` — Deep posture breakdown (open findings, dormant privileged users, unused grants, review health).
+- `GET /api/v1/workspaces/{wId}/security/risk` — Explainable risk score ($0–100$), risk level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and attributed factor penalties.
+- `GET /api/v1/workspaces/{wId}/security/timeline` — Unified, sanitized security timeline merging security events and audit trails.
+- `GET /api/v1/workspaces/{wId}/security/findings` — Paginated and filterable security finding inventory (`status`, `severity`, `category`, `search`).
+- `PATCH /api/v1/workspaces/{wId}/security/findings/{id}/status` — Transition finding lifecycle (`OPEN`, `ACKNOWLEDGED`, `IN_PROGRESS`, `RESOLVED`, `FALSE_POSITIVE`).
+- `PATCH /api/v1/workspaces/{wId}/security/findings/{id}/assign` — Assign or reassign remediation owner.
+- `POST /api/v1/workspaces/{wId}/security/analyze` — Trigger on-demand deterministic rule scan across workspace state.
+- `POST /api/v1/workspaces/{wId}/security/events` — Ingest sanitized security telemetry event.
+- `GET /api/v1/workspaces/{wId}/security/events` — Paginated and filterable security event audit log.
+
 ---
 
 ## 5. Pagination, Sorting & Filtering
@@ -249,3 +262,4 @@ Collection endpoints accept standard query parameters:
 - `size`: Items per page (default: `20`, maximum: `100`).
 - `sort`: Comma-separated sort expressions (e.g. `sort=createdAt,desc`).
 - `search`: Filter by project name, tag, or description.
+

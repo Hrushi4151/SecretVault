@@ -75,6 +75,16 @@ public enum AccessPermission {
     ACCESS_REVIEW_MANAGE(
             "access_review.manage",
             "Create and certify access review campaigns"
+    ),
+
+    SECURITY_VIEW(
+            "security.view",
+            "View security findings, events, timeline, and posture"
+    ),
+
+    SECURITY_MANAGE(
+            "security.manage",
+            "Acknowledge, assign, resolve security findings, and trigger intelligence analysis"
     );
 
     private final String code;
