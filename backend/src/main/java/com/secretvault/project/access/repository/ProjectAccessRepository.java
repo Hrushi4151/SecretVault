@@ -13,6 +13,8 @@ public interface ProjectAccessRepository extends JpaRepository<ProjectAccess, UU
 
     List<ProjectAccess> findByProjectId(UUID projectId);
 
+    List<ProjectAccess> findByUserId(UUID userId);
+
     Optional<ProjectAccess> findByProjectIdAndUserId(UUID projectId, UUID userId);
 
     boolean existsByProjectIdAndUserId(UUID projectId, UUID userId);
