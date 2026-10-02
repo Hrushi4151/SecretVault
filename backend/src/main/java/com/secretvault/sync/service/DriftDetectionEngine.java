@@ -131,9 +131,10 @@ public class DriftDetectionEngine {
             }
         }
 
-        // 1. Identify MISSING_FROM_PROVIDER
+        // 1. Identify MISSING_FROM_PROVIDER and VALUE_MISMATCH
         for (DesiredSecretState desired : desiredMap.values()) {
-            if (!actualMap.containsKey(desired.secretName())) {
+            ProviderSecretState actual = actualMap.get(desired.secretName());
+            if (actual == null) {
                 DriftType driftType = DriftType.MISSING_FROM_PROVIDER;
                 DriftSeverity severity = calculateSeverity(envType, driftType);
                 String fingerprint = DriftFingerprintUtil.computeFingerprint(
@@ -149,6 +150,26 @@ public class DriftDetectionEngine {
                         null, "Secret exists in SecretVault but is absent on provider", now
                 );
                 detectedDrifts.add(record);
+            } else {
+                // Secret exists on both SecretVault and external provider: check for value/fingerprint divergence
+                if (desired.desiredFingerprint() != null && actual.providerFingerprint() != null
+                        && !desired.desiredFingerprint().equals(actual.providerFingerprint())) {
+                    DriftType driftType = DriftType.VALUE_MISMATCH;
+                    DriftSeverity severity = calculateSeverity(envType, driftType);
+                    String fingerprint = DriftFingerprintUtil.computeFingerprint(
+                            workspaceId, mapping.getIntegrationId(), mapping.getId(), desired.secretName(), driftType
+                    );
+                    activeDetectedFingerprints.add(fingerprint);
+
+                    DriftRecord record = upsertDriftRecord(
+                            workspaceId, mapping.getProjectId(), mapping.getEnvironmentId(),
+                            mapping.getIntegrationId(), mapping.getId(),
+                            desired.secretId(), desired.secretName(), actual.providerSecretIdentifier(),
+                            driftType, severity, desired.desiredFingerprint(), actual.providerFingerprint(), fingerprint,
+                            null, "Secret value or fingerprint differs between SecretVault and external provider", now
+                    );
+                    detectedDrifts.add(record);
+                }
             }
         }
 

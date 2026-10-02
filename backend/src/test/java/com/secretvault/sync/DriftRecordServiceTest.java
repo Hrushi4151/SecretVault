@@ -48,6 +48,15 @@ class DriftRecordServiceTest {
     @Mock
     private SecurityEventService securityEventService;
 
+    @Mock
+    private com.secretvault.sync.service.DesiredStateResolver desiredStateResolver;
+
+    @Mock
+    private com.secretvault.sync.service.ActualStateResolver actualStateResolver;
+
+    @Mock
+    private com.secretvault.sync.service.DriftDetectionEngine driftDetectionEngine;
+
     private DriftRecordService driftRecordService;
 
     private UUID workspaceId;
@@ -61,7 +70,10 @@ class DriftRecordServiceTest {
                 driftRecordRepository,
                 effectiveAccessService,
                 auditService,
-                securityEventService
+                securityEventService,
+                desiredStateResolver,
+                actualStateResolver,
+                driftDetectionEngine
         );
 
         workspaceId = UUID.randomUUID();

@@ -79,4 +79,18 @@ public class DriftController {
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/detect")
+    @Operation(summary = "Trigger on-demand drift detection scan across workspace or scoped targets")
+    public ResponseEntity<ApiResponse<java.util.List<DriftRecordResponse>>> triggerDriftDetection(
+            @PathVariable UUID workspaceId,
+            @RequestParam(required = false) com.secretvault.sync.model.SyncScope scope,
+            @RequestParam(required = false) UUID scopeResourceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        java.util.List<DriftRecordResponse> responses = driftRecordService.triggerDriftDetection(
+                workspaceId, scope, scopeResourceId, principal.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(responses));
+    }
 }

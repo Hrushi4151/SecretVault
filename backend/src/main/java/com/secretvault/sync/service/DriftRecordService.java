@@ -45,17 +45,60 @@ public class DriftRecordService {
     private final EffectiveAccessService effectiveAccessService;
     private final AuditService auditService;
     private final SecurityEventService securityEventService;
+    private final DesiredStateResolver desiredStateResolver;
+    private final ActualStateResolver actualStateResolver;
+    private final DriftDetectionEngine driftDetectionEngine;
 
     public DriftRecordService(
             DriftRecordRepository driftRecordRepository,
             EffectiveAccessService effectiveAccessService,
             AuditService auditService,
-            SecurityEventService securityEventService
+            SecurityEventService securityEventService,
+            DesiredStateResolver desiredStateResolver,
+            ActualStateResolver actualStateResolver,
+            DriftDetectionEngine driftDetectionEngine
     ) {
         this.driftRecordRepository = Objects.requireNonNull(driftRecordRepository, "driftRecordRepository must not be null");
         this.effectiveAccessService = Objects.requireNonNull(effectiveAccessService, "effectiveAccessService must not be null");
         this.auditService = Objects.requireNonNull(auditService, "auditService must not be null");
         this.securityEventService = Objects.requireNonNull(securityEventService, "securityEventService must not be null");
+        this.desiredStateResolver = Objects.requireNonNull(desiredStateResolver, "desiredStateResolver must not be null");
+        this.actualStateResolver = Objects.requireNonNull(actualStateResolver, "actualStateResolver must not be null");
+        this.driftDetectionEngine = Objects.requireNonNull(driftDetectionEngine, "driftDetectionEngine must not be null");
+    }
+
+    /**
+     * Triggers on-demand drift detection across a specified scope (WORKSPACE, PROJECT, ENVIRONMENT, MAPPING).
+     */
+    @Transactional
+    public List<DriftRecordResponse> triggerDriftDetection(
+            UUID workspaceId,
+            com.secretvault.sync.model.SyncScope scope,
+            UUID scopeResourceId,
+            UUID callerUserId
+    ) {
+        effectiveAccessService.checkPermission(
+                workspaceId, null, null, null,
+                AccessPermission.DRIFT_VIEW, callerUserId
+        );
+
+        com.secretvault.sync.model.SyncScope effectiveScope = scope != null ? scope : com.secretvault.sync.model.SyncScope.WORKSPACE;
+        Map<com.secretvault.provider.entity.ProviderResourceMapping, List<com.secretvault.sync.model.DesiredSecretState>> desiredMap =
+                desiredStateResolver.resolveDesiredState(workspaceId, effectiveScope, scopeResourceId);
+
+        List<DriftRecord> allDetected = new ArrayList<>();
+        for (Map.Entry<com.secretvault.provider.entity.ProviderResourceMapping, List<com.secretvault.sync.model.DesiredSecretState>> entry : desiredMap.entrySet()) {
+            com.secretvault.provider.entity.ProviderResourceMapping mapping = entry.getKey();
+            List<com.secretvault.sync.model.DesiredSecretState> desiredStates = entry.getValue();
+
+            com.secretvault.sync.model.ActualStateResult actualResult = actualStateResolver.resolveActualState(workspaceId, mapping);
+            List<DriftRecord> mappingDrifts = driftDetectionEngine.detectDriftForMapping(
+                    workspaceId, mapping, desiredStates, actualResult, callerUserId
+            );
+            allDetected.addAll(mappingDrifts);
+        }
+
+        return allDetected.stream().map(DriftRecordResponse::fromEntity).toList();
     }
 
     /**

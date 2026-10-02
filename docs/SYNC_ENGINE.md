@@ -103,19 +103,33 @@ The engine is built around modular, decoupled components conforming to the Open-
 - Database locks are never held across external HTTP provider calls.
 
 ### Sync Idempotency
-- Repeated sync runs with identical desired and actual states yield `NO_OP` plans.
+- Repeated sync runs with identical desired and actual states yield `NO_OP` operations (`SyncOperationStatus.SKIPPED`).
 - Operations verify state fingerprints before issuing API calls to prevent redundant writes.
+- First execution against mismatched provider creates/updates provider variable; second execution without state change yields `NO_OP` with 0 provider mutations and 0 duplicate drift records.
 - Each `SyncJob` receives a unique UUID idempotency key.
+
+### 4.1 Provider Failure & Retry Classification
+- **HTTP 429 (`PROVIDER_RATE_LIMITED`)**: Bounded retry up to 3 attempts with exponential backoff (`backoffMs * attempt`). Halts safely without infinite retry loops.
+- **HTTP 401/403 (`PROVIDER_AUTHENTICATION_FAILED` / `PROVIDER_AUTHORIZATION_FAILED`)**: Never retried blindly; immediately marked as `FAILED` with normalized error code.
+- **HTTP 400/422 (`PROVIDER_INVALID_REQUEST`)**: Never retried; classified as validation error.
+- **HTTP 5xx / Network Outage (`PROVIDER_UNAVAILABLE`)**: Categorized strictly as `PROVIDER_UNAVAILABLE`, never falsely reported as `MISSING_FROM_PROVIDER`.
+
+### 4.2 Conservative Deletion Safety
+- Remote secrets found on the provider that are unmanaged in SecretVault are planned as `SyncOperationType.BLOCKED` with machine-readable error code `UNMANAGED_PROVIDER_SECRET`.
+- Zero automated deletion occurs without explicit administrative policy override.
 
 ---
 
-## 5. Background Scheduler & Automated Drift Scans
+## 5. Background Scheduler & Targeted Drift Scans
 
-- Managed by `SyncDriftScheduler`.
-- Configurable via `secretvault.sync.scheduler.enabled` and `secretvault.sync.scheduler.cron`.
-- Performs bounded workspace batching to prevent CPU/network exhaustion.
-- Scans active integrations and resource mappings on a recurring schedule.
-- Emits security findings when persistent or high-severity drift is discovered in production environments.
+- **Background Scheduler (`SyncDriftScheduler`)**:
+  - Configurable via `secretvault.sync.scheduler.enabled` and `secretvault.sync.scheduler.cron`.
+  - Performs bounded workspace batching to prevent CPU/network exhaustion.
+  - Scans active integrations and resource mappings on a recurring schedule.
+  - Emits security findings when persistent or high-severity drift is discovered in production environments.
+- **Targeted & On-Demand Detection**:
+  - Scoped drift analysis available for `WORKSPACE`, `PROJECT`, `ENVIRONMENT`, and `MAPPING` targets via `POST /api/v1/workspaces/{wId}/drift/detect`.
+  - Post-sync verification automatically triggers targeted drift detection on affected mappings immediately after push execution.
 
 ---
 
@@ -125,3 +139,4 @@ The engine is built around modular, decoupled components conforming to the Open-
 2. **Zero Credential Exposure**: Provider tokens and API keys are decrypted in-memory using AES-256-GCM only for the duration of the provider request.
 3. **Canary Verification**: Test suites assert that canary strings (e.g. `SUPER_SECRET_CANARY_123`) never appear in logs, exceptions, databases, or API responses.
 4. **Tenant Isolation**: All sync operations and queries strictly filter by `workspaceId` with verification via `EffectiveAccessService`.
+

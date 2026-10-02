@@ -110,10 +110,12 @@ public class SyncPlanningEngine {
                         ));
                     }
                 } else {
-                    // Secret exists on both provider and SecretVault -> check if update or no-op
-                    // In current Phase 7/8 model, if both exist, we treat as in-sync / idempotent NO_OP or UPDATE
-                    // In safe reconciliation, re-pushing desired state ensures provider has latest value
-                    if (effectivePolicy == ReconciliationPolicy.DETECT_ONLY) {
+                    // Secret exists on both provider and SecretVault -> check if identical (NO_OP) or modified (UPDATE)
+                    boolean isIdentical = desired.desiredFingerprint() != null
+                            && actual.providerFingerprint() != null
+                            && desired.desiredFingerprint().equals(actual.providerFingerprint());
+
+                    if (isIdentical) {
                         plannedOperations.add(new SyncOperationPlan(
                                 desired.secretId(),
                                 desired.secretName(),
@@ -123,12 +125,26 @@ public class SyncPlanningEngine {
                                 SyncOperationStatus.SKIPPED,
                                 desired.desiredFingerprint(),
                                 actual.providerFingerprint(),
-                                "Secret already exists on provider; DETECT_ONLY policy",
+                                "Secret state is identical between SecretVault and provider (idempotent NO_OP)",
+                                null,
+                                null
+                        ));
+                    } else if (effectivePolicy == ReconciliationPolicy.DETECT_ONLY) {
+                        plannedOperations.add(new SyncOperationPlan(
+                                desired.secretId(),
+                                desired.secretName(),
+                                mapping.getId(),
+                                mapping.getIntegrationId(),
+                                SyncOperationType.UPDATE,
+                                SyncOperationStatus.BLOCKED,
+                                desired.desiredFingerprint(),
+                                actual.providerFingerprint(),
+                                "Secret value differs on provider; DETECT_ONLY policy blocks update",
                                 null,
                                 null
                         ));
                     } else {
-                        // Secret exists on both -> UPDATE/NO_OP (idempotent push)
+                        // Secret exists on both and differs -> UPDATE
                         plannedOperations.add(new SyncOperationPlan(
                                 desired.secretId(),
                                 desired.secretName(),
@@ -138,7 +154,7 @@ public class SyncPlanningEngine {
                                 SyncOperationStatus.PENDING,
                                 desired.desiredFingerprint(),
                                 actual.providerFingerprint(),
-                                "Secret exists on provider, applying latest desired version",
+                                "Secret value differs on provider, applying latest desired version",
                                 null,
                                 null
                         ));
@@ -160,8 +176,8 @@ public class SyncPlanningEngine {
                             null,
                             actual.providerFingerprint(),
                             "Conservative deletion: unmanaged remote secrets are never deleted automatically",
-                            null,
-                            null
+                            "UNMANAGED_PROVIDER_SECRET",
+                            "Unmanaged provider secret cannot be deleted automatically without explicit authorization"
                     ));
                 }
             }
