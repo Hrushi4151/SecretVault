@@ -19,9 +19,7 @@ import {
   Send,
   XCircle,
   KeyRound,
-  Sliders
 } from 'lucide-react';
-import { MemberAccessManagementDialog } from '../access/MemberAccessManagementDialog';
 
 export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
   const { activeWorkspace, user } = useAuth();
@@ -30,7 +28,6 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedMemberForAccess, setSelectedMemberForAccess] = useState(null);
 
   // Invite Form State
   const [inviteEmail, setInviteEmail] = useState('');
@@ -341,17 +338,6 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
                           <RoleBadge role={member.role} />
                         )}
 
-                        {canManage && (
-                          <button
-                            onClick={() => setSelectedMemberForAccess(member)}
-                            title="Manage Project & Environment Access"
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#2C0012] text-[#FF85A2] hover:bg-[#FF2D6D] hover:text-white border border-[#FFB4C8]/25 transition-all shadow-sm"
-                          >
-                            <Sliders className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Manage Access</span>
-                          </button>
-                        )}
-
                         <span className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-[#A26377]">
                           <Clock className="w-3 h-3" />
                           {new Date(member.joinedAt).toLocaleDateString()}
@@ -615,15 +601,6 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
             Close
           </Button>
         </div>
-
-        {selectedMemberForAccess && (
-          <MemberAccessManagementDialog
-            isOpen={Boolean(selectedMemberForAccess)}
-            onClose={() => setSelectedMemberForAccess(null)}
-            targetMember={selectedMemberForAccess}
-            onAccessUpdated={() => loadData()}
-          />
-        )}
       </div>
     </Modal>
   );
