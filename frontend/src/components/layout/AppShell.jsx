@@ -23,6 +23,7 @@ import {
   Lock,
   Sparkles,
   MailCheck,
+  Bot,
 } from 'lucide-react';
 
 export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => {
@@ -64,6 +65,7 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     { id: 'projects', label: 'Projects', icon: <FolderGit2 className="w-4 h-4" /> },
     { id: 'secrets', label: 'Secrets', icon: <Key className="w-4 h-4" />, badge: 'Phase 3' },
     { id: 'access', label: 'Access & JIT', icon: <ShieldCheck className="w-4 h-4 text-[#FF85A2]" />, badge: 'Phase 5' },
+    { id: 'machine-identities', label: 'Machine & OIDC', icon: <Bot className="w-4 h-4 text-[#F43F5E]" />, badge: 'Phase 9' },
     { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Phase 7' },
     { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 8' },
   ];

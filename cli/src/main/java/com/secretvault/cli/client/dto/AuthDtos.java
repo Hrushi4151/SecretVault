@@ -38,4 +38,31 @@ public final class AuthDtos {
             String mfaChallengeId,
             Instant mfaExpiresAt
     ) {}
+
+    public record OidcTokenExchangeRequest(
+            UUID providerId,
+            String issuer,
+            String token
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record MachineIdentityDto(
+            UUID id,
+            UUID workspaceId,
+            String name,
+            String description,
+            String type,
+            String status,
+            Instant expiresAt,
+            Instant lastAuthenticatedAt,
+            Instant lastUsedAt
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record OidcTokenResponse(
+            String accessToken,
+            String tokenType,
+            long expiresIn,
+            MachineIdentityDto machineIdentity
+    ) {}
 }

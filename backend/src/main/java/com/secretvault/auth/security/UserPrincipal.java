@@ -22,14 +22,22 @@ public class UserPrincipal implements UserDetails {
     private final String fullName;
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
+    private final boolean isMachine;
+    private final UUID workspaceId;
 
     public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities) {
+        this(id, email, password, fullName, enabled, authorities, false, null);
+    }
+
+    public UserPrincipal(UUID id, String email, String password, String fullName, boolean enabled, Collection<? extends GrantedAuthority> authorities, boolean isMachine, UUID workspaceId) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.fullName = fullName;
         this.enabled = enabled;
         this.authorities = authorities;
+        this.isMachine = isMachine;
+        this.workspaceId = workspaceId;
     }
 
     public static UserPrincipal create(User user) {
@@ -41,8 +49,33 @@ public class UserPrincipal implements UserDetails {
                 user.getPasswordHash(),
                 user.getFullName(),
                 isEnabled,
-                authorities
+                authorities,
+                false,
+                null
         );
+    }
+
+    public static UserPrincipal createMachine(com.secretvault.machine.entity.MachineIdentity machine) {
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_MACHINE"));
+        boolean isEnabled = machine.getStatus() == com.secretvault.machine.model.MachineStatus.ACTIVE && !machine.isExpired(java.time.Instant.now());
+        return new UserPrincipal(
+                machine.getId(),
+                "machine:" + machine.getName(),
+                "",
+                "Machine: " + machine.getName(),
+                isEnabled,
+                authorities,
+                true,
+                machine.getWorkspaceId()
+        );
+    }
+
+    public boolean isMachine() {
+        return isMachine;
+    }
+
+    public UUID getWorkspaceId() {
+        return workspaceId;
     }
 
     public UUID getId() {

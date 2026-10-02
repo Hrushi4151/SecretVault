@@ -10,6 +10,7 @@ import com.secretvault.cli.config.ProfileConfig;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Orchestrates authentication, session persistence, automatic token renewal, and profile credentials.
@@ -60,6 +61,38 @@ public class AuthManager {
             if (response.activeWorkspace() != null && profile.getWorkspaceId() == null) {
                 profile.setWorkspaceId(response.activeWorkspace().id().toString());
                 profile.setWorkspaceSlug(response.activeWorkspace().slug());
+            }
+
+            configManager.saveConfig(config);
+        }
+
+        return response;
+    }
+
+    public AuthDtos.OidcTokenResponse loginWithOidc(String profileName, String serverUrl, UUID providerId, String issuer, String oidcToken) {
+        CliConfig config = configManager.loadConfig();
+        ProfileConfig profile = config.getProfile(profileName);
+        if (serverUrl != null && !serverUrl.isBlank()) {
+            profile.setServer(serverUrl);
+        }
+
+        SecretVaultApiClient client = new SecretVaultApiClient(profile.getServer());
+        AuthDtos.OidcTokenResponse response = client.exchangeOidcToken(new AuthDtos.OidcTokenExchangeRequest(providerId, issuer, oidcToken));
+
+        if (response.accessToken() != null) {
+            Instant expiresAt = Instant.now().plusSeconds(response.expiresIn() > 0 ? response.expiresIn() : 600);
+            StoredCredentials creds = new StoredCredentials(
+                    response.accessToken(),
+                    null,
+                    expiresAt,
+                    profile.getServer(),
+                    response.machineIdentity() != null ? response.machineIdentity().name() : "machine",
+                    response.machineIdentity() != null ? response.machineIdentity().id() : null
+            );
+            credentialStore.save(profileName, profile.getServer(), creds);
+
+            if (response.machineIdentity() != null && response.machineIdentity().workspaceId() != null) {
+                profile.setWorkspaceId(response.machineIdentity().workspaceId().toString());
             }
 
             configManager.saveConfig(config);

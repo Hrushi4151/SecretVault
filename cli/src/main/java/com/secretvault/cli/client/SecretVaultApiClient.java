@@ -93,6 +93,22 @@ public class SecretVaultApiClient {
         }
     }
 
+    public AuthDtos.OidcTokenResponse exchangeOidcToken(String issuer, UUID providerId, String token) {
+        return exchangeOidcToken(new AuthDtos.OidcTokenExchangeRequest(providerId, issuer, token));
+    }
+
+    public AuthDtos.OidcTokenResponse exchangeOidcToken(AuthDtos.OidcTokenExchangeRequest req) {
+        return post("/api/v1/auth/oidc/token", req, new TypeReference<ApiEnvelope<AuthDtos.OidcTokenResponse>>() {}, false, null);
+    }
+
+    public List<AuthDtos.MachineIdentityDto> listMachineIdentities(UUID workspaceId) {
+        return get("/api/v1/workspaces/" + workspaceId + "/machine-identities", new TypeReference<ApiEnvelope<List<AuthDtos.MachineIdentityDto>>>() {}, workspaceId);
+    }
+
+    public AuthDtos.MachineIdentityDto getMachineIdentity(UUID workspaceId, UUID machineId) {
+        return get("/api/v1/workspaces/" + workspaceId + "/machine-identities/" + machineId, new TypeReference<ApiEnvelope<AuthDtos.MachineIdentityDto>>() {}, workspaceId);
+    }
+
     // ==========================================
     // Workspace APIs
     // ==========================================

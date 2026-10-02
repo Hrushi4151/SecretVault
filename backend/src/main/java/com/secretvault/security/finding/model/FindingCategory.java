@@ -51,6 +51,18 @@ public enum FindingCategory {
     PROVIDER_CREDENTIAL_FAILURE(
             "External Provider Credential Failure",
             "External provider credentials rejected, invalid, or lacking necessary permissions."
+    ),
+    MACHINE_IDENTITY_RISK(
+            "Machine Identity Security Risk",
+            "Machine identity has excessive permissions, missing expiration, or dormant privileged access."
+    ),
+    OVERLY_BROAD_TRUST_POLICY(
+            "Overly Broad OIDC Trust Policy",
+            "OIDC Trust Policy contains wildcards, missing branch/environment constraints, or unsafe claim rules."
+    ),
+    MACHINE_PRODUCTION_REVEAL(
+            "Machine Production Secret Reveal",
+            "Machine identity holds standing reveal permissions on production environments."
     );
 
     private final String displayName;

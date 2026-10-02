@@ -13,6 +13,7 @@ import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -28,19 +29,22 @@ public class SecretAuthorizationHelper {
     private final ProjectRepository projectRepository;
     private final EnvironmentRepository environmentRepository;
     private final EffectiveAccessService effectiveAccessService;
+    private final com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository;
 
     public SecretAuthorizationHelper(
             WorkspaceRepository workspaceRepository,
             WorkspaceMembershipRepository membershipRepository,
             ProjectRepository projectRepository,
             EnvironmentRepository environmentRepository,
-            EffectiveAccessService effectiveAccessService
+            EffectiveAccessService effectiveAccessService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository
     ) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
         this.projectRepository = projectRepository;
         this.environmentRepository = environmentRepository;
         this.effectiveAccessService = effectiveAccessService;
+        this.machineIdentityRepository = machineIdentityRepository;
     }
 
     public record WorkspaceContext(Workspace workspace, WorkspaceMembership membership, Project project, Environment environment) {
@@ -54,8 +58,27 @@ public class SecretAuthorizationHelper {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Workspace not found"));
 
-        WorkspaceMembership membership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
+        WorkspaceMembership membership = null;
+        boolean isMachine = false;
+
+        if (machineIdentityRepository != null) {
+            Optional<com.secretvault.machine.entity.MachineIdentity> machineOpt = machineIdentityRepository.findByIdAndDeletedAtIsNull(userId);
+            if (machineOpt.isPresent()) {
+                com.secretvault.machine.entity.MachineIdentity machine = machineOpt.get();
+                if (!machine.getWorkspaceId().equals(workspaceId)) {
+                    throw ApiException.forbidden("Cross-tenant access denied: Machine identity does not belong to this workspace");
+                }
+                if (!machine.isUsable(java.time.Instant.now())) {
+                    throw ApiException.forbidden("Machine identity is " + machine.getStatus());
+                }
+                isMachine = true;
+            }
+        }
+
+        if (!isMachine) {
+            membership = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                    .orElseThrow(() -> ApiException.forbidden("You are not a member of this workspace"));
+        }
 
         Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Project not found in this workspace"));

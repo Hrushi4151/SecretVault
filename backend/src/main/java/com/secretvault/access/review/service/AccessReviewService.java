@@ -82,6 +82,8 @@ public class AccessReviewService {
     private final AuditService auditService;
     private final EffectiveAccessService effectiveAccessService;
     private final Clock clock;
+    private final com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository;
+    private final com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository;
 
     public AccessReviewService(
             AccessReviewCampaignRepository campaignRepository,
@@ -102,7 +104,30 @@ public class AccessReviewService {
         this(campaignRepository, itemRepository, workspaceRepository, membershipRepository,
              projectRepository, environmentRepository, secretRepository, projectAccessRepository,
              environmentAccessRepository, accessGrantRepository, jitRepository, userRepository,
-             auditService, effectiveAccessService, Clock.systemUTC());
+             auditService, effectiveAccessService, Clock.systemUTC(), null, null);
+    }
+
+    public AccessReviewService(
+            AccessReviewCampaignRepository campaignRepository,
+            AccessReviewItemRepository itemRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            SecretRepository secretRepository,
+            ProjectAccessRepository projectAccessRepository,
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository,
+            UserRepository userRepository,
+            AuditService auditService,
+            EffectiveAccessService effectiveAccessService,
+            Clock clock
+    ) {
+        this(campaignRepository, itemRepository, workspaceRepository, membershipRepository,
+             projectRepository, environmentRepository, secretRepository, projectAccessRepository,
+             environmentAccessRepository, accessGrantRepository, jitRepository, userRepository,
+             auditService, effectiveAccessService, clock, null, null);
     }
 
     @Autowired
@@ -121,7 +146,9 @@ public class AccessReviewService {
             UserRepository userRepository,
             AuditService auditService,
             EffectiveAccessService effectiveAccessService,
-            Clock clock
+            Clock clock,
+            @Autowired(required = false) com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository,
+            @Autowired(required = false) com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository
     ) {
         this.campaignRepository = campaignRepository;
         this.itemRepository = itemRepository;
@@ -138,6 +165,8 @@ public class AccessReviewService {
         this.auditService = auditService;
         this.effectiveAccessService = effectiveAccessService;
         this.clock = clock != null ? clock : Clock.systemUTC();
+        this.machineIdentityRepository = machineIdentityRepository;
+        this.machineAccessGrantRepository = machineAccessGrantRepository;
     }
 
     @Transactional
@@ -469,6 +498,10 @@ public class AccessReviewService {
             case GRANULAR_GRANT -> {
                 accessGrantRepository.findByIdAndWorkspaceId(item.getSourceReferenceId(), workspaceId)
                         .ifPresent(accessGrantRepository::delete);
+                if (machineAccessGrantRepository != null) {
+                    machineAccessGrantRepository.findByIdAndWorkspaceId(item.getSourceReferenceId(), workspaceId)
+                            .ifPresent(machineAccessGrantRepository::delete);
+                }
             }
             case ENVIRONMENT_ACCESS -> {
                 environmentAccessRepository.findById(item.getSourceReferenceId())
@@ -620,6 +653,45 @@ public class AccessReviewService {
                         jit.getId(),
                         "JIT Elevation: " + jit.getRequestedPermission().getCode() + " (TTL until " + jit.getExpiresAt() + ")"
                 ));
+            }
+        }
+
+        // 6. Snapshot Machine Identity Grants
+        if (machineIdentityRepository != null && machineAccessGrantRepository != null) {
+            List<com.secretvault.machine.entity.MachineIdentity> machines = machineIdentityRepository.findByWorkspaceIdAndDeletedAtIsNull(wsId);
+            for (com.secretvault.machine.entity.MachineIdentity machine : machines) {
+                if (machine.getStatus() != com.secretvault.machine.model.MachineStatus.ACTIVE) continue;
+
+                List<com.secretvault.machine.entity.MachineAccessGrant> machineGrants =
+                        machineAccessGrantRepository.findByWorkspaceIdAndMachineIdentityId(wsId, machine.getId());
+
+                for (com.secretvault.machine.entity.MachineAccessGrant mg : machineGrants) {
+                    String resourceName = "Workspace-Wide";
+                    UUID resourceId = wsId;
+                    if (mg.getSecretId() != null) {
+                        resourceName = secretRepository.findById(mg.getSecretId()).map(Secret::getName).orElse("Secret");
+                        resourceId = mg.getSecretId();
+                    } else if (mg.getEnvironmentId() != null) {
+                        resourceName = environmentRepository.findById(mg.getEnvironmentId()).map(Environment::getName).orElse("Environment");
+                        resourceId = mg.getEnvironmentId();
+                    } else if (mg.getProjectId() != null) {
+                        resourceName = projectRepository.findById(mg.getProjectId()).map(Project::getName).orElse("Project");
+                        resourceId = mg.getProjectId();
+                    }
+
+                    items.add(new AccessReviewItem(
+                            campaign.getId(),
+                            machine.getId(),
+                            "machine:" + machine.getName(),
+                            "Machine: " + machine.getName() + " (" + machine.getType() + ")",
+                            mg.getScopeType(),
+                            resourceName,
+                            resourceId,
+                            AccessSourceType.GRANULAR_GRANT,
+                            mg.getId(),
+                            "Machine Grant: " + mg.getPermission() + " [" + mg.getEffect() + "]"
+                    ));
+                }
             }
         }
 

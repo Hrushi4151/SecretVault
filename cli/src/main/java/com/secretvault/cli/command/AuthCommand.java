@@ -22,12 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Command(
         name = "auth",
         description = "Manage authentication, profiles, and secure local session credentials",
         subcommands = {
                 AuthCommand.LoginCommand.class,
+                AuthCommand.OidcLoginCommand.class,
                 AuthCommand.LogoutCommand.class,
                 AuthCommand.StatusCommand.class,
                 AuthCommand.WhoamiCommand.class,
@@ -131,6 +133,76 @@ public class AuthCommand extends BaseCommand {
                 return 1;
             } finally {
                 RedactionHelper.wipe(passwordChars);
+            }
+        }
+    }
+
+    @Command(name = "oidc", description = "Exchange an OIDC workload token (e.g., GitHub Actions, GitLab CI) for a SecretVault machine session")
+    public static class OidcLoginCommand extends BaseCommand {
+
+        @Option(names = {"--provider-id"}, description = "OIDC Provider UUID in SecretVault")
+        private UUID providerId;
+
+        @Option(names = {"--issuer"}, description = "OIDC Issuer URL (if provider-id is not specified)")
+        private String issuer;
+
+        @Option(names = {"--token"}, description = "Raw OIDC ID Token (JWT)")
+        private String token;
+
+        @Option(names = {"--token-stdin"}, description = "Read OIDC ID Token from standard input")
+        private boolean tokenStdin;
+
+        @Option(names = {"--token-env"}, description = "Environment variable containing the OIDC token")
+        private String tokenEnv;
+
+        @Override
+        public Integer call() {
+            ConsolePrinter printer = getPrinter();
+            ContextManager.ResolvedContext ctx = resolveContext();
+            String targetProfile = ctx.profile();
+            String targetServer = ctx.server();
+
+            String rawToken = token;
+            if (rawToken == null || rawToken.isBlank()) {
+                if (tokenEnv != null && !tokenEnv.isBlank()) {
+                    rawToken = System.getenv(tokenEnv);
+                } else if (tokenStdin) {
+                    try {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+                        rawToken = br.readLine();
+                    } catch (Exception e) {
+                        printer.error("Failed to read OIDC token from stdin: " + e.getMessage());
+                        return 1;
+                    }
+                } else {
+                    // Check standard CI environment variables as convenience
+                    String ghToken = System.getenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN");
+                    String gitlabToken = System.getenv("CI_JOB_JWT_V2");
+                    if (ghToken != null && !ghToken.isBlank()) {
+                        rawToken = ghToken;
+                    } else if (gitlabToken != null && !gitlabToken.isBlank()) {
+                        rawToken = gitlabToken;
+                    }
+                }
+            }
+
+            if (rawToken == null || rawToken.isBlank()) {
+                printer.error("OIDC token is required. Use --token, --token-stdin, or --token-env.");
+                return 1;
+            }
+
+            try {
+                printer.info("Exchanging OIDC token with SecretVault at " + targetServer + " (Profile: " + targetProfile + ")...");
+                AuthManager authManager = getAuthManager();
+                AuthDtos.OidcTokenResponse resp = authManager.loginWithOidc(targetProfile, targetServer, providerId, issuer, rawToken);
+
+                printer.success("Authenticated successfully as Machine Identity: " + 
+                        (resp.machineIdentity() != null ? resp.machineIdentity().name() : "Machine"));
+                printer.info("Session valid for " + resp.expiresIn() + " seconds.");
+                return 0;
+            } catch (Exception e) {
+                printer.error(e.getMessage());
+                return 1;
             }
         }
     }

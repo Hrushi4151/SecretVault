@@ -8,6 +8,7 @@ import com.secretvault.cli.command.DevCommand;
 import com.secretvault.cli.command.DoctorCommand;
 import com.secretvault.cli.command.EnvCommand;
 import com.secretvault.cli.command.EnvironmentCommand;
+import com.secretvault.cli.command.MachineCommand;
 import com.secretvault.cli.command.ProjectCommand;
 import com.secretvault.cli.command.RunCommand;
 import com.secretvault.cli.command.SecretCommand;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
         versionProvider = SecretVaultCli.VersionProvider.class,
         subcommands = {
                 AuthCommand.class,
+                MachineCommand.class,
                 WorkspaceCommand.class,
                 ProjectCommand.class,
                 EnvironmentCommand.class,

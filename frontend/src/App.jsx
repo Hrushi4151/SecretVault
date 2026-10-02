@@ -8,6 +8,7 @@ import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
 import { ProjectsView } from './components/project/ProjectsView';
 import { SecretsView } from './components/secrets/SecretsView';
 import { AccessControlCenterView } from './components/access/AccessControlCenterView';
+import { MachineIdentitiesView } from './components/machine/MachineIdentitiesView';
 import { IntegrationsView } from './components/integrations/IntegrationsView';
 import { SyncCenterView } from './components/sync/SyncCenterView';
 import { SettingsView } from './components/settings/SettingsView';
@@ -97,6 +98,8 @@ const MainRouter = () => {
         />
       ) : currentTab === 'access' ? (
         <AccessControlCenterView />
+      ) : currentTab === 'machine-identities' ? (
+        <MachineIdentitiesView />
       ) : currentTab === 'integrations' ? (
         <IntegrationsView />
       ) : currentTab === 'sync-center' || currentTab === 'drift' ? (

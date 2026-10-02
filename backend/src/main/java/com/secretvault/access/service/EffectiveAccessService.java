@@ -65,6 +65,8 @@ public class EffectiveAccessService {
     private final AccessGrantRepository accessGrantRepository;
     private final JitAccessRequestRepository jitRepository;
     private final java.time.Clock clock;
+    private final com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository;
+    private final com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository;
 
     public EffectiveAccessService(
             WorkspaceRepository workspaceRepository,
@@ -79,7 +81,24 @@ public class EffectiveAccessService {
     ) {
         this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
              secretRepository, projectAccessRepository, environmentAccessRepository,
-             accessGrantRepository, jitRepository, java.time.Clock.systemUTC());
+             accessGrantRepository, jitRepository, java.time.Clock.systemUTC(), null, null);
+    }
+
+    public EffectiveAccessService(
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            SecretRepository secretRepository,
+            ProjectAccessRepository projectAccessRepository,
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository,
+            java.time.Clock clock
+    ) {
+        this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
+             secretRepository, projectAccessRepository, environmentAccessRepository,
+             accessGrantRepository, jitRepository, clock, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -93,7 +112,9 @@ public class EffectiveAccessService {
             EnvironmentAccessRepository environmentAccessRepository,
             AccessGrantRepository accessGrantRepository,
             JitAccessRequestRepository jitRepository,
-            java.time.Clock clock
+            java.time.Clock clock,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository
     ) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
@@ -105,11 +126,13 @@ public class EffectiveAccessService {
         this.accessGrantRepository = accessGrantRepository;
         this.jitRepository = jitRepository;
         this.clock = clock != null ? clock : java.time.Clock.systemUTC();
+        this.machineIdentityRepository = machineIdentityRepository;
+        this.machineAccessGrantRepository = machineAccessGrantRepository;
     }
 
     /**
      * Evaluates whether an authenticated actor has a specific permission on a resource target.
-     * Executes the authoritative 9-step evaluation pipeline and returns a structured AccessDecision.
+     * Executes the authoritative evaluation pipeline for both Human Users and Machine Identities.
      */
     @Transactional(readOnly = true)
     public AccessDecision evaluateAccess(
@@ -130,10 +153,19 @@ public class EffectiveAccessService {
             return AccessDecision.deny(permission, "Tenant context missing: workspace ID must not be null");
         }
 
-        // 1. Tenant / Workspace Membership Check
+        // 1. Tenant / Workspace Check
         if (!workspaceRepository.existsById(workspaceId)) {
             return AccessDecision.deny(permission, AccessScope.WORKSPACE, "Workspace not found");
         }
+
+        // Check if actor is a Machine Identity (Phase 9)
+        if (machineIdentityRepository != null) {
+            Optional<com.secretvault.machine.entity.MachineIdentity> machineOpt = machineIdentityRepository.findByIdAndDeletedAtIsNull(userId);
+            if (machineOpt.isPresent()) {
+                return evaluateMachineAccess(workspaceId, projectId, environmentId, secretId, permission, machineOpt.get());
+            }
+        }
+
         Optional<WorkspaceMembership> membershipOpt = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
         if (membershipOpt.isEmpty()) {
             return AccessDecision.deny(permission, AccessScope.WORKSPACE, "User is not an active member of this workspace");
@@ -764,6 +796,187 @@ public class EffectiveAccessService {
             if (accessGrantRepository != null) {
                 List<AccessGrant> userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
                 if (!userGrants.isEmpty()) return true;
+            }
+        }
+        return false;
+    }
+
+    private AccessDecision evaluateMachineAccess(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            AccessPermission permission,
+            com.secretvault.machine.entity.MachineIdentity machine
+    ) {
+        // 1. Tenant / Workspace Isolation Check
+        if (!machine.getWorkspaceId().equals(workspaceId)) {
+            return AccessDecision.deny(permission, AccessScope.WORKSPACE, "Cross-tenant access denied: Machine identity does not belong to this workspace");
+        }
+
+        // 2. Machine Lifecycle Status Check
+        if (!machine.isUsable(clock.instant())) {
+            return AccessDecision.deny(permission, AccessScope.WORKSPACE, "Machine identity is " + machine.getStatus());
+        }
+
+        // 3. Secret Auto-resolution / validation
+        Secret secret = null;
+        if (secretId != null) {
+            Optional<Secret> sOpt = secretRepository.findById(secretId);
+            if (sOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Secret not found");
+            }
+            secret = sOpt.get();
+            if (environmentId != null && !secret.getEnvironmentId().equals(environmentId)) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Secret does not belong to the specified environment");
+            }
+            environmentId = secret.getEnvironmentId();
+        }
+
+        // 4. Environment Auto-resolution
+        Environment environment = null;
+        if (environmentId != null && projectId == null) {
+            Optional<Environment> eOpt = environmentRepository.findById(environmentId);
+            if (eOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.ENVIRONMENT, "Environment not found");
+            }
+            environment = eOpt.get();
+            projectId = environment.getProjectId();
+        }
+
+        // 5. Project Boundary Validation
+        Project project = null;
+        if (projectId != null) {
+            Optional<Project> projOpt = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId);
+            if (projOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.PROJECT, "Project not found in this workspace");
+            }
+            project = projOpt.get();
+        }
+
+        // 6. Environment Boundary Validation
+        if (environmentId != null && environment == null) {
+            Optional<Environment> envOpt = environmentRepository.findByIdAndProjectId(environmentId, projectId);
+            if (envOpt.isEmpty()) {
+                return AccessDecision.deny(permission, AccessScope.ENVIRONMENT, "Environment not found in this project");
+            }
+            environment = envOpt.get();
+        }
+
+        // 7. Hard Security Invariants Check
+        if (secret != null && secret.getStatus() == SecretStatus.DELETED) {
+            if (permission == AccessPermission.SECRET_UPDATE ||
+                    permission == AccessPermission.SECRET_DELETE ||
+                    permission == AccessPermission.SECRET_ROLLBACK ||
+                    permission == AccessPermission.SECRET_BRANCH) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Cannot perform mutations on a deleted secret");
+            }
+        }
+
+        if (permission == AccessPermission.SECRET_BRANCH && environment != null) {
+            if (environment.getEnvType() != EnvType.DEVELOPMENT) {
+                return AccessDecision.deny(
+                        permission,
+                        AccessScope.ENVIRONMENT,
+                        "Feature branches are only permitted in DEVELOPMENT environments. Environment [" + environment.getName() + "] is of type " + environment.getEnvType() + "."
+                );
+            }
+        }
+
+        // 8. Machine Identity Grants Evaluation
+        if (machineAccessGrantRepository != null) {
+            List<com.secretvault.machine.entity.MachineAccessGrant> grants =
+                    machineAccessGrantRepository.findByWorkspaceIdAndMachineIdentityId(workspaceId, machine.getId());
+
+            String secretKeyName = secret != null ? secret.getName() : null;
+
+            // Check DENY grants first (DENY > ALLOW precedence)
+            for (com.secretvault.machine.entity.MachineAccessGrant grant : grants) {
+                if ("DENY".equalsIgnoreCase(grant.getEffect()) && matchesMachineGrantScope(grant, projectId, environmentId, secretId, secretKeyName)) {
+                    if (isPermissionMatch(grant.getPermission(), permission)) {
+                        return AccessDecision.deny(permission, grant.getScopeType(), "Explicitly denied by machine access policy");
+                    }
+                }
+            }
+
+            // Check ALLOW grants
+            for (com.secretvault.machine.entity.MachineAccessGrant grant : grants) {
+                if ("ALLOW".equalsIgnoreCase(grant.getEffect()) && matchesMachineGrantScope(grant, projectId, environmentId, secretId, secretKeyName)) {
+                    if (isPermissionMatch(grant.getPermission(), permission)) {
+                        return AccessDecision.allow(
+                                permission,
+                                grant.getScopeType(),
+                                AccessSourceType.GRANULAR_GRANT,
+                                grant.getId() != null ? grant.getId().toString() : UUID.randomUUID().toString(),
+                                "Granted via Machine Access Grant [" + grant.getScopeType() + "]"
+                        );
+                    }
+                }
+            }
+        }
+
+        AccessScope targetScope = secret != null ? AccessScope.SECRET
+                : environment != null ? AccessScope.ENVIRONMENT
+                : project != null ? AccessScope.PROJECT
+                : AccessScope.WORKSPACE;
+
+        return AccessDecision.deny(
+                permission,
+                targetScope,
+                "No standing grant: Machine identity [" + machine.getName() + "] does not possess explicit grant for [" + permission.getCode() + "] on this resource target"
+        );
+    }
+
+    private boolean isPermissionMatch(String grantPerm, AccessPermission requiredPerm) {
+        if (grantPerm == null || requiredPerm == null) return false;
+        String cleanGrant = grantPerm.trim().toLowerCase();
+        String cleanRequired = requiredPerm.getCode().trim().toLowerCase();
+        return cleanGrant.equals(cleanRequired) || cleanGrant.equals("*");
+    }
+
+    private boolean matchesMachineGrantScope(
+            com.secretvault.machine.entity.MachineAccessGrant grant,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            String secretKeyName
+    ) {
+        return switch (grant.getScopeType()) {
+            case WORKSPACE -> true;
+            case PROJECT -> projectId != null && projectId.equals(grant.getProjectId());
+            case ENVIRONMENT -> {
+                if (environmentId == null || !environmentId.equals(grant.getEnvironmentId())) {
+                    yield false;
+                }
+                if (grant.getSecretPattern() != null && !grant.getSecretPattern().isBlank() && secretKeyName != null) {
+                    yield isSecretPatternMatch(grant.getSecretPattern(), secretKeyName);
+                }
+                yield true;
+            }
+            case SECRET -> {
+                if (environmentId == null || !environmentId.equals(grant.getEnvironmentId())) {
+                    yield false;
+                }
+                if (grant.getSecretId() != null && secretId != null && grant.getSecretId().equals(secretId)) {
+                    yield true;
+                }
+                if (grant.getSecretPattern() != null && secretKeyName != null) {
+                    yield isSecretPatternMatch(grant.getSecretPattern(), secretKeyName);
+                }
+                yield false;
+            }
+        };
+    }
+
+    private boolean isSecretPatternMatch(String pattern, String secretName) {
+        if (pattern == null || pattern.isBlank() || secretName == null) return true;
+        for (String part : pattern.split(",")) {
+            String p = part.trim();
+            if (p.equals("*") || p.equalsIgnoreCase(secretName)) {
+                return true;
+            }
+            if (p.endsWith("*") && secretName.toLowerCase().startsWith(p.substring(0, p.length() - 1).toLowerCase())) {
+                return true;
             }
         }
         return false;
