@@ -592,14 +592,22 @@ public class SecretService {
         }
 
         // 2. Intersect with Scoped Project Access
-        Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
+        Optional<ProjectAccess> projAccess = projectAccessRepository != null
+                ? projectAccessRepository.findByProjectIdAndUserId(projectId, userId)
+                : Optional.empty();
         WorkspaceRole effProjectRole = ProjectAccessService.computeEffectiveRole(
                 wsRole,
                 projAccess.map(ProjectAccess::getRole).orElse(wsRole)
         );
 
+        if (effProjectRole == WorkspaceRole.VIEWER) {
+            throw ApiException.forbidden("Insufficient permissions: effective project role is VIEWER");
+        }
+
         // 3. Intersect with Scoped Environment Access
-        Optional<EnvironmentAccess> envAccess = environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId);
+        Optional<EnvironmentAccess> envAccess = environmentAccessRepository != null
+                ? environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)
+                : Optional.empty();
         PermissionLevel effEnvPerm = EnvironmentAccessService.computeEffectivePermission(
                 effProjectRole,
                 envAccess.map(EnvironmentAccess::getPermissionLevel).orElse(null)
@@ -616,9 +624,35 @@ public class SecretService {
         WorkspaceContext context = verifyHierarchy(workspaceId, projectId, environmentId, userId);
         WorkspaceRole wsRole = context.membership().getRole();
 
-        // VIEWER role is strictly forbidden from revealing secrets
+        // 1. VIEWER role is strictly forbidden from revealing secrets
         if (wsRole == WorkspaceRole.VIEWER) {
             throw ApiException.forbidden("VIEWER role is not authorized to reveal secret values");
+        }
+
+        // 2. Intersect with Scoped Project Access
+        Optional<ProjectAccess> projAccess = projectAccessRepository != null
+                ? projectAccessRepository.findByProjectIdAndUserId(projectId, userId)
+                : Optional.empty();
+        WorkspaceRole effProjectRole = ProjectAccessService.computeEffectiveRole(
+                wsRole,
+                projAccess.map(ProjectAccess::getRole).orElse(wsRole)
+        );
+
+        if (effProjectRole == WorkspaceRole.VIEWER) {
+            throw ApiException.forbidden("VIEWER role is strictly forbidden from revealing secret values");
+        }
+
+        // 3. Intersect with Scoped Environment Access
+        Optional<EnvironmentAccess> envAccess = environmentAccessRepository != null
+                ? environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId)
+                : Optional.empty();
+        PermissionLevel effEnvPerm = EnvironmentAccessService.computeEffectivePermission(
+                effProjectRole,
+                envAccess.map(EnvironmentAccess::getPermissionLevel).orElse(null)
+        );
+
+        if (effEnvPerm == PermissionLevel.READ) {
+            throw ApiException.forbidden("Insufficient permissions: effective permission on this environment is READ only");
         }
 
         return context;
