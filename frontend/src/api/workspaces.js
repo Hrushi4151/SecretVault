@@ -108,4 +108,17 @@ export const workspaceApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  getMemberAccess: async (workspaceId, userId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/members/${userId}/access`, {
+      method: 'GET',
+    });
+  },
+
+  updateMemberAccess: async (workspaceId, userId, payload) => {
+    return apiClient.request(`/workspaces/${workspaceId}/members/${userId}/access`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
 };
