@@ -82,15 +82,25 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
   ];
 
   const orgNavItems = [
-    { label: 'Team', icon: <Users className="w-4 h-4" />, active: false, action: () => setIsMembersModalOpen(true) },
     {
+      id: 'team',
+      label: 'Team Members',
+      icon: <Users className="w-4 h-4" />,
+      action: () => setIsMembersModalOpen(true),
+    },
+    {
+      id: 'invitations',
       label: 'Invitations',
       icon: <MailCheck className="w-4 h-4 text-[#FF2D6D]" />,
-      active: false,
       badge: pendingInvitationsCount > 0 ? `${pendingInvitationsCount} New` : null,
       action: () => setIsInvitationsModalOpen(true),
     },
-    { label: 'Settings', icon: <FolderGit2 className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <FolderGit2 className="w-4 h-4 text-[#FF85A2]" />,
+      action: () => onSelectTab && onSelectTab('settings'),
+    },
   ];
 
   return (
@@ -245,24 +255,33 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
                 Organization
               </span>
               <div className="flex flex-col gap-1">
-                {orgNavItems.map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={item.action}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all text-left"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[#F4B5C8]">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {orgNavItems.map((item) => {
+                  const isActive = item.id === activeTab;
+                  return (
+                    <button
+                      key={item.id || item.label}
+                      type="button"
+                      onClick={item.action}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all text-left cursor-pointer ${
+                        isActive
+                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
+                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </nav>
@@ -390,6 +409,17 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
                   >
                     <Users className="w-4 h-4 text-[#FF2D6D]" />
                     <span>Manage Workspace Members</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onSelectTab && onSelectTab('settings');
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] transition-colors text-left"
+                  >
+                    <FolderGit2 className="w-4 h-4 text-[#FF85A2]" />
+                    <span>Workspace &amp; Project Settings</span>
                   </button>
 
                   <button
