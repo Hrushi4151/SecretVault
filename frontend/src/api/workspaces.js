@@ -78,6 +78,30 @@ export const workspaceApi = {
     });
   },
 
+  lookupUser: async (workspaceId, email) => {
+    return apiClient.request(`/workspaces/${workspaceId}/invitations/lookup?email=${encodeURIComponent(email)}`, {
+      method: 'GET',
+    });
+  },
+
+  getMyInvitations: async () => {
+    return apiClient.request('/invitations/me', {
+      method: 'GET',
+    });
+  },
+
+  acceptInvitationById: async (invitationId) => {
+    return apiClient.request(`/invitations/${invitationId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  declineInvitationById: async (invitationId) => {
+    return apiClient.request(`/invitations/${invitationId}/decline`, {
+      method: 'POST',
+    });
+  },
+
   acceptInvitation: async (payload) => {
     return apiClient.request('/invitations/accept', {
       method: 'POST',
