@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { WorkspaceSettingsView } from './WorkspaceSettingsView';
 import { ProjectSettingsView } from './ProjectSettingsView';
+import { AccountSecurityView } from './AccountSecurityView';
 import {
   Building2,
   FolderGit2,
@@ -113,49 +114,7 @@ export const SettingsView = ({
           onNavigateToAccess={onNavigateToAccess}
         />
       ) : (
-        /* Account & Security Profile View */
-        <div className="flex flex-col gap-6 max-w-3xl">
-          <div className="p-6 rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/15 flex flex-col gap-6">
-            <div>
-              <h2 className="text-base font-headline font-bold text-white">User Profile &amp; Authentication Identity</h2>
-              <p className="text-xs text-[#A26377]">
-                Authenticated principal details, organizations, and security controls.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-[#A26377] uppercase">Full Name</span>
-                <span className="text-xs font-bold text-white">{user?.fullName || 'N/A'}</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-[#A26377] uppercase">Email Address</span>
-                <span className="text-xs font-mono text-[#F4B5C8]">{user?.email || 'N/A'}</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-[#A26377] uppercase">Active Workspace Role</span>
-                <span className="text-xs font-mono font-bold text-[#4ADE80]">{activeWorkspace?.role || 'MEMBER'}</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-[#A26377] uppercase">Session Security</span>
-                <span className="text-xs font-mono text-[#FFB4C8]">Stateless JJWT (24h TTL)</span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-headline font-bold text-white">Multi-Factor Authentication (MFA)</span>
-                <span className="text-[11px] text-[#A26377]">Step-up TOTP verification for protected reveals and production mutations.</span>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#3F0016] text-[10px] font-mono text-[#4ADE80] border border-[#4ADE80]/30 font-semibold">
-                ENFORCED
-              </span>
-            </div>
-          </div>
-        </div>
+        <AccountSecurityView />
       )}
     </div>
   );

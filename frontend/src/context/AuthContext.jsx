@@ -75,6 +75,10 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await authApi.login(credentials);
+      if (response.mfaRequired) {
+        return response;
+      }
+
       apiClient.setSession({
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
@@ -87,8 +91,63 @@ export const AuthProvider = ({ children }) => {
       }
 
       await refreshWorkspaces();
+      return response;
     } catch (err) {
       const errMsg = err.payload?.message || err.message || 'Login failed. Please check your credentials.';
+      setError(errMsg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeMfaTotpLogin = async ({ challengeId, code }) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.verifyMfaTotp({ challengeId, code });
+      apiClient.setSession({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        activeWorkspaceId: response.activeWorkspace?.id,
+      });
+
+      setUser(response.user);
+      if (response.activeWorkspace) {
+        setActiveWorkspace(response.activeWorkspace);
+      }
+
+      await refreshWorkspaces();
+      return response;
+    } catch (err) {
+      const errMsg = err.payload?.message || err.message || 'Verification failed. Please check the code and try again.';
+      setError(errMsg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeMfaRecoveryLogin = async ({ challengeId, recoveryCode }) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.verifyMfaRecovery({ challengeId, recoveryCode });
+      apiClient.setSession({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        activeWorkspaceId: response.activeWorkspace?.id,
+      });
+
+      setUser(response.user);
+      if (response.activeWorkspace) {
+        setActiveWorkspace(response.activeWorkspace);
+      }
+
+      await refreshWorkspaces();
+      return response;
+    } catch (err) {
+      const errMsg = err.payload?.message || err.message || 'Recovery code verification failed.';
       setError(errMsg);
       throw err;
     } finally {
@@ -170,6 +229,8 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         error,
         login,
+        completeMfaTotpLogin,
+        completeMfaRecoveryLogin,
         register,
         logout,
         switchWorkspace,

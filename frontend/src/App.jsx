@@ -16,6 +16,7 @@ import { Shield, Loader2 } from 'lucide-react';
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
+  const [mfaChallengeId, setMfaChallengeId] = useState(null);
   const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access' | 'integrations' | 'sync-center' | 'settings'
   const [targetProjectId, setTargetProjectId] = useState(null);
   const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
@@ -59,15 +60,25 @@ const MainRouter = () => {
     if (authView === 'mfa') {
       return (
         <MfaChallengeScreen
-          onBackToLogin={() => setAuthView('login')}
-          onSuccess={() => setAuthView('login')}
+          challengeId={mfaChallengeId}
+          onBackToLogin={() => {
+            setMfaChallengeId(null);
+            setAuthView('login');
+          }}
+          onSuccess={() => {
+            setMfaChallengeId(null);
+            setAuthView('login');
+          }}
         />
       );
     }
     return (
       <LoginScreen
         onNavigateToRegister={() => setAuthView('register')}
-        onNavigateToMfa={() => setAuthView('mfa')}
+        onNavigateToMfa={(challengeId) => {
+          setMfaChallengeId(challengeId);
+          setAuthView('mfa');
+        }}
       />
     );
   }
