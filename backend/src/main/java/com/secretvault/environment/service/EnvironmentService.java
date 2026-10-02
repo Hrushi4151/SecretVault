@@ -8,6 +8,7 @@ import com.secretvault.environment.entity.Environment;
 import com.secretvault.environment.repository.EnvironmentRepository;
 import com.secretvault.project.entity.Project;
 import com.secretvault.project.repository.ProjectRepository;
+import com.secretvault.project.service.ProjectService;
 import com.secretvault.workspace.entity.WorkspaceMembership;
 import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
@@ -34,16 +35,28 @@ public class EnvironmentService {
     private final ProjectRepository projectRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMembershipRepository membershipRepository;
+    private final ProjectService projectService;
 
     public EnvironmentService(
             EnvironmentRepository environmentRepository,
             ProjectRepository projectRepository,
             WorkspaceRepository workspaceRepository,
             WorkspaceMembershipRepository membershipRepository) {
+        this(environmentRepository, projectRepository, workspaceRepository, membershipRepository, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public EnvironmentService(
+            EnvironmentRepository environmentRepository,
+            ProjectRepository projectRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectService projectService) {
         this.environmentRepository = environmentRepository;
         this.projectRepository = projectRepository;
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
+        this.projectService = projectService;
     }
 
     /**
@@ -186,6 +199,10 @@ public class EnvironmentService {
 
         Project project = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Project not found in this workspace"));
+
+        if (projectService != null && !projectService.isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+            throw ApiException.forbidden("You are not authorized to access this project");
+        }
 
         return membership;
     }

@@ -483,3 +483,67 @@ Authorization decisions are computed strictly by `EffectiveAccessService` using 
 * **Hierarchy Validation:** Rejects any attempt to configure an environment under a project to which it does not belong.
 * **Mass-Assignment Protection:** Explicit role and permission inputs are strictly validated against supported enumerations and the caller's authorization rank.
 * **Auditability:** Emits immutable `PROJECT_ACCESS_GRANTED`, `PROJECT_ACCESS_REVOKED`, `ENVIRONMENT_ACCESS_GRANTED`, `ENVIRONMENT_ACCESS_REVOKED` audit events containing target and actor principal IDs without leaking sensitive metadata or plaintext.
+
+---
+
+## 12. User Workspace & Project Discovery Architecture & IDOR Protection
+
+### 12.1 Overview & Core Principles
+
+In SecretVault, authenticated users discover only the resources they are authorized to access. Project visibility is computed **server-side** by `EffectiveAccessService` and `ProjectService`. The frontend never fetches unauthorized projects to hide them locally.
+
+```
+User Login
+    ↓
+My Workspaces (GET /api/v1/workspaces)
+    ↓
+Select Workspace
+    ↓
+Authorized Projects (GET /api/v1/workspaces/{workspaceId}/projects)
+    ↓
+Select Project
+    ↓
+Authorized Environments (GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments)
+    ↓
+Authorized Secrets / Resources (GET /api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{envId}/secrets)
+```
+
+### 12.2 Server-Side Project Visibility Matrix
+
+| Member Classification | Condition | Visible Projects in `GET /projects` | Direct ID Access (`GET /projects/{id}`) |
+| :--- | :--- | :--- | :--- |
+| **Workspace Admin / Owner** | Standing role is `OWNER` or `ADMIN` | **All projects** within workspace container | **Allowed** (`200 OK`) |
+| **Scoped Member** | User has $\ge 1$ scoped `ProjectAccess`, `EnvironmentAccess`, `AccessGrant`, or active `JIT` in workspace | **Only assigned projects** (matching explicit scoped grant, environment access, grant, or JIT) | **Allowed** for assigned projects; **Rejected** with `403 FORBIDDEN` for unassigned projects |
+| **Standing Unrestricted Member** | User has standing `DEVELOPER` / `VIEWER` role and 0 scoped records in workspace | **All projects** within workspace container | **Allowed** (`200 OK`) according to standing role permissions |
+| **Dynamic JIT Elevation** | User receives approved temporary JIT elevation for an unassigned project/environment | Dynamically appears in project list during validity window | **Allowed** (`200 OK`) during active window; reverts to `403 FORBIDDEN` upon expiry |
+| **Granular AccessGrant** | User is granted a specific `AccessGrant` scoped to project or its environment | Dynamically appears in project list | **Allowed** (`200 OK`) |
+
+### 12.3 Real-World Scoping Example
+
+```
+Workspace: Acme
+User: Rahul (Standing Workspace Role: DEVELOPER)
+
+Configured Projects:
+  1. E-Commerce   → Scoped ProjectAccess: VIEWER (READ)       → VISIBLE in project list
+  2. Payment API  → Scoped ProjectAccess: DEVELOPER (WRITE)   → VISIBLE in project list
+  3. Admin Portal → Unassigned / No Access Record             → EXCLUDED from project list
+```
+
+* **`GET /api/v1/workspaces/{acmeId}/projects`**: Returns `[E-Commerce, Payment API]`. `Admin Portal` is omitted server-side.
+* **Direct IDOR Attempt**: If Rahul sends `GET /api/v1/workspaces/{acmeId}/projects/{adminPortalId}`, backend rejects with:
+  ```json
+  {
+    "status": 403,
+    "code": "FORBIDDEN",
+    "message": "You are not authorized to access this project"
+  }
+  ```
+* **Environment / Secret IDOR Attempt**: Direct requests to `GET /api/v1/workspaces/{acmeId}/projects/{adminPortalId}/environments` or `.../secrets` are rejected with `403 FORBIDDEN`.
+
+### 12.4 Invariant & Authorization Architecture Alignment
+
+1. **Single Source of Truth:** Reuses `EffectiveAccessService`, `ProjectAccess`, `EnvironmentAccess`, `AccessGrant`, and `JIT` data structures without creating a parallel or duplicate authorization engine.
+2. **IDOR Invariant:** Every hierarchical lookup (`ProjectService.getProjectById`, `EnvironmentService.verifyHierarchyAccess`, `SecretService.verifyHierarchy`) asserts `EffectiveAccessService.isUserAuthorizedForProject` before returning metadata or resources.
+3. **Audit Defense:** Rejections trigger secure error responses without exposing metadata regarding unassigned internal systems.
+
