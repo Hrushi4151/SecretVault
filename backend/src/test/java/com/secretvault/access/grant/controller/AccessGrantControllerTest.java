@@ -233,7 +233,7 @@ class AccessGrantControllerTest {
                         .param("environmentId", environmentId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data", hasSize(13)))
+                .andExpect(jsonPath("$.data", hasSize(15)))
                 .andExpect(jsonPath("$.data[?(@.permissionCode == 'secret.reveal')].granted").value(hasItem(true)));
     }
 }

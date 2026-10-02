@@ -27,6 +27,8 @@
 - `V5__core_secret_management_schema.sql` — `secrets`, `secret_versions`, and `audit_logs` tables with envelope encryption columns, monotonic version constraints, foreign keys, and indexes
 - `V6__versioning_branching_and_promotion_schema.sql` — `secret_branches`, `secret_version_tags`, and lineage/branching foreign keys on `secret_versions` for version control and cross-environment promotion
 - `V7__access_control_and_jit_schema.sql` — `access_grants`, `jit_access_requests`, `access_review_campaigns`, and `access_review_items` for granular access control, dual-custody JIT elevation, and periodic certification campaigns
+- `V8__security_intelligence_schema.sql` — `security_events` and `security_findings` tables with deterministic fingerprint unique constraints and tenant-scoped indexes for threat detection and posture management
+
 
 ---
 
@@ -241,6 +243,46 @@ Append-only immutable record of all security-sensitive actions.
 - `outcome` (VARCHAR(32), `SUCCESS` | `FAILURE`)
 - `created_at` (TIMESTAMPTZ NOT NULL)
 - Indexes: `idx_audit_workspace_created (workspace_id, created_at DESC)`, `idx_audit_resource (resource_type, resource_id)`
+
+### 4.6 `security_events` Table [IMPLEMENTED]
+Standardized, sanitized security and access governance telemetry stream.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)`)
+- `project_id` (UUID, FK -> `projects(id)`)
+- `environment_id` (UUID, FK -> `environments(id)`)
+- `event_type` (VARCHAR(64) NOT NULL)
+- `severity` (VARCHAR(32) NOT NULL, `LOW` | `MEDIUM` | `HIGH` | `CRITICAL`)
+- `outcome` (VARCHAR(32) NOT NULL, `SUCCESS` | `FAILURE` | `DENIED`)
+- `actor_user_id` (UUID, FK -> `users(id)`)
+- `metadata_json` (TEXT NOT NULL, sanitized key-value JSON)
+- `timestamp` (TIMESTAMPTZ NOT NULL)
+- `created_at` (TIMESTAMPTZ NOT NULL)
+- Indexes: `idx_sec_events_ws_time (workspace_id, timestamp DESC)`, `idx_sec_events_actor (actor_user_id)`
+
+### 4.7 `security_findings` Table [IMPLEMENTED]
+Deduplicated, fingerprinted security risk and access vulnerability inventory.
+- `id` (UUID, PK)
+- `workspace_id` (UUID NOT NULL, FK -> `workspaces(id)`)
+- `project_id` (UUID, FK -> `projects(id)`)
+- `environment_id` (UUID, FK -> `environments(id)`)
+- `category` (VARCHAR(64) NOT NULL)
+- `severity` (VARCHAR(32) NOT NULL, `LOW` | `MEDIUM` | `HIGH` | `CRITICAL`)
+- `confidence` (VARCHAR(32) NOT NULL, `LOW` | `MEDIUM` | `HIGH`)
+- `status` (VARCHAR(32) NOT NULL, `OPEN` | `ACKNOWLEDGED` | `IN_PROGRESS` | `RESOLVED` | `FALSE_POSITIVE`)
+- `title` (VARCHAR(255) NOT NULL)
+- `safe_description` (TEXT NOT NULL)
+- `remediation_guidance` (TEXT NOT NULL)
+- `evidence_json` (TEXT NOT NULL)
+- `fingerprint` (VARCHAR(64) NOT NULL, deterministic SHA-256)
+- `occurrence_count` (INT NOT NULL DEFAULT 1)
+- `first_observed_at` (TIMESTAMPTZ NOT NULL)
+- `last_observed_at` (TIMESTAMPTZ NOT NULL)
+- `assignee_user_id` (UUID, FK -> `users(id)`)
+- `acknowledged_at`, `resolved_at` (TIMESTAMPTZ)
+- `resolution_reason` (TEXT)
+- `created_at`, `updated_at` (TIMESTAMPTZ NOT NULL)
+- Constraints: `uq_sec_findings_ws_fp UNIQUE (workspace_id, fingerprint)`
+- Indexes: `idx_sec_findings_ws_status (workspace_id, status)`, `idx_sec_findings_ws_sev (workspace_id, severity)`
 
 ---
 

@@ -1,6 +1,6 @@
 # SecretVault — Project Status & Implementation Tracker
 
-> **Last Updated:** Phase 3 Core Secret Management & Envelope Encryption  
+> **Last Updated:** Phase 6 Security Intelligence & Security Center (Backend / Security Intelligence)  
 > **Current Version:** `0.1.0-SNAPSHOT`  
 > **Architecture Style:** Modular Monolith (Spring Boot 3.3.4 / Java 21)
 
@@ -17,17 +17,17 @@
 | **Projects & Environments (Phase 2 Core)** | 🟢 **COMPLETE** | Scoped `Project` and `Environment` entities, `V3` Flyway migration, automatic provisioning of `development`, `staging`, and `production` (protected) tiers, complete REST APIs with RBAC and cross-tenant IDOR protection, 50/50 tests passing, and React control plane with Stitch dark theme. |
 | **Workspace Access, Invitations & Scoping (Phase 2 Extension)** | 🟢 **COMPLETE** | `V4` Flyway migration (`workspace_invitations`, `project_access`, `environment_access`). Member lifecycle management with last OWNER safeguard (`PATCH/DELETE /members/{userId}`), Workspace Settings (`GET/PATCH /settings`), Cryptographic single-use Invitations (SHA-256 hash storage), Scoped Project Access (`/projects/{id}/members`), Scoped Environment Access (`/environments/{id}/access`), Permission reduction rule ($\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope}$), 72/72 backend tests passing. |
 | **Secret Engine & Envelope Encryption (Phase 3)** | 🟢 **COMPLETE** | AES-256-GCM envelope encryption with ephemeral 256-bit DEKs and 96-bit IVs, Authenticated Additional Data (AAD) context binding (`secretId:environmentId:versionNumber`), pluggable `KmsKeyProvider` key wrapping, immutable monotonic version ledger (`secret_versions`), append-only audit logging (`audit_logs`), bulk `.env` import engine, masked reveal with `Cache-Control: no-store` headers, 99/99 backend tests passing. |
-| **Versioning & Audit (Phase 4)** | ⚪ **NOT STARTED** | Immutable version ledger baseline built in Phase 3; Rollback engine, point-in-time secret diffing, and audit compliance search planned. |
-| **RBAC & Access Control (Phase 5)** | ⚪ **NOT STARTED** | Fine-grained permission evaluator and JIT access planned. |
-| **Provider Adapters (Phase 6)** | ⚪ **NOT STARTED** | `SecretProvider` SPI and AWS/Vercel/Railway/GitHub adapters planned. |
-| **Synchronization Engine (Phase 7)** | ⚪ **NOT STARTED** | Async Redis sync queue, worker, drift detection planned. |
-| **Developer CLI & Runtime (Phase 8)** | ⚪ **NOT STARTED** | `secretvault run` in-memory process injection planned. |
-| **CI/CD & Machine Identity (Phase 9)** | ⚪ **NOT STARTED** | Service accounts and Workload Identity (OIDC) planned. |
-| **Security Intelligence (Phase 10)** | ⚪ **NOT STARTED** | Risk Center, leak scanner, blast radius graph planned. |
-| **Rotation, JIT & Reviews (Phase 11)** | ⚪ **NOT STARTED** | Shadow rotation, JIT approval flows, access reviews planned. |
-| **Kubernetes & Terraform (Phase 12)** | ⚪ **NOT STARTED** | Kubernetes Operator, CRDs, ESO provider planned. |
-| **AI Co-Pilot (Phase 13)** | ⚪ **NOT STARTED** | Python/FastAPI deployment RCA & risk analysis service planned. |
-| **Enterprise & Self-Hosted (Phase 14)**| ⚪ **NOT STARTED** | SAML 2.0 SSO, SCIM directory sync, Helm packaging planned. |
+| **Versioning, Branching & Promotion (Phase 4)** | 🟢 **COMPLETE** | `V6` Flyway migration (`secret_branches`, `secret_version_tags`), point-in-time diffing, Shannon entropy analysis, 3-way branching and merge engine, cross-environment promotion with fresh encryption keys, rollback as new version. |
+| **Granular Access, JIT & Reviews (Phase 5)** | 🟢 **COMPLETE** | `V7` Flyway migration (`access_grants`, `jit_access_requests`, `access_review_campaigns`, `access_review_items`), 11-step `EffectiveAccessService` resolution, anti-self-approval JIT elevation with real-time TTL expiration, point-in-time access review certification snapshots, cryptographic attestation sealing. |
+| **Security Intelligence & Security Center (Phase 6)** | 🟢 **COMPLETE** | `V8` Flyway migration (`security_events`, `security_findings`), 10 deterministic detection rules, explainable risk scoring engine ($0–100$), `SafeEventMetadataSanitizer` zero secret leakage, fingerprinted deduplication, executive dashboard (`/overview`, `/posture`, `/risk`), unified security timeline (`/timeline`), automated scheduler (`SecurityIntelligenceScheduler`), 241/241 backend tests passing. |
+| **Provider Adapters (Phase 7)** | ⚪ **NOT STARTED** | `SecretProvider` SPI and AWS/Vercel/Railway/GitHub adapters planned. |
+| **Synchronization Engine (Phase 8)** | ⚪ **NOT STARTED** | Async Redis sync queue, worker, drift detection planned. |
+| **Developer CLI & Runtime (Phase 9)** | ⚪ **NOT STARTED** | `secretvault run` in-memory process injection planned. |
+| **CI/CD & Machine Identity (Phase 10)** | ⚪ **NOT STARTED** | Service accounts and Workload Identity (OIDC) planned. |
+| **Kubernetes & Terraform (Phase 11)** | ⚪ **NOT STARTED** | Kubernetes Operator, CRDs, ESO provider planned. |
+| **AI Co-Pilot (Phase 12)** | ⚪ **NOT STARTED** | Python/FastAPI deployment RCA & risk analysis service planned. |
+| **Enterprise & Self-Hosted (Phase 13)**| ⚪ **NOT STARTED** | SAML 2.0 SSO, SCIM directory sync, Helm packaging planned. |
+
 
 ---
 
