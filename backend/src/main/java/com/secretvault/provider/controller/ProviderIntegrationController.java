@@ -2,7 +2,7 @@ package com.secretvault.provider.controller;
 
 import com.secretvault.auth.security.UserPrincipal;
 import com.secretvault.common.dto.ApiResponse;
-import com.secretvault.common.dto.PagedResponse;
+import com.secretvault.common.dto.PageResponse;
 import com.secretvault.provider.dto.CreateProviderIntegrationRequest;
 import com.secretvault.provider.dto.CreateResourceMappingRequest;
 import com.secretvault.provider.dto.ProviderIntegrationResponse;
@@ -70,7 +70,7 @@ public class ProviderIntegrationController {
 
     @GetMapping
     @Operation(summary = "List provider integrations within a workspace")
-    public ResponseEntity<ApiResponse<PagedResponse<ProviderIntegrationResponse>>> listIntegrations(
+    public ResponseEntity<ApiResponse<PageResponse<ProviderIntegrationResponse>>> listIntegrations(
             @PathVariable UUID workspaceId,
             @RequestParam(required = false) ProviderType providerType,
             @RequestParam(required = false) IntegrationStatus status,
@@ -83,7 +83,16 @@ public class ProviderIntegrationController {
         Page<ProviderIntegrationResponse> result = integrationService.listIntegrations(
                 workspaceId, providerType, status, search, page, size, sort, principal.getId()
         );
-        return ResponseEntity.ok(ApiResponse.success(PagedResponse.from(result)));
+        PageResponse<ProviderIntegrationResponse> pageResponse = new PageResponse<>(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isFirst(),
+                result.isLast()
+        );
+        return ResponseEntity.ok(ApiResponse.success(pageResponse));
     }
 
     @GetMapping("/{integrationId}")

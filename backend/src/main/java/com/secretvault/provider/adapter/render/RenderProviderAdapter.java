@@ -56,6 +56,7 @@ public class RenderProviderAdapter implements ProviderAdapter {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public RenderProviderAdapter(
             @Value("${secretvault.provider.render.base-url:https://api.render.com/v1}") String baseUrl,
             ObjectMapper objectMapper

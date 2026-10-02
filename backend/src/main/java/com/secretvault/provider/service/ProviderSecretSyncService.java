@@ -155,7 +155,7 @@ public class ProviderSecretSyncService {
 
         ProviderSecretOperationResult opResult;
         try {
-            opResult = adapter.pushSecret(config, providerCredential, mapping, secret.getKey(), secretPlaintext);
+            opResult = adapter.pushSecret(config, providerCredential, mapping, secret.getName(), secretPlaintext);
         } finally {
             // Zeroize in-memory decrypted secret bytes immediately
             Arrays.fill(secretBytes, (byte) 0);
@@ -163,20 +163,17 @@ public class ProviderSecretSyncService {
 
         // 6. Audit Logging & Security Telemetry
         if (opResult.success()) {
-            auditService.logAction(
+            auditService.recordAudit(
+                    null,
                     workspaceId,
                     callerUserId,
+                    "USER",
                     AuditAction.PROVIDER_SECRET_PUSHED,
                     "SECRET",
                     secret.getId(),
-                    "SUCCESS",
-                    Map.of(
-                            "secretKey", secret.getKey(),
-                            "providerType", integration.getProviderType().name(),
-                            "providerResourceId", mapping.getProviderResourceId(),
-                            "providerEnvironment", mapping.getProviderEnvironment(),
-                            "operation", opResult.operation()
-                    )
+                    null,
+                    null,
+                    "SUCCESS"
             );
 
             securityEventService.recordEvent(
@@ -187,12 +184,16 @@ public class ProviderSecretSyncService {
                     SecurityEventType.PROVIDER_SECRET_PUSHED,
                     SecurityEventSeverity.LOW,
                     SecurityEventOutcome.SUCCESS,
-                    Map.of("secretKey", secret.getKey(), "providerType", integration.getProviderType().name(), "providerResourceId", mapping.getProviderResourceId())
+                    "PROVIDER_SECRET_SYNC_SERVICE",
+                    null,
+                    null,
+                    null,
+                    Map.of("secretKey", secret.getName(), "providerType", integration.getProviderType().name(), "providerResourceId", mapping.getProviderResourceId())
             );
 
             return PushSecretToProviderResponse.success(
                     secret.getId(),
-                    secret.getKey(),
+                    secret.getName(),
                     integration.getProviderType(),
                     mapping.getProviderResourceId(),
                     mapping.getProviderEnvironment(),
@@ -200,23 +201,22 @@ public class ProviderSecretSyncService {
                     opResult.operation()
             );
         } else {
-            auditService.logAction(
+            auditService.recordAudit(
+                    null,
                     workspaceId,
                     callerUserId,
+                    "USER",
                     AuditAction.PROVIDER_OPERATION_FAILED,
                     "SECRET",
                     secret.getId(),
-                    "FAILURE",
-                    Map.of(
-                            "secretKey", secret.getKey(),
-                            "providerType", integration.getProviderType().name(),
-                            "error", opResult.errorMessage() != null ? opResult.errorMessage() : "Push failed"
-                    )
+                    null,
+                    null,
+                    "FAILURE"
             );
 
             return PushSecretToProviderResponse.failure(
                     secret.getId(),
-                    secret.getKey(),
+                    secret.getName(),
                     integration.getProviderType(),
                     mapping.getProviderResourceId(),
                     mapping.getProviderEnvironment(),
@@ -258,14 +258,17 @@ public class ProviderSecretSyncService {
 
         ProviderSecretOperationResult result = adapter.deleteSecret(config, providerCredential, mapping, secretKey);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_SECRET_DELETED,
                 "PROVIDER_MAPPING",
                 mappingId,
-                result.success() ? "SUCCESS" : "FAILURE",
-                Map.of("secretKey", secretKey, "providerType", integration.getProviderType().name())
+                null,
+                null,
+                result.success() ? "SUCCESS" : "FAILURE"
         );
 
         return result;

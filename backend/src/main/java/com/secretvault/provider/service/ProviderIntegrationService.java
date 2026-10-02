@@ -130,14 +130,17 @@ public class ProviderIntegrationService {
         ProviderIntegration saved = integrationRepository.save(integration);
 
         // 3. Auditing & Security Telemetry
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_INTEGRATION_CREATED,
                 "PROVIDER_INTEGRATION",
                 saved.getId(),
-                validation.valid() ? "SUCCESS" : "FAILURE",
-                Map.of("providerType", saved.getProviderType().name(), "displayName", saved.getDisplayName(), "status", saved.getStatus().name())
+                null,
+                null,
+                validation.valid() ? "SUCCESS" : "FAILURE"
         );
 
         if (!validation.valid()) {
@@ -149,6 +152,10 @@ public class ProviderIntegrationService {
                     SecurityEventType.PROVIDER_CREDENTIAL_VALIDATION_FAILURE,
                     SecurityEventSeverity.MEDIUM,
                     SecurityEventOutcome.FAILURE,
+                    "PROVIDER_INTEGRATION_SERVICE",
+                    null,
+                    null,
+                    null,
                     Map.of("providerType", saved.getProviderType().name(), "displayName", saved.getDisplayName(), "error", validation.errorMessage() != null ? validation.errorMessage() : "Validation failed")
             );
         }
@@ -213,14 +220,17 @@ public class ProviderIntegrationService {
         integration.setUpdatedAt(Instant.now());
         ProviderIntegration updated = integrationRepository.save(integration);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_INTEGRATION_UPDATED,
                 "PROVIDER_INTEGRATION",
                 updated.getId(),
-                "SUCCESS",
-                Map.of("displayName", updated.getDisplayName(), "status", updated.getStatus().name())
+                null,
+                null,
+                "SUCCESS"
         );
 
         return ProviderIntegrationResponse.fromEntity(updated);
@@ -265,6 +275,10 @@ public class ProviderIntegrationService {
                     SecurityEventType.PROVIDER_CREDENTIAL_VALIDATION_FAILURE,
                     SecurityEventSeverity.MEDIUM,
                     SecurityEventOutcome.FAILURE,
+                    "PROVIDER_INTEGRATION_SERVICE",
+                    null,
+                    null,
+                    null,
                     Map.of("providerType", integration.getProviderType().name(), "displayName", integration.getDisplayName(), "error", result.errorMessage() != null ? result.errorMessage() : "Validation failed")
             );
         }
@@ -272,14 +286,17 @@ public class ProviderIntegrationService {
         integration.setUpdatedAt(Instant.now());
         integrationRepository.save(integration);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_INTEGRATION_VALIDATED,
                 "PROVIDER_INTEGRATION",
                 integrationId,
-                result.valid() ? "SUCCESS" : "FAILURE",
-                Map.of("valid", String.valueOf(result.valid()))
+                null,
+                null,
+                result.valid() ? "SUCCESS" : "FAILURE"
         );
 
         return ValidateIntegrationResponse.fromResult(result);
@@ -298,14 +315,17 @@ public class ProviderIntegrationService {
         mappingRepository.deleteByIntegrationId(integrationId);
         integrationRepository.delete(integration);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_INTEGRATION_DELETED,
                 "PROVIDER_INTEGRATION",
                 integrationId,
-                "SUCCESS",
-                Map.of("displayName", integration.getDisplayName(), "providerType", integration.getProviderType().name())
+                null,
+                null,
+                "SUCCESS"
         );
     }
 
@@ -338,7 +358,23 @@ public class ProviderIntegrationService {
     ) {
         effectiveAccessService.checkPermission(workspaceId, null, null, null, AccessPermission.INTEGRATION_VIEW, callerUserId);
 
-        Pageable pageable = PaginationUtils.buildPageRequest(page, size, sort, ALLOWED_SORT_FIELDS, "createdAt");
+        org.springframework.data.domain.Sort.Direction direction = org.springframework.data.domain.Sort.Direction.DESC;
+        String sortField = "createdAt";
+        if (sort != null && !sort.isBlank()) {
+            String[] parts = sort.split(",");
+            if (parts.length > 0 && ALLOWED_SORT_FIELDS.contains(parts[0].trim())) {
+                sortField = parts[0].trim();
+            }
+            if (parts.length > 1 && "asc".equalsIgnoreCase(parts[1].trim())) {
+                direction = org.springframework.data.domain.Sort.Direction.ASC;
+            }
+        }
+        Pageable pageable = PaginationUtils.sanitizePageable(
+                org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, Math.min(PaginationUtils.MAX_PAGE_SIZE, size)), org.springframework.data.domain.Sort.by(direction, sortField)),
+                ALLOWED_SORT_FIELDS,
+                "createdAt",
+                org.springframework.data.domain.Sort.Direction.DESC
+        );
         String cleanSearch = search != null && !search.isBlank() ? search.trim() : null;
 
         return integrationRepository.searchIntegrations(workspaceId, providerType, status, cleanSearch, pageable)

@@ -115,19 +115,17 @@ public class ProviderResourceMappingService {
 
         ProviderResourceMapping saved = mappingRepository.save(mapping);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_MAPPING_CREATED,
                 "PROVIDER_MAPPING",
                 saved.getId(),
-                "SUCCESS",
-                Map.of(
-                        "integrationId", integrationId.toString(),
-                        "projectId", request.projectId().toString(),
-                        "environmentId", request.environmentId().toString(),
-                        "providerResourceId", request.providerResourceId()
-                )
+                null,
+                null,
+                "SUCCESS"
         );
 
         securityEventService.recordEvent(
@@ -138,6 +136,10 @@ public class ProviderResourceMappingService {
                 SecurityEventType.PROVIDER_MAPPING_CHANGED,
                 SecurityEventSeverity.LOW,
                 SecurityEventOutcome.SUCCESS,
+                "PROVIDER_RESOURCE_MAPPING_SERVICE",
+                null,
+                null,
+                null,
                 Map.of("action", "CREATE", "providerType", integration.getProviderType().name(), "providerResourceId", request.providerResourceId())
         );
 
@@ -202,14 +204,17 @@ public class ProviderResourceMappingService {
         mapping.setUpdatedAt(Instant.now());
         ProviderResourceMapping updated = mappingRepository.save(mapping);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_MAPPING_UPDATED,
                 "PROVIDER_MAPPING",
                 mappingId,
-                "SUCCESS",
-                Map.of("providerEnvironment", updated.getProviderEnvironment(), "syncEnabled", String.valueOf(updated.isSyncEnabled()))
+                null,
+                null,
+                "SUCCESS"
         );
 
         return ProviderResourceMappingResponse.fromEntity(updated);
@@ -231,14 +236,17 @@ public class ProviderResourceMappingService {
 
         mappingRepository.delete(mapping);
 
-        auditService.logAction(
+        auditService.recordAudit(
+                null,
                 workspaceId,
                 callerUserId,
+                "USER",
                 AuditAction.PROVIDER_MAPPING_DELETED,
                 "PROVIDER_MAPPING",
                 mappingId,
-                "SUCCESS",
-                Map.of("integrationId", integrationId.toString())
+                null,
+                null,
+                "SUCCESS"
         );
     }
 }

@@ -56,6 +56,7 @@ public class VercelProviderAdapter implements ProviderAdapter {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public VercelProviderAdapter(
             @Value("${secretvault.provider.vercel.base-url:https://api.vercel.com}") String baseUrl,
             ObjectMapper objectMapper

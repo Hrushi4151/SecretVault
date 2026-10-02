@@ -27,7 +27,6 @@ import java.util.UUID;
 public class ProviderResourceMapping {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id = UUID.randomUUID();
 
     @Column(name = "workspace_id", nullable = false)
