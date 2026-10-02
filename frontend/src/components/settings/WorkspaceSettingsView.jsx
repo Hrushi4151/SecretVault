@@ -952,6 +952,7 @@ export const WorkspaceSettingsView = ({ onNavigateToAccess, onNavigateToProjects
       {selectedMemberForAccess && (
         <MemberAccessManagementDialog
           isOpen={Boolean(selectedMemberForAccess)}
+          targetMember={selectedMemberForAccess}
           member={selectedMemberForAccess}
           workspaceId={activeWorkspace?.id}
           onClose={() => setSelectedMemberForAccess(null)}
