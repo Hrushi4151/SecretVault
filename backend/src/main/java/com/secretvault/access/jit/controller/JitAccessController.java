@@ -32,6 +32,13 @@ public class JitAccessController {
     }
 
     @PostMapping("/requests")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "jit_request",
+            limit = 20,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.USER_ID,
+            message = "Too many JIT requests submitted. Please try again later."
+    )
     public ResponseEntity<ApiResponse<JitAccessRequestResponse>> submitRequest(
             @PathVariable UUID workspaceId,
             @Valid @RequestBody SubmitJitRequest request,
@@ -69,6 +76,13 @@ public class JitAccessController {
     }
 
     @PostMapping("/requests/{requestId}/approve")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "jit_approve",
+            limit = 30,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.USER_ID,
+            message = "Too many JIT approval attempts. Please try again later."
+    )
     public ResponseEntity<ApiResponse<JitAccessRequestResponse>> approveRequest(
             @PathVariable UUID workspaceId,
             @PathVariable UUID requestId,
