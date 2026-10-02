@@ -418,6 +418,44 @@ public class DefaultMfaService implements MfaService {
         return MfaVerificationResult.success(userId);
     }
 
+    @Override
+    @Transactional
+    public MfaVerificationResult verifyLoginTotp(String challengeId, String code) {
+        if (challengeId == null || challengeId.isBlank()) {
+            return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Missing challenge ID");
+        }
+        Optional<MfaChallengePayload> optChallenge;
+        try {
+            optChallenge = securityStateStore.get(CATEGORY_MFA_CHALLENGE, challengeId, MfaChallengePayload.class);
+        } catch (Exception ex) {
+            log.error("Redis failure during challenge resolution for challenge [{}]", challengeId);
+            throw ApiException.internal("MFA_SERVICE_UNAVAILABLE", "MFA service temporarily unavailable", ex);
+        }
+        if (optChallenge.isEmpty()) {
+            return MfaVerificationResult.failed(AuthenticationState.MFA_CHALLENGE_EXPIRED, "MFA challenge expired or not found");
+        }
+        return verifyLoginTotp(challengeId, optChallenge.get().userId(), code);
+    }
+
+    @Override
+    @Transactional
+    public MfaVerificationResult verifyLoginRecoveryCode(String challengeId, String recoveryCode) {
+        if (challengeId == null || challengeId.isBlank()) {
+            return MfaVerificationResult.failed(AuthenticationState.AUTHENTICATION_FAILED, "Missing challenge ID");
+        }
+        Optional<MfaChallengePayload> optChallenge;
+        try {
+            optChallenge = securityStateStore.get(CATEGORY_MFA_CHALLENGE, challengeId, MfaChallengePayload.class);
+        } catch (Exception ex) {
+            log.error("Redis failure during challenge resolution for challenge [{}]", challengeId);
+            throw ApiException.internal("MFA_SERVICE_UNAVAILABLE", "MFA service temporarily unavailable", ex);
+        }
+        if (optChallenge.isEmpty()) {
+            return MfaVerificationResult.failed(AuthenticationState.MFA_CHALLENGE_EXPIRED, "MFA challenge expired or not found");
+        }
+        return verifyLoginRecoveryCode(challengeId, optChallenge.get().userId(), recoveryCode);
+    }
+
     private boolean handleFailedAttempt(String challengeId, UUID userId, int maxAttempts) {
         long attemptCount = securityStateStore.incrementAttempts(CATEGORY_MFA_CHALLENGE, challengeId, Duration.ofSeconds(CHALLENGE_TTL_SECONDS));
         if (attemptCount >= maxAttempts) {
