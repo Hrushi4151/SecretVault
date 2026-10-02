@@ -85,6 +85,21 @@ public enum AccessPermission {
     SECURITY_MANAGE(
             "security.manage",
             "Acknowledge, assign, resolve security findings, and trigger intelligence analysis"
+    ),
+
+    INTEGRATION_VIEW(
+            "integration.view",
+            "View external provider integrations, capabilities, and resource mappings"
+    ),
+
+    INTEGRATION_MANAGE(
+            "integration.manage",
+            "Create, update, validate, and delete external provider integrations and mappings"
+    ),
+
+    INTEGRATION_SYNC(
+            "integration.sync",
+            "Synchronize and push secrets to external platform providers"
     );
 
     private final String code;

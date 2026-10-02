@@ -489,25 +489,48 @@ public class EffectiveAccessService {
             case JIT_APPROVE:
             case ACCESS_REVIEW_MANAGE:
             case SECURITY_MANAGE:
+            case INTEGRATION_MANAGE:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN || (effProjectRole == WorkspaceRole.ADMIN)) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace governance role authorizes security and access administration"
+                            "Workspace governance role authorizes security, integrations, and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Governance and access administration require OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance and integration administration require OWNER or ADMIN authority");
+
+            case INTEGRATION_SYNC:
+                if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN) {
+                    return AccessDecision.allow(
+                            permission,
+                            AccessScope.WORKSPACE,
+                            AccessSourceType.WORKSPACE_ROLE,
+                            wsRole.name(),
+                            "Workspace " + wsRole + " authorizes provider secret synchronization"
+                    );
+                }
+                if (effEnvPerm == PermissionLevel.WRITE || effEnvPerm == PermissionLevel.MANAGE) {
+                    return AccessDecision.allow(
+                            permission,
+                            AccessScope.ENVIRONMENT,
+                            AccessSourceType.ENVIRONMENT_ACCESS,
+                            effEnvPerm.name(),
+                            "Environment " + effEnvPerm + " authorizes provider secret synchronization"
+                    );
+                }
+                return AccessDecision.deny(permission, targetScope, "Provider secret synchronization requires OWNER, ADMIN, or environment WRITE/MANAGE permission");
 
             case JIT_REQUEST:
             case SECURITY_VIEW:
+            case INTEGRATION_VIEW:
                 return AccessDecision.allow(
                         permission,
                         AccessScope.WORKSPACE,
                         AccessSourceType.WORKSPACE_ROLE,
                         wsRole.name(),
-                        "Active workspace members are permitted to view security posture and submit JIT requests"
+                        "Active workspace members are permitted to view integrations, security posture, and submit JIT requests"
                 );
 
             default:
