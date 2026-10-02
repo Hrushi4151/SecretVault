@@ -512,18 +512,20 @@ public class EffectiveAccessService {
             case ACCESS_REVIEW_MANAGE:
             case SECURITY_MANAGE:
             case INTEGRATION_MANAGE:
+            case DRIFT_MANAGE:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN || (effProjectRole == WorkspaceRole.ADMIN)) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace governance role authorizes security, integrations, and access administration"
+                            "Workspace governance role authorizes security, integrations, drift management, and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Governance and integration administration require OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance, drift, and integration administration require OWNER or ADMIN authority");
 
             case INTEGRATION_SYNC:
+            case SYNC_EXECUTE:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN) {
                     return AccessDecision.allow(
                             permission,
@@ -547,12 +549,15 @@ public class EffectiveAccessService {
             case JIT_REQUEST:
             case SECURITY_VIEW:
             case INTEGRATION_VIEW:
+            case SYNC_VIEW:
+            case SYNC_DRY_RUN:
+            case DRIFT_VIEW:
                 return AccessDecision.allow(
                         permission,
                         AccessScope.WORKSPACE,
                         AccessSourceType.WORKSPACE_ROLE,
                         wsRole.name(),
-                        "Active workspace members are permitted to view integrations, security posture, and submit JIT requests"
+                        "Active workspace members are permitted to view integrations, sync, drift status, security posture, and submit JIT requests"
                 );
 
             default:
