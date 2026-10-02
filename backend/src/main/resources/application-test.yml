@@ -35,3 +35,10 @@ secretvault:
       fail-open: true
     cache:
       enabled: true
+  mfa:
+    totp:
+      algorithm: SHA1
+      digits: 6
+      period-seconds: 30
+      allowed-drift-steps: 1
+      issuer: SecretVaultTest
