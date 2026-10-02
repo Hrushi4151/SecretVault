@@ -13,6 +13,8 @@ public interface EnvironmentAccessRepository extends JpaRepository<EnvironmentAc
 
     List<EnvironmentAccess> findByEnvironmentId(UUID environmentId);
 
+    List<EnvironmentAccess> findByUserId(UUID userId);
+
     Optional<EnvironmentAccess> findByEnvironmentIdAndUserId(UUID environmentId, UUID userId);
 
     boolean existsByEnvironmentIdAndUserId(UUID environmentId, UUID userId);
