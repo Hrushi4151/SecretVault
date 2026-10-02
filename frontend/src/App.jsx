@@ -8,19 +8,32 @@ import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
 import { ProjectsView } from './components/project/ProjectsView';
 import { SecretsView } from './components/secrets/SecretsView';
 import { AccessControlCenterView } from './components/access/AccessControlCenterView';
+import { SettingsView } from './components/settings/SettingsView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access'
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'access' | 'settings'
   const [targetProjectId, setTargetProjectId] = useState(null);
   const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
+  const [settingsSection, setSettingsSection] = useState('workspace'); // 'workspace' | 'project' | 'profile'
 
   const handleNavigateToSecrets = (projectId, environmentId = null) => {
     setTargetProjectId(projectId);
     setTargetEnvironmentId(environmentId);
     setCurrentTab('secrets');
+  };
+
+  const handleNavigateToProjectSettings = (projectId) => {
+    setTargetProjectId(projectId);
+    setSettingsSection('project');
+    setCurrentTab('settings');
+  };
+
+  const handleNavigateToWorkspaceSettings = () => {
+    setSettingsSection('workspace');
+    setCurrentTab('settings');
   };
 
   if (isLoading) {
@@ -60,7 +73,10 @@ const MainRouter = () => {
   return (
     <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
       {currentTab === 'projects' ? (
-        <ProjectsView onNavigateToSecrets={handleNavigateToSecrets} />
+        <ProjectsView
+          onNavigateToSecrets={handleNavigateToSecrets}
+          onNavigateToProjectSettings={handleNavigateToProjectSettings}
+        />
       ) : currentTab === 'secrets' ? (
         <SecretsView
           initialProjectId={targetProjectId}
@@ -68,11 +84,20 @@ const MainRouter = () => {
         />
       ) : currentTab === 'access' ? (
         <AccessControlCenterView />
+      ) : currentTab === 'settings' ? (
+        <SettingsView
+          initialSection={settingsSection}
+          initialProjectId={targetProjectId}
+          onNavigateToSecrets={handleNavigateToSecrets}
+          onNavigateToAccess={() => setCurrentTab('access')}
+          onNavigateToProjects={() => setCurrentTab('projects')}
+        />
       ) : (
         <WorkspaceOverview
           onNavigateToProjects={() => setCurrentTab('projects')}
           onNavigateToSecrets={handleNavigateToSecrets}
           onNavigateToAccess={() => setCurrentTab('access')}
+          onNavigateToWorkspaceSettings={handleNavigateToWorkspaceSettings}
         />
       )}
     </AppShell>
