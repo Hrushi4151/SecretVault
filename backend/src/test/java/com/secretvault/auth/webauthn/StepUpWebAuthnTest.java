@@ -18,6 +18,7 @@ import com.secretvault.auth.stepup.service.DefaultStepUpAuthenticationService;
 import com.secretvault.auth.webauthn.dto.WebAuthnAuthenticationOptionsResponse;
 import com.secretvault.auth.webauthn.repository.UserWebAuthnCredentialRepository;
 import com.secretvault.auth.webauthn.service.WebAuthnService;
+import com.secretvault.common.exception.ApiException;
 import com.secretvault.common.security.state.SecurityStateStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -166,5 +167,82 @@ class StepUpWebAuthnTest {
         assertNotNull(result);
         assertEquals("stup_webauthn_proof_token_123", result.proofToken());
         verify(webAuthnService).finishStepUpAssertion(userId, sessionIdentifier, "chlg_123", "{\"mock\":\"assertion\"}");
+    }
+
+    @Test
+    @DisplayName("Step-Up Security: Proof issued for SECRET_REVEAL cannot be used for SECRET_DELETE (Action Swapping)")
+    void testStepUpProof_actionSwapping_rejected() {
+        String proofToken = "stup_webauthn_reveal_proof";
+        com.secretvault.auth.stepup.model.StepUpProofPayload proof = com.secretvault.auth.stepup.model.StepUpProofPayload.of(
+                proofToken,
+                userId,
+                sessionIdentifier,
+                StepUpAction.SECRET_REVEAL,
+                context,
+                StepUpFactor.WEBAUTHN,
+                300
+        );
+
+        when(securityStateStore.consumeAtomic(eq("step_up_proof"), eq(proofToken), eq(com.secretvault.auth.stepup.model.StepUpProofPayload.class)))
+                .thenReturn(Optional.of(proof));
+        when(sessionRepository.findBySessionIdentifierAndUserId(sessionIdentifier, userId))
+                .thenReturn(Optional.of(activeSession));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                stepUpService.verifyAndConsumeProof(proofToken, userId, sessionIdentifier, StepUpAction.SECRET_DELETE, context)
+        );
+
+        assertEquals(403, ex.getStatus().value());
+        assertEquals("STEP_UP_MISMATCH", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Step-Up Security: Proof issued for Secret A cannot be used for Secret B (Resource Swapping)")
+    void testStepUpProof_resourceSwapping_rejected() {
+        String proofToken = "stup_webauthn_secret_a_proof";
+        com.secretvault.auth.stepup.model.StepUpProofPayload proof = com.secretvault.auth.stepup.model.StepUpProofPayload.of(
+                proofToken,
+                userId,
+                sessionIdentifier,
+                StepUpAction.SECRET_REVEAL,
+                context,
+                StepUpFactor.WEBAUTHN,
+                300
+        );
+
+        StepUpContext differentSecretContext = StepUpContext.forSecret(
+                context.workspaceId(),
+                context.projectId(),
+                context.environmentId(),
+                UUID.randomUUID() // Different secret ID
+        );
+
+        when(securityStateStore.consumeAtomic(eq("step_up_proof"), eq(proofToken), eq(com.secretvault.auth.stepup.model.StepUpProofPayload.class)))
+                .thenReturn(Optional.of(proof));
+        when(sessionRepository.findBySessionIdentifierAndUserId(sessionIdentifier, userId))
+                .thenReturn(Optional.of(activeSession));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                stepUpService.verifyAndConsumeProof(proofToken, userId, sessionIdentifier, StepUpAction.SECRET_REVEAL, differentSecretContext)
+        );
+
+        assertEquals(403, ex.getStatus().value());
+        assertEquals("STEP_UP_MISMATCH", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Step-Up Security: Proof token is single-use and cannot be replayed")
+    void testStepUpProof_replay_rejected() {
+        String proofToken = "stup_already_used_token";
+
+        when(securityStateStore.consumeAtomic(eq("step_up_proof"), eq(proofToken), eq(com.secretvault.auth.stepup.model.StepUpProofPayload.class)))
+                .thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                stepUpService.verifyAndConsumeProof(proofToken, userId, sessionIdentifier, StepUpAction.SECRET_REVEAL, context)
+        );
+
+        assertEquals(403, ex.getStatus().value());
+        assertEquals("STEP_UP_INVALID", ex.getCode());
     }
 }
