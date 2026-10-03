@@ -1,0 +1,31 @@
+server:
+  port: 8085
+
+secretvault:
+  enabled: true
+  endpoint: ${SECRETVAULT_ENDPOINT:http://localhost:8080}
+  workspace: ${SECRETVAULT_WORKSPACE:default}
+  project: ${SECRETVAULT_PROJECT:payment-gateway}
+  environment: ${SECRETVAULT_ENVIRONMENT:development}
+  authentication:
+    mode: ${SECRETVAULT_AUTH_MODE:AUTO}
+  cache:
+    enabled: true
+    ttl: 60s
+  resilience:
+    mode: FAIL_CLOSED
+    circuit-breaker-enabled: true
+
+# Declarative properties injected transparently from SecretVault (No .env file, No plaintext in config)
+app:
+  database-password: ${secretvault:DB_PASSWORD:fallback-pass}
+  stripe-api-key: ${secretvault:STRIPE_SECRET_KEY:fallback-key}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

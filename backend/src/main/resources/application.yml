@@ -78,8 +78,8 @@ secretvault:
   redis:
     environment: ${REDIS_ENV:${SPRING_PROFILES_ACTIVE:local}}
     rate-limit:
-      enabled: true
-      fail-open: false
+      enabled: ${RATE_LIMIT_ENABLED:true}
+      fail-open: ${RATE_LIMIT_FAIL_OPEN:true}
     cache:
       enabled: true
     ttl:

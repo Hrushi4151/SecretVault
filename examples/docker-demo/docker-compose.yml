@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: examples/docker-demo/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - SECRETVAULT_ENDPOINT=http://backend:8080
+      - SECRETVAULT_WORKSPACE=default
+      - SECRETVAULT_PROJECT=payment-gateway
+      - SECRETVAULT_ENVIRONMENT=development
+      - SECRET_VAULT_TOKEN=${SECRET_VAULT_MACHINE_TOKEN}
+    depends_on:
+      - backend
+
+  backend:
+    image: secretvault-backend:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
