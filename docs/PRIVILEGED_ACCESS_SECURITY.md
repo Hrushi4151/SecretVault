@@ -88,7 +88,7 @@ Elevations are verified dynamically against `clock.instant().isBefore(expiresAt)
 
 ---
 
-## 6. Database Schema (`V15__privileged_access_security_schema.sql`)
+## 6. Database Schema (`V16__privileged_access_security_schema.sql`)
 
 - `privileged_access_policies`: Configurable policies per scope and action.
 - `privileged_access_requests`: Formal request ledger tracking lifecycle state (`PENDING`, `APPROVED`, `REJECTED`, `EXECUTED`, `EXPIRED`, `CANCELLED`, `REVOKED`).

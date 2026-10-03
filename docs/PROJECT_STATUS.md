@@ -48,6 +48,6 @@
 - **Four-Eyes / Dual Approval Quorum Protocol (`PrivilegedAccessPolicy`, `PrivilegedAccessRequest`, `PrivilegedAccessApproval`)**: Configurable quorum enforcement with strict anti-self-approval barriers preventing requesters/beneficiaries from approving their own actions.
 - **Real-Time Ephemeral Elevation Engine (`PrivilegedAccessElevation`)**: Authoritative integration directly into `EffectiveAccessService` with real-time expiration checks and instant administrative revocation.
 - **Emergency Break-Glass Protocol**: Strongly-authenticated, time-bounded, explicitly-scoped emergency access requiring mandatory 20+ character justification, Step-Up/WebAuthn proof, and comprehensive immutable audit logging.
-- **Database Schema (`V15__privileged_access_security_schema.sql`)**: High-performance indexes, constraints, and audit linkages.
+- **Database Schema (`V16__privileged_access_security_schema.sql`)**: High-performance indexes, constraints, and audit linkages.
 - **Full Threat Matrix Coverage**: Verified all 40 adversarial threat scenarios (PA-01 through PA-40).
 - **Frontend Privileged Access Center (`PrivilegedAccessCenter.jsx`)**: Multi-tab governance console with pending requests, approval queue, active elevation countdowns, break-glass console, and policy management.
