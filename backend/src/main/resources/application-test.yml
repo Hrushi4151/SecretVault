@@ -28,6 +28,11 @@ logging:
     com.secretvault: INFO
 
 secretvault:
+  security:
+    master-key: dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2Rldl8wMDE=
+    jwt:
+      secret: test_jwt_secret_for_automated_testing_minimum_256_bits_length_12345
+      expiration-seconds: 86400
   redis:
     environment: test
     rate-limit:

@@ -9,9 +9,9 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:ep-blue-mouse-b4y5wu9d-pooler.c-6.us-east-2.aws.neon.tech}:${DB_PORT:5432}/${DB_NAME:SecureVault}?sslmode=require&channelBinding=require}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:neondb_owner}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:npg_a8uPcUoR4rgT}}
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:secretvault}}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -71,10 +71,10 @@ springdoc:
 # Application Security Configuration
 secretvault:
   security:
-    master-key: ${VAULT_MASTER_KEY:MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=}
+    master-key: ${VAULT_MASTER_KEY:}
     jwt:
-      secret: ${JWT_SECRET:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
-      expiration-seconds: 86400
+      secret: ${JWT_SECRET:}
+      expiration-seconds: ${JWT_EXPIRATION_SECONDS:86400}
   redis:
     environment: ${REDIS_ENV:${SPRING_PROFILES_ACTIVE:local}}
     rate-limit:

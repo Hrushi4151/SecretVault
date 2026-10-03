@@ -4,10 +4,16 @@ spring:
       on-profile: local
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:ep-blue-mouse-b4y5wu9d-pooler.c-6.us-east-2.aws.neon.tech}:${DB_PORT:5432}/${DB_NAME:SecureVault}?sslmode=require&channelBinding=require}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:neondb_owner}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:npg_a8uPcUoR4rgT}}
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:secretvault_dev}}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:vault_user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:vault_secure_password_dev_only}}
     driver-class-name: org.postgresql.Driver
+
+secretvault:
+  security:
+    master-key: ${VAULT_MASTER_KEY:dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2Rldl8wMDE=}
+    jwt:
+      secret: ${JWT_SECRET:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
 
 logging:
   level:

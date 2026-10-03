@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -33,17 +34,16 @@ public class JwtTokenProvider {
     private final SecureRandom secureRandom = new SecureRandom();
 
     public JwtTokenProvider(
-            @Value("${secretvault.security.jwt.secret:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}") String jwtSecret,
+            @Value("${secretvault.security.jwt.secret:}") String jwtSecret,
             @Value("${secretvault.security.jwt.expiration-seconds:86400}") long expirationSeconds) {
-        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        if (keyBytes.length < 32) {
-            // Pad or extend key to satisfy 256 bits requirement safely
-            byte[] padded = new byte[32];
-            System.arraycopy(keyBytes, 0, padded, 0, Math.min(keyBytes.length, 32));
-            this.key = Keys.hmacShaKeyFor(padded);
-        } else {
-            this.key = Keys.hmacShaKeyFor(keyBytes);
+        if (!StringUtils.hasText(jwtSecret)) {
+            throw new IllegalStateException("CRITICAL: JWT signing secret (JWT_SECRET / secretvault.security.jwt.secret) is not configured");
         }
+        byte[] keyBytes = jwtSecret.trim().getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("CRITICAL: JWT signing secret must be at least 256 bits (32 bytes). Found: " + keyBytes.length + " bytes");
+        }
+        this.key = Keys.hmacShaKeyFor(keyBytes);
         this.expirationSeconds = expirationSeconds;
     }
 
