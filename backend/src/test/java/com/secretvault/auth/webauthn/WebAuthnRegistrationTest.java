@@ -234,4 +234,42 @@ class WebAuthnRegistrationTest {
 
         assertEquals(403, ex.getStatus().value());
     }
+
+    @Test
+    @DisplayName("Start registration: rejects null user ID")
+    void testStartRegistration_nullUser_rejected() {
+        ApiException ex = assertThrows(ApiException.class, () ->
+                webAuthnService.startRegistration(null, sessionIdentifier, "Key")
+        );
+
+        assertEquals(401, ex.getStatus().value());
+    }
+
+    @Test
+    @DisplayName("Finish registration: rejects blank challengeId or blank credentialJson")
+    void testFinishRegistration_blankParams_rejected() {
+        ApiException ex1 = assertThrows(ApiException.class, () ->
+                webAuthnService.finishRegistration(userId, sessionIdentifier, "", "Key", "{}")
+        );
+        assertEquals(400, ex1.getStatus().value());
+
+        ApiException ex2 = assertThrows(ApiException.class, () ->
+                webAuthnService.finishRegistration(userId, sessionIdentifier, "chlg_1", "Key", "   ")
+        );
+        assertEquals(400, ex2.getStatus().value());
+    }
+
+    @Test
+    @DisplayName("Finish registration: rejects finish if session was revoked after challenge generation")
+    void testFinishRegistration_sessionRevoked_rejected() {
+        activeSession.revoke("Session terminated");
+        when(sessionRepository.findBySessionIdentifier(sessionIdentifier)).thenReturn(Optional.of(activeSession));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                webAuthnService.finishRegistration(userId, sessionIdentifier, "chlg_1", "Key", "{}")
+        );
+
+        assertEquals(401, ex.getStatus().value());
+        verify(securityStateStore, never()).consumeAtomic(anyString(), anyString(), any());
+    }
 }

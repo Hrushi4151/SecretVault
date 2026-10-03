@@ -187,4 +187,30 @@ class WebAuthnAuthenticationTest {
         assertEquals(400, ex.getStatus().value());
         assertEquals("WEBAUTHN_CHALLENGE_INVALID", ex.getCode());
     }
+
+    @Test
+    @DisplayName("Finish authentication: rejects blank challengeId or credentialJson")
+    void testFinishAuthentication_blankParams_rejected() {
+        ApiException ex1 = assertThrows(ApiException.class, () ->
+                webAuthnService.finishAuthentication("", "{}")
+        );
+        assertEquals(400, ex1.getStatus().value());
+
+        ApiException ex2 = assertThrows(ApiException.class, () ->
+                webAuthnService.finishAuthentication("chlg_1", "   ")
+        );
+        assertEquals(400, ex2.getStatus().value());
+    }
+
+    @Test
+    @DisplayName("Query hasWebAuthnCredentials returns false for null user or empty repository")
+    void testHasWebAuthnCredentials() {
+        assertFalse(webAuthnService.hasWebAuthnCredentials(null));
+
+        when(credentialRepository.countByUserIdAndRevokedAtIsNull(userId)).thenReturn(0L);
+        assertFalse(webAuthnService.hasWebAuthnCredentials(userId));
+
+        when(credentialRepository.countByUserIdAndRevokedAtIsNull(userId)).thenReturn(2L);
+        assertTrue(webAuthnService.hasWebAuthnCredentials(userId));
+    }
 }
