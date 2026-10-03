@@ -62,6 +62,12 @@ public class ConsolePrinter {
         }
     }
 
+    public void highlight(String message) {
+        if (!quiet) {
+            out.println(color(message, CYAN + BOLD));
+        }
+    }
+
     public void success(String message) {
         if (!quiet) {
             out.println(color("✓ " + message, GREEN));

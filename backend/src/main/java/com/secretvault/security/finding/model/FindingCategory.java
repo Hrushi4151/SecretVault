@@ -63,6 +63,14 @@ public enum FindingCategory {
     MACHINE_PRODUCTION_REVEAL(
             "Machine Production Secret Reveal",
             "Machine identity holds standing reveal permissions on production environments."
+    ),
+    SECRET_ROTATION_RISK(
+            "Secret Rotation Lifecycle Risk",
+            "Secret rotation is overdue, repeatedly failing, or compromised without complete remediation."
+    ),
+    SECRET_LEASE_RISK(
+            "Secret Lease & Consumer Risk",
+            "Long-lived unrenewed secret lease or stale consumer running on deprecated secret version."
     );
 
     private final String displayName;

@@ -125,6 +125,57 @@ public enum AccessPermission {
     DRIFT_MANAGE(
             "drift.manage",
             "Acknowledge, ignore, and manage drift record status"
+    ),
+
+    // Phase 12: Secret Rotation, Leases & Consumers
+    SECRET_ROTATION_READ(
+            "secret.rotation.read",
+            "View rotation policies, jobs, execution history, and impact analysis"
+    ),
+
+    SECRET_ROTATION_CREATE(
+            "secret.rotation.create",
+            "Trigger manual or scheduled secret rotation jobs"
+    ),
+
+    SECRET_ROTATION_MANAGE(
+            "secret.rotation.manage",
+            "Pause, resume, retry, and manage active rotation jobs"
+    ),
+
+    SECRET_ROTATION_CANCEL(
+            "secret.rotation.cancel",
+            "Cancel active in-flight secret rotation jobs"
+    ),
+
+    SECRET_ROTATION_ROLLBACK(
+            "secret.rotation.rollback",
+            "Rollback secret rotation to previous verified version"
+    ),
+
+    SECRET_ROTATION_EMERGENCY(
+            "secret.rotation.emergency",
+            "Trigger emergency rotation and mark secrets as compromised"
+    ),
+
+    SECRET_ROTATION_POLICY_MANAGE(
+            "secret.rotation.policy.manage",
+            "Create, update, and disable secret rotation policies"
+    ),
+
+    SECRET_LEASE_READ(
+            "secret.lease.read",
+            "View active and historical secret leases"
+    ),
+
+    SECRET_LEASE_MANAGE(
+            "secret.lease.manage",
+            "Issue, renew, and revoke runtime secret leases"
+    ),
+
+    CONSUMER_MANAGE(
+            "consumer.manage",
+            "Register, heartbeat, and govern runtime secret consumers"
     );
 
     private final String code;

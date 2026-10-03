@@ -35,7 +35,9 @@ import java.util.UUID;
                 SecretCommand.UpdateCommand.class,
                 SecretCommand.DeleteCommand.class,
                 SecretCommand.VersionsCommand.class,
-                SecretCommand.RollbackCommand.class
+                SecretCommand.RollbackCommand.class,
+                SecretCommand.RotateCommand.class,
+                SecretCommand.CompromiseCommand.class
         }
 )
 public class SecretCommand extends BaseCommand {
@@ -579,4 +581,90 @@ public class SecretCommand extends BaseCommand {
             }
         }
     }
+
+    @Command(name = "rotate", description = "Trigger rotation for a secret (supports --emergency flag)")
+    public static class RotateCommand extends BaseCommand {
+
+        @Parameters(index = "0", description = "Secret name or UUID")
+        private String secretIdentifier;
+
+        @Option(names = {"--emergency"}, description = "Execute emergency immediate rotation with old-version invalidation")
+        private boolean emergency;
+
+        @Option(names = {"--strategy"}, description = "Rotation strategy (MANUAL, ON_DEMAND, SCHEDULED, EXPIRY_BASED, EMERGENCY)", defaultValue = "MANUAL")
+        private String strategy;
+
+        @Option(names = {"--rollout"}, description = "Rollout strategy (IMMEDIATE, STAGED, DUAL_CREDENTIAL_GRACE_PERIOD)", defaultValue = "DUAL_CREDENTIAL_GRACE_PERIOD")
+        private String rollout;
+
+        @Option(names = {"--reason", "-r"}, description = "Audit reason for rotation")
+        private String reason;
+
+        @Override
+        public Integer call() {
+            ConsolePrinter printer = getPrinter();
+            try {
+                SecretVaultApiClient client = getAuthenticatedClient();
+                ContextManager.ResolvedContext ctx = resolveContext();
+                UUID workspaceId = resolveWorkspaceId(client, ctx.workspace());
+                UUID projectId = resolveProjectId(client, workspaceId, ctx.project());
+                UUID envId = resolveEnvironmentId(client, workspaceId, projectId, ctx.environment());
+                UUID secretId = resolveSecretId(client, workspaceId, projectId, envId, secretIdentifier);
+
+                if (emergency) {
+                    com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest req =
+                            new com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest("EMERGENCY", "IMMEDIATE", reason != null ? reason : "Emergency rotation via CLI", null);
+                    var job = client.emergencyRotate(workspaceId, secretId, req);
+                    printer.highlight("🚨 EMERGENCY ROTATION EXECUTED 🚨");
+                    printer.success("✓ Secret rotated and new version activated immediately: v" + job.targetVersionNumber());
+                    return 0;
+                }
+
+                com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest req =
+                        new com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest(strategy, rollout, reason != null ? reason : "Rotation triggered via CLI", null);
+                var job = client.triggerRotation(workspaceId, secretId, req);
+                printer.success("✓ Rotation job started successfully: " + job.id() + " (Target version: " + (job.targetVersionNumber() != null ? "v" + job.targetVersionNumber() : "generating") + ")");
+                return 0;
+            } catch (Exception e) {
+                printer.error("Failed to rotate secret: " + e.getMessage());
+                return 1;
+            }
+        }
+    }
+
+    @Command(name = "compromise", description = "Mark a secret as compromised and immediately initiate emergency rotation and lease revocation")
+    public static class CompromiseCommand extends BaseCommand {
+
+        @Parameters(index = "0", description = "Secret name or UUID")
+        private String secretIdentifier;
+
+        @Option(names = {"--reason", "-r"}, description = "Compromise incident reason / CVE identifier", defaultValue = "Secret marked compromised via CLI")
+        private String reason;
+
+        @Override
+        public Integer call() {
+            ConsolePrinter printer = getPrinter();
+            try {
+                SecretVaultApiClient client = getAuthenticatedClient();
+                ContextManager.ResolvedContext ctx = resolveContext();
+                UUID workspaceId = resolveWorkspaceId(client, ctx.workspace());
+                UUID projectId = resolveProjectId(client, workspaceId, ctx.project());
+                UUID envId = resolveEnvironmentId(client, workspaceId, projectId, ctx.environment());
+                UUID secretId = resolveSecretId(client, workspaceId, projectId, envId, secretIdentifier);
+
+                com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest req =
+                        new com.secretvault.cli.client.dto.RotationCliDtos.TriggerRotationRequest("EMERGENCY", "IMMEDIATE", reason, null);
+                var job = client.emergencyRotate(workspaceId, secretId, req);
+
+                printer.highlight("🚨 SECRET MARKED COMPROMISED 🚨");
+                printer.success("✓ Emergency rotation completed. New Version v" + job.targetVersionNumber() + " is active.");
+                printer.info("All prior leases revoked and security findings recorded.");
+                return 0;
+            } catch (Exception e) {
+                printer.error("Failed to execute compromised secret workflow: " + e.getMessage());
+                return 1;
+            }
+        }
+    }
 }
+

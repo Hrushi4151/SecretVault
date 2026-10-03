@@ -3,13 +3,16 @@ package com.secretvault.cli;
 import com.secretvault.cli.command.AuthCommand;
 import com.secretvault.cli.command.CompletionCommand;
 import com.secretvault.cli.command.ConfigCommand;
+import com.secretvault.cli.command.ConsumerCommand;
 import com.secretvault.cli.command.ContextCommand;
 import com.secretvault.cli.command.DevCommand;
 import com.secretvault.cli.command.DoctorCommand;
 import com.secretvault.cli.command.EnvCommand;
 import com.secretvault.cli.command.EnvironmentCommand;
+import com.secretvault.cli.command.LeaseCommand;
 import com.secretvault.cli.command.MachineCommand;
 import com.secretvault.cli.command.ProjectCommand;
+import com.secretvault.cli.command.RotationCommand;
 import com.secretvault.cli.command.RunCommand;
 import com.secretvault.cli.command.SecretCommand;
 import com.secretvault.cli.command.VersionCommand;
@@ -39,6 +42,9 @@ import java.util.concurrent.Callable;
                 EnvironmentCommand.class,
                 ContextCommand.class,
                 SecretCommand.class,
+                RotationCommand.class,
+                LeaseCommand.class,
+                ConsumerCommand.class,
                 EnvCommand.class,
                 RunCommand.class,
                 DevCommand.class,

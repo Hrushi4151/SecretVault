@@ -8,6 +8,8 @@ import com.secretvault.cli.client.dto.AuthDtos;
 import com.secretvault.cli.client.dto.EnvironmentDto;
 import com.secretvault.cli.client.dto.HealthDto;
 import com.secretvault.cli.client.dto.ProjectDto;
+import com.secretvault.cli.client.dto.RotationCliDtos;
+import com.secretvault.cli.client.dto.RotationCliDtos.*;
 import com.secretvault.cli.client.dto.SecretDtos;
 import com.secretvault.cli.client.dto.WorkspaceDto;
 import com.secretvault.cli.security.RedactionHelper;
@@ -348,17 +350,126 @@ public class SecretVaultApiClient {
                 } else {
                     handleErrorResponse(status, resp);
                 }
-            } catch (ApiClientException ace) {
-                throw ace;
-            } catch (IOException ioe) {
-                throw ApiClientException.networkError(ioe.getMessage(), ioe);
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-                throw new ApiClientException(ErrorCode.TIMEOUT, 0, "Request was interrupted", null);
+            } catch (ApiClientException e) {
+                throw e;
             } catch (Exception e) {
-                throw new ApiClientException(ErrorCode.SERVER_ERROR, 0, "Unexpected client exception: " + e.getMessage(), null, 0, e);
+                throw new ApiClientException(ErrorCode.SERVER_ERROR, 500, e.getMessage(), null, 0L, e);
             }
         }
+    }
+
+    // ==========================================
+    // Phase 12: Secret Rotation, Leases & Consumers
+    // ==========================================
+
+    public RotationCliDtos.RotationJobDto triggerRotation(UUID workspaceId, UUID secretId, RotationCliDtos.TriggerRotationRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotate", workspaceId, secretId);
+        return post(path, req, new TypeReference<ApiEnvelope<RotationCliDtos.RotationJobDto>>() {}, true, workspaceId);
+    }
+
+    public RotationCliDtos.RotationJobDto emergencyRotate(UUID workspaceId, UUID secretId, RotationCliDtos.TriggerRotationRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotate", workspaceId, secretId);
+        return post(path, req, new TypeReference<ApiEnvelope<RotationCliDtos.RotationJobDto>>() {}, true, workspaceId);
+    }
+
+    public List<RotationCliDtos.RotationJobDto> listRotationJobs(UUID workspaceId, UUID secretId, int limit) {
+        String path = secretId != null
+                ? String.format("/api/v1/workspaces/%s/secrets/%s/rotations?size=%d", workspaceId, secretId, limit > 0 ? limit : 50)
+                : String.format("/api/v1/workspaces/%s/rotations?size=%d", workspaceId, limit > 0 ? limit : 50);
+
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<RotationCliDtos.RotationJobDto>>() {});
+    }
+
+    public RotationCliDtos.RotationJobDto getRotationJob(UUID workspaceId, UUID jobId) {
+        String path = String.format("/api/v1/workspaces/%s/rotations/%s", workspaceId, jobId);
+        return get(path, new TypeReference<ApiEnvelope<RotationCliDtos.RotationJobDto>>() {}, workspaceId);
+    }
+
+    public RotationCliDtos.RotationJobDto cancelRotation(UUID workspaceId, UUID jobId, RotationCliDtos.CancelRotationRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/rotations/%s/cancel", workspaceId, jobId);
+        post(path, req != null ? req : java.util.Map.of(), new TypeReference<ApiEnvelope<Void>>() {}, true, workspaceId);
+        return getRotationJob(workspaceId, jobId);
+    }
+
+    public RotationCliDtos.RotationJobDto retryRotation(UUID workspaceId, UUID jobId) {
+        String path = String.format("/api/v1/workspaces/%s/rotations/%s/retry", workspaceId, jobId);
+        return post(path, java.util.Map.of(), new TypeReference<ApiEnvelope<RotationCliDtos.RotationJobDto>>() {}, true, workspaceId);
+    }
+
+    public RotationCliDtos.RotationJobDto rollbackRotation(UUID workspaceId, UUID secretId, RotationCliDtos.RollbackRotationRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotate/rollback", workspaceId, secretId);
+        return post(path, req, new TypeReference<ApiEnvelope<RotationCliDtos.RotationJobDto>>() {}, true, workspaceId);
+    }
+
+    public RotationCliDtos.RotationImpactDto getRotationImpact(UUID workspaceId, UUID secretId) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotation-impact", workspaceId, secretId);
+        return get(path, new TypeReference<ApiEnvelope<RotationCliDtos.RotationImpactDto>>() {}, workspaceId);
+    }
+
+    public RotationCliDtos.RotationPolicyDto getRotationPolicy(UUID workspaceId, UUID secretId) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotation-policy", workspaceId, secretId);
+        return get(path, new TypeReference<ApiEnvelope<RotationCliDtos.RotationPolicyDto>>() {}, workspaceId);
+    }
+
+    public RotationCliDtos.RotationPolicyDto saveRotationPolicy(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId, RotationCliDtos.SaveRotationPolicyRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/rotation-policy", workspaceId, projectId, environmentId, secretId);
+        return post(path, req, new TypeReference<ApiEnvelope<RotationCliDtos.RotationPolicyDto>>() {}, true, workspaceId);
+    }
+
+    public void disableRotationPolicy(UUID workspaceId, UUID secretId) {
+        String path = String.format("/api/v1/workspaces/%s/secrets/%s/rotation-policy", workspaceId, secretId);
+        delete(path, workspaceId);
+    }
+
+    public List<RotationCliDtos.SecretLeaseDto> listLeases(UUID workspaceId, UUID secretId, UUID consumerId, int limit) {
+        StringBuilder path = new StringBuilder(String.format("/api/v1/workspaces/%s/leases?size=%d", workspaceId, limit > 0 ? limit : 50));
+        if (secretId != null) path.append("&secretId=").append(secretId);
+        com.fasterxml.jackson.databind.JsonNode node = get(path.toString(), new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<RotationCliDtos.SecretLeaseDto>>() {});
+    }
+
+    public RotationCliDtos.SecretLeaseDto getLease(UUID workspaceId, UUID leaseId) {
+        String path = String.format("/api/v1/workspaces/%s/leases/%s", workspaceId, leaseId);
+        return get(path, new TypeReference<ApiEnvelope<RotationCliDtos.SecretLeaseDto>>() {}, workspaceId);
+    }
+
+    public RotationCliDtos.SecretLeaseDto renewLease(UUID workspaceId, UUID leaseId, RotationCliDtos.RenewLeaseRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/leases/%s/renew", workspaceId, leaseId);
+        return post(path, req, new TypeReference<ApiEnvelope<RotationCliDtos.SecretLeaseDto>>() {}, true, workspaceId);
+    }
+
+    public RotationCliDtos.SecretLeaseDto revokeLease(UUID workspaceId, UUID leaseId, RotationCliDtos.RevokeLeaseRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/leases/%s", workspaceId, leaseId);
+        delete(path, workspaceId);
+        return getLease(workspaceId, leaseId);
+    }
+
+    public List<RotationCliDtos.SecretConsumerDto> listConsumers(UUID workspaceId, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/consumers?size=%d", workspaceId, limit > 0 ? limit : 50);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<RotationCliDtos.SecretConsumerDto>>() {});
+    }
+
+    public RotationCliDtos.SecretConsumerDto getConsumer(UUID workspaceId, UUID consumerId) {
+        String path = String.format("/api/v1/workspaces/%s/consumers/%s", workspaceId, consumerId);
+        return get(path, new TypeReference<ApiEnvelope<RotationCliDtos.SecretConsumerDto>>() {}, workspaceId);
+    }
+
+    public RotationCliDtos.SecretConsumerDto disableConsumer(UUID workspaceId, UUID consumerId) {
+        String path = String.format("/api/v1/workspaces/%s/consumers/%s", workspaceId, consumerId);
+        delete(path, workspaceId);
+        return getConsumer(workspaceId, consumerId);
+    }
+
+    private <T> List<T> parsePageContent(com.fasterxml.jackson.databind.JsonNode node, TypeReference<List<T>> typeRef) {
+        if (node == null) return List.of();
+        if (node.has("content") && node.get("content").isArray()) {
+            return objectMapper.convertValue(node.get("content"), typeRef);
+        } else if (node.isArray()) {
+            return objectMapper.convertValue(node, typeRef);
+        }
+        return List.of();
     }
 
     private void handleErrorResponse(int status, HttpResponse<String> resp) {
