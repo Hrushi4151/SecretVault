@@ -18,6 +18,7 @@
 | **Phase 5.8.1** | Session Management, Refresh-Token Binding, Device Telemetry, Revocation Governance | **COMPLETED** | 100% |
 | **Phase 5.8.2** | Generalized Step-Up Authentication Framework, Policy Engine, Single-Use Proofs | **COMPLETED** | 100% |
 | **Phase 5.8.3** | WebAuthn / FIDO2 Passkeys, Phishing-Resistant Factor, Step-Up & MFA Integration | **COMPLETED** | 100% |
+| **Phase 5.8.4** | Privileged Access Security (Break-Glass, Dual Approval Quorum, Temporary Elevation) | **COMPLETED** | 100% |
 | **Phase 6** | Security Intelligence, Security Center, Posture, Dynamic Risk Engine | **COMPLETED** | 100% |
 | **Phase 7** | Provider Integration Framework SPI, Vercel/Render Adapters, Credential AAD Binding | **COMPLETED** | 100% |
 | **Phase 8** | Sync Engine, Drift Detection, Reconciliation, Fingerprint Deduplication, Scheduler | **COMPLETED** | 100% |
@@ -38,3 +39,15 @@
 - **Security Intelligence & Audit Integration**: Emits sanitized security events (`DRIFT_DETECTED`, `DRIFT_RESOLVED`, `SYNC_STARTED`, `SYNC_COMPLETED`, `SYNC_FAILED`) and triggers high-severity security findings for production drift.
 - **REST Endpoints (`DriftController`, `SyncController`)**: Comprehensive pagination, filtering, allowlisted sorting, and RBAC permissions (`SYNC_VIEW`, `SYNC_DRY_RUN`, `SYNC_EXECUTE`, `DRIFT_VIEW`, `DRIFT_MANAGE`).
 - **Zero-Plaintext Security & Canary Verification**: `SUPER_SECRET_CANARY_123` verified absent from all logs, databases, exceptions, and API payloads.
+
+---
+
+## 3. Phase 5.8.4 Detailed Deliverables (Privileged Access Security)
+
+- **Centralized Privileged Action Model (`PrivilegedAction`)**: 17 sensitive operations categorized across Workspace, Project, Environment, and Secret scopes.
+- **Four-Eyes / Dual Approval Quorum Protocol (`PrivilegedAccessPolicy`, `PrivilegedAccessRequest`, `PrivilegedAccessApproval`)**: Configurable quorum enforcement with strict anti-self-approval barriers preventing requesters/beneficiaries from approving their own actions.
+- **Real-Time Ephemeral Elevation Engine (`PrivilegedAccessElevation`)**: Authoritative integration directly into `EffectiveAccessService` with real-time expiration checks and instant administrative revocation.
+- **Emergency Break-Glass Protocol**: Strongly-authenticated, time-bounded, explicitly-scoped emergency access requiring mandatory 20+ character justification, Step-Up/WebAuthn proof, and comprehensive immutable audit logging.
+- **Database Schema (`V16__privileged_access_security_schema.sql`)**: High-performance indexes, constraints, and audit linkages.
+- **Full Threat Matrix Coverage**: Verified all 40 adversarial threat scenarios (PA-01 through PA-40).
+- **Frontend Privileged Access Center (`PrivilegedAccessCenter.jsx`)**: Multi-tab governance console with pending requests, approval queue, active elevation countdowns, break-glass console, and policy management.
