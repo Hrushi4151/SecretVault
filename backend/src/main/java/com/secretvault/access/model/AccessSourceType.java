@@ -9,5 +9,7 @@ public enum AccessSourceType {
     PROJECT_ACCESS,
     ENVIRONMENT_ACCESS,
     GRANULAR_GRANT,
-    JIT_GRANT
+    JIT_GRANT,
+    PRIVILEGED_ELEVATION,
+    BREAK_GLASS
 }

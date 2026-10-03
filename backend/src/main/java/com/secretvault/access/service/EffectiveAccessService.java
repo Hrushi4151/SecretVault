@@ -67,6 +67,7 @@ public class EffectiveAccessService {
     private final java.time.Clock clock;
     private final com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository;
     private final com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository;
+    private final com.secretvault.access.privileged.repository.PrivilegedAccessElevationRepository privilegedElevationRepository;
 
     public EffectiveAccessService(
             WorkspaceRepository workspaceRepository,
@@ -81,7 +82,7 @@ public class EffectiveAccessService {
     ) {
         this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
              secretRepository, projectAccessRepository, environmentAccessRepository,
-             accessGrantRepository, jitRepository, java.time.Clock.systemUTC(), null, null);
+             accessGrantRepository, jitRepository, java.time.Clock.systemUTC(), null, null, null);
     }
 
     public EffectiveAccessService(
@@ -98,7 +99,26 @@ public class EffectiveAccessService {
     ) {
         this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
              secretRepository, projectAccessRepository, environmentAccessRepository,
-             accessGrantRepository, jitRepository, clock, null, null);
+             accessGrantRepository, jitRepository, clock, null, null, null);
+    }
+
+    public EffectiveAccessService(
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository,
+            SecretRepository secretRepository,
+            ProjectAccessRepository projectAccessRepository,
+            EnvironmentAccessRepository environmentAccessRepository,
+            AccessGrantRepository accessGrantRepository,
+            JitAccessRequestRepository jitRepository,
+            java.time.Clock clock,
+            com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository,
+            com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository
+    ) {
+        this(workspaceRepository, membershipRepository, projectRepository, environmentRepository,
+             secretRepository, projectAccessRepository, environmentAccessRepository,
+             accessGrantRepository, jitRepository, clock, machineIdentityRepository, machineAccessGrantRepository, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -114,7 +134,8 @@ public class EffectiveAccessService {
             JitAccessRequestRepository jitRepository,
             java.time.Clock clock,
             @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineIdentityRepository machineIdentityRepository,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.machine.repository.MachineAccessGrantRepository machineAccessGrantRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.access.privileged.repository.PrivilegedAccessElevationRepository privilegedElevationRepository
     ) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
@@ -128,6 +149,7 @@ public class EffectiveAccessService {
         this.clock = clock != null ? clock : java.time.Clock.systemUTC();
         this.machineIdentityRepository = machineIdentityRepository;
         this.machineAccessGrantRepository = machineAccessGrantRepository;
+        this.privilegedElevationRepository = privilegedElevationRepository;
     }
 
     /**
@@ -256,6 +278,12 @@ public class EffectiveAccessService {
                     if (jitDecision != null && jitDecision.allowed()) {
                         return jitDecision;
                     }
+                    AccessDecision privDecision = evaluatePrivilegedElevationExtension(
+                            workspaceId, projectId, environmentId, secretId, permission, userId
+                    );
+                    if (privDecision != null && privDecision.allowed()) {
+                        return privDecision;
+                    }
                     return AccessDecision.deny(permission, AccessScope.PROJECT, "You are not authorized to access this project");
                 }
             }
@@ -300,7 +328,15 @@ public class EffectiveAccessService {
             return jitDecision;
         }
 
-        // 11. Default Deny
+        // 11. Privileged Access & Break-Glass Temporary Elevation Extension Point (Phase 5.8.4)
+        AccessDecision privDecision = evaluatePrivilegedElevationExtension(
+                workspaceId, projectId, environmentId, secretId, permission, userId
+        );
+        if (privDecision != null && privDecision.allowed()) {
+            return privDecision;
+        }
+
+        // 12. Default Deny
         return standingDecision;
     }
 
@@ -700,6 +736,78 @@ public class EffectiveAccessService {
     }
 
     /**
+     * Evaluates active Privileged Access & Break-Glass Temporary Elevations (Phase 5.8.4).
+     */
+    private AccessDecision evaluatePrivilegedElevationExtension(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            AccessPermission permission,
+            UUID userId
+    ) {
+        if (privilegedElevationRepository == null) {
+            return null;
+        }
+
+        Instant now = clock.instant();
+        List<com.secretvault.access.privileged.entity.PrivilegedAccessElevation> activeElevations =
+                privilegedElevationRepository.findActiveElevationsForUserAndPermission(workspaceId, userId, permission, now);
+
+        if (activeElevations.isEmpty()) {
+            return null;
+        }
+
+        for (com.secretvault.access.privileged.entity.PrivilegedAccessElevation elev : activeElevations) {
+            if (!elev.isActive(now)) {
+                continue;
+            }
+
+            boolean matchesScope = false;
+            AccessScope targetScope = AccessScope.WORKSPACE;
+
+            switch (elev.getScopeType()) {
+                case WORKSPACE -> {
+                    matchesScope = true;
+                    targetScope = AccessScope.WORKSPACE;
+                }
+                case PROJECT -> {
+                    if (projectId != null && projectId.equals(elev.getProjectId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.PROJECT;
+                    }
+                }
+                case ENVIRONMENT -> {
+                    if (environmentId != null && environmentId.equals(elev.getEnvironmentId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.ENVIRONMENT;
+                    }
+                }
+                case SECRET -> {
+                    if (secretId != null && secretId.equals(elev.getSecretId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.SECRET;
+                    }
+                }
+            }
+
+            if (matchesScope) {
+                AccessSourceType sourceType = elev.isBreakGlass() ? AccessSourceType.BREAK_GLASS : AccessSourceType.PRIVILEGED_ELEVATION;
+                String sourceDesc = (elev.isBreakGlass() ? "Active Break-Glass emergency access" : "Active temporary privileged elevation") +
+                        " authorizes " + permission.getCode() + " until " + elev.getExpiresAt();
+                return AccessDecision.allow(
+                        permission,
+                        targetScope,
+                        sourceType,
+                        elev.getId().toString(),
+                        sourceDesc
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
      * Determines whether a user has authorized access or involvement in a project.
      * Evaluates:
      * 1. Full workspace administrators (OWNER, ADMIN) -> always true.
@@ -766,12 +874,26 @@ public class EffectiveAccessService {
             }
         }
 
-        // 5. Scoped check: if user has any scoped records in this workspace, unassigned projects are false
+        // 5. Active unexpired Privileged Elevation / Break-Glass grant
+        if (privilegedElevationRepository != null) {
+            List<com.secretvault.access.privileged.entity.PrivilegedAccessElevation> userElevations =
+                    privilegedElevationRepository.findActiveElevationsForUser(workspaceId, userId, clock.instant());
+            boolean hasElevOnProject = userElevations.stream().anyMatch(e ->
+                    (e.getScopeType() == com.secretvault.access.privileged.model.PrivilegedPolicyScope.WORKSPACE) ||
+                    (e.getProjectId() != null && e.getProjectId().equals(projectId)) ||
+                    (e.getEnvironmentId() != null && projectEnvIds.contains(e.getEnvironmentId()))
+            );
+            if (hasElevOnProject) {
+                return true;
+            }
+        }
+
+        // 6. Scoped check: if user has any scoped records in this workspace, unassigned projects are false
         if (hasAnyScopedAccessInWorkspace(workspaceId, userId)) {
             return false;
         }
 
-        // 6. Standing unrestricted member
+        // 7. Standing unrestricted member
         return true;
     }
 

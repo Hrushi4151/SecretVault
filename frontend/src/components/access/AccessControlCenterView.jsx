@@ -8,6 +8,7 @@ import { AccessReviewsView } from './AccessReviewsView';
 import { AccessReviewDetailsView } from './AccessReviewDetailsView';
 import { EffectivePermissionInspector } from './EffectivePermissionInspector';
 import { WhyAccess } from './WhyAccess';
+import { PrivilegedAccessCenter } from './PrivilegedAccessCenter';
 import {
   ShieldCheck,
   Key,
@@ -22,7 +23,8 @@ import {
   ShieldAlert,
   Users,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Flame
 } from 'lucide-react';
 
 export const AccessControlCenterView = () => {
@@ -114,6 +116,7 @@ export const AccessControlCenterView = () => {
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#1C000A] border border-[#FFB4C8]/15 w-fit overflow-x-auto max-w-full">
         {[
           { id: 'OVERVIEW', label: 'Security & Access Overview', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'PRIVILEGED', label: 'Privileged Access & Break-Glass', icon: <Flame className="w-4 h-4 text-[#FF1744]" /> },
           { id: 'JIT', label: 'Just-In-Time (JIT) Access', icon: <Clock className="w-4 h-4" /> },
           { id: 'GRANTS', label: 'Granular Access Grants', icon: <Key className="w-4 h-4" /> },
           { id: 'REVIEWS', label: 'Access Reviews & Certification', icon: <Award className="w-4 h-4" /> },
@@ -278,6 +281,8 @@ export const AccessControlCenterView = () => {
       )}
 
       {/* Main SubTab Content */}
+      {activeSubTab === 'PRIVILEGED' && <PrivilegedAccessCenter />}
+
       {activeSubTab === 'JIT' && <JitAccessView />}
 
       {activeSubTab === 'GRANTS' && (
