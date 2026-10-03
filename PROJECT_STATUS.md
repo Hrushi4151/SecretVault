@@ -1,8 +1,8 @@
 # SecretVault — Project Status & Implementation Tracker
 
-> **Last Updated:** Phase 7 Provider Integration Framework (Backend / Provider Integration Owner)  
-> **Current Version:** `0.1.0-SNAPSHOT`  
-> **Architecture Style:** Modular Monolith (Spring Boot 3.3.4 / Java 21)
+> **Last Updated:** Phase 10 Developer CLI & Production Hardening (`f7e3298`)  
+> **Current Version:** `1.0.0` / Baseline: `f7e3298`  
+> **Architecture Style:** Modular Monolith (Spring Boot 3.3.4 / Java 21) + Java/Picocli CLI (`@hrushikeshmore/secretvault-cli`)
 
 ---
 
