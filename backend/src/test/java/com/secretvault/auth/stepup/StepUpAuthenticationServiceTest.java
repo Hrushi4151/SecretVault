@@ -63,6 +63,12 @@ class StepUpAuthenticationServiceTest {
     @Mock
     private EffectiveAccessService effectiveAccessService;
 
+    @Mock
+    private com.secretvault.auth.webauthn.repository.UserWebAuthnCredentialRepository userWebAuthnCredentialRepository;
+
+    @Mock
+    private com.secretvault.auth.webauthn.service.WebAuthnService webAuthnService;
+
     @InjectMocks
     private DefaultStepUpAuthenticationService stepUpService;
 

@@ -128,4 +128,65 @@ export const authApi = {
       body: JSON.stringify({ recoveryCode }),
     });
   },
+
+  getStepUpWebAuthnOptions: async (challengeId) => {
+    return apiClient.request(`/auth/step-up/challenges/${encodeURIComponent(challengeId)}/webauthn/options`, {
+      method: 'POST',
+    });
+  },
+
+  verifyStepUpWebAuthn: async ({ challengeId, credentialJson }) => {
+    return apiClient.request(`/auth/step-up/challenges/${encodeURIComponent(challengeId)}/verify-webauthn`, {
+      method: 'POST',
+      body: JSON.stringify({ credentialJson }),
+    });
+  },
+
+  // WebAuthn / Passkeys
+  getWebAuthnRegistrationOptions: async (friendlyName) => {
+    const params = friendlyName ? `?friendlyName=${encodeURIComponent(friendlyName)}` : '';
+    return apiClient.request(`/auth/webauthn/registration/options${params}`, {
+      method: 'POST',
+    });
+  },
+
+  verifyWebAuthnRegistration: async ({ challengeId, friendlyName, credentialJson }) => {
+    return apiClient.request('/auth/webauthn/registration/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId, friendlyName, credentialJson }),
+    });
+  },
+
+  getWebAuthnAuthenticationOptions: async (email) => {
+    return apiClient.request('/auth/webauthn/authentication/options', {
+      method: 'POST',
+      body: email ? JSON.stringify({ email }) : undefined,
+    });
+  },
+
+  verifyWebAuthnAuthentication: async ({ challengeId, credentialJson }) => {
+    return apiClient.request('/auth/webauthn/authentication/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId, credentialJson }),
+    });
+  },
+
+  getWebAuthnCredentials: async () => {
+    return apiClient.request('/auth/webauthn/credentials', {
+      method: 'GET',
+    });
+  },
+
+  renameWebAuthnCredential: async ({ credentialId, friendlyName }) => {
+    return apiClient.request(`/auth/webauthn/credentials/${encodeURIComponent(credentialId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ friendlyName }),
+    });
+  },
+
+  revokeWebAuthnCredential: async (credentialId) => {
+    return apiClient.request(`/auth/webauthn/credentials/${encodeURIComponent(credentialId)}`, {
+      method: 'DELETE',
+    });
+  },
 };

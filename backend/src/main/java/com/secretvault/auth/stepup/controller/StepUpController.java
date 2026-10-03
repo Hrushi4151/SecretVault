@@ -164,4 +164,54 @@ public class StepUpController {
                 .cacheControl(CacheControl.noStore())
                 .body(ApiResponse.success(response));
     }
+
+    @PostMapping("/challenges/{challengeId}/webauthn/options")
+    @SecurityRequirement(name = "BearerAuth")
+    @RateLimited(
+            category = "step_up_webauthn_opts",
+            limit = 10,
+            windowSeconds = 60,
+            type = RateLimitIdentifierType.USER_ID,
+            message = "Too many WebAuthn step-up options requests. Please try again later."
+    )
+    @Operation(summary = "Get WebAuthn Step-Up Options", description = "Generates WebAuthn assertion options for an active step-up challenge.")
+    public ResponseEntity<ApiResponse<com.secretvault.auth.webauthn.dto.WebAuthnAuthenticationOptionsResponse>> getWebAuthnOptions(
+            @PathVariable String challengeId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        com.secretvault.auth.webauthn.dto.WebAuthnAuthenticationOptionsResponse response = stepUpService.createWebAuthnStepUpOptions(
+                challengeId,
+                principal.getId(),
+                principal.getSessionIdentifier()
+        );
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ApiResponse.success(response));
+    }
+
+    @PostMapping("/challenges/{challengeId}/verify-webauthn")
+    @SecurityRequirement(name = "BearerAuth")
+    @RateLimited(
+            category = "step_up_verify_webauthn",
+            limit = 5,
+            windowSeconds = 60,
+            type = RateLimitIdentifierType.USER_ID,
+            message = "Too many WebAuthn verification attempts. Please try again later."
+    )
+    @Operation(summary = "Verify WebAuthn Step-Up", description = "Verifies WebAuthn assertion against an active step-up challenge and issues a short-lived proof token.")
+    public ResponseEntity<ApiResponse<StepUpProofResponse>> verifyWebAuthn(
+            @PathVariable String challengeId,
+            @Valid @RequestBody com.secretvault.auth.webauthn.dto.WebAuthnStepUpVerifyRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        StepUpProofResponse response = stepUpService.verifyWebAuthn(
+                challengeId,
+                principal.getId(),
+                principal.getSessionIdentifier(),
+                request.credentialJson()
+        );
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ApiResponse.success(response));
+    }
 }

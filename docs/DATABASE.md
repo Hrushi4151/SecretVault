@@ -29,6 +29,7 @@
 - `V7__access_control_and_jit_schema.sql` — `access_grants`, `jit_access_requests`, `access_review_campaigns`, and `access_review_items` for granular access control, dual-custody JIT elevation, and periodic certification campaigns
 - `V8__security_intelligence_schema.sql` — `security_events` and `security_findings` tables with deterministic fingerprint unique constraints and tenant-scoped indexes for threat detection and posture management
 - `V9__provider_integrations_schema.sql` — `provider_integrations` and `provider_resource_mappings` tables for external deployment platform integrations, encrypted credential storage, and tenant-scoped resource/environment mappings.
+- `V14__webauthn_credentials_schema.sql` — `user_webauthn_credentials` table storing public COSE credential keys, sign counts, AAGUIDs, transports, and friendly names for FIDO2 / WebAuthn passkeys.
 
 
 ---
