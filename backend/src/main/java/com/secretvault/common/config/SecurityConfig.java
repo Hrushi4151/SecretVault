@@ -93,8 +93,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("http://localhost:[*]", "https://*.secretvault.dev"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID", "X-Request-ID", "X-Organization-ID"));
-        configuration.setExposedHeaders(List.of("X-Correlation-ID", "X-Request-ID"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID", "X-Request-ID", "X-Organization-ID", "X-Workspace-ID", "X-Step-Up-Proof"));
+        configuration.setExposedHeaders(List.of("X-Correlation-ID", "X-Request-ID", "X-Step-Up-Proof"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

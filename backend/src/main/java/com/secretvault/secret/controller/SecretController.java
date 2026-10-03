@@ -169,6 +169,7 @@ public class SecretController {
             @PathVariable UUID secretId,
             @RequestParam(required = false) Integer version,
             @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @RequestHeader(value = "X-Step-Up-Proof", required = false) String stepUpProof,
             @AuthenticationPrincipal UserPrincipal principal,
             HttpServletRequest servletRequest
     ) {
@@ -177,7 +178,8 @@ public class SecretController {
         String ipAddress = servletRequest.getRemoteAddr();
 
         SecretRevealResponse response = secretService.revealSecret(
-                workspaceId, projectId, environmentId, secretId, version, principal.getId(), requestId, ipAddress
+                workspaceId, projectId, environmentId, secretId, version, principal.getId(),
+                principal.getSessionIdentifier(), stepUpProof, requestId, ipAddress
         );
 
         HttpHeaders headers = new HttpHeaders();

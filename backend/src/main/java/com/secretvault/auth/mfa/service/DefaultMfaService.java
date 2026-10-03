@@ -577,4 +577,45 @@ public class DefaultMfaService implements MfaService {
 
         auditService.recordAudit(null, null, userId, "USER", AuditAction.MFA_DISABLED, "USER_MFA", userMfa.getId(), null, null, "ADMIN_OVERRIDE");
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean verifyTotp(UUID userId, String code) {
+        if (userId == null || code == null || code.isBlank()) {
+            return false;
+        }
+        UserMfa userMfa = userMfaRepository.findByUserId(userId).orElse(null);
+        if (userMfa == null || !userMfa.isEnabled()) {
+            return false;
+        }
+        String aad = "user-mfa:" + userId;
+        try {
+            byte[] rawSecretBytes = encryptionService.decrypt(userMfa.toEncryptedPayload(), aad);
+            String base32Secret = Base32.encode(rawSecretBytes, false);
+            return totpService.verifyCode(base32Secret, code.trim());
+        } catch (Exception ex) {
+            log.error("Failed to decrypt MFA secret for user [{}] during direct TOTP verification", userId, ex);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean verifyAndConsumeRecoveryCode(UUID userId, String recoveryCode) {
+        if (userId == null || recoveryCode == null || recoveryCode.isBlank()) {
+            return false;
+        }
+        UserMfa userMfa = userMfaRepository.findByUserId(userId).orElse(null);
+        if (userMfa == null || !userMfa.isEnabled()) {
+            return false;
+        }
+        List<MfaRecoveryCode> unusedCodes = recoveryCodeRepository.findByUserMfaIdAndUsedFalseOrderByCodeIndexAsc(userMfa.getId());
+        for (MfaRecoveryCode candidate : unusedCodes) {
+            if (recoveryCodeService.matches(recoveryCode.trim(), candidate.getCodeHash())) {
+                recoveryCodeRepository.markUsedIfUnused(candidate.getId(), Instant.now());
+                return true;
+            }
+        }
+        return false;
+    }
 }

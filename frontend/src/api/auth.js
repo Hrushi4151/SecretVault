@@ -100,4 +100,32 @@ export const authApi = {
       method: 'POST',
     });
   },
+
+  createStepUpChallenge: async ({ action, context }) => {
+    return apiClient.request('/auth/step-up/challenges', {
+      method: 'POST',
+      body: JSON.stringify({ action, context }),
+    });
+  },
+
+  verifyStepUpPassword: async ({ challengeId, password }) => {
+    return apiClient.request(`/auth/step-up/challenges/${encodeURIComponent(challengeId)}/verify-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  verifyStepUpTotp: async ({ challengeId, code }) => {
+    return apiClient.request(`/auth/step-up/challenges/${encodeURIComponent(challengeId)}/verify-totp`, {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  verifyStepUpRecoveryCode: async ({ challengeId, recoveryCode }) => {
+    return apiClient.request(`/auth/step-up/challenges/${encodeURIComponent(challengeId)}/verify-recovery-code`, {
+      method: 'POST',
+      body: JSON.stringify({ recoveryCode }),
+    });
+  },
 };

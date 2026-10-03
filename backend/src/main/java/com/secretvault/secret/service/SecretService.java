@@ -72,6 +72,8 @@ public class SecretService {
     private final ProjectService projectService;
     private final EffectiveAccessService effectiveAccessService;
     private final MachineIdentityRepository machineIdentityRepository;
+    private final com.secretvault.auth.stepup.service.StepUpPolicyService stepUpPolicyService;
+    private final com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService;
 
     public SecretService(
             SecretRepository secretRepository,
@@ -87,7 +89,7 @@ public class SecretService {
     ) {
         this(secretRepository, secretVersionRepository, encryptionService, auditService,
              environmentRepository, projectRepository, workspaceRepository, membershipRepository,
-             projectAccessRepository, environmentAccessRepository, null, null, null);
+             projectAccessRepository, environmentAccessRepository, null, null, null, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -104,7 +106,9 @@ public class SecretService {
             @org.springframework.beans.factory.annotation.Autowired(required = false) EnvironmentAccessRepository environmentAccessRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) ProjectService projectService,
             @org.springframework.beans.factory.annotation.Autowired(required = false) EffectiveAccessService effectiveAccessService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) MachineIdentityRepository machineIdentityRepository
+            @org.springframework.beans.factory.annotation.Autowired(required = false) MachineIdentityRepository machineIdentityRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.auth.stepup.service.StepUpPolicyService stepUpPolicyService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService
     ) {
         this.secretRepository = secretRepository;
         this.secretVersionRepository = secretVersionRepository;
@@ -119,6 +123,8 @@ public class SecretService {
         this.projectService = projectService;
         this.effectiveAccessService = effectiveAccessService;
         this.machineIdentityRepository = machineIdentityRepository;
+        this.stepUpPolicyService = stepUpPolicyService;
+        this.stepUpAuthenticationService = stepUpAuthenticationService;
     }
 
     /**
@@ -437,7 +443,7 @@ public class SecretService {
 
     /**
      * Explicit Reveal endpoint decrypting secret in memory on-demand.
-     * Enforces strict RBAC and security audit trail. Never caches plaintext.
+     * Enforces strict RBAC, Step-Up re-authentication when required, and security audit trail. Never caches plaintext.
      */
     @Transactional
     public SecretRevealResponse revealSecret(
@@ -447,10 +453,37 @@ public class SecretService {
             UUID secretId,
             Integer versionNumber,
             UUID userId,
+            String sessionIdentifier,
+            String stepUpProof,
             String requestId,
             String ipAddress
     ) {
+        // 1. First verify base hierarchical and RBAC permissions (Time-of-Check)
         WorkspaceContext context = verifyHierarchyAndRevealAccess(workspaceId, projectId, environmentId, userId);
+
+        // 2. Evaluate Step-Up policy
+        com.secretvault.auth.stepup.model.StepUpContext stepUpContext =
+                com.secretvault.auth.stepup.model.StepUpContext.forSecret(workspaceId, projectId, environmentId, secretId);
+
+        if (stepUpPolicyService != null && stepUpPolicyService.requiresStepUp(userId, com.secretvault.auth.stepup.model.StepUpAction.SECRET_REVEAL, stepUpContext)) {
+            if (stepUpAuthenticationService == null) {
+                throw ApiException.internal("STEP_UP_UNAVAILABLE", "Step-up authentication service is unavailable");
+            }
+            if (stepUpProof == null || stepUpProof.isBlank()) {
+                throw ApiException.forbidden("STEP_UP_REQUIRED", "Step-up authentication is required to reveal secrets in this protected environment");
+            }
+            // Atomically verify and single-use consume the proof
+            stepUpAuthenticationService.verifyAndConsumeProof(
+                    stepUpProof,
+                    userId,
+                    sessionIdentifier,
+                    com.secretvault.auth.stepup.model.StepUpAction.SECRET_REVEAL,
+                    stepUpContext
+            );
+
+            // 3. Time-of-Use: Re-verify authorization after step-up proof verification
+            context = verifyHierarchyAndRevealAccess(workspaceId, projectId, environmentId, userId);
+        }
 
         Secret secret = secretRepository.findByIdAndEnvironmentId(secretId, environmentId)
                 .orElseThrow(() -> ApiException.notFound("Secret not found in this environment"));
@@ -470,7 +503,7 @@ public class SecretService {
         SecretVersion version = secretVersionRepository.findBySecretIdAndVersionNumber(secretId, targetVersion)
                 .orElseThrow(() -> ApiException.notFound("Secret version " + targetVersion + " not found"));
 
-        // 1. Reconstruct payload and decrypt in memory
+        // 4. Reconstruct payload and decrypt in memory
         EncryptedPayload payload = new EncryptedPayload(
                 version.getCiphertext(),
                 version.getEncryptedDek(),
@@ -486,7 +519,7 @@ public class SecretService {
         // Memory zeroization of temporary byte array
         Arrays.fill(plaintextBytes, (byte) 0);
 
-        // 2. Emit audit event
+        // 5. Emit audit event
         auditService.recordSecretAudit(
                 context.workspace().getOrganizationId(),
                 workspaceId,
@@ -509,6 +542,20 @@ public class SecretService {
                 plaintext,
                 Instant.now()
         );
+    }
+
+    @Transactional
+    public SecretRevealResponse revealSecret(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            Integer versionNumber,
+            UUID userId,
+            String requestId,
+            String ipAddress
+    ) {
+        return revealSecret(workspaceId, projectId, environmentId, secretId, versionNumber, userId, null, null, requestId, ipAddress);
     }
 
     /**

@@ -79,4 +79,16 @@ public interface MfaService {
      * Purges recovery codes and transitions UserMfa status to DISABLED.
      */
     void disableMfa(UUID userId);
+
+    /**
+     * Directly verifies a candidate TOTP code against a user's active MFA secret.
+     * Used by Generalized Step-Up Authentication without requiring a login challenge.
+     */
+    boolean verifyTotp(UUID userId, String code);
+
+    /**
+     * Directly verifies and consumes an unused backup recovery code for a user.
+     * Used by Generalized Step-Up Authentication without requiring a login challenge.
+     */
+    boolean verifyAndConsumeRecoveryCode(UUID userId, String recoveryCode);
 }

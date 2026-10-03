@@ -6,6 +6,7 @@ import { CreateSecretModal } from './CreateSecretModal';
 import { SecretDetailsModal } from './SecretDetailsModal';
 import SecretBranchesModal from './SecretBranchesModal';
 import EnvironmentPromotionModal from './EnvironmentPromotionModal';
+import { StepUpAuthenticationModal } from '../auth/StepUpAuthenticationModal';
 import {
   Key,
   Plus,
@@ -79,6 +80,7 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [branchModalSecret, setBranchModalSecret] = useState(null);
   const [copiedKeyName, setCopiedKeyName] = useState(null);
+  const [stepUpSecretId, setStepUpSecretId] = useState(null);
 
   // Quick reveal state per secret row
   const [quickRevealedSecrets, setQuickRevealedSecrets] = useState({}); // { [secretId]: { value, expiresAt } }
@@ -191,8 +193,8 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
   };
 
   // Quick reveal handler
-  const handleQuickReveal = async (secretId) => {
-    if (quickRevealedSecrets[secretId]) {
+  const handleQuickReveal = async (secretId, stepUpProof = null) => {
+    if (quickRevealedSecrets[secretId] && !stepUpProof) {
       // Hide if already revealed
       setQuickRevealedSecrets((prev) => {
         const next = { ...prev };
@@ -208,7 +210,9 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
         activeWorkspace.id,
         selectedProjectId,
         selectedEnvironmentId,
-        secretId
+        secretId,
+        null,
+        stepUpProof
       );
       const data = response?.data || response;
       setQuickRevealedSecrets((prev) => ({
@@ -228,7 +232,15 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
         });
       }, 15000);
     } catch (err) {
-      alert(err.message || 'Failed to reveal secret. Ensure you have proper permissions.');
+      if (
+        err.payload?.code === 'STEP_UP_REQUIRED' ||
+        (err.message && err.message.toLowerCase().includes('step-up')) ||
+        (err.status === 403 && err.payload?.code === 'STEP_UP_REQUIRED')
+      ) {
+        setStepUpSecretId(secretId);
+      } else {
+        alert(err.message || 'Failed to reveal secret. Ensure you have proper permissions.');
+      }
     } finally {
       setQuickRevealingId(null);
     }
@@ -813,6 +825,28 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
           environmentType={currentEnvironment?.envType || 'DEVELOPMENT'}
           onBranchMerged={() => {
             handleRefresh();
+          }}
+        />
+      )}
+
+      {/* Step-Up Authentication Modal for Quick Reveal */}
+      {stepUpSecretId && (
+        <StepUpAuthenticationModal
+          isOpen={!!stepUpSecretId}
+          onClose={() => setStepUpSecretId(null)}
+          action="SECRET_REVEAL"
+          context={{
+            workspaceId: activeWorkspace?.id,
+            projectId: selectedProjectId,
+            environmentId: selectedEnvironmentId,
+            secretId: stepUpSecretId,
+          }}
+          actionTitle="Reveal Protected Secret"
+          actionDescription={`Step-up verification is required to reveal secrets in ${currentEnvironment?.name || 'this protected environment'}.`}
+          onSuccess={(proofToken) => {
+            const sid = stepUpSecretId;
+            setStepUpSecretId(null);
+            handleQuickReveal(sid, proofToken);
           }}
         />
       )}

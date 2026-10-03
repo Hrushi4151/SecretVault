@@ -79,6 +79,12 @@ class SecretServiceTest {
     @Mock
     private EnvironmentAccessRepository environmentAccessRepository;
 
+    @Mock
+    private com.secretvault.auth.stepup.service.StepUpPolicyService stepUpPolicyService;
+
+    @Mock
+    private com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService;
+
     @InjectMocks
     private SecretService secretService;
 
@@ -377,6 +383,44 @@ class SecretServiceTest {
                 secretService.revealSecret(workspaceId, projectId, environmentId, secretId, null, userId, "req-6", "127.0.0.1"));
         assertEquals("BAD_REQUEST", ex.getCode());
         assertTrue(ex.getMessage().contains("deleted"));
+    }
+
+    @Test
+    @DisplayName("Should require step-up proof when policy dictates and reject if missing")
+    void testRevealSecret_requiresStepUp_missingProof() {
+        mockValidHierarchy(WorkspaceRole.DEVELOPER);
+        when(stepUpPolicyService.requiresStepUp(eq(userId), eq(com.secretvault.auth.stepup.model.StepUpAction.SECRET_REVEAL), any()))
+                .thenReturn(true);
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                secretService.revealSecret(workspaceId, projectId, environmentId, secretId, null, userId, "sess_123", null, "req-stepup", "127.0.0.1"));
+
+        assertEquals(403, ex.getStatus().value());
+        assertEquals("STEP_UP_REQUIRED", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Should reveal secret when required step-up proof is valid and verified")
+    void testRevealSecret_requiresStepUp_validProof() {
+        mockValidHierarchy(WorkspaceRole.DEVELOPER);
+        when(stepUpPolicyService.requiresStepUp(eq(userId), eq(com.secretvault.auth.stepup.model.StepUpAction.SECRET_REVEAL), any()))
+                .thenReturn(true);
+
+        when(secretRepository.findByIdAndEnvironmentId(secretId, environmentId)).thenReturn(Optional.of(secret));
+        when(secretVersionRepository.findBySecretIdAndVersionNumber(secretId, 1)).thenReturn(Optional.of(secretVersion));
+        when(encryptionService.decrypt(any(EncryptedPayload.class), eq(secretId + ":" + environmentId + ":1")))
+                .thenReturn("sk_live_supersecret".getBytes(StandardCharsets.UTF_8));
+
+        SecretRevealResponse response = secretService.revealSecret(
+                workspaceId, projectId, environmentId, secretId, null, userId, "sess_123", "stup_valid_token_xyz", "req-stepup-ok", "127.0.0.1"
+        );
+
+        assertNotNull(response);
+        assertEquals("sk_live_supersecret", response.value());
+        verify(stepUpAuthenticationService).verifyAndConsumeProof(
+                eq("stup_valid_token_xyz"), eq(userId), eq("sess_123"),
+                eq(com.secretvault.auth.stepup.model.StepUpAction.SECRET_REVEAL), any()
+        );
     }
 
     @Test
