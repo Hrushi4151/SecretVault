@@ -11,6 +11,7 @@ import com.secretvault.cli.client.dto.ProjectDto;
 import com.secretvault.cli.client.dto.RotationCliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos.*;
 import com.secretvault.cli.client.dto.SecretDtos;
+import com.secretvault.cli.client.dto.StepUpDtos;
 import com.secretvault.cli.client.dto.WorkspaceDto;
 import com.secretvault.cli.security.RedactionHelper;
 
@@ -22,7 +23,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -78,6 +82,16 @@ public class SecretVaultApiClient {
         return post("/api/v1/auth/login", req, new TypeReference<ApiEnvelope<AuthDtos.AuthResponse>>() {}, false, null);
     }
 
+    public AuthDtos.AuthResponse verifyMfaTotp(String challengeId, String code) {
+        AuthDtos.MfaTotpVerifyRequest req = new AuthDtos.MfaTotpVerifyRequest(challengeId, code);
+        return post("/api/v1/auth/mfa/verify-totp", req, new TypeReference<ApiEnvelope<AuthDtos.AuthResponse>>() {}, false, null);
+    }
+
+    public AuthDtos.AuthResponse verifyMfaRecovery(String challengeId, String recoveryCode) {
+        AuthDtos.MfaRecoveryVerifyRequest req = new AuthDtos.MfaRecoveryVerifyRequest(challengeId, recoveryCode);
+        return post("/api/v1/auth/mfa/verify-recovery", req, new TypeReference<ApiEnvelope<AuthDtos.AuthResponse>>() {}, false, null);
+    }
+
     public AuthDtos.AuthResponse refreshToken(String refreshToken) {
         AuthDtos.RefreshTokenRequest req = new AuthDtos.RefreshTokenRequest(refreshToken);
         return post("/api/v1/auth/refresh", req, new TypeReference<ApiEnvelope<AuthDtos.AuthResponse>>() {}, false, null);
@@ -109,6 +123,29 @@ public class SecretVaultApiClient {
 
     public AuthDtos.MachineIdentityDto getMachineIdentity(UUID workspaceId, UUID machineId) {
         return get("/api/v1/workspaces/" + workspaceId + "/machine-identities/" + machineId, new TypeReference<ApiEnvelope<AuthDtos.MachineIdentityDto>>() {}, workspaceId);
+    }
+
+    // ==========================================
+    // Generalized Step-Up Authentication APIs
+    // ==========================================
+
+    public StepUpDtos.StepUpChallengeResponse createStepUpChallenge(StepUpDtos.StepUpChallengeRequest req) {
+        return post("/api/v1/auth/step-up/challenges", req, new TypeReference<ApiEnvelope<StepUpDtos.StepUpChallengeResponse>>() {}, true, null);
+    }
+
+    public StepUpDtos.StepUpProofResponse verifyStepUpTotp(String challengeId, String code) {
+        StepUpDtos.TotpStepUpRequest req = new StepUpDtos.TotpStepUpRequest(code);
+        return post("/api/v1/auth/step-up/challenges/" + challengeId + "/verify-totp", req, new TypeReference<ApiEnvelope<StepUpDtos.StepUpProofResponse>>() {}, true, null);
+    }
+
+    public StepUpDtos.StepUpProofResponse verifyStepUpPassword(String challengeId, String password) {
+        StepUpDtos.PasswordStepUpRequest req = new StepUpDtos.PasswordStepUpRequest(password);
+        return post("/api/v1/auth/step-up/challenges/" + challengeId + "/verify-password", req, new TypeReference<ApiEnvelope<StepUpDtos.StepUpProofResponse>>() {}, true, null);
+    }
+
+    public StepUpDtos.StepUpProofResponse verifyStepUpRecoveryCode(String challengeId, String recoveryCode) {
+        StepUpDtos.RecoveryCodeStepUpRequest req = new StepUpDtos.RecoveryCodeStepUpRequest(recoveryCode);
+        return post("/api/v1/auth/step-up/challenges/" + challengeId + "/verify-recovery-code", req, new TypeReference<ApiEnvelope<StepUpDtos.StepUpProofResponse>>() {}, true, null);
     }
 
     // ==========================================
@@ -173,6 +210,16 @@ public class SecretVaultApiClient {
                 new TypeReference<ApiEnvelope<SecretDtos.SecretMetadataDto>>() {}, workspaceId);
     }
 
+    public SecretDtos.SecretRevealPolicyEvaluation getSecretRevealPolicy(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId) {
+        String endpoint = "/api/v1/workspaces/" + workspaceId + "/projects/" + projectId + "/environments/" + environmentId + "/secrets/" + secretId + "/reveal-policy";
+        return get(endpoint, new TypeReference<ApiEnvelope<SecretDtos.SecretRevealPolicyEvaluation>>() {}, workspaceId);
+    }
+
+    public SecretDtos.SecretRevealIntentResponse createSecretRevealIntent(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId, SecretDtos.CreateRevealIntentRequest req) {
+        String endpoint = "/api/v1/workspaces/" + workspaceId + "/projects/" + projectId + "/environments/" + environmentId + "/secrets/" + secretId + "/reveal-intent";
+        return post(endpoint, req, new TypeReference<ApiEnvelope<SecretDtos.SecretRevealIntentResponse>>() {}, true, workspaceId);
+    }
+
     public SecretDtos.SecretMetadataDto createSecret(UUID workspaceId, UUID projectId, UUID environmentId, String name, String value, String description) {
         SecretDtos.CreateSecretRequest req = new SecretDtos.CreateSecretRequest(name, value, description);
         return post("/api/v1/workspaces/" + workspaceId + "/projects/" + projectId + "/environments/" + environmentId + "/secrets",
@@ -187,11 +234,23 @@ public class SecretVaultApiClient {
     }
 
     public SecretDtos.SecretRevealDto revealSecret(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId, Integer version) {
+        return revealSecret(workspaceId, projectId, environmentId, secretId, version, null, null, null);
+    }
+
+    public SecretDtos.SecretRevealDto revealSecret(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId, Integer version, String intentToken, String stepUpProof, String reason) {
         String endpoint = "/api/v1/workspaces/" + workspaceId + "/projects/" + projectId + "/environments/" + environmentId + "/secrets/" + secretId + "/reveal";
         if (version != null) {
             endpoint += "?version=" + version;
         }
-        return post(endpoint, null, new TypeReference<ApiEnvelope<SecretDtos.SecretRevealDto>>() {}, true, workspaceId);
+        Map<String, String> headers = new HashMap<>();
+        if (intentToken != null && !intentToken.isBlank()) {
+            headers.put("X-Reveal-Intent-Token", intentToken);
+        }
+        if (stepUpProof != null && !stepUpProof.isBlank()) {
+            headers.put("X-Step-Up-Proof", stepUpProof);
+        }
+        SecretDtos.ExecuteRevealRequest body = new SecretDtos.ExecuteRevealRequest(intentToken, version, reason, stepUpProof);
+        return postWithHeaders(endpoint, body, headers, new TypeReference<ApiEnvelope<SecretDtos.SecretRevealDto>>() {}, true, workspaceId);
     }
 
     public void deleteSecret(UUID workspaceId, UUID projectId, UUID environmentId, UUID secretId) {
@@ -266,6 +325,10 @@ public class SecretVaultApiClient {
     }
 
     private <T> T post(String path, Object bodyObj, TypeReference<ApiEnvelope<T>> typeRef, boolean requiresAuth, UUID workspaceId) {
+        return postWithHeaders(path, bodyObj, Collections.emptyMap(), typeRef, requiresAuth, workspaceId);
+    }
+
+    private <T> T postWithHeaders(String path, Object bodyObj, Map<String, String> customHeaders, TypeReference<ApiEnvelope<T>> typeRef, boolean requiresAuth, UUID workspaceId) {
         return executeWithRetry(() -> {
             String bodyJson = bodyObj != null ? objectMapper.writeValueAsString(bodyObj) : "";
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -276,6 +339,14 @@ public class SecretVaultApiClient {
                     .header("Content-Type", "application/json")
                     .header("X-Correlation-ID", UUID.randomUUID().toString())
                     .POST(HttpRequest.BodyPublishers.ofString(bodyJson));
+
+            if (customHeaders != null) {
+                for (Map.Entry<String, String> entry : customHeaders.entrySet()) {
+                    if (entry.getKey() != null && entry.getValue() != null) {
+                        builder.header(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
 
             if (requiresAuth) {
                 attachAuthAndWorkspace(builder, workspaceId);

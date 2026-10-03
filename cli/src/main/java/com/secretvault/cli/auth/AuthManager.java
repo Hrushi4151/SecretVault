@@ -45,17 +45,50 @@ public class AuthManager {
         SecretVaultApiClient client = new SecretVaultApiClient(profile.getServer());
         AuthDtos.AuthResponse response = authenticationProvider.authenticate(client, email, password);
 
-        if (response.accessToken() != null) {
+        saveCredentialsIfPresent(profileName, profile, profile.getServer(), email, response, config);
+        return response;
+    }
+
+    public AuthDtos.AuthResponse completeMfaTotp(String profileName, String serverUrl, String email, String challengeId, String code) {
+        CliConfig config = configManager.loadConfig();
+        ProfileConfig profile = config.getProfile(profileName);
+        if (serverUrl != null && !serverUrl.isBlank()) {
+            profile.setServer(serverUrl);
+        }
+
+        SecretVaultApiClient client = new SecretVaultApiClient(profile.getServer());
+        AuthDtos.AuthResponse response = client.verifyMfaTotp(challengeId, code);
+
+        saveCredentialsIfPresent(profileName, profile, profile.getServer(), email, response, config);
+        return response;
+    }
+
+    public AuthDtos.AuthResponse completeMfaRecovery(String profileName, String serverUrl, String email, String challengeId, String recoveryCode) {
+        CliConfig config = configManager.loadConfig();
+        ProfileConfig profile = config.getProfile(profileName);
+        if (serverUrl != null && !serverUrl.isBlank()) {
+            profile.setServer(serverUrl);
+        }
+
+        SecretVaultApiClient client = new SecretVaultApiClient(profile.getServer());
+        AuthDtos.AuthResponse response = client.verifyMfaRecovery(challengeId, recoveryCode);
+
+        saveCredentialsIfPresent(profileName, profile, profile.getServer(), email, response, config);
+        return response;
+    }
+
+    private void saveCredentialsIfPresent(String profileName, ProfileConfig profile, String server, String email, AuthDtos.AuthResponse response, CliConfig config) {
+        if (response != null && response.accessToken() != null) {
             Instant expiresAt = Instant.now().plusSeconds(response.expiresIn() > 0 ? response.expiresIn() : 86400);
             StoredCredentials creds = new StoredCredentials(
                     response.accessToken(),
                     response.refreshToken(),
                     expiresAt,
-                    profile.getServer(),
+                    server,
                     email,
                     response.user() != null ? response.user().id() : null
             );
-            credentialStore.save(profileName, profile.getServer(), creds);
+            credentialStore.save(profileName, server, creds);
 
             // If activeWorkspace returned, bind default workspace if not set
             if (response.activeWorkspace() != null && profile.getWorkspaceId() == null) {
@@ -65,8 +98,6 @@ public class AuthManager {
 
             configManager.saveConfig(config);
         }
-
-        return response;
     }
 
     public AuthDtos.OidcTokenResponse loginWithOidc(String profileName, String serverUrl, UUID providerId, String issuer, String oidcToken) {

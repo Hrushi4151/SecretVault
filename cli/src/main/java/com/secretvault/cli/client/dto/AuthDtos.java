@@ -65,4 +65,14 @@ public final class AuthDtos {
             long expiresIn,
             MachineIdentityDto machineIdentity
     ) {}
+
+    public record MfaTotpVerifyRequest(
+            String challengeId,
+            String code
+    ) {}
+
+    public record MfaRecoveryVerifyRequest(
+            String challengeId,
+            String recoveryCode
+    ) {}
 }

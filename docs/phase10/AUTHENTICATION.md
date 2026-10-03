@@ -15,12 +15,45 @@ secretvault auth login ──[ Interactive Non-Echo Password ]
     ▼
 REST API: POST /api/v1/auth/login
     │
+    ├─► If MFA Required (HTTP 200 with mfaRequired: true):
+    │     ├── Prompts for 6-digit TOTP code (or recovery code)
+    │     └── Calls POST /api/v1/auth/mfa/verify-totp (or verify-recovery)
+    │
     ├─► Success: JWT Access Token + Refresh Token
     ▼
 Encrypted Credential Store (AES-256-GCM + PBKDF2)
     │
     └─► Tokens saved encrypted in ~/.credentials.enc
 ```
+
+---
+
+## 1.1 Multi-Factor Authentication (MFA)
+
+When a user has MFA enabled, `secretvault auth login` seamlessly initiates an interactive challenge flow:
+
+1. **TOTP Verification (Default):**
+   - The CLI prompts the user: `Enter 6-digit MFA Code (or type 'recovery'):`
+   - The user inputs their 6-digit authenticator code (masked/securely handled).
+   - CLI issues `POST /api/v1/auth/mfa/verify-totp` with `{ mfaToken, totpCode }`.
+
+2. **Recovery Code Verification (Backup):**
+   - If the user provides `--recovery` or enters `recovery`, the CLI prompts: `Enter MFA Backup Recovery Code:`
+   - CLI issues `POST /api/v1/auth/mfa/verify-recovery` with `{ mfaToken, recoveryCode }`.
+
+All MFA inputs and temporary tokens are zeroized in memory immediately following the verification attempt.
+
+---
+
+## 1.2 Generalized Step-Up Authentication
+
+For privileged or sensitive actions (such as `secret reveal`, `secret delete`, or `secret rollback`), the SecretVault backend enforces contextual Step-Up Authentication:
+
+1. The CLI initiates a challenge request `POST /api/v1/auth/step-up/challenge` with the target `action` and `resourceId`.
+2. The server responds with allowed factors (e.g. `TOTP`, `PASSWORD`, `RECOVERY_CODE`, `WEBAUTHN`).
+3. The CLI prompts for the highest available CLI-compatible factor (TOTP -> Password -> Recovery Code) and verifies via `POST /api/v1/auth/step-up/verify`.
+4. The server returns a short-lived, single-use `stepUpProof` token, which the CLI passes via the `X-Step-Up-Proof` header to authorize the protected operation.
+5. If the policy mandates WebAuthn hardware keys only (`requireWebAuthnOnly`), the CLI safely denies the operation and instructs the user to perform the ceremony via the SecretVault Web Console.
 
 ---
 

@@ -4,6 +4,8 @@ import com.secretvault.cli.client.SecretVaultApiClient;
 import com.secretvault.cli.client.dto.SecretDtos;
 import com.secretvault.cli.output.ConsolePrinter;
 
+import com.secretvault.cli.security.SecretRevealHelper;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +48,9 @@ public class SecretInjector {
             }
 
             try {
-                SecretDtos.SecretRevealDto reveal = apiClient.revealSecret(workspaceId, projectId, environmentId, meta.id(), null);
+                SecretDtos.SecretRevealDto reveal = SecretRevealHelper.revealProtectedSecret(
+                        apiClient, workspaceId, projectId, environmentId, meta.id(), null, "Runtime injection via CLI", printer
+                );
                 if (reveal != null && reveal.value() != null) {
                     injectedSecrets.put(meta.name(), reveal.value());
                 }

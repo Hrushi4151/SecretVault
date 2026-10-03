@@ -147,11 +147,24 @@ Displays secret metadata. **Plaintext is never printed.**
 secretvault secret get STRIPE_API_KEY
 ```
 
-### `secretvault secret reveal <name-or-id>`
-Explicitly decrypts and prints plaintext secret value to stdout.
+### `secretvault secret reveal [name-or-id]`
+Explicitly decrypts and prints plaintext secret value to stdout with full Phase 5.8.5 Secret Reveal Protection.
 ```bash
-secretvault secret reveal STRIPE_API_KEY [--version <N>] [--yes] [--raw] [--json]
+secretvault secret reveal STRIPE_API_KEY [--version <N>] [--reason <text>] [--yes] [--raw] [--json]
 ```
+
+**Options:**
+- `--reason`, `-r`: Mandatory audit reason (10–500 characters) if enforced by environment / workspace reveal policy. If omitted and required, CLI interactively prompts for the justification.
+- `--version`, `-v`: Specific version number to decrypt and reveal (defaults to latest active version).
+- `--yes`, `-y`: Bypass interactive confirmation prompt.
+- `--raw`: Print raw secret value only without key prefix or formatted metadata.
+- `--json`: Output as JSON object including metadata, version, and masked/unmasked indicators.
+
+**Security Controls:**
+- Evaluates hierarchical `/api/v1/secrets/{id}/reveal-policy` (DENY, STEP_UP_REQUIRED, AUDIT_LOG_ONLY, ALLOWED).
+- Triggers Step-Up Authentication challenge (`X-Step-Up-Proof`) when required by policy.
+- Obtains a short-lived single-use reveal intent token (`POST /api/v1/secrets/{id}/reveal-intent`) and passes `X-Reveal-Intent-Token`.
+- Directs users to the Web Console if hardware WebAuthn is exclusively mandated.
 
 ### `secretvault secret create <name>`
 Creates a new secret (Version 1).

@@ -27,6 +27,7 @@ import java.util.UUID;
 @Command(
         name = "auth",
         description = "Manage authentication, profiles, and secure local session credentials",
+        mixinStandardHelpOptions = true,
         subcommands = {
                 AuthCommand.LoginCommand.class,
                 AuthCommand.OidcLoginCommand.class,
@@ -45,7 +46,7 @@ public class AuthCommand extends BaseCommand {
         return 0;
     }
 
-    @Command(name = "login", description = "Authenticate with SecretVault server and store encrypted session tokens")
+    @Command(name = "login", description = "Authenticate with SecretVault server and store encrypted session tokens", mixinStandardHelpOptions = true)
     public static class LoginCommand extends BaseCommand {
 
         @Option(names = {"--email"}, description = "User email address")
@@ -53,6 +54,9 @@ public class AuthCommand extends BaseCommand {
 
         @Option(names = {"--password-stdin"}, description = "Read password from standard input (non-echo)")
         private boolean passwordStdin;
+
+        @Option(names = {"--recovery"}, description = "Use a backup recovery code instead of TOTP for MFA verification")
+        private boolean useRecovery;
 
         @Override
         public Integer call() {
@@ -118,9 +122,51 @@ public class AuthCommand extends BaseCommand {
                 AuthDtos.AuthResponse authResp = authManager.login(targetProfile, targetServer, userEmail, passwordChars);
 
                 if (authResp.mfaRequired()) {
-                    printer.warn("MFA is required for this account. Challenge ID: " + authResp.mfaChallengeId());
-                    printer.info("Please use web console or complete MFA verification to obtain session.");
-                    return 1;
+                    String challengeId = authResp.mfaChallengeId();
+                    if (challengeId == null || challengeId.isBlank()) {
+                        printer.error("MFA required but no challenge ID returned by server.");
+                        return 1;
+                    }
+
+                    if (useRecovery) {
+                        char[] recoveryChars = readSecretInput("Enter a recovery code: ");
+                        if (recoveryChars == null || recoveryChars.length == 0) {
+                            printer.error("Recovery code cannot be empty.");
+                            return 1;
+                        }
+                        try {
+                            String recoveryCode = new String(recoveryChars).trim();
+                            authResp = authManager.completeMfaRecovery(targetProfile, targetServer, userEmail, challengeId, recoveryCode);
+                        } finally {
+                            RedactionHelper.wipe(recoveryChars);
+                        }
+                    } else {
+                        char[] codeChars = readSecretInput("Enter your 6-digit authenticator code: ");
+                        if (codeChars == null || codeChars.length == 0) {
+                            printer.error("MFA code cannot be empty.");
+                            return 1;
+                        }
+                        try {
+                            String code = new String(codeChars).trim();
+                            if ("recovery".equalsIgnoreCase(code)) {
+                                char[] recoveryChars = readSecretInput("Enter a recovery code: ");
+                                if (recoveryChars == null || recoveryChars.length == 0) {
+                                    printer.error("Recovery code cannot be empty.");
+                                    return 1;
+                                }
+                                try {
+                                    String recoveryCode = new String(recoveryChars).trim();
+                                    authResp = authManager.completeMfaRecovery(targetProfile, targetServer, userEmail, challengeId, recoveryCode);
+                                } finally {
+                                    RedactionHelper.wipe(recoveryChars);
+                                }
+                            } else {
+                                authResp = authManager.completeMfaTotp(targetProfile, targetServer, userEmail, challengeId, code);
+                            }
+                        } finally {
+                            RedactionHelper.wipe(codeChars);
+                        }
+                    }
                 }
 
                 printer.success("Authenticated successfully as " + userEmail);
@@ -133,6 +179,21 @@ public class AuthCommand extends BaseCommand {
                 return 1;
             } finally {
                 RedactionHelper.wipe(passwordChars);
+            }
+        }
+
+        private char[] readSecretInput(String prompt) {
+            if (System.console() != null) {
+                return System.console().readPassword(prompt);
+            } else {
+                try {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+                    System.out.print(prompt);
+                    String line = br.readLine();
+                    return line != null ? line.toCharArray() : new char[0];
+                } catch (Exception e) {
+                    return new char[0];
+                }
             }
         }
     }

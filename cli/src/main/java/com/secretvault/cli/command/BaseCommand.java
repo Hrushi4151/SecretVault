@@ -13,6 +13,7 @@ import com.secretvault.cli.output.ConsolePrinter;
 import com.secretvault.cli.output.OutputFormat;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
 import java.util.List;
@@ -27,6 +28,9 @@ public abstract class BaseCommand implements Callable<Integer> {
 
     @Spec
     protected CommandSpec spec;
+
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "Show this help message and exit.")
+    protected boolean helpRequested;
 
     protected ConfigManager getConfigManager() {
         return new ConfigManager();

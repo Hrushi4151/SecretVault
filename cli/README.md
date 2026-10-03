@@ -70,9 +70,12 @@ secretvault run --env staging -- npm test
 ## 🔒 Security Architecture
 
 - **Unified Authorization**: All human and machine requests evaluate through the same authoritative `EffectiveAccessService` backend pipeline.
+- **Interactive Multi-Factor Authentication (MFA)**: Seamlessly challenges for 6-digit TOTP codes or backup recovery codes during `auth login`.
+- **Generalized Step-Up Authentication**: Triggers cryptographic step-up challenges (`X-Step-Up-Proof`) for high-risk operations like secret reveal, deletion, and rollbacks.
+- **Phase 5.8.5 Secret Reveal Protection**: Enforces hierarchical reveal policy evaluation, mandatory audit justifications, and single-use ephemeral intent tokens (`X-Reveal-Intent-Token`).
 - **In-Memory Injection**: Secrets are injected directly into child process memory via `ProcessBuilder.environment()`. No `.env` files are created or persisted.
 - **Encrypted Credential Storage**: Local sessions are secured using AES-256-GCM encryption with PBKDF2 key derivation.
-- **No Token Leaks**: OIDC tokens and passwords accept stdin input (`--token-stdin`, `--password-stdin`) to prevent process table leakage. Centralized redaction masks tokens and sensitive headers across all logs.
+- **No Token Leaks**: OIDC tokens, OTPs, and passwords accept stdin or interactive non-echoing console input to prevent process table leakage. Centralized redaction masks tokens, proofs, and sensitive headers across all logs.
 - **Strict Short TTL**: Machine identity sessions default to 600 seconds, strictly enforced server-side.
 
 ---

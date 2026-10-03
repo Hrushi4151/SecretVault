@@ -3,6 +3,7 @@ package com.secretvault.cli.env;
 import com.secretvault.cli.client.SecretVaultApiClient;
 import com.secretvault.cli.client.dto.SecretDtos;
 import com.secretvault.cli.output.ConsolePrinter;
+import com.secretvault.cli.security.SecretRevealHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +38,9 @@ public class DotEnvPuller {
         if (metadataList != null) {
             for (SecretDtos.SecretMetadataDto meta : metadataList) {
                 try {
-                    SecretDtos.SecretRevealDto reveal = apiClient.revealSecret(workspaceId, projectId, environmentId, meta.id(), null);
+                    SecretDtos.SecretRevealDto reveal = SecretRevealHelper.revealProtectedSecret(
+                            apiClient, workspaceId, projectId, environmentId, meta.id(), null, "Export via CLI env pull", printer
+                    );
                     if (reveal != null && reveal.value() != null) {
                         secrets.put(meta.name(), reveal.value());
                     }

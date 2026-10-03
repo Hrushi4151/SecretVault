@@ -31,6 +31,8 @@ This document outlines the security architecture, memory protections, threat mit
 | **8. Insecure Production HTTP** | Plaintext HTTP traffic interception | Client enforces HTTPS for remote hosts (allows HTTP exclusively for `localhost` and `127.0.0.1`). |
 | **9. Process Environment Snooping** | Unrelated secrets exposed to child process | Allows explicit secret allow-lists (`--secret KEY`) so only required secrets are passed into memory. |
 | **10. Zombie Child Processes** | Orphaned processes running in background on CLI exit | JVM shutdown hooks intercept `SIGINT`/`SIGTERM` and destroy the entire child process hierarchy. |
+| **11. Unauthorized Secret Exfiltration** | Accidental or malicious secret exposure | Hierarchical `/reveal-policy` evaluation, mandatory audit reason, contextual Step-Up challenge, and single-use `X-Reveal-Intent-Token`. |
+| **12. Weak or Phished Passwords** | Unauthorized login attempts | Mandatory interactive MFA (TOTP / Recovery Code) challenge during `secretvault auth login`. |
 
 ---
 
@@ -39,8 +41,22 @@ This document outlines the security architecture, memory protections, threat mit
 All log output, debug messages, and error responses pass through `com.secretvault.cli.security.RedactionHelper`:
 
 - `Authorization: Bearer <token>` ➔ `Authorization: [REDACTED]`
+- `X-Step-Up-Proof: <token>` ➔ `X-Step-Up-Proof: [REDACTED]`
+- `X-Reveal-Intent-Token: <token>` ➔ `X-Reveal-Intent-Token: [REDACTED]`
 - `eyJ...` (JWT Tokens) ➔ `[REDACTED_JWT]`
 - `{"password": "..."}` ➔ `{"password": "[REDACTED]"}`
 - `{"secret": "..."}` ➔ `{"secret": "[REDACTED]"}`
+- `{"totpCode": "..."}` ➔ `{"totpCode": "[REDACTED]"}`
+- `{"recoveryCode": "..."}` ➔ `{"recoveryCode": "[REDACTED]"}`
 
 Plaintext secrets are rendered **exclusively** on stdout when the user explicitly runs `secretvault secret reveal` or `secretvault env pull`.
+
+---
+
+## 4. Memory Zeroing & Ephemeral Secret Handling
+
+Sensitive credentials, OTPs, recovery codes, and passwords handled by the CLI:
+1. Are captured via non-echoing console input (`System.console().readPassword()`) into `char[]` buffers.
+2. Are immediately overwritten with null characters (`Arrays.fill(buffer, '\0')`) in `finally` blocks after REST dispatch.
+3. Are never assigned to long-lived static variables or unmanaged GC-eligible string instances.
+4. Step-Up challenge tokens and reveal intent tokens are scoped to single-use lifecycle and zeroized after execution.

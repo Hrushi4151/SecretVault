@@ -22,6 +22,13 @@ public final class SecretDtos {
             String maskedValue
     ) {}
 
+    public enum RevealPolicyLevel {
+        DEFAULT,
+        SENSITIVE,
+        HIGHLY_SENSITIVE,
+        PRODUCTION_CRITICAL
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record SecretRevealDto(
             UUID id,
@@ -29,7 +36,85 @@ public final class SecretDtos {
             String name,
             Integer versionNumber,
             String value,
-            Instant revealedAt
+            Instant revealedAt,
+            Integer maxDisplayDurationSeconds,
+            Boolean copyAllowed,
+            Integer clipboardTimeoutSeconds,
+            RevealPolicyLevel policyLevel
+    ) {
+        public SecretRevealDto(
+                UUID id,
+                UUID environmentId,
+                String name,
+                Integer versionNumber,
+                String value,
+                Instant revealedAt
+        ) {
+            this(id, environmentId, name, versionNumber, value, revealedAt, 60, true, 15, RevealPolicyLevel.DEFAULT);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SecretRevealPolicyEvaluation(
+            RevealPolicyLevel policyLevel,
+            boolean requireStepUp,
+            List<String> allowedStepUpFactors,
+            boolean requireWebAuthnOnly,
+            boolean requireReason,
+            int minReasonLength,
+            int maxReasonLength,
+            boolean requirePrivilegedOrJit,
+            int maxDisplayDurationSeconds,
+            boolean copyAllowed,
+            int clipboardTimeoutSeconds,
+            boolean bulkRevealAllowed,
+            int maxBulkCount,
+            int rateLimitPerMinute
+    ) {
+        public static SecretRevealPolicyEvaluation defaultPolicy() {
+            return new SecretRevealPolicyEvaluation(
+                    RevealPolicyLevel.DEFAULT,
+                    false,
+                    List.of("PASSWORD", "TOTP", "RECOVERY_CODE", "WEBAUTHN"),
+                    false,
+                    false,
+                    10,
+                    500,
+                    false,
+                    60,
+                    true,
+                    15,
+                    false,
+                    50,
+                    60
+            );
+        }
+    }
+
+    public record CreateRevealIntentRequest(
+            Integer versionNumber,
+            String reason,
+            String stepUpProof
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SecretRevealIntentResponse(
+            String intentToken,
+            Instant expiresAt,
+            int maxDisplayDurationSeconds,
+            boolean copyAllowed,
+            int clipboardTimeoutSeconds,
+            RevealPolicyLevel policyLevel,
+            boolean requireReason,
+            boolean requireStepUp,
+            List<String> allowedStepUpFactors
+    ) {}
+
+    public record ExecuteRevealRequest(
+            String intentToken,
+            Integer versionNumber,
+            String reason,
+            String stepUpProof
     ) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)

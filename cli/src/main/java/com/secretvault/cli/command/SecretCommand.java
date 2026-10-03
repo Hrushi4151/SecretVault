@@ -7,6 +7,8 @@ import com.secretvault.cli.output.ConsolePrinter;
 import com.secretvault.cli.output.OutputFormat;
 import com.secretvault.cli.output.TableFormatter;
 import com.secretvault.cli.security.RedactionHelper;
+import com.secretvault.cli.security.SecretRevealHelper;
+import com.secretvault.cli.security.StepUpAuthenticator;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -26,6 +28,7 @@ import java.util.UUID;
         name = "secret",
         aliases = {"secrets"},
         description = "Manage secret lifecycles, explicit reveals, versions, and rollbacks",
+        mixinStandardHelpOptions = true,
         subcommands = {
                 SecretCommand.ListCommand.class,
                 SecretCommand.GetCommand.class,
@@ -159,10 +162,10 @@ public class SecretCommand extends BaseCommand {
         }
     }
 
-    @Command(name = "reveal", description = "Explicitly decrypt and display secret plaintext value to stdout")
+    @Command(name = "reveal", description = "Explicitly decrypt and display secret plaintext value to stdout", mixinStandardHelpOptions = true)
     public static class RevealCommand extends BaseCommand {
 
-        @Parameters(index = "0", description = "Secret name or UUID")
+        @Parameters(index = "0", description = "Secret name or UUID", arity = "0..1")
         private String secretIdentifier;
 
         @Option(names = {"--version", "-v"}, description = "Historical version number (default: latest active version)")
@@ -174,10 +177,32 @@ public class SecretCommand extends BaseCommand {
         @Option(names = {"--raw"}, description = "Print only the raw secret value with no trailing metadata or styling")
         private boolean raw;
 
+        @Option(names = {"--reason", "-r"}, description = "Audit reason for revealing this secret")
+        private String reason;
+
         @Override
         public Integer call() {
             ConsolePrinter printer = getPrinter();
             try {
+                if (secretIdentifier == null || secretIdentifier.isBlank()) {
+                    if (System.console() != null) {
+                        secretIdentifier = System.console().readLine("Secret name or UUID: ");
+                    } else {
+                        try {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+                            System.out.print("Secret name or UUID: ");
+                            secretIdentifier = br.readLine();
+                        } catch (Exception e) {
+                            printer.error("Secret identifier is required.");
+                            return 1;
+                        }
+                    }
+                }
+                if (secretIdentifier == null || secretIdentifier.isBlank()) {
+                    printer.error("Secret name or UUID is required.");
+                    return 1;
+                }
+
                 SecretVaultApiClient client = getAuthenticatedClient();
                 ContextManager.ResolvedContext ctx = resolveContext();
                 UUID workspaceId = resolveWorkspaceId(client, ctx.workspace());
@@ -189,7 +214,9 @@ public class SecretCommand extends BaseCommand {
                     printer.warn("This command decrypts and reveals sensitive plaintext data to the terminal.");
                 }
 
-                SecretDtos.SecretRevealDto reveal = client.revealSecret(workspaceId, projectId, envId, secretId, versionNumber);
+                SecretDtos.SecretRevealDto reveal = SecretRevealHelper.revealProtectedSecret(
+                        client, workspaceId, projectId, envId, secretId, versionNumber, reason, printer
+                );
 
                 if (raw) {
                     System.out.print(reveal.value());
