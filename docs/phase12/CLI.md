@@ -1,126 +1,49 @@
-# CLI Reference Manual: Phase 12 Commands
+# Phase 12: CLI Reference — secretvault scan
 
-The `secretvault` CLI provides first-class commands for secret rotation, leases, consumers, and emergency compromise response.
+## 1. Overview
 
----
-
-## 1. Rotation Commands (`secretvault rotation`)
-
-### List Policies
-```bash
-secretvault rotation policy list --workspace-id <workspaceId>
-```
-
-### Create Policy
-```bash
-secretvault rotation policy create \
-  --workspace-id <workspaceId> \
-  --project-id <projectId> \
-  --env-id <envId> \
-  --secret-id <secretId> \
-  --strategy SCHEDULED \
-  --secret-type PASSWORD \
-  --interval-seconds 2592000 \
-  --grace-period-seconds 1800 \
-  --enabled
-```
-
-### Trigger Rotation Job
-```bash
-secretvault rotation trigger \
-  --workspace-id <workspaceId> \
-  --secret-id <secretId> \
-  --strategy MANUAL \
-  --reason "Routine scheduled rotation"
-```
-
-### Rollback Rotation Job
-```bash
-secretvault rotation rollback \
-  --workspace-id <workspaceId> \
-  --job-id <jobId> \
-  --target-version 2 \
-  --reason "Compatibility issues in v3"
-```
-
-### Calculate Impact
-```bash
-secretvault rotation impact \
-  --workspace-id <workspaceId> \
-  --secret-id <secretId>
-```
+The `secretvault scan` command provides local and CI scanning capabilities directly from the command line.
 
 ---
 
-## 2. Lease Commands (`secretvault lease`)
+## 2. Command Synopsis
 
-### Issue Lease
 ```bash
-secretvault lease create \
-  --workspace-id <workspaceId> \
-  --secret-id <secretId> \
-  --ttl 3600 \
-  --max-lifetime 86400
+secretvault scan [PATH] [OPTIONS]
 ```
 
-### List Leases
-```bash
-secretvault lease list --workspace-id <workspaceId> --status ACTIVE
-```
-
-### Renew Lease
-```bash
-secretvault lease renew \
-  --workspace-id <workspaceId> \
-  --lease-id <leaseId> \
-  --extend-seconds 3600
-```
-
-### Revoke Lease
-```bash
-secretvault lease revoke \
-  --workspace-id <workspaceId> \
-  --lease-id <leaseId>
-```
+If `PATH` is omitted, the current working directory (`.`) is scanned.
 
 ---
 
-## 3. Consumer Commands (`secretvault consumer`)
+## 3. Options Reference
 
-### Register Consumer
-```bash
-secretvault consumer register \
-  --workspace-id <workspaceId> \
-  --project-id <projectId> \
-  --env-id <envId> \
-  --name "order-worker" \
-  --type WORKER \
-  --dynamic-refresh
-```
-
-### List Consumers
-```bash
-secretvault consumer list --workspace-id <workspaceId>
-```
+| Option | Type | Description |
+| :--- | :--- | :--- |
+| `--git-history` | Boolean | Scan full Git commit diff history instead of just working tree |
+| `--staged` | Boolean | Scan only staged changes in Git index (ideal for pre-commit hooks) |
+| `--all-branches` | Boolean | Scan all Git branches and tags |
+| `--depth <N>` | Integer | Limit Git history traversal to `N` commits (default: 500) |
+| `--sarif <FILE>`| File Path| Export results in SARIF v2.1.0 JSON format |
+| `--fail-on <SEV>`| Enum | Exit with code 1 if findings meet or exceed severity: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` |
+| `--format <FMT>`| String | Output format: `TABLE`, `JSON`, `SARIF` |
+| `--workspace-id <ID>` | UUID | Scope findings to a specific remote workspace |
+| `--repo-id <ID>`| UUID | Associate findings with a registered repository entity |
 
 ---
 
-## 4. Secret Lifecycle Shortcuts
+## 4. Subcommands
 
-### Direct Secret Rotation
-```bash
-secretvault secret rotate \
-  --workspace-id <workspaceId> \
-  --secret-id <secretId> \
-  --reason "Triggered by deploy pipeline"
-```
+### Repository Management
+- `secretvault repository list`: List all connected repositories.
+- `secretvault repository get <id>`: Show repository connection details and risk metrics.
+- `secretvault repository connect --name <n> --url <u>`: Register a new repository.
+- `secretvault repository scan <id>`: Trigger a server-side repository scan.
 
-### Emergency Compromise Remediation
-```bash
-secretvault secret compromise \
-  --workspace-id <workspaceId> \
-  --secret-id <secretId> \
-  --incident-details "GitHub public repo leak detected" \
-  --rotate-immediately \
-  --revoke-leases
-```
+### Finding Triage
+- `secretvault finding list [--repo <id>] [--status <st>]`: List detected secret findings.
+- `secretvault finding get <id>`: Show finding details and masked evidence.
+- `secretvault finding why-exposed <id>`: View the explainability analysis report.
+- `secretvault finding confirm <id> [--reason <r>]`: Confirm finding as a real leak.
+- `secretvault finding ignore <id> [--reason <r>]`: Ignore finding as accepted risk.
+- `secretvault finding remediate <id> --action <a-name>`: Trigger remediation (e.g. `ROTATE_SECRET`).

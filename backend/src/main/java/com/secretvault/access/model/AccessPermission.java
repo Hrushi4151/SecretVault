@@ -197,6 +197,32 @@ public enum AccessPermission {
     WEBHOOK_MANAGE(
             "webhook.manage",
             "Create, update, delete, test, and replay webhook endpoints and deliveries"
+    ),
+
+    // Phase 12: Repository Security & Secret Leak Detection
+    REPOSITORY_VIEW(
+            "repository.view",
+            "View connected repositories, scans, and security findings"
+    ),
+
+    REPOSITORY_MANAGE(
+            "repository.manage",
+            "Connect, configure, and delete repository connections and policies"
+    ),
+
+    REPOSITORY_SCAN(
+            "repository.scan",
+            "Trigger on-demand scans and configure scan schedules"
+    ),
+
+    REPOSITORY_FINDING_MANAGE(
+            "repository.finding.manage",
+            "Triage, acknowledge, ignore, and mark findings as false positive"
+    ),
+
+    REPOSITORY_REMEDIATE(
+            "repository.remediate",
+            "Execute remediation, trigger rotation, and rewrite history guidance"
     );
 
 

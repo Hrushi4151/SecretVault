@@ -95,6 +95,16 @@ public abstract class BaseCommand implements Callable<Integer> {
         return getAuthManager().createAuthenticatedClient(ctx.profile(), ctx.server());
     }
 
+    protected SecretVaultApiClient getApiClient() {
+        return getAuthenticatedClient();
+    }
+
+    protected UUID resolveWorkspaceId() {
+        ContextManager.ResolvedContext ctx = resolveContext();
+        SecretVaultApiClient client = getAuthenticatedClient();
+        return resolveWorkspaceId(client, ctx.workspace());
+    }
+
     protected UUID resolveWorkspaceId(SecretVaultApiClient client, String workspaceIdentifier) {
         if (workspaceIdentifier == null || workspaceIdentifier.isBlank()) {
             throw new IllegalArgumentException("Workspace context is missing. Specify --workspace <name|id> or set default context.");

@@ -211,6 +211,10 @@ public class SecretVaultHttpClient {
         throw new SecretNotFoundException(nameOrId);
     }
 
+    public JsonNode executeApi(String method, String path, String bodyJson, UUID workspaceId) {
+        return executeWithRetry(method, path, bodyJson, workspaceId, false);
+    }
+
     private JsonNode executeWithRetry(String method, String path, String bodyJson, UUID workspaceId, boolean isReveal) {
         if (config.isCircuitBreakerEnabled()) {
             circuitBreaker.checkPermission();

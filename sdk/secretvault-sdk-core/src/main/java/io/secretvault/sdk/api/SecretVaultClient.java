@@ -26,6 +26,7 @@ public class SecretVaultClient implements AutoCloseable {
     private final SecretVaultHttpClient httpClient;
     private final ScheduledExecutorService scheduler;
     private final SecretsApi secretsApi;
+    private final RepositorySecurityApi repositorySecurityApi;
 
     private SecretVaultClient(SdkConfig config) {
         this.config = Objects.requireNonNull(config, "SdkConfig cannot be null");
@@ -40,6 +41,7 @@ public class SecretVaultClient implements AutoCloseable {
             return t;
         });
         this.secretsApi = new DefaultSecretsApi(config, httpClient, cache, coalescer, metrics, scheduler);
+        this.repositorySecurityApi = new DefaultRepositorySecurityApi(config, httpClient);
     }
 
     public static SecretVaultClient create(SdkConfig config) {
@@ -52,6 +54,10 @@ public class SecretVaultClient implements AutoCloseable {
 
     public SecretsApi secrets() {
         return secretsApi;
+    }
+
+    public RepositorySecurityApi repositorySecurity() {
+        return repositorySecurityApi;
     }
 
     public boolean ping() {

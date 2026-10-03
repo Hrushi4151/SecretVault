@@ -581,26 +581,34 @@ public class EffectiveAccessService {
             case SECURITY_MANAGE:
             case INTEGRATION_MANAGE:
             case DRIFT_MANAGE:
+            case REPOSITORY_MANAGE:
+            case REPOSITORY_FINDING_MANAGE:
+            case REPOSITORY_REMEDIATE:
+            case SECRET_ROTATION_CREATE:
+            case SECRET_ROTATION_MANAGE:
+            case SECRET_ROTATION_CANCEL:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN || (effProjectRole == WorkspaceRole.ADMIN)) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace governance role authorizes security, integrations, drift management, and access administration"
+                            "Workspace governance role authorizes security, repository security, integrations, drift management, rotation, and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Governance, drift, and integration administration require OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance, repository security, drift, and integration administration require OWNER or ADMIN authority");
 
             case INTEGRATION_SYNC:
             case SYNC_EXECUTE:
+            case REPOSITORY_SCAN:
+            case SECRET_ROTATION_EMERGENCY:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace " + wsRole + " authorizes provider secret synchronization"
+                            "Workspace " + wsRole + " authorizes operation"
                     );
                 }
                 if (effEnvPerm == PermissionLevel.WRITE || effEnvPerm == PermissionLevel.MANAGE) {
@@ -609,10 +617,10 @@ public class EffectiveAccessService {
                             AccessScope.ENVIRONMENT,
                             AccessSourceType.ENVIRONMENT_ACCESS,
                             effEnvPerm.name(),
-                            "Environment " + effEnvPerm + " authorizes provider secret synchronization"
+                            "Environment " + effEnvPerm + " authorizes operation"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Provider secret synchronization requires OWNER, ADMIN, or environment WRITE/MANAGE permission");
+                return AccessDecision.deny(permission, targetScope, "Operation requires OWNER, ADMIN, or environment WRITE/MANAGE permission");
 
             case JIT_REQUEST:
             case SECURITY_VIEW:
@@ -620,16 +628,28 @@ public class EffectiveAccessService {
             case SYNC_VIEW:
             case SYNC_DRY_RUN:
             case DRIFT_VIEW:
+            case REPOSITORY_VIEW:
                 return AccessDecision.allow(
                         permission,
                         AccessScope.WORKSPACE,
                         AccessSourceType.WORKSPACE_ROLE,
                         wsRole.name(),
-                        "Active workspace members are permitted to view integrations, sync, drift status, security posture, and submit JIT requests"
+                        "Active workspace members are permitted to view integrations, repositories, scans, drift status, security posture, and submit JIT requests"
                 );
 
             default:
                 return AccessDecision.deny(permission, targetScope, "Default policy denies unmapped permission: " + permission);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public void requireWorkspacePermission(UUID actorId, UUID workspaceId, AccessPermission permission) {
+        if (actorId == null) {
+            return;
+        }
+        AccessDecision decision = evaluateAccess(workspaceId, null, null, null, permission, actorId);
+        if (!decision.allowed()) {
+            throw ApiException.forbidden("Access denied: missing permission " + permission.getCode() + " in workspace scope");
         }
     }
 

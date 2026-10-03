@@ -16,6 +16,7 @@ import { EventCenterView } from './components/events/EventCenterView';
 import { AutomationCenterView } from './components/automation/AutomationCenterView';
 import { WebhookCenterView } from './components/webhook/WebhookCenterView';
 import { SecurityOperationsView } from './components/incident/SecurityOperationsView';
+import { RepositorySecurityView } from './components/repository/RepositorySecurityView';
 import { SettingsView } from './components/settings/SettingsView';
 import { Shield, Loader2 } from 'lucide-react';
 
@@ -119,6 +120,8 @@ const MainRouter = () => {
         <WebhookCenterView />
       ) : currentTab === 'incidents' ? (
         <SecurityOperationsView />
+      ) : currentTab === 'repo-security' ? (
+        <RepositorySecurityView />
       ) : currentTab === 'settings' ? (
         <SettingsView
           initialSection={settingsSection}

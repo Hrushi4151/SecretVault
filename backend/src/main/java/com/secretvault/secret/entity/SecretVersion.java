@@ -76,6 +76,9 @@ public class SecretVersion {
     @Column(name = "branch_id")
     private UUID branchId;
 
+    @Column(name = "fingerprint", length = 128)
+    private String fingerprint;
+
     public SecretVersion() {
     }
 
@@ -203,5 +206,13 @@ public class SecretVersion {
 
     public UUID getBranchId() {
         return branchId;
+    }
+
+    public String getFingerprint() {
+        return fingerprint;
+    }
+
+    public void setFingerprint(String fingerprint) {
+        this.fingerprint = fingerprint;
     }
 }

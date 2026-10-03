@@ -19,6 +19,9 @@ import com.secretvault.cli.command.ProjectCommand;
 import com.secretvault.cli.command.RotationCommand;
 import com.secretvault.cli.command.RunCommand;
 import com.secretvault.cli.command.SecretCommand;
+import com.secretvault.cli.command.ScanCommand;
+import com.secretvault.cli.command.RepositoryCliCommand;
+import com.secretvault.cli.command.FindingCliCommand;
 import com.secretvault.cli.command.VersionCommand;
 import com.secretvault.cli.command.WebhookCommand;
 import com.secretvault.cli.command.WorkspaceCommand;
@@ -62,6 +65,9 @@ import java.util.concurrent.Callable;
                 DoctorCommand.class,
                 VersionCommand.class,
                 CompletionCommand.class,
+                ScanCommand.class,
+                RepositoryCliCommand.class,
+                FindingCliCommand.class,
                 CommandLine.HelpCommand.class
         }
 )

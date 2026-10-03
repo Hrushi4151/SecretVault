@@ -13,13 +13,13 @@ import java.io.PrintStream;
 public class ConsolePrinter {
 
     // ANSI Colors
-    private static final String RESET = "\u001B[0m";
-    private static final String RED = "\u001B[31m";
-    private static final String GREEN = "\u001B[32m";
-    private static final String YELLOW = "\u001B[33m";
-    private static final String BLUE = "\u001B[34m";
-    private static final String CYAN = "\u001B[36m";
-    private static final String BOLD = "\u001B[1m";
+    public static final String RESET = "\u001B[0m";
+    public static final String RED = "\u001B[31m";
+    public static final String GREEN = "\u001B[32m";
+    public static final String YELLOW = "\u001B[33m";
+    public static final String BLUE = "\u001B[34m";
+    public static final String CYAN = "\u001B[36m";
+    public static final String BOLD = "\u001B[1m";
 
     private final PrintStream out;
     private final PrintStream err;
@@ -104,6 +104,30 @@ public class ConsolePrinter {
         } catch (Exception e) {
             err.println(color("Error formatting JSON: " + e.getMessage(), RED));
         }
+    }
+
+    public void header(String title) {
+        bold("=== " + title + " ===");
+    }
+
+    public void row(String line) {
+        raw(line);
+    }
+
+    public void keyVal(String key, String val) {
+        item(key, val);
+    }
+
+    public void blank() {
+        raw("");
+    }
+
+    public void warning(String msg) {
+        warn(msg);
+    }
+
+    public String colorize(String text, String ansiCode) {
+        return color(text, ansiCode);
     }
 
     private String color(String text, String ansiCode) {

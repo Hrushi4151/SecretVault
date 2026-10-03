@@ -71,6 +71,10 @@ public enum FindingCategory {
     SECRET_LEASE_RISK(
             "Secret Lease & Consumer Risk",
             "Long-lived unrenewed secret lease or stale consumer running on deprecated secret version."
+    ),
+    REPOSITORY_SECRET_EXPOSURE(
+            "Repository Secret Exposure",
+            "Exposed credential or secret detected in source code, commit history, or repository files."
     );
 
     private final String displayName;

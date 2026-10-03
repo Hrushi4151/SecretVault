@@ -31,5 +31,7 @@ public interface SecretVersionRepository extends JpaRepository<SecretVersion, UU
 
     Optional<SecretVersion> findTopBySecretIdOrderByVersionNumberDesc(UUID secretId);
 
+    Optional<SecretVersion> findFirstByFingerprint(String fingerprint);
+
     long countBySecretId(UUID secretId);
 }

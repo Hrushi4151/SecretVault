@@ -84,7 +84,13 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
   const securityNavItems = [
     { label: 'Security Overview', icon: <Shield className="w-4 h-4" />, active: false, badge: 'Phase 2' },
     { label: 'Risk Center', icon: <ShieldAlert className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Secret Leaks', icon: <Lock className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    {
+      id: 'repo-security',
+      label: 'Repo Security & Leaks',
+      icon: <Lock className="w-4 h-4 text-[#F43F5E]" />,
+      badge: 'Phase 12',
+      action: () => onSelectTab && onSelectTab('repo-security'),
+    },
     {
       id: 'drift',
       label: 'Drift Detection',

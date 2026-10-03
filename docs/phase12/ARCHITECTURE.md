@@ -1,91 +1,142 @@
-# Architecture & State Machine: Secret Rotation Engine
+# Phase 12 Architecture: Repository Security & Secret Leak Detection
 
-## 1. Overview
+## 1. High-Level System Overview
 
-The SecretVault Rotation Engine orchestrates the automated replacement of secret credentials across diverse infrastructure targets with zero downtime, formal safety invariants, and cryptographic guarantees.
+The SecretVault Repository Security subsystem provides automated detection, triage, live validation, cryptographic inventory correlation, and zero-downtime remediation for leaked credentials.
+
+It is designed around four foundational architectural pillars:
+1. **Isolated Sandboxing**: Scans occur strictly inside contained filesystem sandboxes with zero arbitrary shell execution.
+2. **Multi-Signal Detection**: Combines bounded deterministic regex matching, Shannon entropy quantification, and keyword contextual scoring.
+3. **Zero-Plaintext Invariant**: Scanner components, persistence layers, REST controllers, and audit trails never persist or transmit raw plaintext secrets.
+4. **Actionable Remediation**: Findings are directly wired into SecretVault's Phase 12 Rotation Engine for immediate automated or manual key rotation and credential revocation.
 
 ---
 
-## 2. 21-State Rotation Machine
-
-Every rotation job transitions through an explicit state machine managed by `RotationService`:
+## 2. Component Architecture Diagram
 
 ```mermaid
-stateDiagram-v2
-    [*] --> QUEUED: triggerRotation()
-    QUEUED --> STARTED: acquire DistributedLock
-    STARTED --> GENERATING: select SecretRotator
-    GENERATING --> GENERATED: cryptographically generate payload
-    GENERATED --> VALIDATING: execute synthetic verification probe
-    
-    VALIDATING --> VALIDATED: probe successful
-    VALIDATING --> VALIDATION_FAILED: probe failed
-    VALIDATION_FAILED --> FAILED: max retries exceeded
-    VALIDATION_FAILED --> GENERATING: retry backoff
-    
-    VALIDATED --> STAGING: provision in downstream provider
-    STAGING --> STAGED: credential staged in target system
-    
-    STAGED --> ACTIVATING: store encrypted version & make active
-    ACTIVATING --> ACTIVE: secret version activated
-    
-    ACTIVE --> GRACE_PERIOD: dual-credential grace window starts
-    GRACE_PERIOD --> REVOKING: grace period expires
-    REVOKING --> COMPLETED: old credentials destroyed
-    
-    ACTIVE --> COMPLETED: direct rollout (no grace period)
-    
-    STAGING --> ROLLING_BACK: external staging error
-    ACTIVATING --> ROLLING_BACK: activation failure
-    ROLLING_BACK --> ROLLED_BACK: restored previous version
-    
-    QUEUED --> CANCELLED: user cancel
-    STARTED --> CANCELLED: user cancel
-    STAGING --> CANCELLED: user cancel
+graph TD
+    subgraph Ingestion["1. Ingestion Layer"]
+        CLI["secretvault scan (CLI)"]
+        WEB["Repository Web UI"]
+        API["REST API (/api/v1/workspaces/.../repositories)"]
+        GIT_SRC["Git Clone / Working Tree"]
+        ZIP_SRC["Zip Archive Upload"]
+    end
+
+    subgraph Sandbox["2. Sandboxed Isolation Boundary"]
+        GUARD["PathTraversalGuard (Canonical Containment)"]
+        ARCH["ArchiveScanner (ZipSlip & Bomb Defense)"]
+        EXEC["GitProcessExecutor (Safe Argument Arrays, No Hooks)"]
+    end
+
+    subgraph Engine["3. Detection & Analysis Engine"]
+        DISC["FileDiscoveryEngine (Binary Probing & Exclusions)"]
+        SCAN["GitRepositoryScanner (Tree & Diff History)"]
+        DET["RegexSecretDetector (14 High-Value Rules)"]
+        ENT["EntropyEvaluator (Shannon Entropy H >= 4.5)"]
+        CTX["ContextAnalyzer (Assignment & Keywords)"]
+    end
+
+    subgraph Security["4. Zero-Plaintext Cryptographic Core"]
+        FP["SecretFingerprinter (SHA-256 Digest)"]
+        MASK["MaskedPreviewGenerator (e.g. AKIA************MP12)"]
+    end
+
+    subgraph Enrichment["5. Enrichment, RBAC & Remediation"]
+        LIVE["LiveCredentialValidator (STS, GitHub, Stripe)"]
+        CORR["SecretInventoryCorrelator (Vault Matching)"]
+        RBAC["EffectiveAccessService (Tenant Isolation)"]
+        AUDIT["AuditService (Tamper-Evident Ledger)"]
+        ROT["RotationService (Emergency Key Rotation)"]
+    end
+
+    CLI --> API
+    WEB --> API
+    API --> GUARD
+    GIT_SRC --> EXEC
+    ZIP_SRC --> ARCH
+    ARCH --> GUARD
+    EXEC --> GUARD
+
+    GUARD --> DISC
+    DISC --> SCAN
+    SCAN --> DET
+    DET --> ENT
+    DET --> CTX
+
+    DET --> FP
+    DET --> MASK
+
+    FP --> LIVE
+    FP --> CORR
+    CORR --> RBAC
+    RBAC --> AUDIT
+    CORR --> ROT
 ```
 
-### Complete State Descriptions
+---
 
-1. **QUEUED**: Rotation job created and stored in Postgres. Awaiting worker pickup or synchronous pipeline execution.
-2. **STARTED**: Distributed lock acquired on `secret_id` using `RotationDistributedLock` (Redis or DB lease).
-3. **GENERATING**: `SecretRotator` invoked to generate secure candidate credential bytes.
-4. **GENERATED**: Candidate credential created in memory.
-5. **VALIDATING**: Synthetic verification probes initiated (`RotationValidationEngine`).
-6. **VALIDATED**: Candidate successfully validated against synthetic probe or target system.
-7. **VALIDATION_FAILED**: Validation test failed (e.g., target API returned HTTP 401).
-8. **STAGING**: Candidate credential provisioned in target system alongside active credential (dual-credential mode).
-9. **STAGED**: Downstream system confirms candidate credential is ready for traffic.
-10. **ACTIVATING**: Envelope encryption executed; new `SecretVersion` record persisted; `Secret.currentVersionNumber` incremented.
-11. **ACTIVE**: New version is now the authoritative version returned for secrets retrieval and leases.
-12. **GRACE_PERIOD**: Dual-credential grace timer started. Microservices continue using old version while fetching new version via SDK.
-13. **REVOKING**: Grace timer elapsed. Downstream rotator instructed to deprovision and invalidate old credential.
-14. **COMPLETED**: Rotation workflow finished successfully with full audit trail.
-15. **ROLLING_BACK**: Failure occurred during staging or activation; rollback handler invoked.
-16. **ROLLED_BACK**: Target version reverted, old credential restored as primary, and job marked as rolled back.
-17. **CANCELLED**: Operator aborted rotation job prior to activation.
-18. **FAILED**: Terminal error during execution with failure diagnostic recorded in job entity.
+## 3. Sequence Flow: End-to-End Scan & Remediation
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor DevSecOps as DevSecOps Engineer / CI Pipeline
+    participant API as RepositoryScanController
+    participant ScanSvc as RepositoryScanService
+    participant Sandbox as PathTraversalGuard & GitExecutor
+    participant Engine as GitRepositoryScanner & Detectors
+    participant FP as SecretFingerprinter
+    participant LiveVal as LiveCredentialValidator
+    participant Correlator as SecretInventoryCorrelator
+    participant DB as PostgreSQL (V18 Schema)
+    participant RotSvc as RotationService
+
+    DevSecOps->>API: POST /api/v1/workspaces/{wsId}/repositories/{repoId}/scans
+    API->>ScanSvc: triggerScan(workspaceId, repoId, request, actorId)
+    ScanSvc->>Sandbox: prepareSandbox(repoSource)
+    Sandbox-->>ScanSvc: validatedSandboxPath
+    ScanSvc->>Engine: scanRepository(sandboxPath, config)
+    
+    loop For Each File / Git Commit Diff
+        Engine->>Engine: scanContent(content, path, commitSha, branch)
+        Engine->>FP: computeFingerprint(rawSecret) & computeMaskedPreview()
+        FP-->>Engine: fingerprint (SHA-256), maskedValue
+        Note over Engine,FP: Raw secret immediately discarded from memory
+    end
+    
+    Engine-->>ScanSvc: List<SecretDetectionResult> (Masked & Fingerprinted)
+    
+    loop For Each Detected Candidate
+        ScanSvc->>LiveVal: validateToken(secretType, rawToken) [Optional]
+        LiveVal-->>ScanSvc: validationStatus (ACTIVE / INVALID / UNKNOWN)
+        ScanSvc->>Correlator: correlateFingerprint(workspaceId, fingerprint)
+        Correlator-->>ScanSvc: matchedSecretId (if present in Vault inventory)
+        ScanSvc->>DB: persist SecretFinding & Occurrences
+    end
+
+    ScanSvc-->>API: RepositoryScanSummary (Findings count, severities, run time)
+    API-->>DevSecOps: 200 OK (Clean SARIF / JSON with zero plaintext)
+
+    opt Finding Requires Immediate Remediation
+        DevSecOps->>API: POST /api/v1/workspaces/{wsId}/findings/{id}/remediate (ROTATE_SECRET)
+        API->>RotSvc: triggerEmergencyRotation(workspaceId, matchedSecretId)
+        RotSvc-->>API: RotationJob Started (Dual-credential grace period)
+        API-->>DevSecOps: 200 OK (Remediation job created)
+    end
+```
 
 ---
 
-## 3. Distributed Locking & Concurrency Protection
+## 4. Multi-Tenancy & Workspace Scoping
 
-Secret rotation involves mutating sensitive remote resources (database users, OAuth credentials, cloud IAM keys). Simultaneous rotations on the same secret will lead to split-brain states or credential corruption.
+All repository entities, scans, findings, allowlists, and remediation jobs are explicitly scoped by `workspace_id`. Cross-workspace scanning or finding retrieval is strictly prohibited at both the database query layer (JPA composite keys and constraints) and the business logic layer (`EffectiveAccessService.requireWorkspacePermission`).
 
-### `RotationDistributedLock`
-
-The system uses a non-reentrant distributed lock:
-- Lock key: `sv:lock:rotation:<secret_id>`
-- Default TTL: 5 minutes (300 seconds)
-- Lock token: UUID generated per execution thread
-- Guarantee: Only one rotation or rollback job can execute per `secret_id` at any time across cluster nodes.
-
----
-
-## 4. Cryptographic Envelope Storage
-
-When a new credential passes validation:
-1. `SecretGenerationEngine` produces high-entropy plaintext in memory.
-2. `EncryptionService.encrypt(plaintextBytes, aad)` wraps the plaintext with AES-256-GCM and a unique Data Encryption Key (DEK).
-3. Plaintext memory buffers are immediately zeroized.
-4. The encrypted payload (ciphertext, wrapped DEK, IV, auth tag, KEK reference) is saved in the immutable `secret_versions` table.
-5. `Secret.currentVersionNumber` is updated atomically.
+| Permission | Scope | Allowed Actions |
+| :--- | :--- | :--- |
+| `REPOSITORY_VIEW` | Workspace | View repository list, scan history, masked findings, "Why Exposed" |
+| `REPOSITORY_SCAN` | Workspace | Initiate scans, upload archives for scanning |
+| `REPOSITORY_MANAGE` | Workspace | Connect repositories, update policies, configure Webhooks |
+| `REPOSITORY_FINDING_MANAGE` | Workspace | Triage findings, mark false positives, manage allowlists |
+| `REPOSITORY_REMEDIATE` | Workspace | Trigger emergency secret rotation, credential revocation |

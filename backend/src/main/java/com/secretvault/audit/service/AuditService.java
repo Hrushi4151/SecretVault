@@ -102,6 +102,25 @@ public class AuditService {
         return recordAudit(null, workspaceId, actorId, "USER", action, resourceType, resourceId, null, null, "SUCCESS");
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public AuditLog record(
+            UUID workspaceId,
+            UUID actorId,
+            AuditAction action,
+            String resourceType,
+            String resourceIdentifier,
+            java.util.Map<String, ?> metadata
+    ) {
+        UUID resourceUuid = null;
+        try {
+            if (resourceIdentifier != null && !resourceIdentifier.isBlank()) {
+                resourceUuid = UUID.fromString(resourceIdentifier);
+            }
+        } catch (IllegalArgumentException ignored) {}
+
+        return recordAudit(null, workspaceId, actorId, "USER", action, resourceType, resourceUuid, null, null, "SUCCESS");
+    }
+
     @Transactional(readOnly = true)
     public List<AuditLog> getWorkspaceAuditLogs(UUID workspaceId) {
         return auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);

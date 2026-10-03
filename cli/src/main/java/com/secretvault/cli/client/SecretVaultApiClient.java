@@ -11,6 +11,7 @@ import com.secretvault.cli.client.dto.ProjectDto;
 import com.secretvault.cli.client.dto.Phase13CliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos.*;
+import com.secretvault.cli.client.dto.RepositoryCliDtos;
 import com.secretvault.cli.client.dto.SecretDtos;
 import com.secretvault.cli.client.dto.StepUpDtos;
 import com.secretvault.cli.client.dto.WorkspaceDto;
@@ -734,6 +735,71 @@ public class SecretVaultApiClient {
     public void markAllNotificationsRead(UUID workspaceId) {
         String path = String.format("/api/v1/workspaces/%s/notifications/read-all", workspaceId);
         post(path, null, new TypeReference<ApiEnvelope<Void>>() {}, true, workspaceId);
+    }
+
+    // ==========================================
+    // Phase 12: Repository Security Operations
+    // ==========================================
+
+    public List<RepositoryCliDtos.RepositoryDto> listRepositories(UUID workspaceId) {
+        String path = String.format("/api/v1/workspaces/%s/repositories?size=100", workspaceId);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<RepositoryCliDtos.RepositoryDto>>() {});
+    }
+
+    public RepositoryCliDtos.RepositoryDto getRepository(UUID workspaceId, UUID repositoryId) {
+        String path = String.format("/api/v1/workspaces/%s/repositories/%s", workspaceId, repositoryId);
+        return get(path, new TypeReference<ApiEnvelope<RepositoryCliDtos.RepositoryDto>>() {}, workspaceId);
+    }
+
+    public RepositoryCliDtos.RepositoryDto connectRepository(UUID workspaceId, Object request) {
+        String path = String.format("/api/v1/workspaces/%s/repositories", workspaceId);
+        return post(path, request, new TypeReference<ApiEnvelope<RepositoryCliDtos.RepositoryDto>>() {}, true, workspaceId);
+    }
+
+    public RepositoryCliDtos.ScanDto triggerScan(UUID workspaceId, UUID repositoryId, String scanType, String branch) {
+        String path = String.format("/api/v1/workspaces/%s/repositories/%s/scans", workspaceId, repositoryId);
+        var req = java.util.Map.of("scanType", scanType != null ? scanType : "INCREMENTAL", "branch", branch != null ? branch : "main");
+        return post(path, req, new TypeReference<ApiEnvelope<RepositoryCliDtos.ScanDto>>() {}, true, workspaceId);
+    }
+
+    public RepositoryCliDtos.ScanDto scanLocalDirectory(UUID workspaceId, UUID repositoryId, String dirPath, boolean scanHistory) {
+        String path = String.format("/api/v1/workspaces/%s/repository-scans/local%s",
+                workspaceId, repositoryId != null ? "?repositoryId=" + repositoryId : "");
+        var req = java.util.Map.of("path", dirPath, "scanHistory", scanHistory);
+        return post(path, req, new TypeReference<ApiEnvelope<RepositoryCliDtos.ScanDto>>() {}, true, workspaceId);
+    }
+
+    public List<RepositoryCliDtos.SecretFindingDto> listFindings(UUID workspaceId, UUID repositoryId, String severity, String status, String search) {
+        StringBuilder sb = new StringBuilder(String.format("/api/v1/workspaces/%s/secret-findings?size=100", workspaceId));
+        if (repositoryId != null) sb.append("&repositoryId=").append(repositoryId);
+        if (severity != null) sb.append("&severity=").append(URLEncoder.encode(severity, StandardCharsets.UTF_8));
+        if (status != null) sb.append("&status=").append(URLEncoder.encode(status, StandardCharsets.UTF_8));
+        if (search != null) sb.append("&search=").append(URLEncoder.encode(search, StandardCharsets.UTF_8));
+        com.fasterxml.jackson.databind.JsonNode node = get(sb.toString(), new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<RepositoryCliDtos.SecretFindingDto>>() {});
+    }
+
+    public RepositoryCliDtos.SecretFindingDto getFinding(UUID workspaceId, UUID findingId) {
+        String path = String.format("/api/v1/workspaces/%s/secret-findings/%s", workspaceId, findingId);
+        return get(path, new TypeReference<ApiEnvelope<RepositoryCliDtos.SecretFindingDto>>() {}, workspaceId);
+    }
+
+    public RepositoryCliDtos.WhyExposedDto whyExposed(UUID workspaceId, UUID findingId) {
+        String path = String.format("/api/v1/workspaces/%s/secret-findings/%s/why-exposed", workspaceId, findingId);
+        return get(path, new TypeReference<ApiEnvelope<RepositoryCliDtos.WhyExposedDto>>() {}, workspaceId);
+    }
+
+    public RepositoryCliDtos.SecretFindingDto updateFindingStatus(UUID workspaceId, UUID findingId, String newStatus, String reason) {
+        String path = String.format("/api/v1/workspaces/%s/secret-findings/%s/status", workspaceId, findingId);
+        var req = java.util.Map.of("status", newStatus, "reason", reason != null ? reason : "");
+        return patch(path, req, new TypeReference<ApiEnvelope<RepositoryCliDtos.SecretFindingDto>>() {}, workspaceId);
+    }
+
+    public RepositoryCliDtos.RemediationJobDto remediateFinding(UUID workspaceId, UUID findingId, String action, String notes) {
+        String path = String.format("/api/v1/workspaces/%s/repository-remediations/%s", workspaceId, findingId);
+        var req = java.util.Map.of("action", action, "notes", notes != null ? notes : "");
+        return post(path, req, new TypeReference<ApiEnvelope<RepositoryCliDtos.RemediationJobDto>>() {}, true, workspaceId);
     }
 
     private <T> List<T> parsePageContent(com.fasterxml.jackson.databind.JsonNode node, TypeReference<List<T>> typeRef) {
