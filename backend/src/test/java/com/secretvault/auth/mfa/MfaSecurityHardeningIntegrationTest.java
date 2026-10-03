@@ -34,8 +34,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.hamcrest.Matchers.*;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -58,6 +64,9 @@ class MfaSecurityHardeningIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockBean
+    private StringRedisTemplate stringRedisTemplate;
 
     private static final AtomicInteger IP_COUNTER = new AtomicInteger(100);
 
@@ -512,6 +521,13 @@ class MfaSecurityHardeningIntegrationTest {
     void testRateLimiterTriggers429OnIpAbuse() throws Exception {
         String abuseIp = "198.51.100.99";
         MfaTotpVerifyRequest req = new MfaTotpVerifyRequest(UUID.randomUUID().toString(), "123456");
+
+        AtomicInteger count = new AtomicInteger(0);
+        when(stringRedisTemplate.execute(org.mockito.ArgumentMatchers.<RedisScript<List>>any(), anyList(), anyString()))
+                .thenAnswer(invocation -> {
+                    int c = count.incrementAndGet();
+                    return List.of((long) c, 60L);
+                });
 
         // 10 requests allowed
         for (int i = 0; i < 10; i++) {

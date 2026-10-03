@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Redis-backed atomic short-lived security state store.
@@ -49,6 +51,8 @@ public class RedisSecurityStateStore implements SecurityStateStore {
     private final RedisScript<String> consumeScript;
     private final RedisScript<Long> incrAttemptsScript;
 
+    private final Map<String, String> localMemoryFallback = new ConcurrentHashMap<>();
+
     public RedisSecurityStateStore(
             StringRedisTemplate stringRedisTemplate,
             RedisKeyBuilder keyBuilder,
@@ -72,8 +76,18 @@ public class RedisSecurityStateStore implements SecurityStateStore {
         try {
             SecurityStateEnvelope<T> envelope = SecurityStateEnvelope.create(category, identifier, payload, ttlSeconds);
             String json = objectMapper.writeValueAsString(envelope);
-            stringRedisTemplate.opsForValue().set(key, json, Duration.ofSeconds(ttlSeconds));
+            localMemoryFallback.put(key, json);
+            if (stringRedisTemplate != null) {
+                try {
+                    stringRedisTemplate.opsForValue().set(key, json, Duration.ofSeconds(ttlSeconds));
+                } catch (Exception ex) {
+                    redisMetrics.redisFailure("security_state_put");
+                    log.warn("Redis unavailable for state put [{}], falling back to local state: {}", sanitizeKey(key), ex.getMessage());
+                }
+            }
             redisMetrics.securityStatePut(category);
+        } catch (ApiException ae) {
+            throw ae;
         } catch (Exception ex) {
             redisMetrics.redisFailure("security_state_put");
             log.error("Failed to store security state for key [{}]: {}", sanitizeKey(key), ex.getMessage());
@@ -85,7 +99,18 @@ public class RedisSecurityStateStore implements SecurityStateStore {
     public <T> Optional<T> get(String category, String identifier, Class<T> type) {
         String key = keyBuilder.securityStateKey(category, identifier);
         try {
-            String json = stringRedisTemplate.opsForValue().get(key);
+            String json = null;
+            if (stringRedisTemplate != null) {
+                try {
+                    json = stringRedisTemplate.opsForValue().get(key);
+                } catch (Exception ex) {
+                    redisMetrics.redisFailure("security_state_get");
+                    log.warn("Redis unavailable for state get [{}], using memory fallback: {}", sanitizeKey(key), ex.getMessage());
+                }
+            }
+            if (json == null || json.isBlank()) {
+                json = localMemoryFallback.get(key);
+            }
             if (json == null || json.isBlank()) {
                 return Optional.empty();
             }
@@ -113,7 +138,18 @@ public class RedisSecurityStateStore implements SecurityStateStore {
     public <T> Optional<T> consumeAtomic(String category, String identifier, Class<T> type) {
         String key = keyBuilder.securityStateKey(category, identifier);
         try {
-            String json = stringRedisTemplate.execute(consumeScript, Collections.singletonList(key));
+            String json = null;
+            if (stringRedisTemplate != null) {
+                try {
+                    json = stringRedisTemplate.execute(consumeScript, Collections.singletonList(key));
+                } catch (Exception ex) {
+                    redisMetrics.redisFailure("security_state_consume");
+                    log.warn("Redis unavailable for consumeAtomic [{}], using memory fallback: {}", sanitizeKey(key), ex.getMessage());
+                }
+            }
+            if (json == null || json.isBlank()) {
+                json = localMemoryFallback.remove(key);
+            }
             if (json == null || json.isBlank()) {
                 return Optional.empty();
             }
@@ -141,8 +177,15 @@ public class RedisSecurityStateStore implements SecurityStateStore {
     public boolean exists(String category, String identifier) {
         String key = keyBuilder.securityStateKey(category, identifier);
         try {
-            Boolean hasKey = stringRedisTemplate.hasKey(key);
-            return Boolean.TRUE.equals(hasKey);
+            if (stringRedisTemplate != null) {
+                try {
+                    Boolean hasKey = stringRedisTemplate.hasKey(key);
+                    if (Boolean.TRUE.equals(hasKey)) return true;
+                } catch (Exception ex) {
+                    redisMetrics.redisFailure("security_state_exists");
+                }
+            }
+            return localMemoryFallback.containsKey(key);
         } catch (Exception ex) {
             redisMetrics.redisFailure("security_state_exists");
             log.error("Failed to check security state existence for key [{}]: {}", sanitizeKey(key), ex.getMessage());
@@ -153,9 +196,13 @@ public class RedisSecurityStateStore implements SecurityStateStore {
     @Override
     public void delete(String category, String identifier) {
         String key = keyBuilder.securityStateKey(category, identifier);
+        localMemoryFallback.remove(key);
+        localMemoryFallback.remove(key + ":attempts");
         try {
-            stringRedisTemplate.delete(key);
-            stringRedisTemplate.delete(key + ":attempts");
+            if (stringRedisTemplate != null) {
+                stringRedisTemplate.delete(key);
+                stringRedisTemplate.delete(key + ":attempts");
+            }
         } catch (Exception ex) {
             redisMetrics.redisFailure("security_state_delete");
             log.error("Failed to delete security state for key [{}]: {}", sanitizeKey(key), ex.getMessage());
@@ -167,12 +214,21 @@ public class RedisSecurityStateStore implements SecurityStateStore {
         String key = keyBuilder.securityStateKey(category, identifier);
         long ttlSeconds = Math.max(1, ttl.toSeconds());
         try {
-            Long count = stringRedisTemplate.execute(
-                    incrAttemptsScript,
-                    Collections.singletonList(key),
-                    String.valueOf(ttlSeconds)
-            );
-            return count != null ? count : 1L;
+            if (stringRedisTemplate != null) {
+                try {
+                    Long count = stringRedisTemplate.execute(
+                            incrAttemptsScript,
+                            Collections.singletonList(key),
+                            String.valueOf(ttlSeconds)
+                    );
+                    if (count != null) return count;
+                } catch (Exception ex) {
+                    redisMetrics.redisFailure("security_state_increment_attempts");
+                }
+            }
+            long current = Long.parseLong(localMemoryFallback.getOrDefault(key + ":attempts", "0")) + 1;
+            localMemoryFallback.put(key + ":attempts", String.valueOf(current));
+            return current;
         } catch (Exception ex) {
             redisMetrics.redisFailure("security_state_increment_attempts");
             log.error("Failed to increment security attempts for key [{}]: {}", sanitizeKey(key), ex.getMessage());

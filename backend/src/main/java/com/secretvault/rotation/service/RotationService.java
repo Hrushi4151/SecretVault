@@ -243,6 +243,19 @@ public class RotationService {
 
         verifyAccess(workspaceId, env.getProjectId(), secret.getEnvironmentId(), secretId, actorId, requiredPermission);
 
+        // Verify idempotency key if supplied
+        if (StringUtils.hasText(idempotencyKey)) {
+            Optional<RotationJob> existingKeyJob = jobRepository.findByWorkspaceIdAndIdempotencyKey(workspaceId, idempotencyKey);
+            if (existingKeyJob.isPresent()) {
+                RotationJob existing = existingKeyJob.get();
+                if (!existing.getSecretId().equals(secretId)) {
+                    throw ApiException.conflict("Idempotency key '" + idempotencyKey + "' was previously used for a different secret rotation");
+                }
+                log.info("Idempotent rotation request matched existing job {} for secret {}", existing.getId(), secretId);
+                return RotationJobResponse.fromEntity(existing);
+            }
+        }
+
         // Check if an active rotation job is already executing for this secret
         Optional<RotationJob> activeJob = jobRepository.findTopBySecretIdOrderByCreatedAtDesc(secretId);
         if (activeJob.isPresent() && isActiveState(activeJob.get().getStatus())) {
