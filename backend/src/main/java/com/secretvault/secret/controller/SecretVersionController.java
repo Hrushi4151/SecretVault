@@ -52,15 +52,18 @@ public class SecretVersionController {
     private final SecretVersionService versionService;
     private final SecretDiffService diffService;
     private final SecretRollbackService rollbackService;
+    private final com.secretvault.secret.reveal.service.SecretRevealService secretRevealService;
 
     public SecretVersionController(
             SecretVersionService versionService,
             SecretDiffService diffService,
-            SecretRollbackService rollbackService
+            SecretRollbackService rollbackService,
+            com.secretvault.secret.reveal.service.SecretRevealService secretRevealService
     ) {
         this.versionService = versionService;
         this.diffService = diffService;
         this.rollbackService = rollbackService;
+        this.secretRevealService = secretRevealService;
     }
 
     @GetMapping("/versions")
@@ -100,7 +103,58 @@ public class SecretVersionController {
         return ResponseEntity.ok(ApiResponse.success(version));
     }
 
+    @PostMapping("/versions/{versionNumber}/reveal-intent")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_reveal_intent",
+            limit = 60,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many reveal intent requests. Please try again later."
+    )
+    @Operation(summary = "Request a short-lived single-use reveal intent token for a historical version")
+    public ResponseEntity<ApiResponse<com.secretvault.secret.reveal.dto.SecretRevealIntentResponse>> createHistoricalRevealIntent(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID environmentId,
+            @PathVariable UUID secretId,
+            @PathVariable Integer versionNumber,
+            @RequestBody(required = false) com.secretvault.secret.reveal.dto.CreateRevealIntentRequest request,
+            @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest servletRequest
+    ) {
+        validateWorkspaceHeader(workspaceId, headerWorkspaceId);
+        String requestId = resolveRequestId();
+        String ipAddress = servletRequest.getRemoteAddr();
+
+        com.secretvault.secret.reveal.dto.CreateRevealIntentRequest req =
+                new com.secretvault.secret.reveal.dto.CreateRevealIntentRequest(
+                        versionNumber,
+                        request != null ? request.reason() : null,
+                        request != null ? request.stepUpProof() : null
+                );
+
+        com.secretvault.secret.reveal.dto.SecretRevealIntentResponse response = secretRevealService.createRevealIntent(
+                workspaceId, projectId, environmentId, secretId, req,
+                principal.getId(), principal.getSessionIdentifier(), requestId, ipAddress
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, private");
+        headers.set(HttpHeaders.PRAGMA, "no-cache");
+        headers.set(HttpHeaders.EXPIRES, "0");
+
+        return ResponseEntity.ok().headers(headers).body(ApiResponse.success(response));
+    }
+
     @PostMapping("/versions/{versionNumber}/reveal")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_reveal",
+            limit = 60,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many secret reveal attempts. Please try again later."
+    )
     @Operation(summary = "Explicitly decrypt and reveal a historical secret version value in memory")
     public ResponseEntity<ApiResponse<SecretRevealResponse>> revealHistoricalVersion(
             @PathVariable UUID workspaceId,
@@ -109,6 +163,9 @@ public class SecretVersionController {
             @PathVariable UUID secretId,
             @PathVariable Integer versionNumber,
             @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @RequestHeader(value = "X-Step-Up-Proof", required = false) String stepUpProofHeader,
+            @RequestHeader(value = "X-Reveal-Intent-Token", required = false) String intentTokenHeader,
+            @RequestBody(required = false) com.secretvault.secret.reveal.dto.ExecuteRevealRequest requestBody,
             @AuthenticationPrincipal UserPrincipal principal,
             HttpServletRequest httpRequest
     ) {
@@ -116,8 +173,24 @@ public class SecretVersionController {
         String requestId = resolveRequestId();
         String ipAddress = httpRequest.getRemoteAddr();
 
-        SecretRevealResponse response = versionService.revealHistoricalVersion(
-                workspaceId, projectId, environmentId, secretId, versionNumber, principal.getId(), requestId, ipAddress
+        String intentToken = (requestBody != null && StringUtils.hasText(requestBody.intentToken()))
+                ? requestBody.intentToken()
+                : intentTokenHeader;
+
+        String stepUpProof = (requestBody != null && StringUtils.hasText(requestBody.stepUpProof()))
+                ? requestBody.stepUpProof()
+                : stepUpProofHeader;
+
+        String reason = (requestBody != null && StringUtils.hasText(requestBody.reason()))
+                ? requestBody.reason()
+                : null;
+
+        com.secretvault.secret.reveal.dto.ExecuteRevealRequest req =
+                new com.secretvault.secret.reveal.dto.ExecuteRevealRequest(intentToken, versionNumber, reason, stepUpProof);
+
+        SecretRevealResponse response = secretRevealService.revealHistoricalVersion(
+                workspaceId, projectId, environmentId, secretId, versionNumber, req,
+                principal.getId(), principal.getSessionIdentifier(), requestId, ipAddress
         );
 
         HttpHeaders headers = new HttpHeaders();

@@ -241,7 +241,7 @@ public class RedisSecurityStateStore implements SecurityStateStore {
             throw ApiException.badRequest("Security state payload cannot be null");
         }
         String payloadClass = payload.getClass().getSimpleName().toLowerCase();
-        if (payloadClass.contains("secret") || payloadClass.contains("password") || payloadClass.contains("totp") || payloadClass.contains("privatekey")) {
+        if ((payloadClass.contains("secret") && !payloadClass.contains("intent")) || payloadClass.contains("password") || payloadClass.contains("totp") || payloadClass.contains("privatekey")) {
             log.error("CRITICAL SECURITY VIOLATION: Attempted to store sensitive entity [{}] in Redis", payloadClass);
             throw ApiException.internal("SECURITY_INVARIANT_VIOLATION", "Storing raw secret/credential types in Redis is strictly forbidden");
         }

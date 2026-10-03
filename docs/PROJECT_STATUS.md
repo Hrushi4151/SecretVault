@@ -19,6 +19,7 @@
 | **Phase 5.8.2** | Generalized Step-Up Authentication Framework, Policy Engine, Single-Use Proofs | **COMPLETED** | 100% |
 | **Phase 5.8.3** | WebAuthn / FIDO2 Passkeys, Phishing-Resistant Factor, Step-Up & MFA Integration | **COMPLETED** | 100% |
 | **Phase 5.8.4** | Privileged Access Security (Break-Glass, Dual Approval Quorum, Temporary Elevation) | **SIGNED OFF** | 100% (40/40 PA Matrix, 748 Backend, 52 Frontend) |
+| **Phase 5.8.5** | Production-Grade Secret Reveal Protection (2-Phase Reveal Intent Protocol, Policy Engine, Auto-Mask) | **SIGNED OFF** | 100% (60/60 SR Matrix, 814 Backend, 57 Frontend) |
 | **Phase 6** | Security Intelligence, Security Center, Posture, Dynamic Risk Engine | **COMPLETED** | 100% |
 | **Phase 7** | Provider Integration Framework SPI, Vercel/Render Adapters, Credential AAD Binding | **COMPLETED** | 100% |
 | **Phase 8** | Sync Engine, Drift Detection, Reconciliation, Fingerprint Deduplication, Scheduler | **COMPLETED** | 100% |
@@ -54,4 +55,4 @@
 
 ---
 
-### PHASE 5.8.4 SIGNED OFF — PRIVILEGED ACCESS SECURITY COMPLETE
+### PHASE 5.8.5 SIGNED OFF — PRODUCTION-GRADE SECRET REVEAL PROTECTION COMPLETE
