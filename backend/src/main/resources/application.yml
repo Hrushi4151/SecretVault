@@ -95,3 +95,16 @@ secretvault:
       period-seconds: 30
       allowed-drift-steps: 1
       issuer: SecretVault
+  webauthn:
+    rp-id: ${WEBAUTHN_RP_ID:localhost}
+    rp-name: ${WEBAUTHN_RP_NAME:SecretVault}
+    allowed-origins:
+      - ${WEBAUTHN_ORIGIN_DEV_1:http://localhost:5173}
+      - ${WEBAUTHN_ORIGIN_DEV_2:http://localhost:3000}
+      - ${WEBAUTHN_ORIGIN_DEV_3:http://localhost:8080}
+      - ${WEBAUTHN_ORIGIN_PROD:https://app.secretvault.dev}
+    challenge-ttl-seconds: 300
+    timeout-seconds: 60
+    user-verification: PREFERRED
+    allow-origin-port: true
+    clone-detection-action: BLOCK

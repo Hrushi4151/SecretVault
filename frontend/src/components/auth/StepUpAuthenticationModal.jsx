@@ -5,6 +5,12 @@ import { Input } from '../common/Input';
 import { Alert } from '../common/Alert';
 import { authApi } from '../../api/auth';
 import {
+  isWebAuthnSupported,
+  prepareRequestOptions,
+  credentialRequestToJSON,
+  formatWebAuthnError,
+} from '../../utils/webauthn';
+import {
   ShieldCheck,
   KeyRound,
   Smartphone,
@@ -12,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
   Key,
+  Fingerprint,
 } from 'lucide-react';
 
 export const StepUpAuthenticationModal = ({
@@ -24,7 +31,7 @@ export const StepUpAuthenticationModal = ({
   onSuccess,
 }) => {
   const [challenge, setChallenge] = useState(null);
-  const [activeFactor, setActiveFactor] = useState('PASSWORD'); // 'PASSWORD' | 'TOTP' | 'RECOVERY_CODE'
+  const [activeFactor, setActiveFactor] = useState('PASSWORD'); // 'WEBAUTHN' | 'TOTP' | 'PASSWORD' | 'RECOVERY_CODE'
   const [password, setPassword] = useState('');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -33,6 +40,7 @@ export const StepUpAuthenticationModal = ({
   const [error, setError] = useState(null);
 
   const totpInputRefs = useRef([]);
+  const isWebAuthnAvail = isWebAuthnSupported();
 
   // Initialize step-up challenge when modal opens
   useEffect(() => {
@@ -50,7 +58,9 @@ export const StepUpAuthenticationModal = ({
         .then((res) => {
           if (isMounted) {
             setChallenge(res);
-            if (res.supportedFactors && res.supportedFactors.includes('TOTP')) {
+            if (res.supportedFactors && res.supportedFactors.includes('WEBAUTHN') && isWebAuthnAvail) {
+              setActiveFactor('WEBAUTHN');
+            } else if (res.supportedFactors && res.supportedFactors.includes('TOTP')) {
               setActiveFactor('TOTP');
             } else {
               setActiveFactor('PASSWORD');
@@ -115,6 +125,47 @@ export const StepUpAuthenticationModal = ({
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
       totpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyWebAuthn = async () => {
+    if (!challenge?.challengeId) {
+      setError('Active challenge not found. Please try again.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // 1. Get assertion options for this step-up challenge
+      const optionsRes = await authApi.getStepUpWebAuthnOptions(challenge.challengeId);
+      const browserOptions = prepareRequestOptions(optionsRes.optionsJson);
+
+      // 2. Trigger browser passkey assertion ceremony
+      const assertion = await navigator.credentials.get(browserOptions);
+      if (!assertion) {
+        throw new Error('Passkey verification was cancelled.');
+      }
+
+      // 3. Format assertion response
+      const credentialJson = credentialRequestToJSON(assertion);
+
+      // 4. Verify assertion on backend and get proofToken
+      const result = await authApi.verifyStepUpWebAuthn({
+        challengeId: challenge.challengeId,
+        credentialJson,
+      });
+
+      if (onSuccess && result?.proofToken) {
+        onSuccess(result.proofToken);
+      }
+      onClose();
+    } catch (err) {
+      const formatted = formatWebAuthnError(err);
+      setError(formatted);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -214,6 +265,7 @@ export const StepUpAuthenticationModal = ({
   };
 
   const supportedFactors = challenge?.supportedFactors || ['PASSWORD'];
+  const hasWebAuthn = supportedFactors.includes('WEBAUTHN') && isWebAuthnAvail;
   const hasTotp = supportedFactors.includes('TOTP');
   const hasRecovery = supportedFactors.includes('RECOVERY_CODE');
 
@@ -250,6 +302,20 @@ export const StepUpAuthenticationModal = ({
             {/* Factor Selector Tabs */}
             {supportedFactors.length > 1 && (
               <div className="flex rounded-xl bg-[#230009] p-1 border border-[#FFB4C8]/15">
+                {hasWebAuthn && (
+                  <button
+                    type="button"
+                    onClick={() => handleFactorChange('WEBAUTHN')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      activeFactor === 'WEBAUTHN'
+                        ? 'bg-[#E50046] text-white shadow-md'
+                        : 'text-[#F4B5C8] hover:text-white'
+                    }`}
+                  >
+                    <Fingerprint className="w-3.5 h-3.5" />
+                    Passkey
+                  </button>
+                )}
                 {hasTotp && (
                   <button
                     type="button"
@@ -261,7 +327,7 @@ export const StepUpAuthenticationModal = ({
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
-                    Authenticator App
+                    Authenticator
                   </button>
                 )}
                 <button
@@ -274,7 +340,7 @@ export const StepUpAuthenticationModal = ({
                   }`}
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  Account Password
+                  Password
                 </button>
                 {hasRecovery && (
                   <button
@@ -290,6 +356,54 @@ export const StepUpAuthenticationModal = ({
                     Recovery Code
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* WebAuthn / Passkey Verification View */}
+            {activeFactor === 'WEBAUTHN' && (
+              <div className="flex flex-col items-center justify-center gap-4 py-4 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#3F0016] border border-[#FFB4C8]/30 flex items-center justify-center text-[#FF2D6D] shadow-inner">
+                  <Fingerprint className="w-8 h-8" />
+                </div>
+                <div className="flex flex-col gap-1 max-w-sm">
+                  <h4 className="text-sm font-headline font-bold text-white">
+                    Authenticate with Passkey or Security Key
+                  </h4>
+                  <p className="text-xs text-[#A26377]">
+                    Tap your hardware security key, use Touch ID, Windows Hello, or your device biometric authentication to approve this step-up action.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 w-full border-t border-[#FFB4C8]/10">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleVerifyWebAuthn}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                        Follow Device Prompt...
+                      </>
+                    ) : (
+                      <>
+                        <Fingerprint className="w-4 h-4 mr-1.5" />
+                        Prompt Passkey
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 

@@ -16,6 +16,8 @@
 | **Phase 5** | Granular RBAC, JIT Elevation, Access Review Certification, Anti-Self-Approval | **COMPLETED** | 100% |
 | **Phase 5.7** | Multi-Factor Authentication (TOTP, Recovery Codes, Challenge State Machine) | **COMPLETED** | 100% |
 | **Phase 5.8.1** | Session Management, Refresh-Token Binding, Device Telemetry, Revocation Governance | **COMPLETED** | 100% |
+| **Phase 5.8.2** | Generalized Step-Up Authentication Framework, Policy Engine, Single-Use Proofs | **COMPLETED** | 100% |
+| **Phase 5.8.3** | WebAuthn / FIDO2 Passkeys, Phishing-Resistant Factor, Step-Up & MFA Integration | **COMPLETED** | 100% |
 | **Phase 6** | Security Intelligence, Security Center, Posture, Dynamic Risk Engine | **COMPLETED** | 100% |
 | **Phase 7** | Provider Integration Framework SPI, Vercel/Render Adapters, Credential AAD Binding | **COMPLETED** | 100% |
 | **Phase 8** | Sync Engine, Drift Detection, Reconciliation, Fingerprint Deduplication, Scheduler | **COMPLETED** | 100% |

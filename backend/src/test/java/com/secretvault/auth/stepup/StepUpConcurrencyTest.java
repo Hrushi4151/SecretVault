@@ -54,7 +54,12 @@ class StepUpConcurrencyTest {
     @Mock
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    @InjectMocks
+    @Mock
+    private com.secretvault.auth.webauthn.repository.UserWebAuthnCredentialRepository webAuthnCredentialRepository;
+
+    @Mock
+    private com.secretvault.auth.webauthn.service.WebAuthnService webAuthnService;
+
     private DefaultStepUpAuthenticationService stepUpService;
 
     private UUID userId;
@@ -64,6 +69,17 @@ class StepUpConcurrencyTest {
 
     @BeforeEach
     void setUp() {
+        stepUpService = new DefaultStepUpAuthenticationService(
+                userRepository,
+                sessionRepository,
+                mfaService,
+                securityStateStore,
+                auditService,
+                passwordEncoder,
+                null,
+                webAuthnCredentialRepository,
+                webAuthnService
+        );
         userId = UUID.randomUUID();
         sessionIdentifier = "sess_concurrency_test_123456";
         activeSession = new UserSession(userId, sessionIdentifier, AuthMethod.PASSWORD, "127.0.0.1", "Browser", "Device", "Chrome", "Linux", Instant.now().plusSeconds(3600));

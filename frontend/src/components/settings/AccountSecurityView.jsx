@@ -7,6 +7,7 @@ import { MfaEnrollmentModal } from './mfa/MfaEnrollmentModal';
 import { MfaDisableModal } from './mfa/MfaDisableModal';
 import { MfaSecurityDetailsModal } from './mfa/MfaSecurityDetailsModal';
 import { SessionsView } from './session/SessionsView';
+import { PasskeysSection } from './webauthn/PasskeysSection';
 import {
   Shield,
   ShieldCheck,
@@ -273,7 +274,10 @@ export const AccountSecurityView = () => {
         )}
       </div>
 
-      {/* 3. Session Governance & Device Management Section */}
+      {/* 3. Passkeys & Security Keys Section (FIDO2 / WebAuthn) */}
+      <PasskeysSection />
+
+      {/* 4. Session Governance & Device Management Section */}
       <SessionsView />
 
       {/* Modals */}

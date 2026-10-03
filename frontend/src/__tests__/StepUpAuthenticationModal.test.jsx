@@ -10,7 +10,16 @@ vi.mock('../api/auth', () => ({
     verifyStepUpPassword: vi.fn(),
     verifyStepUpTotp: vi.fn(),
     verifyStepUpRecoveryCode: vi.fn(),
+    getStepUpWebAuthnOptions: vi.fn(),
+    verifyStepUpWebAuthn: vi.fn(),
   },
+}));
+
+vi.mock('../utils/webauthn', () => ({
+  isWebAuthnSupported: vi.fn(() => true),
+  prepareRequestOptions: vi.fn((opts) => ({ publicKey: opts })),
+  credentialRequestToJSON: vi.fn(() => '{"id":"mock_cred_id"}'),
+  formatWebAuthnError: vi.fn((err) => err.message || 'WebAuthn error'),
 }));
 
 describe('StepUpAuthenticationModal Component', () => {
@@ -25,6 +34,14 @@ describe('StepUpAuthenticationModal Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock navigator.credentials.get
+    Object.defineProperty(globalThis.navigator, 'credentials', {
+      value: {
+        get: vi.fn().mockResolvedValue({ id: 'mock_cred_id', response: {} }),
+        create: vi.fn(),
+      },
+      writable: true,
+    });
   });
 
   it('initializes challenge on open and renders password verification tab', async () => {
@@ -57,6 +74,56 @@ describe('StepUpAuthenticationModal Component', () => {
     expect(authApi.createStepUpChallenge).toHaveBeenCalledWith({
       action: 'SECRET_REVEAL',
       context: testContext,
+    });
+  });
+
+  it('renders Passkey tab when WEBAUTHN is supported and completes step-up assertion', async () => {
+    authApi.createStepUpChallenge.mockResolvedValueOnce({
+      challengeId: 'chal-passkey-123',
+      action: 'SECRET_REVEAL',
+      supportedFactors: ['PASSWORD', 'WEBAUTHN'],
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+    });
+
+    authApi.getStepUpWebAuthnOptions.mockResolvedValueOnce({
+      challengeId: 'webauthn-chal-xyz',
+      optionsJson: '{"challenge":"test"}',
+    });
+
+    authApi.verifyStepUpWebAuthn.mockResolvedValueOnce({
+      proofToken: 'stup_webauthn_proof_token',
+      action: 'SECRET_REVEAL',
+      factorUsed: 'WEBAUTHN',
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+    });
+
+    render(
+      <StepUpAuthenticationModal
+        isOpen={true}
+        onClose={mockOnClose}
+        action="SECRET_REVEAL"
+        context={testContext}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Passkey')).toBeInTheDocument();
+      expect(screen.getByText('Authenticate with Passkey or Security Key')).toBeInTheDocument();
+    });
+
+    const promptBtn = screen.getByText('Prompt Passkey');
+    fireEvent.click(promptBtn);
+
+    await waitFor(() => {
+      expect(authApi.getStepUpWebAuthnOptions).toHaveBeenCalledWith('chal-passkey-123');
+      expect(navigator.credentials.get).toHaveBeenCalled();
+      expect(authApi.verifyStepUpWebAuthn).toHaveBeenCalledWith({
+        challengeId: 'chal-passkey-123',
+        credentialJson: '{"id":"mock_cred_id"}',
+      });
+      expect(mockOnSuccess).toHaveBeenCalledWith('stup_webauthn_proof_token');
+      expect(mockOnClose).toHaveBeenCalled();
     });
   });
 
@@ -131,8 +198,8 @@ describe('StepUpAuthenticationModal Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Authenticator App')).toBeInTheDocument();
-      expect(screen.getByText('Account Password')).toBeInTheDocument();
+      expect(screen.getByText('Authenticator')).toBeInTheDocument();
+      expect(screen.getByText('Password')).toBeInTheDocument();
       expect(screen.getByText('Recovery Code')).toBeInTheDocument();
     });
 

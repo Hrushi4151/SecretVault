@@ -39,6 +39,17 @@ public interface StepUpAuthenticationService {
     StepUpProofResponse verifyRecoveryCode(String challengeId, UUID userId, String sessionIdentifier, String recoveryCode);
 
     /**
+     * Generates WebAuthn assertion options for an active step-up challenge.
+     */
+    com.secretvault.auth.webauthn.dto.WebAuthnAuthenticationOptionsResponse createWebAuthnStepUpOptions(String challengeId, UUID userId, String sessionIdentifier);
+
+    /**
+     * Verifies a WebAuthn assertion against the step-up challenge.
+     * On success, consumes the challenge and issues a short-lived, context-bound proof token.
+     */
+    StepUpProofResponse verifyWebAuthn(String challengeId, UUID userId, String sessionIdentifier, String credentialJson);
+
+    /**
      * Atomically consumes and validates a step-up proof token for a sensitive operation.
      * Enforces user binding, session binding, action binding, resource-context binding, and active session status.
      *

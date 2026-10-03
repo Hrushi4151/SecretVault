@@ -6,5 +6,6 @@ package com.secretvault.auth.stepup.model;
 public enum StepUpFactor {
     PASSWORD,
     TOTP,
-    RECOVERY_CODE
+    RECOVERY_CODE,
+    WEBAUTHN
 }

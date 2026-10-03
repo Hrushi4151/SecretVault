@@ -64,6 +64,19 @@ All error responses return a standardized, sanitized JSON payload without leakin
 - `POST /api/v1/auth/login` — Authenticate and receive JWT + refresh token.
 - `POST /api/v1/auth/refresh` — Issue fresh access token using valid refresh token.
 - `GET /api/v1/auth/me` — Inspect caller identity and active organizations.
+- `POST /api/v1/auth/webauthn/registration/options` — Start WebAuthn registration ceremony for authenticated user.
+- `POST /api/v1/auth/webauthn/registration/verify` — Verify attestation response and persist public passkey.
+- `POST /api/v1/auth/webauthn/authentication/options` — Start passkey login authentication ceremony.
+- `POST /api/v1/auth/webauthn/authentication/verify` — Verify assertion response, create session, and issue tokens.
+- `GET /api/v1/auth/webauthn/credentials` — List caller's registered passkey metadata (zero private keys or public key blobs).
+- `PATCH /api/v1/auth/webauthn/credentials/{id}` — Rename friendly label for registered passkey.
+- `DELETE /api/v1/auth/webauthn/credentials/{id}` — Revoke passkey with lockout prevention checks.
+- `POST /api/v1/auth/step-up/challenges` — Create short-lived step-up challenge bound to session and action.
+- `POST /api/v1/auth/step-up/challenges/{id}/verify-password` — Verify password for step-up and issue single-use proof.
+- `POST /api/v1/auth/step-up/challenges/{id}/verify-totp` — Verify TOTP code for step-up and issue single-use proof.
+- `POST /api/v1/auth/step-up/challenges/{id}/verify-recovery-code` — Verify recovery code for step-up and issue single-use proof.
+- `POST /api/v1/auth/step-up/challenges/{id}/webauthn/options` — Generate WebAuthn assertion options for step-up.
+- `POST /api/v1/auth/step-up/challenges/{id}/verify-webauthn` — Verify WebAuthn passkey assertion for step-up and issue single-use proof.
 - `GET /api/v1/workspaces` — List workspaces for the authenticated user.
 - `POST /api/v1/workspaces` — Create a new workspace.
 - `GET /api/v1/workspaces/{id}` — Get workspace details.

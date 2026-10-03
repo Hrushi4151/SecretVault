@@ -58,6 +58,8 @@ public class DefaultStepUpAuthenticationService implements StepUpAuthenticationS
     private final AuditService auditService;
     private final PasswordEncoder passwordEncoder;
     private final EffectiveAccessService effectiveAccessService;
+    private final com.secretvault.auth.webauthn.repository.UserWebAuthnCredentialRepository userWebAuthnCredentialRepository;
+    private final com.secretvault.auth.webauthn.service.WebAuthnService webAuthnService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public DefaultStepUpAuthenticationService(
@@ -67,7 +69,9 @@ public class DefaultStepUpAuthenticationService implements StepUpAuthenticationS
             SecurityStateStore securityStateStore,
             AuditService auditService,
             PasswordEncoder passwordEncoder,
-            @Autowired(required = false) EffectiveAccessService effectiveAccessService
+            @Autowired(required = false) EffectiveAccessService effectiveAccessService,
+            com.secretvault.auth.webauthn.repository.UserWebAuthnCredentialRepository userWebAuthnCredentialRepository,
+            @org.springframework.context.annotation.Lazy com.secretvault.auth.webauthn.service.WebAuthnService webAuthnService
     ) {
         this.userRepository = Objects.requireNonNull(userRepository, "UserRepository must not be null");
         this.sessionRepository = Objects.requireNonNull(sessionRepository, "UserSessionRepository must not be null");
@@ -76,6 +80,8 @@ public class DefaultStepUpAuthenticationService implements StepUpAuthenticationS
         this.auditService = Objects.requireNonNull(auditService, "AuditService must not be null");
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "PasswordEncoder must not be null");
         this.effectiveAccessService = effectiveAccessService;
+        this.userWebAuthnCredentialRepository = Objects.requireNonNull(userWebAuthnCredentialRepository, "UserWebAuthnCredentialRepository must not be null");
+        this.webAuthnService = Objects.requireNonNull(webAuthnService, "WebAuthnService must not be null");
     }
 
     @Override
@@ -109,6 +115,9 @@ public class DefaultStepUpAuthenticationService implements StepUpAuthenticationS
         if (mfaService.isMfaEnabled(userId)) {
             supportedFactors.add(StepUpFactor.TOTP);
             supportedFactors.add(StepUpFactor.RECOVERY_CODE);
+        }
+        if (userWebAuthnCredentialRepository.countByUserIdAndRevokedAtIsNull(userId) > 0) {
+            supportedFactors.add(StepUpFactor.WEBAUTHN);
         }
 
         String challengeId = UUID.randomUUID().toString();
@@ -268,6 +277,27 @@ public class DefaultStepUpAuthenticationService implements StepUpAuthenticationS
         }
 
         return issueProof(challenge, userId, sessionIdentifier, StepUpFactor.RECOVERY_CODE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.secretvault.auth.webauthn.dto.WebAuthnAuthenticationOptionsResponse createWebAuthnStepUpOptions(
+            String challengeId,
+            UUID userId,
+            String sessionIdentifier
+    ) {
+        return webAuthnService.startStepUpAssertion(userId, sessionIdentifier, challengeId);
+    }
+
+    @Override
+    @Transactional
+    public StepUpProofResponse verifyWebAuthn(
+            String challengeId,
+            UUID userId,
+            String sessionIdentifier,
+            String credentialJson
+    ) {
+        return webAuthnService.finishStepUpAssertion(userId, sessionIdentifier, challengeId, credentialJson);
     }
 
     @Override

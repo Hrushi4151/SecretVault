@@ -71,7 +71,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/refresh",
                                 "/api/v1/auth/mfa/verify-totp",
                                 "/api/v1/auth/mfa/verify-recovery",
-                                "/api/v1/auth/oidc/token"
+                                "/api/v1/auth/oidc/token",
+                                "/api/v1/auth/webauthn/authentication/**"
                         ).permitAll()
 
                         // All other endpoints require authentication
