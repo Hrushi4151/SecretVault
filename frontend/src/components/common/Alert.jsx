@@ -6,6 +6,7 @@ export const Alert = ({
   variant = 'danger',
   title,
   message,
+  children,
   requestId,
   onDismiss,
   className = '',
@@ -42,7 +43,7 @@ export const Alert = ({
       {current.icon}
       <div className="flex-1 flex flex-col gap-0.5">
         {title && <span className="font-semibold text-white">{title}</span>}
-        <span className="text-white/90">{message}</span>
+        <span className="text-white/90">{message || children}</span>
         {requestId && (
           <span className="text-[10px] font-mono text-[#A26377] mt-1">
             Request ID: {requestId}

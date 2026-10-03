@@ -63,12 +63,14 @@ export const secretApi = {
     );
   },
 
-  reveal: async (workspaceId, projectId, environmentId, secretId, version = null) => {
+  reveal: async (workspaceId, projectId, environmentId, secretId, version = null, stepUpProof = null) => {
     const endpoint = `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/reveal${
       version ? `?version=${version}` : ''
     }`;
+    const headers = stepUpProof ? { 'X-Step-Up-Proof': stepUpProof } : {};
     return apiClient.request(endpoint, {
       method: 'POST',
+      headers,
     });
   },
 

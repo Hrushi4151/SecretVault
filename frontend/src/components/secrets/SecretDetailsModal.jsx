@@ -3,6 +3,7 @@ import { secretApi } from '../../api/secrets';
 import { versionsApi } from '../../api/versions';
 import SecretDiffModal from './SecretDiffModal';
 import SecretRollbackModal from './SecretRollbackModal';
+import { StepUpAuthenticationModal } from '../auth/StepUpAuthenticationModal';
 import {
   X,
   Key,
@@ -51,6 +52,7 @@ export const SecretDetailsModal = ({
   const [revealError, setRevealError] = useState(null);
   const [autoMaskSeconds, setAutoMaskSeconds] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
+  const [isStepUpOpen, setIsStepUpOpen] = useState(false);
 
   // Rotate state
   const [newValue, setNewValue] = useState('');
@@ -117,7 +119,7 @@ export const SecretDetailsModal = ({
     }
   };
 
-  const handleReveal = async (versionNumber = null) => {
+  const handleReveal = async (versionNumber = null, stepUpProof = null) => {
     setIsRevealing(true);
     setRevealError(null);
     try {
@@ -125,14 +127,22 @@ export const SecretDetailsModal = ({
       if (versionNumber) {
         response = await versionsApi.revealHistoricalVersion(workspaceId, projectId, environmentId, secret.id, versionNumber);
       } else {
-        response = await secretApi.reveal(workspaceId, projectId, environmentId, secret.id, null);
+        response = await secretApi.reveal(workspaceId, projectId, environmentId, secret.id, null, stepUpProof);
       }
       const data = response?.data || response;
       setRevealedValue(data.value);
       setRevealedVersion(data.versionNumber);
       setAutoMaskSeconds(20);
     } catch (err) {
-      setRevealError(err.response?.data?.message || err.message || 'Failed to reveal secret. Check your permissions.');
+      if (
+        err.payload?.code === 'STEP_UP_REQUIRED' ||
+        (err.message && err.message.toLowerCase().includes('step-up')) ||
+        (err.status === 403 && err.payload?.code === 'STEP_UP_REQUIRED')
+      ) {
+        setIsStepUpOpen(true);
+      } else {
+        setRevealError(err.payload?.message || err.message || 'Failed to reveal secret. Check your permissions.');
+      }
     } finally {
       setIsRevealing(false);
     }
@@ -712,6 +722,26 @@ export const SecretDetailsModal = ({
             if (onSecretUpdated) {
               onSecretUpdated({ ...secret, currentVersionNumber: newVer.versionNumber });
             }
+          }}
+        />
+      )}
+
+      {/* Step-Up Authentication Modal */}
+      {isStepUpOpen && (
+        <StepUpAuthenticationModal
+          isOpen={isStepUpOpen}
+          onClose={() => setIsStepUpOpen(false)}
+          action="SECRET_REVEAL"
+          context={{
+            workspaceId,
+            projectId,
+            environmentId,
+            secretId: secret?.id,
+          }}
+          actionTitle="Reveal Protected Secret"
+          actionDescription={`Step-up verification is required to reveal secret values in ${environmentName}.`}
+          onSuccess={(proofToken) => {
+            handleReveal(null, proofToken);
           }}
         />
       )}
