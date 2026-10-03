@@ -11,8 +11,8 @@ public final class RedactionHelper {
 
     private static final Pattern BEARER_PATTERN = Pattern.compile("Bearer\\s+[A-Za-z0-9-_=.]+", Pattern.CASE_INSENSITIVE);
     private static final Pattern JWT_PATTERN = Pattern.compile("eyJ[A-Za-z0-9-_]+\\.eyJ[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+");
-    private static final Pattern AUTH_HEADER_PATTERN = Pattern.compile("(?i)(authorization|proxy-authorization|x-auth-token|api-key|secret):\\s*[^\\r\\n]+");
-    private static final Pattern PASSWORD_JSON_PATTERN = Pattern.compile("(?i)\"(password|secret|refreshToken|accessToken|value)\"\\s*:\\s*\"[^\"]*\"");
+    private static final Pattern AUTH_HEADER_PATTERN = Pattern.compile("(?i)(authorization|proxy-authorization|x-auth-token|x-step-up-proof|x-reveal-intent-token|api-key|secret):\\s*[^\\r\\n]+");
+    private static final Pattern PASSWORD_JSON_PATTERN = Pattern.compile("(?i)\"(password|secret|refreshToken|accessToken|value|totpCode|recoveryCode|stepUpProof|token)\"\\s*:\\s*\"[^\"]*\"");
 
     private RedactionHelper() {}
 

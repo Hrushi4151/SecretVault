@@ -16,6 +16,7 @@ build/
 out/
 .vite/
 **/.vite/
+*.tgz
 
 # Environment and Secrets (CRITICAL: NEVER COMMIT SECRETS)
 .env

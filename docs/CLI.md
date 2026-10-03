@@ -23,7 +23,8 @@ For complete Phase 10 documentation, see:
 ## 2. Comprehensive Command Catalog
 
 ### 2.1 Authentication & Configuration
-- `secretvault auth login` — Interactive non-echo login or stdin prompt with server/profile selection.
+- `secretvault auth login` — Interactive non-echo login with MFA challenge (TOTP & Recovery Code) or stdin prompt.
+- `secretvault auth oidc` — Exchange OIDC workload identity token for a short-lived machine session.
 - `secretvault auth logout` — Securely revokes refresh tokens and clears local credentials.
 - `secretvault auth status` — Displays active organization, profile, target server, and token expiration state.
 - `secretvault auth whoami` — Displays authenticated caller identity, permissions status, and workspace.
@@ -37,18 +38,24 @@ For complete Phase 10 documentation, see:
 - `secretvault context get` / `secretvault context set` — Manages hierarchical context bindings.
 - `secretvault dev init` — Bootstraps `.secretvault/project.json` in local directory.
 
-### 2.3 Secret Management & Diffing
+### 2.3 Secret Management, Protection & Diffing
 - `secretvault secret list` — Lists secret keys, versions, and statuses (values strictly masked).
 - `secretvault secret get <KEY>` — Fetches secret metadata.
-- `secretvault secret reveal <KEY>` — Explicitly decrypts secret to stdout (requires confirmation unless `--yes`/`--raw`).
+- `secretvault secret reveal <KEY>` — Protected plaintext secret reveal enforcing `/reveal-policy`, mandatory audit reason (`-r`), Step-Up challenge (`X-Step-Up-Proof`), and single-use intent token (`X-Reveal-Intent-Token`).
 - `secretvault secret create <KEY>` — Creates a new secret version 1 (supports `--stdin`, `--from-file`, `--value-from-env`).
 - `secretvault secret set <KEY>` — Creates or updates secret version.
 - `secretvault secret update <KEY>` — Appends new version with audit reason.
-- `secretvault secret delete <KEY>` — Soft-deletes secret with confirmation prompt.
+- `secretvault secret delete <KEY>` — Soft-deletes secret with confirmation prompt (Step-Up protected).
 - `secretvault secret versions <KEY>` — Immutable version history.
 - `secretvault secret rollback <KEY> --version <V>` — Rolls back secret to historical version as vN+1.
+- `secretvault secret rotate <KEY>` — Triggers standard or emergency secret rotation.
+- `secretvault secret compromise <KEY>` — Marks secret compromised and triggers immediate revocation and rotation.
 
-### 2.4 Runtime In-Memory Injection (`secretvault run`)
+### 2.4 Leases & Dynamic Consumers
+- `secretvault lease list` / `get` / `renew` / `revoke` — Manages dynamic consumer leases.
+- `secretvault consumer list` / `get` / `disable` — Inspects active secret consumer registrations.
+
+### 2.5 Runtime In-Memory Injection (`secretvault run`)
 - **Syntax:** `secretvault run [--secret <KEY>...] -- <command> [args...]`
 - **Example:** `secretvault run -- npm run dev`
 - **Behavior:**
@@ -59,11 +66,11 @@ For complete Phase 10 documentation, see:
   5. Forwards process signals (`SIGINT`, `SIGTERM`) cleanly and propagates exact child exit codes.
   6. On child process termination, memory buffers are wiped.
 
-### 2.5 Safe `.env` Synchronization
+### 2.6 Safe `.env` Synchronization
 - `secretvault env pull` — Safely pulls secrets into stdout or file (with `.gitignore` check and `chmod 600`).
 - `secretvault env push` — Parses `.env` data safely (no shell evaluation) with `--dry-run` diff preview.
 
-### 2.6 Diagnostics & Shell Autocompletion
+### 2.7 Diagnostics & Shell Autocompletion
 - `secretvault doctor` — Runs end-to-end environment, network, latency, and credential health checks.
 - `secretvault version` — Displays CLI and server versions.
 - `secretvault completion <shell>` — Generates completion scripts for `bash`, `zsh`, `fish`, and `powershell`.

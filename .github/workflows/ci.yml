@@ -73,3 +73,79 @@ jobs:
 
       - name: Package Artifact
         run: mvn -f backend/pom.xml package -DskipTests
+
+  cli-build-test:
+    name: CLI Build & Test (Java 21 & Node.js)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'cli/package-lock.json'
+
+      - name: Run CLI Unit & Security Tests
+        run: mvn -f cli/pom.xml clean test
+
+      - name: Build Shaded Executable JAR & Distribution
+        run: |
+          npm --prefix cli run build:java
+          npm --prefix cli run prepack
+
+      - name: Run npm Launcher Tests
+        run: npm --prefix cli test
+
+      - name: Verify CLI Dry-Run Packaging
+        working-directory: cli
+        run: npm pack --dry-run
+
+  sdk-build-test:
+    name: Java SDK Build & Test (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run SDK Tests
+        run: mvn -f sdk/pom.xml clean test
+
+  frontend-build-test:
+    name: Frontend Test & Build (Node.js)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Dependencies
+        run: npm --prefix frontend ci
+
+      - name: Run Frontend Tests
+        run: npm --prefix frontend test -- --maxConcurrency=2
+
+      - name: Build Frontend Production Bundle
+        run: npm --prefix frontend run build
