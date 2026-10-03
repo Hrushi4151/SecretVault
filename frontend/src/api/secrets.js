@@ -63,14 +63,49 @@ export const secretApi = {
     );
   },
 
-  reveal: async (workspaceId, projectId, environmentId, secretId, version = null, stepUpProof = null) => {
-    const endpoint = `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/reveal${
-      version ? `?version=${version}` : ''
-    }`;
+  getRevealPolicy: async (workspaceId, projectId, environmentId, secretId) => {
+    return apiClient.request(
+      `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/reveal-policy`,
+      {
+        method: 'GET',
+      }
+    );
+  },
+
+  createRevealIntent: async (workspaceId, projectId, environmentId, secretId, payload = {}, stepUpProof = null) => {
     const headers = stepUpProof ? { 'X-Step-Up-Proof': stepUpProof } : {};
+    return apiClient.request(
+      `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/reveal-intent`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  reveal: async (workspaceId, projectId, environmentId, secretId, payloadOrVersion = null, stepUpProof = null) => {
+    let body = null;
+    let endpoint = `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/reveal`;
+    const headers = {};
+
+    if (typeof payloadOrVersion === 'object' && payloadOrVersion !== null) {
+      body = JSON.stringify(payloadOrVersion);
+      if (payloadOrVersion.stepUpProof) {
+        headers['X-Step-Up-Proof'] = payloadOrVersion.stepUpProof;
+      }
+    } else if (payloadOrVersion !== null) {
+      endpoint += `?version=${payloadOrVersion}`;
+    }
+
+    if (stepUpProof) {
+      headers['X-Step-Up-Proof'] = stepUpProof;
+    }
+
     return apiClient.request(endpoint, {
       method: 'POST',
       headers,
+      body,
     });
   },
 
@@ -81,5 +116,32 @@ export const secretApi = {
         method: 'DELETE',
       }
     );
+  },
+};
+
+export const secretRevealPolicyApi = {
+  list: async (workspaceId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/secret-reveal-policies`, {
+      method: 'GET',
+    });
+  },
+
+  setPolicy: async (workspaceId, payload) => {
+    return apiClient.request(`/workspaces/${workspaceId}/secret-reveal-policies`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  delete: async (workspaceId, policyId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/secret-reveal-policies/${policyId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  audit: async (workspaceId, page = 0, size = 20) => {
+    return apiClient.request(`/workspaces/${workspaceId}/secret-reveal-audit?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
   },
 };

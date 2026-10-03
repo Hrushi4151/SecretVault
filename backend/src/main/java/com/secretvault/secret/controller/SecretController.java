@@ -6,9 +6,13 @@ import com.secretvault.common.exception.ApiException;
 import com.secretvault.secret.dto.CreateSecretRequest;
 import com.secretvault.secret.dto.SecretMetadataResponse;
 import com.secretvault.secret.dto.SecretRevealResponse;
-import com.secretvault.secret.dto.SecretVersionResponse;
 import com.secretvault.secret.dto.UpdateSecretRequest;
 import com.secretvault.secret.entity.SecretStatus;
+import com.secretvault.secret.reveal.dto.CreateRevealIntentRequest;
+import com.secretvault.secret.reveal.dto.ExecuteRevealRequest;
+import com.secretvault.secret.reveal.dto.SecretRevealIntentResponse;
+import com.secretvault.secret.reveal.model.SecretRevealPolicyEvaluation;
+import com.secretvault.secret.reveal.service.SecretRevealService;
 import com.secretvault.secret.service.SecretService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,9 +51,14 @@ import java.util.UUID;
 public class SecretController {
 
     private final SecretService secretService;
+    private final SecretRevealService secretRevealService;
 
-    public SecretController(SecretService secretService) {
+    public SecretController(
+            SecretService secretService,
+            SecretRevealService secretRevealService
+    ) {
         this.secretService = secretService;
+        this.secretRevealService = secretRevealService;
     }
 
     @GetMapping
@@ -71,8 +80,8 @@ public class SecretController {
     }
 
     @GetMapping("/{secretId}")
-    @Operation(summary = "Get secret metadata by ID")
-    public ResponseEntity<ApiResponse<SecretMetadataResponse>> getSecretById(
+    @Operation(summary = "Get secret metadata (never returns plaintext)")
+    public ResponseEntity<ApiResponse<SecretMetadataResponse>> getSecret(
             @PathVariable UUID workspaceId,
             @PathVariable UUID projectId,
             @PathVariable UUID environmentId,
@@ -81,12 +90,11 @@ public class SecretController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         validateWorkspaceHeader(workspaceId, headerWorkspaceId);
-        SecretMetadataResponse response = secretService.getSecretById(
+        SecretMetadataResponse secret = secretService.getSecretById(
                 workspaceId, projectId, environmentId, secretId, principal.getId()
         );
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(secret));
     }
-
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -153,6 +161,65 @@ public class SecretController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @GetMapping("/{secretId}/reveal-policy")
+    @Operation(summary = "Inspect effective reveal policy and requirements for a target secret")
+    public ResponseEntity<ApiResponse<SecretRevealPolicyEvaluation>> getRevealPolicy(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID environmentId,
+            @PathVariable UUID secretId,
+            @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        validateWorkspaceHeader(workspaceId, headerWorkspaceId);
+        SecretRevealPolicyEvaluation policy = secretRevealService.getRevealPolicy(
+                workspaceId, projectId, environmentId, secretId, principal.getId()
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, private");
+        headers.set(HttpHeaders.PRAGMA, "no-cache");
+        headers.set(HttpHeaders.EXPIRES, "0");
+
+        return ResponseEntity.ok().headers(headers).body(ApiResponse.success(policy));
+    }
+
+    @PostMapping("/{secretId}/reveal-intent")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "secret_reveal_intent",
+            limit = 60,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            message = "Too many reveal intent requests. Please try again later."
+    )
+    @Operation(summary = "Request a short-lived single-use reveal intent token")
+    public ResponseEntity<ApiResponse<SecretRevealIntentResponse>> createRevealIntent(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID projectId,
+            @PathVariable UUID environmentId,
+            @PathVariable UUID secretId,
+            @RequestBody(required = false) CreateRevealIntentRequest request,
+            @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest servletRequest
+    ) {
+        validateWorkspaceHeader(workspaceId, headerWorkspaceId);
+        String requestId = getRequestId();
+        String ipAddress = servletRequest.getRemoteAddr();
+
+        SecretRevealIntentResponse response = secretRevealService.createRevealIntent(
+                workspaceId, projectId, environmentId, secretId, request,
+                principal.getId(), principal.getSessionIdentifier(), requestId, ipAddress
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, private");
+        headers.set(HttpHeaders.PRAGMA, "no-cache");
+        headers.set(HttpHeaders.EXPIRES, "0");
+
+        return ResponseEntity.ok().headers(headers).body(ApiResponse.success(response));
+    }
+
     @PostMapping("/{secretId}/reveal")
     @com.secretvault.common.ratelimit.RateLimited(
             category = "secret_reveal",
@@ -169,7 +236,9 @@ public class SecretController {
             @PathVariable UUID secretId,
             @RequestParam(required = false) Integer version,
             @RequestHeader(value = "X-Workspace-ID", required = false) UUID headerWorkspaceId,
-            @RequestHeader(value = "X-Step-Up-Proof", required = false) String stepUpProof,
+            @RequestHeader(value = "X-Step-Up-Proof", required = false) String stepUpProofHeader,
+            @RequestHeader(value = "X-Reveal-Intent-Token", required = false) String intentTokenHeader,
+            @RequestBody(required = false) ExecuteRevealRequest requestBody,
             @AuthenticationPrincipal UserPrincipal principal,
             HttpServletRequest servletRequest
     ) {
@@ -177,9 +246,27 @@ public class SecretController {
         String requestId = getRequestId();
         String ipAddress = servletRequest.getRemoteAddr();
 
-        SecretRevealResponse response = secretService.revealSecret(
-                workspaceId, projectId, environmentId, secretId, version, principal.getId(),
-                principal.getSessionIdentifier(), stepUpProof, requestId, ipAddress
+        String intentToken = (requestBody != null && StringUtils.hasText(requestBody.intentToken()))
+                ? requestBody.intentToken()
+                : intentTokenHeader;
+
+        String stepUpProof = (requestBody != null && StringUtils.hasText(requestBody.stepUpProof()))
+                ? requestBody.stepUpProof()
+                : stepUpProofHeader;
+
+        String reason = (requestBody != null && StringUtils.hasText(requestBody.reason()))
+                ? requestBody.reason()
+                : null;
+
+        Integer targetVersion = (requestBody != null && requestBody.versionNumber() != null)
+                ? requestBody.versionNumber()
+                : version;
+
+        ExecuteRevealRequest req = new ExecuteRevealRequest(intentToken, targetVersion, reason, stepUpProof);
+
+        SecretRevealResponse response = secretRevealService.executeReveal(
+                workspaceId, projectId, environmentId, secretId, req,
+                principal.getId(), principal.getSessionIdentifier(), requestId, ipAddress
         );
 
         HttpHeaders headers = new HttpHeaders();
