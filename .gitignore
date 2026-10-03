@@ -72,8 +72,9 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-env/
+/env/
 venv/
 .venv/
 pip-log.txt
 .pytest_cache/
+!**/src/**/env/

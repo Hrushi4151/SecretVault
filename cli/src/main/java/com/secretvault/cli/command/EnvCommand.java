@@ -16,6 +16,7 @@ import java.util.UUID;
 @Command(
         name = "env",
         description = "Pull and push .env key-value pairs safely with diff previews and gitignore protection",
+        mixinStandardHelpOptions = true,
         subcommands = {
                 EnvCommand.PullCommand.class,
                 EnvCommand.PushCommand.class
@@ -29,7 +30,7 @@ public class EnvCommand extends BaseCommand {
         return 0;
     }
 
-    @Command(name = "pull", description = "Pull environment secrets into stdout or safely to a local .env file")
+    @Command(name = "pull", description = "Pull environment secrets into stdout or safely to a local .env file", mixinStandardHelpOptions = true)
     public static class PullCommand extends BaseCommand {
 
         @Option(names = {"--output", "-o"}, description = "Target file path to write (e.g. .env, .env.local)")
@@ -71,7 +72,7 @@ public class EnvCommand extends BaseCommand {
         }
     }
 
-    @Command(name = "push", description = "Push local .env key-value pairs to SecretVault environment")
+    @Command(name = "push", description = "Push local .env key-value pairs to SecretVault environment", mixinStandardHelpOptions = true)
     public static class PushCommand extends BaseCommand {
 
         @Option(names = {"--file", "-f"}, defaultValue = ".env", description = "Path to local .env file (default: .env)")

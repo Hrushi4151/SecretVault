@@ -29,4 +29,11 @@ const doctorResult = spawnSync('node', [binScript, 'doctor'], { encoding: 'utf8'
 assert(doctorResult.stdout.includes('SecretVault Doctor') || doctorResult.stdout.includes('Diagnostic'), 'Doctor must execute');
 console.log('✔ Test 3 passed: secretvault doctor runs diagnostic suite');
 
+// 4. Test Env Command
+const envHelpResult = spawnSync('node', [binScript, 'env', '--help'], { encoding: 'utf8' });
+assert.strictEqual(envHelpResult.status, 0, `Expected exit code 0 for env --help, got: ${envHelpResult.status}`);
+assert(envHelpResult.stdout.includes('pull'), 'Output must list pull subcommand');
+assert(envHelpResult.stdout.includes('push'), 'Output must list push subcommand');
+console.log('✔ Test 4 passed: secretvault env --help executes via launcher');
+
 console.log('\nAll launcher tests PASSED successfully!');

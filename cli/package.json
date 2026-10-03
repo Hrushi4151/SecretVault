@@ -1,5 +1,5 @@
 {
-  "name": "@secretvault/cli",
+  "name": "@hrushikeshmore/secretvault-cli",
   "version": "1.0.0",
   "description": "Official CLI for SecretVault — secure multi-tenant secret management, runtime injection, context management, and OIDC workload authentication",
   "main": "index.js",
