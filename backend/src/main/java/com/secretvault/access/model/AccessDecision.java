@@ -16,6 +16,10 @@ public record AccessDecision(
         String deniedReason
 ) {
 
+    public static AccessDecision allow(String reason) {
+        return new AccessDecision(true, null, null, null, null, reason, null);
+    }
+
     public static AccessDecision allow(
             AccessPermission permission,
             AccessScope scope,

@@ -25,7 +25,11 @@ import {
   Sparkles,
   MailCheck,
   Bot,
+  Activity,
+  Zap,
+  Webhook,
 } from 'lucide-react';
+import { NotificationCenterModal } from '../notification/NotificationCenterModal';
 
 export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => {
   const { user, activeWorkspace, logout, refreshWorkspaces, switchWorkspace } = useAuth();
@@ -34,6 +38,7 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
   const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
 
   const fetchInvitationsCount = useCallback(async () => {
     if (!user) return;
@@ -70,6 +75,10 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     { id: 'machine-identities', label: 'Machine & OIDC', icon: <Bot className="w-4 h-4 text-[#F43F5E]" />, badge: 'Phase 9' },
     { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Phase 7' },
     { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 8' },
+    { id: 'events', label: 'Event Center', icon: <Activity className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 13' },
+    { id: 'automation', label: 'Automation', icon: <Zap className="w-4 h-4 text-[#F59E0B]" />, badge: 'Phase 13' },
+    { id: 'webhooks', label: 'Webhooks', icon: <Webhook className="w-4 h-4 text-[#10B981]" />, badge: 'Phase 13' },
+    { id: 'incidents', label: 'SecOps Incidents', icon: <ShieldAlert className="w-4 h-4 text-[#EF4444]" />, badge: 'Phase 13' },
   ];
 
   const securityNavItems = [
@@ -370,9 +379,9 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
 
             <button
               type="button"
-              onClick={() => setIsInvitationsModalOpen(true)}
+              onClick={() => setIsNotificationsModalOpen(true)}
               className="relative p-2 rounded-xl text-[#F4B5C8] hover:bg-[#30000F] hover:text-white transition-all border border-transparent hover:border-[#FFB4C8]/20 cursor-pointer"
-              title="Notifications & Invitations"
+              title="Notifications Center"
             >
               <Bell className="w-5 h-5" />
               {pendingInvitationsCount > 0 && (
@@ -482,6 +491,11 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
             switchWorkspace(inv.workspaceId);
           }
         }}
+      />
+
+      <NotificationCenterModal
+        isOpen={isNotificationsModalOpen}
+        onClose={() => setIsNotificationsModalOpen(false)}
       />
     </div>
   );

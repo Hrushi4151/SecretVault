@@ -6,5 +6,6 @@ package com.secretvault.secret.entity;
 public enum SecretStatus {
     ACTIVE,
     DISABLED,
-    DELETED
+    DELETED,
+    COMPROMISED
 }

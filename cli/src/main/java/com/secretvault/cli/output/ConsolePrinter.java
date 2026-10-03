@@ -86,6 +86,18 @@ public class ConsolePrinter {
         out.println(text);
     }
 
+    public void bold(String message) {
+        if (!quiet) {
+            out.println(color(message, BOLD));
+        }
+    }
+
+    public void item(String label, String value) {
+        if (!quiet) {
+            out.println(String.format("  %-22s: %s", color(label, BOLD), value));
+        }
+    }
+
     public void printJson(Object object) {
         try {
             out.println(objectMapper.writeValueAsString(object));

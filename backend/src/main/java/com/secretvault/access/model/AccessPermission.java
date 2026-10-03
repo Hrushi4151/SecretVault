@@ -176,7 +176,29 @@ public enum AccessPermission {
     CONSUMER_MANAGE(
             "consumer.manage",
             "Register, heartbeat, and govern runtime secret consumers"
+    ),
+
+    // Phase 13: Automation & Webhook Governance
+    AUTOMATION_VIEW(
+            "automation.view",
+            "View automation policies, approvals, and execution logs"
+    ),
+
+    AUTOMATION_MANAGE(
+            "automation.manage",
+            "Create, update, delete, and configure automation policies and approvals"
+    ),
+
+    WEBHOOK_VIEW(
+            "webhook.view",
+            "View webhook endpoints and delivery history"
+    ),
+
+    WEBHOOK_MANAGE(
+            "webhook.manage",
+            "Create, update, delete, test, and replay webhook endpoints and deliveries"
     );
+
 
     private final String code;
     private final String description;

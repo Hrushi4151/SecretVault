@@ -12,6 +12,10 @@ import { MachineIdentitiesView } from './components/machine/MachineIdentitiesVie
 import { IntegrationsView } from './components/integrations/IntegrationsView';
 import { SyncCenterView } from './components/sync/SyncCenterView';
 import { RotationCenterView } from './components/rotation/RotationCenterView';
+import { EventCenterView } from './components/events/EventCenterView';
+import { AutomationCenterView } from './components/automation/AutomationCenterView';
+import { WebhookCenterView } from './components/webhook/WebhookCenterView';
+import { SecurityOperationsView } from './components/incident/SecurityOperationsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { Shield, Loader2 } from 'lucide-react';
 
@@ -107,6 +111,14 @@ const MainRouter = () => {
         <IntegrationsView />
       ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
         <SyncCenterView />
+      ) : currentTab === 'events' ? (
+        <EventCenterView />
+      ) : currentTab === 'automation' ? (
+        <AutomationCenterView />
+      ) : currentTab === 'webhooks' ? (
+        <WebhookCenterView />
+      ) : currentTab === 'incidents' ? (
+        <SecurityOperationsView />
       ) : currentTab === 'settings' ? (
         <SettingsView
           initialSection={settingsSection}

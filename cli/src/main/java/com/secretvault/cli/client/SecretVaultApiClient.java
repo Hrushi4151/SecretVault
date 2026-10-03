@@ -8,6 +8,7 @@ import com.secretvault.cli.client.dto.AuthDtos;
 import com.secretvault.cli.client.dto.EnvironmentDto;
 import com.secretvault.cli.client.dto.HealthDto;
 import com.secretvault.cli.client.dto.ProjectDto;
+import com.secretvault.cli.client.dto.Phase13CliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos.*;
 import com.secretvault.cli.client.dto.SecretDtos;
@@ -372,6 +373,23 @@ public class SecretVaultApiClient {
         }, typeRef);
     }
 
+    private <T> T put(String path, Object bodyObj, TypeReference<ApiEnvelope<T>> typeRef, UUID workspaceId) {
+        return executeWithRetry(() -> {
+            String bodyJson = bodyObj != null ? objectMapper.writeValueAsString(bodyObj) : "";
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .timeout(timeout)
+                    .header("User-Agent", CLIENT_VERSION)
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .header("X-Correlation-ID", UUID.randomUUID().toString())
+                    .PUT(HttpRequest.BodyPublishers.ofString(bodyJson));
+
+            attachAuthAndWorkspace(builder, workspaceId);
+            return builder.build();
+        }, typeRef);
+    }
+
     private void delete(String path, UUID workspaceId) {
         executeWithRetry(() -> {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -531,6 +549,191 @@ public class SecretVaultApiClient {
         String path = String.format("/api/v1/workspaces/%s/consumers/%s", workspaceId, consumerId);
         delete(path, workspaceId);
         return getConsumer(workspaceId, consumerId);
+    }
+
+    // ==========================================
+    // Phase 13: Domain Events & Replays
+    // ==========================================
+
+    public List<Phase13CliDtos.OutboxEventDto> listEvents(UUID workspaceId, String eventType, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/events?size=%d", workspaceId, limit);
+        if (eventType != null && !eventType.isBlank()) {
+            path += "&eventType=" + URLEncoder.encode(eventType, StandardCharsets.UTF_8);
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.OutboxEventDto>>() {});
+    }
+
+    public Phase13CliDtos.OutboxEventDto getEvent(UUID workspaceId, UUID eventId) {
+        String path = String.format("/api/v1/workspaces/%s/events/%s", workspaceId, eventId);
+        return get(path, new TypeReference<ApiEnvelope<Phase13CliDtos.OutboxEventDto>>() {}, workspaceId);
+    }
+
+    public Phase13CliDtos.EventReplayDto requestEventReplay(UUID workspaceId, Phase13CliDtos.CreateReplayRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/event-replays", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.EventReplayDto>>() {}, true, workspaceId);
+    }
+
+    public List<Phase13CliDtos.EventReplayDto> listEventReplays(UUID workspaceId, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/event-replays?size=%d", workspaceId, limit);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.EventReplayDto>>() {});
+    }
+
+    // ==========================================
+    // Phase 13: Security Automation & Approvals
+    // ==========================================
+
+    public List<Phase13CliDtos.AutomationPolicyDto> listAutomationPolicies(UUID workspaceId, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies?size=%d", workspaceId, limit);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.AutomationPolicyDto>>() {});
+    }
+
+    public Phase13CliDtos.AutomationPolicyDto getAutomationPolicy(UUID workspaceId, UUID policyId) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies/%s", workspaceId, policyId);
+        return get(path, new TypeReference<ApiEnvelope<Phase13CliDtos.AutomationPolicyDto>>() {}, workspaceId);
+    }
+
+    public Phase13CliDtos.AutomationPolicyDto createAutomationPolicy(UUID workspaceId, Phase13CliDtos.CreateAutomationPolicyRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.AutomationPolicyDto>>() {}, true, workspaceId);
+    }
+
+    public void deleteAutomationPolicy(UUID workspaceId, UUID policyId) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies/%s", workspaceId, policyId);
+        delete(path, workspaceId);
+    }
+
+    public Phase13CliDtos.AutomationPolicyDto enableAutomationPolicy(UUID workspaceId, UUID policyId) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies/%s/enable", workspaceId, policyId);
+        return post(path, null, new TypeReference<ApiEnvelope<Phase13CliDtos.AutomationPolicyDto>>() {}, true, workspaceId);
+    }
+
+    public Phase13CliDtos.AutomationPolicyDto disableAutomationPolicy(UUID workspaceId, UUID policyId) {
+        String path = String.format("/api/v1/workspaces/%s/automation-policies/%s/disable", workspaceId, policyId);
+        return post(path, null, new TypeReference<ApiEnvelope<Phase13CliDtos.AutomationPolicyDto>>() {}, true, workspaceId);
+    }
+
+    public List<Phase13CliDtos.AutomationApprovalDto> listAutomationApprovals(UUID workspaceId, String status, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/automation-approvals?size=%d", workspaceId, limit);
+        if (status != null && !status.isBlank()) {
+            path += "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.AutomationApprovalDto>>() {});
+    }
+
+    public Phase13CliDtos.AutomationApprovalDto decideAutomationApproval(UUID workspaceId, UUID approvalId, boolean approve, String rejectionReason) {
+        String path = String.format("/api/v1/workspaces/%s/automation-approvals/%s/decide", workspaceId, approvalId);
+        Phase13CliDtos.DecideApprovalRequest req = new Phase13CliDtos.DecideApprovalRequest(approve, rejectionReason);
+        return post(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.AutomationApprovalDto>>() {}, true, workspaceId);
+    }
+
+    public List<Phase13CliDtos.AutomationExecutionDto> listAutomationExecutions(UUID workspaceId, UUID policyId, String status, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/automation-executions?size=%d", workspaceId, limit);
+        if (policyId != null) {
+            path += "&policyId=" + policyId;
+        }
+        if (status != null && !status.isBlank()) {
+            path += "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.AutomationExecutionDto>>() {});
+    }
+
+    // ==========================================
+    // Phase 13: Webhook Platform
+    // ==========================================
+
+    public List<Phase13CliDtos.WebhookEndpointDto> listWebhooks(UUID workspaceId, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/webhooks?size=%d", workspaceId, limit);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.WebhookEndpointDto>>() {});
+    }
+
+    public Phase13CliDtos.WebhookEndpointDto getWebhook(UUID workspaceId, UUID webhookId) {
+        String path = String.format("/api/v1/workspaces/%s/webhooks/%s", workspaceId, webhookId);
+        return get(path, new TypeReference<ApiEnvelope<Phase13CliDtos.WebhookEndpointDto>>() {}, workspaceId);
+    }
+
+    public Phase13CliDtos.WebhookEndpointDto createWebhook(UUID workspaceId, Phase13CliDtos.CreateWebhookRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/webhooks", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.WebhookEndpointDto>>() {}, true, workspaceId);
+    }
+
+    public void deleteWebhook(UUID workspaceId, UUID webhookId) {
+        String path = String.format("/api/v1/workspaces/%s/webhooks/%s", workspaceId, webhookId);
+        delete(path, workspaceId);
+    }
+
+    public List<Phase13CliDtos.WebhookDeliveryDto> listWebhookDeliveries(UUID workspaceId, UUID webhookId, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/webhook-deliveries?size=%d", workspaceId, limit);
+        if (webhookId != null) {
+            path += "&webhookId=" + webhookId;
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.WebhookDeliveryDto>>() {});
+    }
+
+    public Phase13CliDtos.WebhookDeliveryDto replayWebhookDelivery(UUID workspaceId, UUID deliveryId) {
+        String path = String.format("/api/v1/workspaces/%s/webhook-deliveries/%s/replay", workspaceId, deliveryId);
+        return post(path, null, new TypeReference<ApiEnvelope<Phase13CliDtos.WebhookDeliveryDto>>() {}, true, workspaceId);
+    }
+
+    // ==========================================
+    // Phase 13: Incident Operations
+    // ==========================================
+
+    public List<Phase13CliDtos.SecurityIncidentDto> listIncidents(UUID workspaceId, String status, String severity, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/incidents?size=%d", workspaceId, limit);
+        if (status != null && !status.isBlank()) {
+            path += "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+        }
+        if (severity != null && !severity.isBlank()) {
+            path += "&severity=" + URLEncoder.encode(severity, StandardCharsets.UTF_8);
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.SecurityIncidentDto>>() {});
+    }
+
+    public Phase13CliDtos.SecurityIncidentDto getIncident(UUID workspaceId, UUID incidentId) {
+        String path = String.format("/api/v1/workspaces/%s/incidents/%s", workspaceId, incidentId);
+        return get(path, new TypeReference<ApiEnvelope<Phase13CliDtos.SecurityIncidentDto>>() {}, workspaceId);
+    }
+
+    public Phase13CliDtos.SecurityIncidentDto createIncident(UUID workspaceId, Phase13CliDtos.CreateIncidentRequest req) {
+        String path = String.format("/api/v1/workspaces/%s/incidents", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.SecurityIncidentDto>>() {}, true, workspaceId);
+    }
+
+    public Phase13CliDtos.SecurityIncidentDto updateIncidentStatus(UUID workspaceId, UUID incidentId, String status, String resolutionSummary) {
+        String path = String.format("/api/v1/workspaces/%s/incidents/%s/status", workspaceId, incidentId);
+        Phase13CliDtos.UpdateIncidentStatusRequest req = new Phase13CliDtos.UpdateIncidentStatusRequest(status, resolutionSummary);
+        return put(path, req, new TypeReference<ApiEnvelope<Phase13CliDtos.SecurityIncidentDto>>() {}, workspaceId);
+    }
+
+    // ==========================================
+    // Phase 13: Notification Operations
+    // ==========================================
+
+    public List<Phase13CliDtos.NotificationDto> listNotifications(UUID workspaceId, String status, int limit) {
+        String path = String.format("/api/v1/workspaces/%s/notifications?size=%d", workspaceId, limit);
+        if (status != null && !status.isBlank()) {
+            path += "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+        }
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<Phase13CliDtos.NotificationDto>>() {});
+    }
+
+    public Phase13CliDtos.NotificationDto markNotificationRead(UUID workspaceId, UUID notificationId) {
+        String path = String.format("/api/v1/workspaces/%s/notifications/%s/read", workspaceId, notificationId);
+        return post(path, null, new TypeReference<ApiEnvelope<Phase13CliDtos.NotificationDto>>() {}, true, workspaceId);
+    }
+
+    public void markAllNotificationsRead(UUID workspaceId) {
+        String path = String.format("/api/v1/workspaces/%s/notifications/read-all", workspaceId);
+        post(path, null, new TypeReference<ApiEnvelope<Void>>() {}, true, workspaceId);
     }
 
     private <T> List<T> parsePageContent(com.fasterxml.jackson.databind.JsonNode node, TypeReference<List<T>> typeRef) {
