@@ -82,7 +82,7 @@ public class RotationPolicy {
     @Column(name = "secret_type", nullable = false, length = 32)
     private SecretType secretType = SecretType.PASSWORD;
 
-    @Column(name = "secret_generator_config", columnDefinition = "TEXT")
+    @Column(name = "secret_generator_config", columnDefinition = "jsonb")
     private String secretGeneratorConfig;
 
     @Column(name = "provider_id")

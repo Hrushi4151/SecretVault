@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS repository_security_policies (
     live_validation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     fail_ci_severity VARCHAR(32) NOT NULL DEFAULT 'HIGH', -- 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'
     max_history_depth INTEGER NOT NULL DEFAULT 1000,
+    max_file_size_bytes BIGINT NOT NULL DEFAULT 5242880,
     excluded_paths_json TEXT,
     allowed_detectors_json TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -71,6 +72,7 @@ CREATE TABLE IF NOT EXISTS repository_scans (
     idempotency_key VARCHAR(128),
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
+    triggered_by UUID,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -93,6 +95,7 @@ CREATE TABLE IF NOT EXISTS secret_findings (
     visibility VARCHAR(32) NOT NULL DEFAULT 'PRIVATE',
     branch VARCHAR(128),
     commit_sha VARCHAR(64),
+    author VARCHAR(255),
     file_path VARCHAR(1024) NOT NULL,
     line_number INTEGER,
     column_number INTEGER,
@@ -127,6 +130,8 @@ CREATE TABLE IF NOT EXISTS secret_finding_occurrences (
     line_number INTEGER,
     column_number INTEGER,
     detector VARCHAR(64) NOT NULL,
+    scan_id UUID,
+    fingerprint VARCHAR(128),
     first_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -145,6 +150,7 @@ CREATE TABLE IF NOT EXISTS finding_allowlists (
     reason TEXT NOT NULL,
     created_by UUID,
     expires_at TIMESTAMP WITH TIME ZONE,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -162,8 +168,9 @@ CREATE TABLE IF NOT EXISTS finding_remediation_jobs (
     actor_id UUID,
     details_json TEXT,
     error_message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP WITH TIME ZONE
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_remediation_ws ON finding_remediation_jobs(workspace_id, status);

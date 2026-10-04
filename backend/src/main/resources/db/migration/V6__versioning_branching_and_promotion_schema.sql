@@ -8,6 +8,7 @@ ALTER TABLE secret_versions ADD COLUMN IF NOT EXISTS source_version_id UUID REFE
 ALTER TABLE secret_versions ADD COLUMN IF NOT EXISTS source_secret_id UUID REFERENCES secrets(id) ON DELETE SET NULL;
 ALTER TABLE secret_versions ADD COLUMN IF NOT EXISTS source_environment_id UUID REFERENCES environments(id) ON DELETE SET NULL;
 ALTER TABLE secret_versions ADD COLUMN IF NOT EXISTS branch_id UUID;
+ALTER TABLE secret_versions ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(128);
 
 CREATE INDEX IF NOT EXISTS idx_secret_versions_type ON secret_versions(version_type);
 CREATE INDEX IF NOT EXISTS idx_secret_versions_source_ver ON secret_versions(source_version_id);

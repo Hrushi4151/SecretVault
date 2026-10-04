@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS rotation_validations (
     latency_ms BIGINT,
     error_message TEXT,
     details JSONB,
+    validated_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
