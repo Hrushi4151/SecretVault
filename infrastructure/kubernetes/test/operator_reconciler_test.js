@@ -249,14 +249,16 @@ async function runAsyncTest(name, fn) {
     assert.strictEqual(externalResourceRequiresCleanup, false);
   });
 
-  // Scenario 27: No unnecessary cluster-wide RBAC
-  runTest('27. RBAC permits only secretvault.io CRDs, events, and coordination leases', () => {
+  // Scenario 27: Least-privilege RBAC configuration
+  runTest('27. RBAC permits scoped secretvault.io CRDs, core/v1 secrets, apps/v1, events, and coordination leases', () => {
     const roleYaml = fs.readFileSync(path.join(__dirname, '..', 'config', 'rbac', 'role.yaml'), 'utf8');
     assert.ok(roleYaml.includes('secretvault.io'));
     assert.ok(roleYaml.includes('secretvaultsecrets'));
     assert.ok(roleYaml.includes('secretvaultsyncs'));
+    assert.ok(roleYaml.includes('secrets'));
+    assert.ok(roleYaml.includes('deployments'));
     assert.ok(!roleYaml.includes('cluster-admin'));
-    assert.ok(!roleYaml.includes('resources:\n      - secrets')); // No v1/Secret permissions in 13.3
+    assert.ok(!roleYaml.includes('verbs:\n      - "*"\n')); // No wildcard admin verbs
   });
 
   // Scenario 28: Malformed CRD safely rejected

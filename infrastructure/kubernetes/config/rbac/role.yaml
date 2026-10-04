@@ -30,6 +30,32 @@ rules:
       - get
       - patch
       - update
+  # Kubernetes core Secret synchronization permissions (Phase 13.4)
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  # Workload rolling restart permissions on secret rotation (apps/v1)
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
   # Event emission permissions
   - apiGroups:
       - ""
@@ -38,3 +64,16 @@ rules:
     verbs:
       - create
       - patch
+  # Leader election coordination lock
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch

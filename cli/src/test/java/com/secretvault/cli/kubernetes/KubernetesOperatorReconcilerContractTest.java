@@ -36,21 +36,22 @@ class KubernetesOperatorReconcilerContractTest {
     }
 
     @Test
-    @DisplayName("Verify RBAC least-privilege security invariants in Phase 13.3")
+    @DisplayName("Verify RBAC least-privilege security invariants in Phase 13.4")
     void testRbacLeastPrivilege() throws Exception {
         Path roleFile = K8S_BASE.resolve(Path.of("config", "rbac", "role.yaml"));
         String roleContent = Files.readString(roleFile);
 
-        // RBAC must cover secretvault.io and events
+        // RBAC must cover secretvault.io, core secrets, apps, and events
         assertTrue(roleContent.contains("secretvault.io"), "Role must contain secretvault.io apiGroup");
         assertTrue(roleContent.contains("secretvaultsecrets"), "Role must permit secretvaultsecrets");
         assertTrue(roleContent.contains("secretvaultsyncs"), "Role must permit secretvaultsyncs");
+        assertTrue(roleContent.contains("secrets"), "Role must permit core/v1 secret delivery");
+        assertTrue(roleContent.contains("deployments"), "Role must permit apps/v1 deployments restart");
         assertTrue(roleContent.contains("events"), "Role must permit event creation");
 
-        // RBAC must NOT contain cluster-admin or broad secret permissions in 13.3
+        // RBAC must NOT contain cluster-admin or wildcard verbs
         assertFalse(roleContent.contains("cluster-admin"), "Role must not grant cluster-admin");
-        assertFalse(roleContent.contains("resources:\n      - secrets"),
-                "Role must not grant core/v1 secret access in Phase 13.3 (deferred to 13.4)");
+        assertFalse(roleContent.contains("verbs:\n      - \"*\""), "Role must not contain wildcard verbs");
     }
 
     @Test

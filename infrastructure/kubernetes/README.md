@@ -1,26 +1,58 @@
-# SecretVault — Kubernetes CustomResourceDefinitions (CRDs) & Resource Contracts
+# SecretVault — Kubernetes CustomResourceDefinitions (CRDs) & Operator Architecture
 
 ## 1. Overview & Architectural Role
 
-This directory contains the official Kubernetes Custom Resource Definitions (CRDs) and Go API specifications (`secretvault.io/v1alpha1`) for the **SecretVault Kubernetes Integration**.
+This directory contains the official Kubernetes Custom Resource Definitions (CRDs), Go API specifications (`secretvault.io/v1alpha1`), and Controller-Runtime Operator for the **SecretVault Kubernetes Integration**.
 
-These resources establish the declarative desired-state contract between Kubernetes clusters and the authoritative SecretVault DevSecOps Secret Management Control Plane.
+These components establish a declarative desired-state synchronization and lifecycle management engine between Kubernetes clusters and the authoritative SecretVault DevSecOps Secret Management Control Plane.
 
-> [!IMPORTANT]
-> **CRDs Represent Desired State Only:**
-> These CRDs define location references, filtering rules, lease configurations, and synchronization policies. They **NEVER** contain plaintext secret values. Actual reconciliation, OIDC workload identity authentication, and secret decryption are executed by the SecretVault Kubernetes Operator in future Phase 13 milestones.
+```
++-----------------------------------------------------------------------------------+
+|                            SecretVault Control Plane                              |
+|   (Authoritative RBAC, Tenant Scopes, Secret Storage, Leases, Rotation, Audit)    |
++-----------------------------------------------------------------------------------+
+                                         ▲
+                                         │ TLS 1.2+ (HTTPS)
+                                         │ Machine Session Auth (sv_machine_...)
+                                         ▼
++-----------------------------------------------------------------------------------+
+|                        SecretVault Kubernetes Operator                            |
+|                                                                                   |
+|  +-------------------------------------+  +------------------------------------+  |
+|  |    SecretVaultSecretReconciler      |  |     SecretVaultSyncReconciler      |  |
+|  |                                     |  |                                    |  |
+|  | - Metadata-First Version Check      |  | - Bulk Scope Secret Listing        |  |
+|  | - Target v1/Secret Sync             |  | - Include/Exclude/Tag Filters      |  |
+|  | - CreationPolicy: Owner/Merge/Orphan|  | - Drift Detection & Remediation    |  |
+|  | - Ephemeral Lease Lifecycle         |  | - Rolling Workload Restart         |  |
+|  | - Immediate Plaintext Scrubbing     |  | - Restart Loop Prevention          |  |
+|  +-------------------------------------+  +------------------------------------+  |
++-----------------------------------------------------------------------------------+
+                                         │
+                                         ▼ Kubernetes API Server
++-----------------------------------------------------------------------------------+
+|                              Kubernetes Namespace                                 |
+|                                                                                   |
+|  [v1/Secret]                    [apps/v1 Deployment / StatefulSet / DaemonSet]   |
+|  - Encrypted in etcd via KMS    - Pod Template Annotation: secretvault.io/revision|
+|  - Preserved unrelated keys     - Zero plaintext in workload annotations          |
++-----------------------------------------------------------------------------------+
+```
 
 ---
 
-## 2. API Group & Versioning
+## 2. Critical Security Model: Native Kubernetes Secrets
 
-- **API Group:** `secretvault.io`
-- **API Version:** `v1alpha1`
-- **Scope:** `Namespaced`
-- **Go Package:** `github.com/secretvault/operator/api/v1alpha1`
-
-### Why `v1alpha1`?
-Initial declarative contracts are established under `v1alpha1` to allow ecosystem feedback on reconciliation semantics, rotation policies, and workload identity bindings before graduating to `v1beta1` and `v1`.
+> [!WARNING]
+> ### Honest Security Notice: Native Kubernetes Secret Storage
+> Native Kubernetes `v1/Secret` synchronization persists base64-encoded secret payloads in Kubernetes `etcd` storage.
+>
+> **Native Kubernetes Secret synchronization is NOT equivalent to zero-plaintext-at-rest storage.**
+>
+> To achieve defense-in-depth in production when using native Kubernetes Secrets:
+> 1. **Kubernetes KMS / Encryption-at-Rest:** The Kubernetes cluster control plane **MUST** have etcd encryption-at-rest configured with a hardware security module (HSM) or Cloud KMS provider (e.g. AWS KMS, GCP KMS, Azure Key Vault).
+> 2. **Least-Privilege RBAC:** Access to `v1/Secret` objects in target namespaces must be strictly restricted to authorized pods via dedicated `ServiceAccount` tokens.
+> 3. **Memory Safety & Zero Leakage:** The SecretVault operator only holds plaintext in transient memory buffers during the exact instant of transmission and releases references immediately. Plaintext values are **NEVER** written to disk, CRD status, CRD annotations, labels, logs, events, or metrics.
 
 ---
 
@@ -28,243 +60,117 @@ Initial declarative contracts are established under `v1alpha1` to allow ecosyste
 
 ### A. `SecretVaultSecret` (`secretvaultsecrets.secretvault.io`)
 - **Short Name:** `svs`
-- **Purpose:** Represents a desired reference to a single, specific secret managed in SecretVault.
-- **Spec Highlights:**
+- **Purpose:** Synchronizes a single secret reference into a destination Kubernetes `v1/Secret` and optionally manages runtime ephemeral leases.
+- **Specification:**
   - `workspace`: Target SecretVault Workspace slug or UUID (Required).
   - `project`: Target SecretVault Project slug or UUID (Required).
   - `environment`: Target Environment tier (`development`, `staging`, `production`) (Required).
-  - `secretName`: Secret key name in SecretVault (e.g., `DB_PASSWORD`, `STRIPE_API_KEY`) (Required).
+  - `secretName`: Secret key name in SecretVault (Required).
   - `version`: Optional pinned integer version (e.g. `3`).
   - `versionPolicy`: Version tracking policy (`LATEST` or `PINNED`, default: `LATEST`).
-  - `auth`: Optional OIDC workload identity references (`serviceAccountRef`, `machineIdentity`, `providerId`).
-  - `target`: Destination Kubernetes Secret name and key (`creationPolicy: Owner`).
-  - `refreshInterval`: Version check cadence (e.g., `1h`, `30m`).
-  - `lease`: Ephemeral lease configuration (`enableLease: true`, `ttl: "3600s"`, `consumerType: CONTAINER`).
-- **Status Highlights:**
-  - Standard Kubernetes `conditions` (`Ready`, `Synced`, `Error`).
+  - `auth`: Optional OIDC workload identity configuration (`serviceAccountRef`, `machineIdentity`, `providerId`).
+  - `target`: Destination Kubernetes Secret configuration (`name`, `key`, `creationPolicy`).
+  - `refreshInterval`: Version evaluation interval (e.g., `1h`, `30m`).
+  - `lease`: Ephemeral lease configuration (`enableLease: true`, `ttl: "3600s"`, `consumerType: CONTAINER`, `autoRenew: true`).
+- **Status Subresource (Zero-Plaintext):**
+  - Conditions: `Ready`, `Synced`, `Error`.
   - `observedGeneration`, `lastSyncTime`, `currentVersion`.
   - `secretFingerprint`: Non-sensitive SHA-256 fingerprint hash (no plaintext).
-  - `leaseId`, `leaseExpiresAt`.
+  - `leaseId`: Active SecretVault lease UUID.
+  - `leaseExpiresAt`: Expiration timestamp of the active lease.
+  - `targetSecretRef`: Reference to generated Kubernetes Secret (`name`, `namespace`, `uid`, `resourceVersion`).
 
 ### B. `SecretVaultSync` (`secretvaultsyncs.secretvault.io`)
-- **Short Name:** `svsync`
-- **Purpose:** Represents an environment-wide bulk synchronization policy into a single aggregated Kubernetes `v1/Secret`.
-- **Spec Highlights:**
+- **Purpose:** Performs bulk environment secret synchronization into an aggregated Kubernetes `v1/Secret` with automated drift detection and rolling workload restarts.
+- **Specification:**
   - `workspace`, `project`, `environment`: SecretVault tenant context (Required).
-  - `target`: Destination Kubernetes `v1/Secret` configuration (`secretName`, `creationPolicy: Owner`, `template`).
-  - `filter`: Optional whitelisting (`includeKeys`), blacklisting (`excludeKeys`), and tag filters (`tags`).
-  - `refreshInterval`: Drift detection and refresh interval (default: `15m`).
-  - `rotationPolicy`: Action to take upon upstream secret rotation (`RestartWorkload`, `NotifyOnly`, `SyncOnly`) with optional `workloadSelector`.
-  - `driftPolicy`: Reconciliation behavior upon external modification (`Enforce`, `DetectOnly`, `Ignore`).
-- **Status Highlights:**
-  - `conditions` (`Ready`, `Synced`, `DriftDetected`, `Error`).
-  - `syncedSecretCount`, `driftDetected`, `driftSummary`.
+  - `target`: Destination Kubernetes `v1/Secret` details (`secretName`, `creationPolicy`, `template`).
+  - `filter`: Whitelisting (`includeKeys`), blacklisting (`excludeKeys`), and tag filters (`tags`).
+  - `refreshInterval`: Synchronization cadence (default: `15m`).
+  - `rotationPolicy`: Remediating actions on rotation (`RestartWorkload`, `NotifyOnly`, `SyncOnly`) with `workloadSelector`.
+  - `driftPolicy`: Reconciliation behavior on external modifications (`Enforce`, `DetectOnly`, `Ignore`).
+- **Status Subresource:**
+  - Conditions: `Ready`, `Synced`, `DriftDetected`, `Error`.
+  - `syncedSecretCount`: Number of synchronized secrets.
+  - `driftDetected`, `driftSummary`: Safe diagnostic summaries.
 
 ---
 
-## 4. Security & Zero-Trust Invariants
+## 4. Creation Policies & Key Preservation
 
-1. **Zero Plaintext in Manifests:**
-   Plaintext secrets, DEKs, master keys, and private tokens **NEVER** exist in CRD specs, statuses, annotations, labels, or events.
-2. **Authoritative Backend Security:**
-   All authentication and access control decisions are strictly evaluated by the SecretVault backend via `EffectiveAccessService` (RBAC + Environment Scopes + JIT grants).
-3. **OIDC Workload Identity Integration:**
-   Authentication uses Kubernetes ServiceAccount projected tokens exchanged dynamically via `POST /api/v1/oidc/auth/exchange` for short-lived machine tokens (600s TTL). No static permanent credentials are required.
-4. **Namespace Boundary Protection:**
-   CRDs are strictly `Namespaced` to isolate tenants and prevent cross-namespace secret exfiltration.
+| Policy | Generated Kubernetes Secret Ownership | Behavior on CR Deletion | Unrelated Keys Handling |
+| :--- | :--- | :--- | :--- |
+| **`Owner`** (Default) | Controller ownerReference attached. | Kubernetes Garbage Collection automatically deletes the Secret. | SecretVault-managed keys are synced; unmanaged keys may be overwritten on full update. |
+| **`Merge`** | No ownerReference attached. | Deleting the CR preserves the Secret. | **Strictly Preserved:** Only SecretVault-managed keys are modified; all other external keys remain intact. |
+| **`None` / `Orphan`** | No ownerReference attached. | Deleting the CR preserves the Secret. | Manages specified keys without claiming lifecycle ownership of the Secret object. |
 
 ---
 
-## 5. Usage Examples
+## 5. Ephemeral Lease Lifecycle Integration
 
-### Example 1: Basic Secret Reference
-```yaml
-apiVersion: secretvault.io/v1alpha1
-kind: SecretVaultSecret
-metadata:
-  name: database-credentials
-  namespace: payment-service
-spec:
-  workspace: default
-  project: payment-gateway
-  environment: production
-  secretName: DB_PASSWORD
-  refreshInterval: 1h
-  auth:
-    serviceAccountRef:
-      name: payment-service-sa
-  target:
-    name: payment-db-secret
-    key: password
-    creationPolicy: Owner
-```
-
-### Example 2: Bulk Environment Synchronization
-```yaml
-apiVersion: secretvault.io/v1alpha1
-kind: SecretVaultSync
-metadata:
-  name: payment-environment-sync
-  namespace: payment-service
-spec:
-  workspace: default
-  project: payment-gateway
-  environment: production
-  refreshInterval: 15m
-  driftPolicy: Enforce
-  auth:
-    serviceAccountRef:
-      name: payment-service-sa
-  target:
-    secretName: payment-app-env
-    creationPolicy: Owner
-```
+When `lease.enableLease: true` is configured:
+1. **Creation:** Upon synchronization, the operator invokes `POST /api/v1/workspaces/{workspaceId}/leases` registering a `SecretConsumer` of type `CONTAINER` (or `SERVICE`, `WORKER`, `JOB`).
+2. **Renewal:** The operator monitors `leaseExpiresAt`. When the remaining TTL falls below the safety margin (50% of TTL or 15 minutes), the operator automatically renews the lease via `POST /api/v1/workspaces/{workspaceId}/leases/{leaseId}/renew`.
+3. **Revocation:** When the `SecretVaultSecret` resource is deleted from Kubernetes, the operator's finalizer (`secretvault.io/finalizer`) revokes the active lease via `DELETE /api/v1/workspaces/{workspaceId}/leases/{leaseId}`.
+4. **Zero Exposure:** Lease tokens and secret values are never stored in lease metadata.
 
 ---
 
----
+## 6. Secret Rotation & Workload Rolling Restart
 
-## 6. Workload OIDC Authentication & Client Architecture (Phase 13.2)
-
-```
-Kubernetes ServiceAccount
-        ↓ (projected volume)
-/var/run/secrets/kubernetes.io/serviceaccount/token
-        ↓
-ProjectedTokenProvider (bounds checking, non-crypto JWT pre-validation, rotation reload)
-        ↓
-OIDC Exchange Client (POST /api/v1/auth/oidc/token)
-        ↓
-SecretVault Backend (JWKS signature verification + OIDC Trust Policy matching)
-        ↓
-Short-Lived Machine Session (`sv_machine_...`, 600s TTL, in-memory only)
-        ↓
-SecretVaultApiClient (TLS 1.2+ verified, SSRF prevention, auto-retry with exponential backoff & jitter)
-```
-
-### Key Security & Operational Modules
-- [`pkg/auth/projected_token_provider.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/projected_token_provider.go): Reads projected ServiceAccount tokens with size cap (64KB), UTF-8 verification, expiration pre-check, and dynamic rotation file-reloading.
-- [`pkg/auth/oidc_exchange_client.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/oidc_exchange_client.go): Executes token exchange against `/api/v1/auth/oidc/token` or `/api/v1/oidc/auth/exchange`, caching session in memory and refreshing proactively before expiry (60s safety margin).
-- [`pkg/auth/machine_session.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/machine_session.go): Encapsulates ephemeral machine session credentials with custom formatters that strictly redact token material (`[REDACTED_MACHINE_TOKEN]`).
-- [`pkg/client/config.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/config.go): SSRF prevention engine requiring HTTPS in production, host validation, disallowing userinfo/query injection, and custom TLS CA pool configuration.
-- [`pkg/client/retry.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/retry.go): Robust retry classifier for transient failures (429, 502, 503, 504, connection reset) with exponential backoff and full jitter.
-- [`pkg/client/redaction.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/redaction.go): Sensitive header and token scrubbing for all logs and metrics.
-- [`pkg/metrics/auth_metrics.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/metrics/auth_metrics.go): Safe operational metrics tracking exchange counts, failure counts, and latencies.
-
-### Threat Model & Mitigations
-| Threat Vector | Mitigation Strategy |
-| :--- | :--- |
-| **Token Theft / Replay** | Short-lived projected tokens (bounded TTL), audience binding (`https://secretvault.internal`), in-memory only storage. |
-| **SSRF via BaseURL** | Strict validation: HTTPS enforced, hostname required, embedded userinfo and query parameters rejected. |
-| **Credential Leakage in Logs** | Custom `String()` and `GoString()` implementations, HTTP header scrubbing (`Authorization`, `Cookie`, `X-Api-Key`). |
-| **Retry Storms** | Exponential backoff capped at max backoff with full randomized jitter. |
-| **Cross-Tenant Access** | Backend `EffectiveAccessService` enforces Organization/Workspace/Project/Environment boundaries; CRD fields are references only. |
-| **TLS Downgrade** | TLS 1.2+ minimum enforced, `InsecureSkipVerify` strictly forbidden in production. |
+When upstream secrets rotate in SecretVault:
+1. **Detection:** The operator detects the new secret version via metadata-first evaluation.
+2. **Version Update:** The operator retrieves the updated secret value and updates the target Kubernetes `v1/Secret`.
+3. **Rolling Restart (`RestartWorkload`):**
+   - The operator locates target `apps/v1` `Deployment`, `StatefulSet`, or `DaemonSet` resources matching `workloadSelector` **strictly in the same namespace**.
+   - The operator updates the pod template annotation:
+     ```yaml
+     spec:
+       template:
+         metadata:
+           annotations:
+             secretvault.io/revision: "<timestamp-nanos>"
+     ```
+   - Kubernetes triggers an automated rolling update of pods with zero downtime.
+4. **Restart-Loop Prevention:** Workloads are only restarted if the secret revision actually changed. Redundant reconciliations will never cause continuous restart loops.
 
 ---
 
----
+## 7. Drift Detection Policies
 
-## 7. Operator Reconciliation Core (Phase 13.3)
+The operator periodically compares target Kubernetes Secret keys against expected SecretVault state:
 
-### Architectural Flow
-```
-Kubernetes API Server (Watches: SecretVaultSecret, SecretVaultSync)
-        ↓ (controller-runtime workqueue)
-SecretVaultSecretReconciler / SecretVaultSyncReconciler
-        ↓
-1. Spec Structural Validation (Required fields, enums, versionPolicy)
-        ↓
-2. Workload OIDC Authentication Resolution (Projected token exchange)
-        ↓
-3. Backend Scope & Metadata Verification (Zero plaintext secret download)
-        ↓
-4. Status & Generation Synchronization (observedGeneration == metadata.generation)
-        ↓
-5. Event Emission (ReferenceValidated, AuthFailed, ConfigInvalid)
-        ↓
-6. Dynamic Refresh Scheduling (RequeueAfter based on refreshInterval)
-```
-
-### Components & Responsibilities
-- [`cmd/manager/main.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/cmd/manager/main.go): Operator entrypoint with controller-runtime Manager, leader election lease coordination (`secretvault-operator-lock.secretvault.io`), healthz/readyz probes, and graceful shutdown signal handlers.
-- [`controllers/secretvaultsecret_controller.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/controllers/secretvaultsecret_controller.go): Reconciles single secret desired state, validates backend metadata references, and updates status conditions (`Ready`, `Synced`, `Error`).
-- [`controllers/secretvaultsync_controller.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/controllers/secretvaultsync_controller.go): Reconciles bulk environment sync intent, verifies scope permissions, and tracks conditions (`Ready`, `Synced`, `DriftDetected`, `Error`).
-- [`config/rbac/`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/config/rbac): Least-privilege RBAC manifests granting access exclusively to `secretvault.io` CRDs, events, and coordination lease locks. Plain Kubernetes `secrets/*` permissions and `cluster-admin` are strictly omitted.
-
-> [!NOTE]
-> **Phase 13.3 Scope Invariant:**
-> Phase 13.3 implements reconciliation, status tracking, and metadata validation **ONLY**. Actual secret synchronization into Kubernetes `v1/Secret` objects, workload rolling restarts, and ephemeral lease lifecycles belong to Phase 13.4.
+- **`Enforce` (Default):** Restores the authoritative SecretVault secret data, overwriting unauthorized external modifications.
+- **`DetectOnly`:** Sets the `DriftDetected: True` status condition and emits a warning event without modifying the Kubernetes Secret.
+- **`Ignore`:** Ignores differences between the Kubernetes Secret and SecretVault.
 
 ---
 
-## 8. Directory Structure
+## 8. Least-Privilege RBAC Configuration
 
-```
-infrastructure/kubernetes/
-├── api/
-│   └── v1alpha1/
-│       ├── groupversion_info.go
-│       ├── secretvaultsecret_types.go
-│       └── secretvaultsync_types.go
-├── cmd/
-│   └── manager/
-│       └── main.go
-├── config/
-│   ├── crd/
-│   │   ├── bases/
-│   │   │   ├── secretvault.io_secretvaultsecrets.yaml
-│   │   │   └── secretvault.io_secretvaultsyncs.yaml
-│   │   └── kustomization.yaml
-│   ├── rbac/
-│   │   ├── service_account.yaml
-│   │   ├── role.yaml
-│   │   ├── role_binding.yaml
-│   │   ├── leader_election_role.yaml
-│   │   ├── leader_election_role_binding.yaml
-│   │   └── kustomization.yaml
-│   └── samples/
-│       ├── secretvault_v1alpha1_secretvaultsecret.yaml
-│       ├── secretvault_v1alpha1_secretvaultsecret_pinned.yaml
-│       ├── secretvault_v1alpha1_secretvaultsync.yaml
-│       └── secretvault_v1alpha1_secretvaultsync_filtered.yaml
-├── controllers/
-│   ├── secretvaultsecret_controller.go
-│   ├── secretvaultsecret_controller_test.go
-│   ├── secretvaultsync_controller.go
-│   └── secretvaultsync_controller_test.go
-├── pkg/
-│   ├── auth/
-│   │   ├── errors.go
-│   │   ├── machine_session.go
-│   │   ├── oidc_exchange_client.go
-│   │   ├── projected_token_provider.go
-│   │   └── auth_test.go
-│   ├── client/
-│   │   ├── client.go
-│   │   ├── client_test.go
-│   │   ├── config.go
-│   │   ├── factory.go
-│   │   ├── redaction.go
-│   │   └── retry.go
-│   └── metrics/
-│       ├── auth_metrics.go
-│       └── operator_metrics.go
-├── test/
-│   ├── crd_validation_test.js
-│   ├── auth_contract_test.js
-│   └── operator_reconciler_test.js
-├── go.mod
-└── README.md
-```
+The operator requires minimal scoped permissions:
+- **`secretvault.io` (CRDs):** `get`, `list`, `watch`, `create`, `update`, `patch`, `delete` on `secretvaultsecrets`, `secretvaultsyncs`, and their status subresources.
+- **`core/v1` (`secrets`):** `get`, `list`, `watch`, `create`, `update`, `patch`, `delete` in managed namespaces.
+- **`apps/v1` (`deployments`, `statefulsets`, `daemonsets`):** `get`, `list`, `watch`, `patch`, `update` for rolling workload restarts.
+- **`coordination.k8s.io` (`leases`):** `get`, `list`, `watch`, `create`, `update`, `patch`, `delete` for leader election.
+- **`core/v1` (`events`):** `create`, `patch` for event reporting.
 
 ---
 
-## 9. Next Milestones (Phase 13 Roadmap)
-- [x] **Phase 13.1:** Kubernetes CRDs & Resource Contract (`SecretVaultSecret`, `SecretVaultSync`).
+## 9. Performance & Optimization Model
+
+1. **Metadata-First Version Checking:** The operator queries lightweight secret metadata (`GetSecretMetadata`) before deciding whether to decrypt. If the version is unchanged and the target Secret is intact, no reveal is executed, preventing audit spam and backend load.
+2. **Bulk Synchronization Optimization:** During bulk sync (`SecretVaultSync`), secrets are filtered using whitelists (`includeKeys`), blacklists (`excludeKeys`), and tags before retrieval. Only modified secrets are decrypted.
+3. **Bounded Memory Footprint:** Secret buffers are explicitly zeroized in memory immediately after transmitting to the Kubernetes API.
+4. **Optimistic Concurrency:** Kubernetes `resourceVersion` conflicts are handled cleanly with exponential backoff and retry.
+
+---
+
+## 10. Phase Roadmap Status
+- [x] **Phase 13.1:** Kubernetes CRDs & Resource Contracts (`SecretVaultSecret`, `SecretVaultSync`).
 - [x] **Phase 13.2:** Kubernetes Workload OIDC Authentication & Projected Token Client.
-- [x] **Phase 13.3:** Kubernetes Operator Reconciler Core (leader election, event watchers).
-- [ ] **Phase 13.4:** Secret Synchronization, Ephemeral Leases & Dynamic Rotation Workload Restarts.
-- [ ] **Phase 13.5:** Production Helm Charts & Hardening.
-- [ ] **Phase 13.6:** Production Terraform Provider.
-- [ ] **Phase 13.7:** End-to-End Testing & Verification.
+- [x] **Phase 13.3:** Kubernetes Operator Reconciler Core (manager, leader election, events).
+- [x] **Phase 13.4:** Kubernetes Secret Synchronization, Ephemeral Leases & Dynamic Rotation.
+- [ ] **Phase 13.5:** Production Helm Charts & Hardening (Deferred).
+- [ ] **Phase 13.6:** Production Terraform Provider (Deferred).
+- [ ] **Phase 13.7:** End-to-End Testing & Certification (Deferred).
