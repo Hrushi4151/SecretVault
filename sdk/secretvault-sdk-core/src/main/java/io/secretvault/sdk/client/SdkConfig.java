@@ -31,6 +31,7 @@ public final class SdkConfig {
     private final boolean allowHttp;
     private final String applicationName;
     private final String applicationVersion;
+    private final io.secretvault.sdk.consumer.ConsumerHeartbeatConfig heartbeatConfig;
 
     private SdkConfig(Builder builder) {
         this.endpoint = Objects.requireNonNull(builder.endpoint, "SecretVault endpoint URI is required");
@@ -48,6 +49,7 @@ public final class SdkConfig {
         this.allowHttp = builder.allowHttp;
         this.applicationName = builder.applicationName;
         this.applicationVersion = builder.applicationVersion;
+        this.heartbeatConfig = builder.heartbeatConfig;
 
         validate();
     }
@@ -89,6 +91,7 @@ public final class SdkConfig {
     public boolean isAllowHttp() { return allowHttp; }
     public String getApplicationName() { return applicationName; }
     public String getApplicationVersion() { return applicationVersion; }
+    public io.secretvault.sdk.consumer.ConsumerHeartbeatConfig getHeartbeatConfig() { return heartbeatConfig; }
 
     public static final class Builder {
         private URI endpoint = URI.create("http://localhost:8080");
@@ -106,6 +109,7 @@ public final class SdkConfig {
         private boolean allowHttp = true; // default true for local dev, configurable
         private String applicationName = "secretvault-app";
         private String applicationVersion = "1.0.0";
+        private io.secretvault.sdk.consumer.ConsumerHeartbeatConfig heartbeatConfig;
 
         public Builder endpoint(String endpoint) {
             this.endpoint = URI.create(endpoint);
@@ -194,6 +198,20 @@ public final class SdkConfig {
 
         public Builder applicationVersion(String applicationVersion) {
             this.applicationVersion = applicationVersion;
+            return this;
+        }
+
+        public Builder heartbeat(io.secretvault.sdk.consumer.ConsumerHeartbeatConfig heartbeatConfig) {
+            this.heartbeatConfig = heartbeatConfig;
+            return this;
+        }
+
+        public Builder consumerHeartbeat(java.util.UUID consumerId, Duration interval) {
+            this.heartbeatConfig = io.secretvault.sdk.consumer.ConsumerHeartbeatConfig.builder()
+                    .consumerId(consumerId)
+                    .interval(interval)
+                    .enabled(true)
+                    .build();
             return this;
         }
 

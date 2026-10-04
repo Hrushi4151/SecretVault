@@ -49,7 +49,7 @@ class KubernetesHelmContractTest {
     @Test
     @DisplayName("Verify Pod Security Standards and Zero Plaintext in Helm values")
     void testHelmValuesSecurity() throws Exception {
-        String valuesContent = Files.readString(HELM_BASE.resolve("values.yaml"));
+        String valuesContent = Files.readString(HELM_BASE.resolve("values.yaml")).replace("\r\n", "\n");
 
         assertTrue(valuesContent.contains("runAsNonRoot: true"), "Values must enforce runAsNonRoot");
         assertTrue(valuesContent.contains("allowPrivilegeEscalation: false"), "Values must disable allowPrivilegeEscalation");
@@ -64,7 +64,7 @@ class KubernetesHelmContractTest {
     @Test
     @DisplayName("Verify RBAC least privilege in Helm templates")
     void testHelmRbacLeastPrivilege() throws Exception {
-        String clusterRole = Files.readString(HELM_BASE.resolve(Path.of("templates", "clusterrole.yaml")));
+        String clusterRole = Files.readString(HELM_BASE.resolve(Path.of("templates", "clusterrole.yaml"))).replace("\r\n", "\n");
 
         assertTrue(clusterRole.contains("secretvault.io"), "RBAC must cover secretvault.io");
         assertTrue(clusterRole.contains("secrets"), "RBAC must cover core/v1 secrets");

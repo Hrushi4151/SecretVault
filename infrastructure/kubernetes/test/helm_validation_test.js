@@ -67,7 +67,7 @@ const HELM_BASE = path.join(__dirname, '..', 'helm', 'secretvault-operator');
 
   // 4. values.yaml secure defaults
   runTest('4. values.yaml provides secure production defaults with zero credentials', () => {
-    const valuesContent = fs.readFileSync(path.join(HELM_BASE, 'values.yaml'), 'utf8');
+    const valuesContent = fs.readFileSync(path.join(HELM_BASE, 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
 
     assert.ok(valuesContent.includes('runAsNonRoot: true'), 'runAsNonRoot must default to true');
     assert.ok(valuesContent.includes('allowPrivilegeEscalation: false'), 'allowPrivilegeEscalation must default to false');
@@ -84,7 +84,7 @@ const HELM_BASE = path.join(__dirname, '..', 'helm', 'secretvault-operator');
 
   // 5. Deployment template security constraints
   runTest('5. deployment.yaml configures probes, securityContexts, memory tmpfs, and leader election', () => {
-    const deployContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'deployment.yaml'), 'utf8');
+    const deployContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'deployment.yaml'), 'utf8').replace(/\r\n/g, '\n');
 
     assert.ok(deployContent.includes('/healthz'), 'Deployment must configure livenessProbe /healthz');
     assert.ok(deployContent.includes('/readyz'), 'Deployment must configure readinessProbe /readyz');
@@ -95,8 +95,8 @@ const HELM_BASE = path.join(__dirname, '..', 'helm', 'secretvault-operator');
 
   // 6. RBAC least-privilege verification
   runTest('6. RBAC templates grant scoped least-privilege permissions with zero cluster-admin', () => {
-    const roleContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'role.yaml'), 'utf8');
-    const clusterRoleContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'clusterrole.yaml'), 'utf8');
+    const roleContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'role.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const clusterRoleContent = fs.readFileSync(path.join(HELM_BASE, 'templates', 'clusterrole.yaml'), 'utf8').replace(/\r\n/g, '\n');
 
     for (const content of [roleContent, clusterRoleContent]) {
       assert.ok(content.includes('secretvault.io'), 'RBAC must cover secretvault.io');

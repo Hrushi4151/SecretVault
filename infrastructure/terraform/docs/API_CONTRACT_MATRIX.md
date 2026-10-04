@@ -32,6 +32,10 @@ This matrix documents the exact mapping between every Terraform resource/data so
 | `secretvault_provider_integration` | Resource (Read) | `GET` | `/api/v1/workspaces/{workspaceId}/integrations/{integrationId}` | None | `ProviderIntegrationResponse` | Scoped by Workspace ID | Read telemetry |
 | `secretvault_provider_integration` | Resource (Update) | `PATCH` | `/api/v1/workspaces/{workspaceId}/integrations/{integrationId}` | `UpdateProviderIntegrationRequest` (`name`, `config`, `credentials`, `enabled`) | `ProviderIntegrationResponse` | Bearer Token / Workspace Admin | `INTEGRATION_UPDATED` |
 | `secretvault_provider_integration` | Resource (Delete) | `DELETE` | `/api/v1/workspaces/{workspaceId}/integrations/{integrationId}` | None | 204 No Content | Bearer Token / Workspace Admin | `INTEGRATION_DELETED` |
+| `secretvault_rotation_policy` | Resource (Create) | `POST` | `/api/v1/workspaces/{workspaceId}/rotation-policies` | `CreateRotationPolicyRequest` | `RotationPolicyResponse` | Bearer Token / Admin / Policy Admin | `ROTATION_POLICY_CREATED` |
+| `secretvault_rotation_policy` | Resource (Read) | `GET` | `/api/v1/workspaces/{workspaceId}/rotation-policies/{policyId}` | None | `RotationPolicyResponse` | Scoped by Workspace ID | Read telemetry |
+| `secretvault_rotation_policy` | Resource (Update) | `PUT` | `/api/v1/workspaces/{workspaceId}/rotation-policies/{policyId}` | `UpdateRotationPolicyRequest` | `RotationPolicyResponse` | Bearer Token / Admin / Policy Admin | `ROTATION_POLICY_UPDATED` |
+| `secretvault_rotation_policy` | Resource (Delete) | `DELETE` | `/api/v1/workspaces/{workspaceId}/rotation-policies/{policyId}` | None | 204 No Content | Bearer Token / Admin / Policy Admin | `ROTATION_POLICY_DELETED` |
 | Workload Authentication | Provider Auth | `POST` | `/api/v1/auth/oidc/token` or `/api/v1/oidc/auth/exchange` | `OidcTokenExchangeRequest` (`token`, `issuer`, `providerId`) | `OidcTokenResponse` (`accessToken`, `expiresIn`) | Public / Workload JWT | `OIDC_AUTH_SUCCESS` / `OIDC_AUTH_FAILURE` |
 
 ---

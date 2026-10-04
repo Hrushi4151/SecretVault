@@ -26,7 +26,7 @@ class KubernetesCrdContractTest {
         }
         assertThat(Files.exists(crdPath)).isTrue();
 
-        String yaml = Files.readString(crdPath);
+        String yaml = Files.readString(crdPath).replace("\r\n", "\n");
         assertThat(yaml).contains("group: secretvault.io");
         assertThat(yaml).contains("kind: SecretVaultSecret");
         assertThat(yaml).contains("name: v1alpha1");
@@ -54,7 +54,7 @@ class KubernetesCrdContractTest {
         }
         assertThat(Files.exists(crdPath)).isTrue();
 
-        String yaml = Files.readString(crdPath);
+        String yaml = Files.readString(crdPath).replace("\r\n", "\n");
         assertThat(yaml).contains("group: secretvault.io");
         assertThat(yaml).contains("kind: SecretVaultSync");
         assertThat(yaml).contains("name: v1alpha1");

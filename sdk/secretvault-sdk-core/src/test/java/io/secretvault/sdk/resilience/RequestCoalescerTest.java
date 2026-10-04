@@ -27,16 +27,24 @@ class RequestCoalescerTest {
         CountDownLatch startSignal = new CountDownLatch(1);
         List<Future<String>> futures = new ArrayList<>();
 
+        CountDownLatch fetchStartedLatch = new CountDownLatch(1);
+        CountDownLatch allThreadsJoinedLatch = new CountDownLatch(threadCount);
+
         for (int i = 0; i < threadCount; i++) {
             futures.add(executor.submit(() -> {
                 startSignal.await();
                 CompletableFuture<String> future = coalescer.coalesce("ws::proj::dev::DB_PASS", () ->
                         CompletableFuture.supplyAsync(() -> {
                             networkCalls.incrementAndGet();
-                            try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+                            fetchStartedLatch.countDown();
+                            try {
+                                // Wait until all 100 threads have invoked coalesce before completing
+                                allThreadsJoinedLatch.await(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+                            } catch (InterruptedException ignored) {}
                             return "database-secret-value";
                         })
                 );
+                allThreadsJoinedLatch.countDown();
                 return future.join();
             }));
         }

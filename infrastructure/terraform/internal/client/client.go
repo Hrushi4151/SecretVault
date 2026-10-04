@@ -491,3 +491,40 @@ func (c *Client) DeleteProviderIntegration(ctx context.Context, workspaceID, int
 	path := fmt.Sprintf("/api/v1/workspaces/%s/integrations/%s", workspaceID, integrationID)
 	return c.executeRequest(ctx, http.MethodDelete, path, workspaceID, nil, nil)
 }
+
+// --- Rotation Policy API ---
+
+func (c *Client) CreateRotationPolicy(ctx context.Context, workspaceID, projectID, envID, secretID string, req CreateRotationPolicyRequest) (*RotationPolicyResponse, error) {
+	path := fmt.Sprintf("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/rotation-policy", workspaceID, projectID, envID, secretID)
+	var resp RotationPolicyResponse
+	err := c.executeRequest(ctx, http.MethodPost, path, workspaceID, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) GetRotationPolicy(ctx context.Context, workspaceID, secretID string) (*RotationPolicyResponse, error) {
+	path := fmt.Sprintf("/api/v1/workspaces/%s/secrets/%s/rotation-policy", workspaceID, secretID)
+	var resp RotationPolicyResponse
+	err := c.executeRequest(ctx, http.MethodGet, path, workspaceID, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateRotationPolicy(ctx context.Context, workspaceID, secretID string, req UpdateRotationPolicyRequest) (*RotationPolicyResponse, error) {
+	path := fmt.Sprintf("/api/v1/workspaces/%s/secrets/%s/rotation-policy", workspaceID, secretID)
+	var resp RotationPolicyResponse
+	err := c.executeRequest(ctx, http.MethodPut, path, workspaceID, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteRotationPolicy(ctx context.Context, workspaceID, secretID string) error {
+	path := fmt.Sprintf("/api/v1/workspaces/%s/secrets/%s/rotation-policy", workspaceID, secretID)
+	return c.executeRequest(ctx, http.MethodDelete, path, workspaceID, nil, nil)
+}

@@ -27,6 +27,7 @@ public class SecretVaultClient implements AutoCloseable {
     private final ScheduledExecutorService scheduler;
     private final SecretsApi secretsApi;
     private final RepositorySecurityApi repositorySecurityApi;
+    private final io.secretvault.sdk.consumer.ConsumerHeartbeatDaemon heartbeatDaemon;
 
     private SecretVaultClient(SdkConfig config) {
         this.config = Objects.requireNonNull(config, "SdkConfig cannot be null");
@@ -42,6 +43,16 @@ public class SecretVaultClient implements AutoCloseable {
         });
         this.secretsApi = new DefaultSecretsApi(config, httpClient, cache, coalescer, metrics, scheduler);
         this.repositorySecurityApi = new DefaultRepositorySecurityApi(config, httpClient);
+
+        if (config.getHeartbeatConfig() != null && config.getHeartbeatConfig().isEnabled()) {
+            this.heartbeatDaemon = new io.secretvault.sdk.consumer.ConsumerHeartbeatDaemon(
+                    config.getHeartbeatConfig(),
+                    this.httpClient
+            );
+            this.heartbeatDaemon.start();
+        } else {
+            this.heartbeatDaemon = null;
+        }
     }
 
     public static SecretVaultClient create(SdkConfig config) {
@@ -80,8 +91,15 @@ public class SecretVaultClient implements AutoCloseable {
         return config;
     }
 
+    public java.util.Optional<io.secretvault.sdk.consumer.ConsumerHeartbeatDaemon> getHeartbeatDaemon() {
+        return java.util.Optional.ofNullable(heartbeatDaemon);
+    }
+
     @Override
     public void close() {
+        if (heartbeatDaemon != null) {
+            heartbeatDaemon.stop();
+        }
         if (scheduler != null && !scheduler.isShutdown()) {
             scheduler.shutdown();
             try {
