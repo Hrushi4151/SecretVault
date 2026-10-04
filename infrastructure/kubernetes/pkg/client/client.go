@@ -233,3 +233,120 @@ func (c *SecretVaultClient) GetSecret(
 
 	return &apiResp.Data, nil
 }
+
+// SecretMetadataResponse models non-sensitive secret metadata without payload values.
+type SecretMetadataResponse struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	WorkspaceID string            `json:"workspaceId"`
+	ProjectID   string            `json:"projectId"`
+	Environment string            `json:"environment"`
+	Version     int               `json:"version"`
+	ContentType string            `json:"contentType,omitempty"`
+	Fingerprint string            `json:"fingerprint,omitempty"`
+	UpdatedAt   time.Time         `json:"updatedAt"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+}
+
+// GetSecretMetadata queries non-sensitive secret metadata from SecretVault (zero plaintext value).
+func (c *SecretVaultClient) GetSecretMetadata(
+	ctx context.Context,
+	workspaceId string,
+	projectId string,
+	environment string,
+	secretName string,
+	version *int,
+) (*SecretMetadataResponse, error) {
+	if workspaceId == "" || projectId == "" || environment == "" || secretName == "" {
+		return nil, auth.NewAuthError("get_secret_metadata", "workspace, project, environment, and secretName are required", auth.ErrInvalidConfiguration)
+	}
+
+	endpoint := fmt.Sprintf("%s/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/metadata",
+		c.config.BaseURL,
+		url.PathEscape(workspaceId),
+		url.PathEscape(projectId),
+		url.PathEscape(environment),
+		url.PathEscape(secretName),
+	)
+
+	if version != nil && *version > 0 {
+		endpoint = fmt.Sprintf("%s?version=%d", endpoint, *version)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, auth.NewAuthError("get_secret_metadata", "failed to create metadata request", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, auth.NewAuthError("get_secret_metadata", "secret not found in SecretVault", nil)
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, auth.NewAuthError("get_secret_metadata", "workload not authorized to inspect secret", auth.ErrAuthorizationDenied)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, auth.NewAuthError("get_secret_metadata", fmt.Sprintf("metadata check failed: HTTP %d", resp.StatusCode), nil)
+	}
+
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, c.config.MaxResponseSizeBytes))
+	if err != nil {
+		return nil, auth.NewAuthError("get_secret_metadata", "failed to read response body", err)
+	}
+
+	var apiResp GenericApiResponse[SecretMetadataResponse]
+	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+		return nil, auth.NewAuthError("get_secret_metadata", "failed to parse metadata JSON response", err)
+	}
+
+	return &apiResp.Data, nil
+}
+
+// ValidateScope checks that the authenticated workload has access to the specified workspace, project, and environment scope.
+func (c *SecretVaultClient) ValidateScope(
+	ctx context.Context,
+	workspaceId string,
+	projectId string,
+	environment string,
+) error {
+	if workspaceId == "" || projectId == "" || environment == "" {
+		return auth.NewAuthError("validate_scope", "workspace, project, and environment are required", auth.ErrInvalidConfiguration)
+	}
+
+	endpoint := fmt.Sprintf("%s/api/v1/workspaces/%s/projects/%s/environments/%s/validate",
+		c.config.BaseURL,
+		url.PathEscape(workspaceId),
+		url.PathEscape(projectId),
+		url.PathEscape(environment),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return auth.NewAuthError("validate_scope", "failed to create scope validation request", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return auth.NewAuthError("validate_scope", "workspace, project, or environment scope not found in SecretVault", nil)
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return auth.NewAuthError("validate_scope", "workload unauthorized for target scope", auth.ErrAuthorizationDenied)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return auth.NewAuthError("validate_scope", fmt.Sprintf("scope validation returned HTTP %d", resp.StatusCode), nil)
+	}
+
+	return nil
+}

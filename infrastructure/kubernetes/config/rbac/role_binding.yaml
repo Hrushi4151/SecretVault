@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: secretvault-operator-manager-rolebinding
+  labels:
+    app.kubernetes.io/name: secretvault-operator
+    app.kubernetes.io/part-of: secretvault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secretvault-operator-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: secretvault-operator-controller-manager
+    namespace: secretvault-system

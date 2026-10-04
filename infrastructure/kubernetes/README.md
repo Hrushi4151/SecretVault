@@ -163,7 +163,42 @@ SecretVaultApiClient (TLS 1.2+ verified, SSRF prevention, auto-retry with expone
 
 ---
 
-## 7. Directory Structure
+---
+
+## 7. Operator Reconciliation Core (Phase 13.3)
+
+### Architectural Flow
+```
+Kubernetes API Server (Watches: SecretVaultSecret, SecretVaultSync)
+        ↓ (controller-runtime workqueue)
+SecretVaultSecretReconciler / SecretVaultSyncReconciler
+        ↓
+1. Spec Structural Validation (Required fields, enums, versionPolicy)
+        ↓
+2. Workload OIDC Authentication Resolution (Projected token exchange)
+        ↓
+3. Backend Scope & Metadata Verification (Zero plaintext secret download)
+        ↓
+4. Status & Generation Synchronization (observedGeneration == metadata.generation)
+        ↓
+5. Event Emission (ReferenceValidated, AuthFailed, ConfigInvalid)
+        ↓
+6. Dynamic Refresh Scheduling (RequeueAfter based on refreshInterval)
+```
+
+### Components & Responsibilities
+- [`cmd/manager/main.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/cmd/manager/main.go): Operator entrypoint with controller-runtime Manager, leader election lease coordination (`secretvault-operator-lock.secretvault.io`), healthz/readyz probes, and graceful shutdown signal handlers.
+- [`controllers/secretvaultsecret_controller.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/controllers/secretvaultsecret_controller.go): Reconciles single secret desired state, validates backend metadata references, and updates status conditions (`Ready`, `Synced`, `Error`).
+- [`controllers/secretvaultsync_controller.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/controllers/secretvaultsync_controller.go): Reconciles bulk environment sync intent, verifies scope permissions, and tracks conditions (`Ready`, `Synced`, `DriftDetected`, `Error`).
+- [`config/rbac/`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/config/rbac): Least-privilege RBAC manifests granting access exclusively to `secretvault.io` CRDs, events, and coordination lease locks. Plain Kubernetes `secrets/*` permissions and `cluster-admin` are strictly omitted.
+
+> [!NOTE]
+> **Phase 13.3 Scope Invariant:**
+> Phase 13.3 implements reconciliation, status tracking, and metadata validation **ONLY**. Actual secret synchronization into Kubernetes `v1/Secret` objects, workload rolling restarts, and ephemeral lease lifecycles belong to Phase 13.4.
+
+---
+
+## 8. Directory Structure
 
 ```
 infrastructure/kubernetes/
@@ -172,17 +207,32 @@ infrastructure/kubernetes/
 │       ├── groupversion_info.go
 │       ├── secretvaultsecret_types.go
 │       └── secretvaultsync_types.go
+├── cmd/
+│   └── manager/
+│       └── main.go
 ├── config/
 │   ├── crd/
 │   │   ├── bases/
 │   │   │   ├── secretvault.io_secretvaultsecrets.yaml
 │   │   │   └── secretvault.io_secretvaultsyncs.yaml
 │   │   └── kustomization.yaml
+│   ├── rbac/
+│   │   ├── service_account.yaml
+│   │   ├── role.yaml
+│   │   ├── role_binding.yaml
+│   │   ├── leader_election_role.yaml
+│   │   ├── leader_election_role_binding.yaml
+│   │   └── kustomization.yaml
 │   └── samples/
 │       ├── secretvault_v1alpha1_secretvaultsecret.yaml
 │       ├── secretvault_v1alpha1_secretvaultsecret_pinned.yaml
 │       ├── secretvault_v1alpha1_secretvaultsync.yaml
 │       └── secretvault_v1alpha1_secretvaultsync_filtered.yaml
+├── controllers/
+│   ├── secretvaultsecret_controller.go
+│   ├── secretvaultsecret_controller_test.go
+│   ├── secretvaultsync_controller.go
+│   └── secretvaultsync_controller_test.go
 ├── pkg/
 │   ├── auth/
 │   │   ├── errors.go
@@ -192,25 +242,28 @@ infrastructure/kubernetes/
 │   │   └── auth_test.go
 │   ├── client/
 │   │   ├── client.go
+│   │   ├── client_test.go
 │   │   ├── config.go
+│   │   ├── factory.go
 │   │   ├── redaction.go
-│   │   ├── retry.go
-│   │   └── client_test.go
+│   │   └── retry.go
 │   └── metrics/
-│       └── auth_metrics.go
+│       ├── auth_metrics.go
+│       └── operator_metrics.go
 ├── test/
 │   ├── crd_validation_test.js
-│   └── auth_contract_test.js
+│   ├── auth_contract_test.js
+│   └── operator_reconciler_test.js
 ├── go.mod
 └── README.md
 ```
 
 ---
 
-## 8. Next Milestones (Phase 13 Roadmap)
+## 9. Next Milestones (Phase 13 Roadmap)
 - [x] **Phase 13.1:** Kubernetes CRDs & Resource Contract (`SecretVaultSecret`, `SecretVaultSync`).
 - [x] **Phase 13.2:** Kubernetes Workload OIDC Authentication & Projected Token Client.
-- [ ] **Phase 13.3:** Kubernetes Operator Reconciler Core (leader election, event watchers).
+- [x] **Phase 13.3:** Kubernetes Operator Reconciler Core (leader election, event watchers).
 - [ ] **Phase 13.4:** Secret Synchronization, Ephemeral Leases & Dynamic Rotation Workload Restarts.
 - [ ] **Phase 13.5:** Production Helm Charts & Hardening.
 - [ ] **Phase 13.6:** Production Terraform Provider.
