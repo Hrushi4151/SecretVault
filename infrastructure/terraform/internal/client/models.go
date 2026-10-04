@@ -172,10 +172,13 @@ type UpdateProviderIntegrationRequest struct {
 
 // OidcTokenExchangeRequest payload for exchanging workload tokens.
 type OidcTokenExchangeRequest struct {
-	Audience         string `json:"audience"`
-	SubjectToken     string `json:"subjectToken"`
-	SubjectTokenType string `json:"subjectTokenType"`
-	GrantType        string `json:"grantType"`
+	ProviderID       string `json:"providerId,omitempty"`
+	Issuer           string `json:"issuer,omitempty"`
+	Token            string `json:"token,omitempty"`
+	Audience         string `json:"audience,omitempty"`
+	SubjectToken     string `json:"subjectToken,omitempty"`
+	SubjectTokenType string `json:"subjectTokenType,omitempty"`
+	GrantType        string `json:"grantType,omitempty"`
 }
 
 // OidcTokenResponse response from OIDC exchange.

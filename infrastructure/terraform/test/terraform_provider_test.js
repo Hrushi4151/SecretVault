@@ -197,9 +197,10 @@ runTest('Examples contain complete valid HCL configurations without real hardcod
 });
 
 // 16. Documentation Suite Completeness
-runTest('Documentation suite covers Architecture, Security, State Safety, Authentication, and Troubleshooting', () => {
+runTest('Documentation suite covers Architecture, API Contracts, Security, State Safety, Authentication, and Troubleshooting', () => {
   const docsDir = path.join(terraformDir, 'docs');
   assert.ok(fs.existsSync(path.join(docsDir, 'ARCHITECTURE.md')), 'ARCHITECTURE.md must exist');
+  assert.ok(fs.existsSync(path.join(docsDir, 'API_CONTRACT_MATRIX.md')), 'API_CONTRACT_MATRIX.md must exist');
   assert.ok(fs.existsSync(path.join(docsDir, 'SECURITY.md')), 'SECURITY.md must exist');
   assert.ok(fs.existsSync(path.join(docsDir, 'SECRET_STATE_SAFETY.md')), 'SECRET_STATE_SAFETY.md must exist');
   assert.ok(fs.existsSync(path.join(docsDir, 'AUTHENTICATION.md')), 'AUTHENTICATION.md must exist');

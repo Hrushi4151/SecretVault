@@ -61,11 +61,15 @@ temp/
 *.swp
 *~
 
-# Terraform
+# Terraform & Go Binaries
 .terraform/
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
+*.exe
+terraform-provider-*
+bin/
+
 
 # Python / AI service
 __pycache__/

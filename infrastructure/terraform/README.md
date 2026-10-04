@@ -72,6 +72,7 @@ provider "secretvault" {
 ## Documentation
 
 - [Architecture Guide](docs/ARCHITECTURE.md)
+- [API Contract Matrix](docs/API_CONTRACT_MATRIX.md)
 - [Security & Threat Model](docs/SECURITY.md)
 - [Secret State Safety Deep-Dive](docs/SECRET_STATE_SAFETY.md)
 - [Authentication & OIDC Workload Guide](docs/AUTHENTICATION.md)

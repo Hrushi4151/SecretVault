@@ -1,12 +1,14 @@
 package validators
 
 import (
-	"context"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
+
+// String is an alias to validator.String for convenient slice syntax.
+type String = validator.String
 
 var (
 	slugRegex       = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)

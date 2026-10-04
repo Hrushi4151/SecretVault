@@ -18,22 +18,21 @@ import (
 )
 
 var (
-	_ provider.Provider              = &SecretVaultProvider{}
-	_ provider.ProviderWithMetadata  = &SecretVaultProvider{}
+	_ provider.Provider = &SecretVaultProvider{}
 )
 
 // SecretVaultProviderModel defines the root provider configuration model.
 type SecretVaultProviderModel struct {
-	Address          types.String `tfsdk:"address"`
-	Token            types.String `tfsdk:"token"`
-	ClientID         types.String `tfsdk:"client_id"`
-	ClientSecret     types.String `tfsdk:"client_secret"`
-	WorkspaceID      types.String `tfsdk:"workspace_id"`
-	TLS              *TLSModel    `tfsdk:"tls"`
-	TimeoutSeconds   types.Int64  `tfsdk:"timeout_seconds"`
-	MaxRetries       types.Int64  `tfsdk:"max_retries"`
-	RetryWaitMinMs   types.Int64  `tfsdk:"retry_wait_min_ms"`
-	RetryWaitMaxMs   types.Int64  `tfsdk:"retry_wait_max_ms"`
+	Address        types.String `tfsdk:"address"`
+	Token          types.String `tfsdk:"token"`
+	ClientID       types.String `tfsdk:"client_id"`
+	ClientSecret   types.String `tfsdk:"client_secret"`
+	WorkspaceID    types.String `tfsdk:"workspace_id"`
+	TLS            *TLSModel    `tfsdk:"tls"`
+	TimeoutSeconds types.Int64  `tfsdk:"timeout_seconds"`
+	MaxRetries     types.Int64  `tfsdk:"max_retries"`
+	RetryWaitMinMs types.Int64  `tfsdk:"retry_wait_min_ms"`
+	RetryWaitMaxMs types.Int64  `tfsdk:"retry_wait_max_ms"`
 }
 
 // TLSModel defines nested TLS settings.

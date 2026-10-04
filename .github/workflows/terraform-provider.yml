@@ -64,3 +64,12 @@ jobs:
         working-directory: infrastructure/terraform/examples
         run: |
           terraform fmt -check
+          cat <<EOF > ~/.terraformrc
+          provider_installation {
+            dev_overrides {
+              "registry.terraform.io/secretvault/secretvault" = "${GITHUB_WORKSPACE}/infrastructure/terraform/bin"
+            }
+            direct {}
+          }
+          EOF
+          terraform validate
