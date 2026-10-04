@@ -122,7 +122,48 @@ spec:
 
 ---
 
-## 6. Directory Structure
+---
+
+## 6. Workload OIDC Authentication & Client Architecture (Phase 13.2)
+
+```
+Kubernetes ServiceAccount
+        ↓ (projected volume)
+/var/run/secrets/kubernetes.io/serviceaccount/token
+        ↓
+ProjectedTokenProvider (bounds checking, non-crypto JWT pre-validation, rotation reload)
+        ↓
+OIDC Exchange Client (POST /api/v1/auth/oidc/token)
+        ↓
+SecretVault Backend (JWKS signature verification + OIDC Trust Policy matching)
+        ↓
+Short-Lived Machine Session (`sv_machine_...`, 600s TTL, in-memory only)
+        ↓
+SecretVaultApiClient (TLS 1.2+ verified, SSRF prevention, auto-retry with exponential backoff & jitter)
+```
+
+### Key Security & Operational Modules
+- [`pkg/auth/projected_token_provider.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/projected_token_provider.go): Reads projected ServiceAccount tokens with size cap (64KB), UTF-8 verification, expiration pre-check, and dynamic rotation file-reloading.
+- [`pkg/auth/oidc_exchange_client.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/oidc_exchange_client.go): Executes token exchange against `/api/v1/auth/oidc/token` or `/api/v1/oidc/auth/exchange`, caching session in memory and refreshing proactively before expiry (60s safety margin).
+- [`pkg/auth/machine_session.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/auth/machine_session.go): Encapsulates ephemeral machine session credentials with custom formatters that strictly redact token material (`[REDACTED_MACHINE_TOKEN]`).
+- [`pkg/client/config.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/config.go): SSRF prevention engine requiring HTTPS in production, host validation, disallowing userinfo/query injection, and custom TLS CA pool configuration.
+- [`pkg/client/retry.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/retry.go): Robust retry classifier for transient failures (429, 502, 503, 504, connection reset) with exponential backoff and full jitter.
+- [`pkg/client/redaction.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/client/redaction.go): Sensitive header and token scrubbing for all logs and metrics.
+- [`pkg/metrics/auth_metrics.go`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/pkg/metrics/auth_metrics.go): Safe operational metrics tracking exchange counts, failure counts, and latencies.
+
+### Threat Model & Mitigations
+| Threat Vector | Mitigation Strategy |
+| :--- | :--- |
+| **Token Theft / Replay** | Short-lived projected tokens (bounded TTL), audience binding (`https://secretvault.internal`), in-memory only storage. |
+| **SSRF via BaseURL** | Strict validation: HTTPS enforced, hostname required, embedded userinfo and query parameters rejected. |
+| **Credential Leakage in Logs** | Custom `String()` and `GoString()` implementations, HTTP header scrubbing (`Authorization`, `Cookie`, `X-Api-Key`). |
+| **Retry Storms** | Exponential backoff capped at max backoff with full randomized jitter. |
+| **Cross-Tenant Access** | Backend `EffectiveAccessService` enforces Organization/Workspace/Project/Environment boundaries; CRD fields are references only. |
+| **TLS Downgrade** | TLS 1.2+ minimum enforced, `InsecureSkipVerify` strictly forbidden in production. |
+
+---
+
+## 7. Directory Structure
 
 ```
 infrastructure/kubernetes/
@@ -142,16 +183,35 @@ infrastructure/kubernetes/
 │       ├── secretvault_v1alpha1_secretvaultsecret_pinned.yaml
 │       ├── secretvault_v1alpha1_secretvaultsync.yaml
 │       └── secretvault_v1alpha1_secretvaultsync_filtered.yaml
+├── pkg/
+│   ├── auth/
+│   │   ├── errors.go
+│   │   ├── machine_session.go
+│   │   ├── oidc_exchange_client.go
+│   │   ├── projected_token_provider.go
+│   │   └── auth_test.go
+│   ├── client/
+│   │   ├── client.go
+│   │   ├── config.go
+│   │   ├── redaction.go
+│   │   ├── retry.go
+│   │   └── client_test.go
+│   └── metrics/
+│       └── auth_metrics.go
 ├── test/
-│   └── crd_validation_test.js
+│   ├── crd_validation_test.js
+│   └── auth_contract_test.js
 ├── go.mod
 └── README.md
 ```
 
 ---
 
-## 7. Next Milestones (Phase 13 Roadmap)
-- **Phase 13.2:** Kubernetes Workload OIDC Authentication & Projected Token Client.
-- **Phase 13.3:** Kubernetes Operator Reconciler Core (leader election, event watchers).
-- **Phase 13.4:** Secret Synchronization, Ephemeral Leases & Dynamic Rotation Workload Restarts.
-- **Phase 13.5:** Production Helm Charts & Hardening.
+## 8. Next Milestones (Phase 13 Roadmap)
+- [x] **Phase 13.1:** Kubernetes CRDs & Resource Contract (`SecretVaultSecret`, `SecretVaultSync`).
+- [x] **Phase 13.2:** Kubernetes Workload OIDC Authentication & Projected Token Client.
+- [ ] **Phase 13.3:** Kubernetes Operator Reconciler Core (leader election, event watchers).
+- [ ] **Phase 13.4:** Secret Synchronization, Ephemeral Leases & Dynamic Rotation Workload Restarts.
+- [ ] **Phase 13.5:** Production Helm Charts & Hardening.
+- [ ] **Phase 13.6:** Production Terraform Provider.
+- [ ] **Phase 13.7:** End-to-End Testing & Verification.

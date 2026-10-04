@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/auth/oidc")
+@RequestMapping({"/api/v1/auth/oidc", "/api/v1/oidc/auth"})
 public class OidcAuthController {
 
     private final OidcTokenExchangeService exchangeService;
@@ -21,7 +21,7 @@ public class OidcAuthController {
         this.exchangeService = exchangeService;
     }
 
-    @PostMapping("/token")
+    @PostMapping({"/token", "/exchange"})
     public ResponseEntity<ApiResponse<OidcDtos.OidcTokenResponse>> exchangeOidcToken(
             @Valid @RequestBody OidcDtos.OidcTokenExchangeRequest request,
             HttpServletRequest httpRequest
