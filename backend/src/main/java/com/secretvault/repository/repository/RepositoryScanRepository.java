@@ -32,7 +32,7 @@ public interface RepositoryScanRepository extends JpaRepository<RepositoryScan, 
 
     long countByWorkspaceIdAndStatus(UUID workspaceId, ScanStatus status);
 
-    @Query("SELECT s FROM RepositoryScan s WHERE s.status IN ('QUEUED', 'CLONING', 'INDEXING', 'SCANNING', 'CLASSIFYING', 'VALIDATING', 'FINALIZING') AND s.updatedAt < :staleTime")
+    @Query("SELECT s FROM RepositoryScan s WHERE s.status IN ('QUEUED', 'CLONING', 'INDEXING', 'SCANNING', 'CLASSIFYING', 'VALIDATING', 'FINALIZING') AND s.createdAt < :staleTime")
     List<RepositoryScan> findStaleActiveScans(@Param("staleTime") Instant staleTime);
 
     boolean existsByWorkspaceIdAndRepositoryIdAndStatusIn(UUID workspaceId, UUID repositoryId, List<ScanStatus> statuses);

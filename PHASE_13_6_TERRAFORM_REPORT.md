@@ -145,9 +145,9 @@ infrastructure/terraform/
 - **Command**: `mvn -f sdk/pom.xml test`
 - **Result**: **17 / 17 tests passed (100%)** (`secretvault-sdk-core` + `secretvault-spring-boot-starter`).
 
-### D. Java Backend OIDC Tests
-- **Command**: `mvn -f backend/pom.xml test -Dtest=*Oidc*`
-- **Result**: **4 / 4 tests passed (100%)**.
+### D. Java Backend Test Suite
+- **Command**: `mvn -f backend/pom.xml test`
+- **Result**: **943 / 943 tests passed (100%)** (all unit and Spring Boot integration tests passing).
 
 ### E. Frontend Unit & Build Regression
 - **Command**: `npm --prefix frontend test`
