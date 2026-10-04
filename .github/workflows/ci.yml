@@ -149,3 +149,31 @@ jobs:
 
       - name: Build Frontend Production Bundle
         run: npm --prefix frontend run build
+
+  kubernetes-validation:
+    name: Kubernetes CRDs, Operator & Helm Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Helm Lint
+        run: helm lint infrastructure/kubernetes/helm/secretvault-operator
+
+      - name: Run Kubernetes Test Suites
+        run: |
+          node infrastructure/kubernetes/test/crd_validation_test.js
+          node infrastructure/kubernetes/test/auth_contract_test.js
+          node infrastructure/kubernetes/test/operator_reconciler_test.js
+          node infrastructure/kubernetes/test/secret_sync_test.js
+          node infrastructure/kubernetes/test/helm_validation_test.js
