@@ -27,3 +27,8 @@ output "integration_status" {
   value       = secretvault_provider_integration.render_sync.status
   description = "The connection status of the Render provider integration."
 }
+
+output "rotation_policy_id" {
+  value       = secretvault_rotation_policy.db_auto_rotation.id
+  description = "The UUID of the created automated secret rotation policy."
+}

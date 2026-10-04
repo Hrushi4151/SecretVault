@@ -10,7 +10,13 @@ import com.secretvault.encryption.model.EncryptedPayload;
 import com.secretvault.encryption.service.EncryptionService;
 import com.secretvault.environment.entity.Environment;
 import com.secretvault.environment.repository.EnvironmentRepository;
+import com.secretvault.events.model.BaseDomainEvent;
+import com.secretvault.events.model.DomainEvent;
+import com.secretvault.events.model.EventSeverity;
+import com.secretvault.events.model.EventType;
+import com.secretvault.events.publisher.EventPublisher;
 import com.secretvault.rotation.dto.RotationDtos.*;
+import com.secretvault.rotation.dto.RotationProviderPushEvent;
 import com.secretvault.rotation.engine.RotationValidationEngine;
 import com.secretvault.rotation.entity.*;
 import com.secretvault.rotation.model.RolloutStrategy;
@@ -33,6 +39,7 @@ import com.secretvault.secret.repository.SecretVersionRepository;
 import com.secretvault.secret.service.SecretAuthorizationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,6 +50,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -68,6 +77,7 @@ public class RotationService {
     private final RotationDistributedLock distributedLock;
     private final EffectiveAccessService effectiveAccessService;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     public RotationService(
             RotationPolicyRepository policyRepository,
@@ -83,6 +93,29 @@ public class RotationService {
             RotationDistributedLock distributedLock,
             EffectiveAccessService effectiveAccessService,
             AuditService auditService) {
+        this(
+                policyRepository, jobRepository, attemptRepository, secretRepository,
+                versionRepository, environmentRepository, leaseRepository, encryptionService,
+                rotatorRegistry, validationEngine, distributedLock, effectiveAccessService,
+                auditService, null
+        );
+    }
+
+    public RotationService(
+            RotationPolicyRepository policyRepository,
+            RotationJobRepository jobRepository,
+            RotationAttemptRepository attemptRepository,
+            SecretRepository secretRepository,
+            SecretVersionRepository versionRepository,
+            EnvironmentRepository environmentRepository,
+            SecretLeaseRepository leaseRepository,
+            EncryptionService encryptionService,
+            SecretRotatorRegistry rotatorRegistry,
+            RotationValidationEngine validationEngine,
+            RotationDistributedLock distributedLock,
+            EffectiveAccessService effectiveAccessService,
+            AuditService auditService,
+            @Autowired(required = false) EventPublisher eventPublisher) {
         this.policyRepository = policyRepository;
         this.jobRepository = jobRepository;
         this.attemptRepository = attemptRepository;
@@ -96,6 +129,7 @@ public class RotationService {
         this.distributedLock = distributedLock;
         this.effectiveAccessService = effectiveAccessService;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     // ==========================================
@@ -148,6 +182,7 @@ public class RotationService {
         policy = policyRepository.save(policy);
 
         auditService.recordSecretAudit(null, workspaceId, actorId, AuditAction.ROTATION_POLICY_CREATED, secretId, null, null, "SUCCESS");
+        publishPolicyEvent(policy, EventType.ROTATION_POLICY_CREATED, actorId);
         return RotationPolicyResponse.fromEntity(policy);
     }
 
@@ -203,6 +238,7 @@ public class RotationService {
 
         policy = policyRepository.save(policy);
         auditService.recordSecretAudit(null, workspaceId, actorId, AuditAction.ROTATION_POLICY_UPDATED, secretId, null, null, "SUCCESS");
+        publishPolicyEvent(policy, EventType.ROTATION_POLICY_UPDATED, actorId);
         return RotationPolicyResponse.fromEntity(policy);
     }
 
@@ -221,6 +257,7 @@ public class RotationService {
         policy.setNextRotationDueAt(null);
         policyRepository.save(policy);
         auditService.recordSecretAudit(null, workspaceId, actorId, AuditAction.ROTATION_POLICY_DISABLED, secretId, null, null, "SUCCESS");
+        publishPolicyEvent(policy, EventType.ROTATION_POLICY_DISABLED, actorId);
     }
 
     // ==========================================
@@ -282,6 +319,7 @@ public class RotationService {
 
         job = jobRepository.save(job);
         auditService.recordSecretAudit(null, workspaceId, actorId, req != null && req.emergency() ? AuditAction.ROTATION_EMERGENCY : AuditAction.ROTATION_STARTED, secretId, null, null, "SUCCESS");
+        publishRotationEvent(job, secret, EventType.ROTATION_TRIGGERED, actorId, null);
 
         // Execute rotation lifecycle
         return executeRotation(job, policy, secret);
@@ -298,6 +336,7 @@ public class RotationService {
             job.setStatus(RotationStatus.FAILED);
             job.setErrorMessage("Concurrent rotation lock already held");
             job = jobRepository.save(job);
+            publishRotationEvent(job, secret, EventType.ROTATION_FAILED, null, Map.of("reason", "LOCK_CONTENTION"));
             return RotationJobResponse.fromEntity(job);
         }
 
@@ -307,6 +346,7 @@ public class RotationService {
             // 1. STARTED
             transitionState(job, RotationStatus.STARTED);
             job.setStartedAt(Instant.now());
+            publishRotationEvent(job, secret, EventType.ROTATION_STARTED, null, null);
 
             // 2. GENERATING
             transitionState(job, RotationStatus.GENERATING);
@@ -336,6 +376,7 @@ public class RotationService {
                 transitionState(job, RotationStatus.VALIDATION_FAILED);
                 job.setErrorMessage("Validation failed against target system");
                 auditService.recordSecretAudit(null, job.getWorkspaceId(), null, AuditAction.ROTATION_FAILED, job.getSecretId(), null, null, "VALIDATION_FAILED");
+                publishRotationEvent(job, secret, EventType.ROTATION_FAILED, null, Map.of("reason", "VALIDATION_FAILED"));
                 return RotationJobResponse.fromEntity(jobRepository.save(job));
             }
             transitionState(job, RotationStatus.VALIDATED);
@@ -383,11 +424,36 @@ public class RotationService {
             transitionState(job, RotationStatus.ACTIVE);
             auditService.recordSecretAudit(null, job.getWorkspaceId(), null, AuditAction.ROTATION_ACTIVATED, job.getSecretId(), null, null, "SUCCESS");
 
+            // Publish ROTATION_ACTIVATED event with safe provider push metadata
+            Environment env = environmentRepository.findById(secret.getEnvironmentId()).orElse(null);
+            RotationProviderPushEvent pushEvent = new RotationProviderPushEvent(
+                    job.getWorkspaceId(),
+                    env != null ? env.getProjectId() : null,
+                    secret.getEnvironmentId(),
+                    secret.getId(),
+                    secret.getName(),
+                    newVersionNumber,
+                    job.getPreviousVersionNumber(),
+                    job.getId(),
+                    policy != null ? policy.getId() : null,
+                    job.getTriggerType() != null ? job.getTriggerType().name() : "MANUAL",
+                    job.getActivatedAt()
+            );
+
+            Map<String, Object> pushMeta = new HashMap<>();
+            pushMeta.put("secretName", secret.getName());
+            pushMeta.put("newVersionNumber", newVersionNumber);
+            pushMeta.put("previousVersionNumber", job.getPreviousVersionNumber());
+            pushMeta.put("triggerType", pushEvent.triggerType());
+            pushMeta.put("activatedAt", job.getActivatedAt().toString());
+            publishRotationEvent(job, secret, EventType.ROTATION_ACTIVATED, null, pushMeta);
+
             // 7. GRACE PERIOD / ROLLOUT
             long graceSeconds = policy != null ? policy.getGracePeriodSeconds() : 1800L;
             if (graceSeconds > 0) {
                 job.setGracePeriodEndsAt(Instant.now().plus(Duration.ofSeconds(graceSeconds)));
                 transitionState(job, RotationStatus.GRACE_PERIOD);
+                publishRotationEvent(job, secret, EventType.ROTATION_GRACE_STARTED, null, Map.of("gracePeriodSeconds", graceSeconds));
             } else {
                 // Immediate revocation of old version if no grace period
                 if (policy != null && policy.isAutoRevokePrevious()) {
@@ -397,6 +463,7 @@ public class RotationService {
                 }
                 transitionState(job, RotationStatus.COMPLETED);
                 job.setCompletedAt(Instant.now());
+                publishRotationEvent(job, secret, EventType.ROTATION_COMPLETED, null, null);
             }
 
             // Update policy last rotated timestamp
@@ -415,6 +482,7 @@ public class RotationService {
             job.setErrorMessage(e.getMessage());
             jobRepository.save(job);
             auditService.recordSecretAudit(null, job.getWorkspaceId(), null, AuditAction.ROTATION_FAILED, job.getSecretId(), null, null, "ERROR: " + e.getMessage());
+            publishRotationEvent(job, secret, EventType.ROTATION_FAILED, null, Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error"));
         } finally {
             if (generatedPlaintext != null) {
                 generatedPlaintext = null;
@@ -493,6 +561,7 @@ public class RotationService {
         rollbackJob = jobRepository.save(rollbackJob);
 
         auditService.recordSecretAudit(null, workspaceId, actorId, AuditAction.ROTATION_ROLLED_BACK, secretId, null, null, "SUCCESS");
+        publishRotationEvent(rollbackJob, secret, EventType.ROTATION_ROLLED_BACK, actorId, Map.of("targetVersionNumber", targetVerNum, "newVersionNumber", nextVersionNumber));
         return RotationJobResponse.fromEntity(rollbackJob);
     }
 
@@ -510,6 +579,29 @@ public class RotationService {
 
         // 1. Audit compromise event
         auditService.recordSecretAudit(null, workspaceId, actorId, AuditAction.SECRET_MARKED_COMPROMISED, secretId, null, null, "INCIDENT");
+
+        // Publish domain event for compromise
+        if (eventPublisher != null) {
+            try {
+                BaseDomainEvent compEvent = BaseDomainEvent.builder()
+                        .eventType(EventType.SECRET_COMPROMISED)
+                        .workspaceId(workspaceId)
+                        .projectId(env.getProjectId())
+                        .environmentId(secret.getEnvironmentId())
+                        .secretId(secretId)
+                        .actorType(actorId != null ? "USER" : "SYSTEM")
+                        .actorId(actorId != null ? actorId.toString() : "SYSTEM")
+                        .source("secretvault-rotation-service")
+                        .aggregateType("SECRET")
+                        .aggregateId(secretId.toString())
+                        .severity(EventSeverity.CRITICAL)
+                        .addMetadata("incidentDetails", req != null && req.incidentDetails() != null ? req.incidentDetails() : "Compromise detected")
+                        .build();
+                eventPublisher.publish(compEvent);
+            } catch (Exception e) {
+                log.warn("Failed to publish SECRET_COMPROMISED event: {}", e.getMessage());
+            }
+        }
 
         // 2. Invalidate all active leases for this secret immediately
         if (req == null || req.revokeLeasesImmediately()) {
@@ -613,6 +705,81 @@ public class RotationService {
     // ==========================================
     // HELPERS & AUTHORIZATION
     // ==========================================
+
+    private void publishPolicyEvent(RotationPolicy policy, EventType eventType, UUID actorId) {
+        if (eventPublisher == null || policy == null) return;
+        try {
+            Secret secret = secretRepository.findById(policy.getSecretId()).orElse(null);
+            Environment env = secret != null ? environmentRepository.findById(secret.getEnvironmentId()).orElse(null) : null;
+
+            BaseDomainEvent event = BaseDomainEvent.builder()
+                    .eventType(eventType)
+                    .workspaceId(policy.getWorkspaceId())
+                    .projectId(env != null ? env.getProjectId() : null)
+                    .environmentId(secret != null ? secret.getEnvironmentId() : null)
+                    .secretId(policy.getSecretId())
+                    .actorType(actorId != null ? "USER" : "SYSTEM")
+                    .actorId(actorId != null ? actorId.toString() : "SYSTEM")
+                    .source("secretvault-rotation-service")
+                    .aggregateType("ROTATION_POLICY")
+                    .aggregateId(policy.getId().toString())
+                    .severity(EventSeverity.INFO)
+                    .addMetadata("policyId", policy.getId().toString())
+                    .addMetadata("enabled", policy.isEnabled())
+                    .addMetadata("strategy", policy.getStrategy() != null ? policy.getStrategy().name() : null)
+                    .addMetadata("secretType", policy.getSecretType() != null ? policy.getSecretType().name() : null)
+                    .addMetadata("intervalSeconds", policy.getIntervalSeconds())
+                    .build();
+            eventPublisher.publish(event);
+        } catch (Exception e) {
+            log.warn("Failed to publish rotation policy event {}: {}", eventType, e.getMessage());
+        }
+    }
+
+    private void publishRotationEvent(RotationJob job, Secret secret, EventType eventType, UUID actorId, Map<String, Object> extraMeta) {
+        if (eventPublisher == null || job == null) return;
+        try {
+            Environment env = secret != null && secret.getEnvironmentId() != null
+                    ? environmentRepository.findById(secret.getEnvironmentId()).orElse(null)
+                    : null;
+
+            BaseDomainEvent.Builder builder = BaseDomainEvent.builder()
+                    .eventType(eventType)
+                    .workspaceId(job.getWorkspaceId())
+                    .projectId(env != null ? env.getProjectId() : null)
+                    .environmentId(secret != null ? secret.getEnvironmentId() : null)
+                    .secretId(job.getSecretId())
+                    .actorType(actorId != null ? "USER" : (job.getInitiatedBy() != null ? "USER" : "SYSTEM"))
+                    .actorId(actorId != null ? actorId.toString() : (job.getInitiatedBy() != null ? job.getInitiatedBy().toString() : "SYSTEM"))
+                    .source("secretvault-rotation-service")
+                    .aggregateType("ROTATION_JOB")
+                    .aggregateId(job.getId().toString())
+                    .severity(eventType == EventType.ROTATION_FAILED || eventType == EventType.SECRET_COMPROMISED ? EventSeverity.HIGH : EventSeverity.INFO)
+                    .correlationId(job.getIdempotencyKey())
+                    .addMetadata("jobId", job.getId().toString())
+                    .addMetadata("status", job.getStatus() != null ? job.getStatus().name() : null)
+                    .addMetadata("triggerType", job.getTriggerType() != null ? job.getTriggerType().name() : null)
+                    .addMetadata("previousVersionNumber", job.getPreviousVersionNumber())
+                    .addMetadata("targetVersionNumber", job.getTargetVersionNumber());
+
+            if (job.getPolicyId() != null) {
+                builder.addMetadata("policyId", job.getPolicyId().toString());
+            }
+            if (secret != null) {
+                builder.addMetadata("secretName", secret.getName());
+            }
+            if (job.getErrorMessage() != null) {
+                builder.addMetadata("errorMessage", job.getErrorMessage());
+            }
+            if (extraMeta != null) {
+                extraMeta.forEach(builder::addMetadata);
+            }
+
+            eventPublisher.publish(builder.build());
+        } catch (Exception e) {
+            log.warn("Failed to publish rotation event {}: {}", eventType, e.getMessage());
+        }
+    }
 
     private void transitionState(RotationJob job, RotationStatus newStatus) {
         log.info("Transitioning rotation job {} from {} to {}", job.getId(), job.getStatus(), newStatus);

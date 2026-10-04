@@ -275,6 +275,7 @@ func (p *SecretVaultProvider) Resources(_ context.Context) []func() resource.Res
 		resources.NewSecretResource,
 		resources.NewMachineIdentityResource,
 		resources.NewProviderIntegrationResource,
+		resources.NewRotationPolicyResource,
 	}
 }
 
