@@ -203,3 +203,20 @@ sequenceDiagram
 4. **Immutable Version Ledger:** Secret values are write-once read-many (`secret_versions`). Updates increment `current_version_number` and insert a new version row. Historical versions remain intact for rollback and compliance.
 5. **No-Store HTTP Delivery:** Secret reveal endpoints return explicit HTTP `Cache-Control: no-store, no-cache, must-revalidate, private` and `Pragma: no-cache` headers to prevent proxy, CDN, or browser disk caching.
 
+---
+
+## 6. Production Cloud Architecture & Platform Operations [IMPLEMENTED — PHASE 16]
+
+Phase 16 transforms SecretVault into a resilient, high-availability cloud control plane:
+
+### A. Modular Infrastructure Codification (Terraform AWS)
+- **VPC Subnet Hierarchy**: Multi-AZ public, private application (ECS Fargate), and isolated database tiers across 3 Availability Zones.
+- **KMS Envelope Integration**: Dedicated Customer Managed Key (CMK) with automated annual rotation and `AwsKmsKeyProvider` SPI.
+- **Multi-AZ Persistence**: Amazon RDS PostgreSQL 16 (synchronous replication, continuous PITR, gp3 KMS encryption) and Amazon ElastiCache Redis 7 (Multi-AZ replication group, TLS + AUTH).
+- **Edge & Load Balancing**: AWS WAF v2 (managed rule sets + rate limit mitigation) and Application Load Balancer with TLS 1.3 termination.
+- **OIDC CI/CD Federation**: GitHub Actions assumes dynamic AWS IAM roles via OIDC, eliminating static cloud credentials.
+
+### B. Enterprise Platform Operations & Resilience
+- **Operational Maintenance Mode**: Dynamic `/api/v1/system/maintenance` endpoints enforcing HTTP 503 Service Unavailable on mutations during platform maintenance with admin bypass.
+- **System Health & SLO Scoring**: Automated `/api/v1/system/health/score` scoring (0-100) across database, cache, KMS, and worker sync queues.
+- **Automated Backup & Restore Harness**: Production backup and restore scripts with SHA-256 cryptographic verification and cold-restore validation.

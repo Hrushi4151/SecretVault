@@ -328,7 +328,24 @@ Modern web applications and microservices deploy across a variety of cloud and p
 - **Positive:** Zero plaintext credential or secret leakage; extensible plug-and-play architecture for any cloud/platform provider; complete tenant isolation; robust audit logging and security telemetry.
 - **Negative:** External provider API rate limits and network latency must be handled gracefully during interactive synchronization calls.
 
+---
 
+## ADR-019: Production Cloud Infrastructure, AWS KMS Hardware Integration & Enterprise Operations (Phase 16)
 
+### Status: Accepted
+### Date: 2026-10-04
+### Context:
+SecretVault is advancing from an application prototype to an enterprise-grade DevSecOps security control plane. To achieve production readiness, the platform requires high availability across availability zones, hardware-backed master key management (AWS KMS CMK), defense-in-depth network isolation, zero-downtime deployments, zero static cloud credentials in CI/CD, operational maintenance controls, real-time system health scoring, and documented disaster recovery runbooks.
 
+### Decision:
+1. **Multi-Tier AWS VPC & Security Group Chaining:** Codify AWS infrastructure in modular Terraform (`infrastructure/terraform/aws`). Application tasks run in private subnets across 3 AZs behind an ALB with TLS 1.3. Persistence tiers (Amazon RDS PostgreSQL 16 Multi-AZ, Amazon ElastiCache Redis 7 Multi-AZ) run in isolated subnets with zero internet ingress.
+2. **AWS KMS Customer Managed Key (CMK) Envelope Integration:** Implement `AwsKmsKeyProvider` using AWS KMS SDK v2 for envelope DEK wrapping/unwrapping with annual automated key rotation. Transient cryptographic buffers in JVM memory are immediately wiped (`Arrays.fill(raw, (byte) 0)`).
+3. **GitHub Actions OIDC Authentication:** Replace permanent IAM user access keys in CI/CD with short-lived STS tokens via GitHub's OpenID Connect identity provider (`token.actions.githubusercontent.com`).
+4. **Operational Maintenance Mode (`MaintenanceModeFilter`):** Implement centralized maintenance toggle returning `503 Service Unavailable` with `Retry-After: 300` headers on mutating requests, while maintaining read-only access and administrator bypass.
+5. **System Health & SLO Evaluation (`SystemHealthService`):** Expose `/api/v1/system/health/score` computing weighted health scores across PostgreSQL, Redis, KMS, and worker outbox queues against defined operational SLOs.
+6. **Automated Backup & DR Harness:** Codify automated PostgreSQL dump/restore scripts with SHA-256 integrity verification, S3 KMS encryption, and a tested Disaster Recovery Plan (RPO <= 15m, RTO <= 60m).
+
+### Consequences:
+- **Positive:** Eliminates single points of failure; enforces hardware-level master key security; eliminates long-lived static CI credentials; provides enterprise operational safety gates during updates or incidents.
+- **Negative:** Cloud hosting costs for Multi-AZ RDS and ElastiCache; requires AWS infrastructure provisioning for production deployment.
 

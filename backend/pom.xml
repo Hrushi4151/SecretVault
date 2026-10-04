@@ -95,11 +95,24 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Observability & Prometheus -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- WebAuthn / FIDO2 / Passkeys (Yubico) -->
         <dependency>
             <groupId>com.yubico</groupId>
             <artifactId>webauthn-server-core</artifactId>
             <version>2.9.0</version>
+        </dependency>
+
+        <!-- AWS SDK v2 for Production KMS Integration -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>kms</artifactId>
+            <version>2.25.60</version>
         </dependency>
 
         <!-- Testing -->

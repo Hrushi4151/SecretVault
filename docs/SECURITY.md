@@ -90,3 +90,13 @@ $$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} 
 2. **Sanitized Context Only:** Only sanitized metadata (key names, rotation age, sync state, failure logs) is provided.
 3. **Advisory Role:** AI suggestions are non-destructive and strictly advisory.
 4. **Resilience:** The core secret engine functions without interruption if the AI service is disabled.
+
+---
+
+## 7. Cloud Hardening & Platform Security Invariants [IMPLEMENTED — PHASE 16]
+
+1. **Hardware-Backed AWS KMS Master Key (KEK):** Production deployments utilize dedicated AWS KMS Customer Managed Keys with automated 365-day rotation. DEK wrapping occurs via authenticated KMS API calls, and raw byte arrays in memory are zeroized immediately after cipher operations.
+2. **Strict Network Tiering & Isolation:** PostgreSQL and Redis instances are deployed in completely isolated subnets with no internet gateway or public IP routing. Ingress is restricted via security group chaining strictly to the application tier.
+3. **Zero Static AWS Credentials in CI/CD:** GitHub Actions authenticates to AWS via OpenID Connect (OIDC) web identity federation, eliminating long-lived access keys and preventing repository-level credential exfiltration.
+4. **Fail-Closed Security Architecture:** Rate limiting, authentication validation, and maintenance mode checks are designed with fail-closed semantics (`fail-open: false`) to ensure system partitions do not compromise security guarantees.
+5. **Defense-in-Depth Edge Headers:** Nginx and ALB enforce strict Content Security Policy (CSP), HTTP Strict Transport Security (HSTS with 2-year max-age and subdomains), X-Frame-Options `DENY`, and X-Content-Type-Options `nosniff`.

@@ -5,6 +5,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -20,6 +21,7 @@ import java.util.Objects;
  * Uses AES Key Wrap (RFC 3394 / AESWrap) to protect Data Encryption Keys.
  */
 @Component
+@ConditionalOnProperty(name = "secretvault.kms.provider", havingValue = "local", matchIfMissing = true)
 public class LocalDevKmsKeyProvider implements KmsKeyProvider {
 
     private static final Logger log = LoggerFactory.getLogger(LocalDevKmsKeyProvider.class);

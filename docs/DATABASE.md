@@ -403,3 +403,27 @@ Granular, per-secret operation tracking within a synchronization job.
 | `jit:grant:{grant_id}` | Active ephemeral Just-In-Time access grant token | 1–8 hours |
 | `token:blacklist:{jti}` | Revoked JWT tokens | Remaining token lifespan |
 
+---
+
+## 7. Production Database Reliability, High Availability & Disaster Recovery [IMPLEMENTED — PHASE 16]
+
+### A. High Availability Architecture (Amazon RDS Multi-AZ)
+- **Engine**: PostgreSQL 16.2 on AWS RDS with Multi-AZ synchronous replication across primary and standby availability zones.
+- **Failover SLA**: Automatic failover within 60–120 seconds with zero manual DNS or application intervention.
+- **Storage & Encryption**: AWS KMS Customer Managed Key encryption on gp3 SSD storage with burst performance.
+
+### B. Connection Pooling & Resource Quotas
+- **HikariCP Configuration**:
+  - Maximum Pool Size: 25 connections per application instance.
+  - Minimum Idle: 5 connections.
+  - Connection Timeout: 5,000 ms.
+  - Idle Timeout: 300,000 ms (5 minutes).
+  - Max Lifetime: 1,800,000 ms (30 minutes).
+  - Leak Detection Threshold: 30,000 ms (30 seconds).
+
+### C. Backup, PITR & Disaster Recovery
+- **Continuous Point-In-Time Recovery (PITR)**: 30-day automated continuous backup window.
+- **Automated Backup & Restore Harness**:
+  - Backup script: [infrastructure/scripts/backup_postgres.sh](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/scripts/backup_postgres.sh) generates compressed `pg_dump`, calculates SHA-256 integrity checksum, and uploads to S3 with KMS SSE.
+  - Restore script: [infrastructure/scripts/restore_postgres.sh](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/scripts/restore_postgres.sh) downloads backup from S3, validates SHA-256 hash match, and restores database schema with table count sanity checks.
+- **Recovery Targets**: RPO $\le$ 15 minutes, RTO $\le$ 60 minutes.

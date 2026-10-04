@@ -177,3 +177,19 @@ jobs:
           node infrastructure/kubernetes/test/operator_reconciler_test.js
           node infrastructure/kubernetes/test/secret_sync_test.js
           node infrastructure/kubernetes/test/helm_validation_test.js
+
+  terraform-validation:
+    name: Terraform Architecture & Format Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Format Check
+        run: |
+          terraform -chdir=infrastructure/terraform fmt -check -recursive

@@ -1,0 +1,129 @@
+# SecretVault — Production Spring Boot Profile (application-prod.yml)
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: native
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    connection-timeout: 5000ms
+    max-connections: 10000
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:secretvault}?sslmode=${DB_SSL_MODE:require}&ssl=true}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:25}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      idle-timeout: 300000
+      connection-timeout: 10000
+      max-lifetime: 1800000
+      leak-detection-threshold: 30000
+      pool-name: SecretVault-HikariCP-Prod
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        generate_statistics: false
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL:true}
+      timeout: 1000ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+
+# Production Observability & Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: secretvault-backend
+      environment: production
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        secretvault.rotation: true
+        secretvault.reveal: true
+
+# Application Security & Cloud Provider Configuration
+secretvault:
+  kms:
+    provider: ${KMS_PROVIDER:aws}
+    aws:
+      key-id: ${KMS_KEY_ID:alias/secretvault-kek}
+      region: ${AWS_REGION:us-east-1}
+      endpoint: ${KMS_ENDPOINT:}
+  security:
+    master-key: ${VAULT_MASTER_KEY:}
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration-seconds: ${JWT_EXPIRATION_SECONDS:86400}
+  redis:
+    environment: production
+    rate-limit:
+      enabled: true
+      fail-open: false # Strict fail-closed security policy in production
+    cache:
+      enabled: true
+    ttl:
+      default-rate-limit: 60s
+      mfa-challenge: 300s
+      step-up: 600s
+      metadata-cache: 300s
+      idempotency: 120s
+  mfa:
+    totp:
+      algorithm: SHA1
+      digits: 6
+      period-seconds: 30
+      allowed-drift-steps: 1
+      issuer: SecretVault
+  webauthn:
+    rp-id: ${WEBAUTHN_RP_ID:secretvault.dev}
+    rp-name: ${WEBAUTHN_RP_NAME:SecretVault Production}
+    allowed-origins:
+      - ${WEBAUTHN_ORIGIN_PROD:https://app.secretvault.dev}
+    challenge-ttl-seconds: 300
+    timeout-seconds: 60
+    user-verification: REQUIRED
+    allow-origin-port: false
+    clone-detection-action: BLOCK

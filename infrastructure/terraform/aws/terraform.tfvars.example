@@ -1,0 +1,24 @@
+# SecretVault AWS Production Terraform Variables Example
+
+aws_region         = "us-east-1"
+environment        = "prod"
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+github_repository  = "Hrushi4151/SecretVault"
+
+# ACM TLS Certificate ARN for HTTPS ALB
+certificate_arn    = "arn:aws:acm:us-east-1:123456789012:certificate/11111111-2222-3333-4444-555555555555"
+
+# Database Sizing
+db_instance_class  = "db.t4g.medium"
+db_name            = "secretvault"
+db_username        = "vault_admin"
+db_password        = "REPLACE_WITH_SECURE_GENERATED_PASSWORD_MIN_32_CHARS"
+
+# Redis Sizing
+redis_node_type    = "cache.t4g.medium"
+redis_auth_token   = "REPLACE_WITH_SECURE_REDIS_AUTH_TOKEN_MIN_32_CHARS"
+
+# Container Images
+backend_image      = "123456789012.dkr.ecr.us-east-1.amazonaws.com/secretvault-backend:1.0.0"
+frontend_image     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/secretvault-frontend:1.0.0"

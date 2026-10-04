@@ -1,0 +1,136 @@
+# SecretVault — Production Hardened Docker Compose Stack
+# Multi-container topology with network isolation, non-root users, resource constraints, and health probes.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: secretvault-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-secretvault}
+      POSTGRES_USER: ${DB_USER:-vault_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password is required}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - secretvault-db-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vault_admin} -d ${DB_NAME:-secretvault}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4096M
+        reservations:
+          cpus: '0.5'
+          memory: 1024M
+
+  redis:
+    image: redis:7-alpine
+    container_name: secretvault-redis-prod
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?Redis password is required}
+      --maxmemory 1024mb
+      --maxmemory-policy volatile-ttl
+      --appendonly yes
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - secretvault-cache-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: secretvault-backend-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-secretvault}
+      DB_USER: ${DB_USER:-vault_admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL_MODE: disable # Docker internal bridge network
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_SSL: false
+      KMS_PROVIDER: ${KMS_PROVIDER:-local} # LocalDev or AWS in cloud
+      VAULT_MASTER_KEY: ${VAULT_MASTER_KEY:?Master KEK is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT Secret is required}
+      SERVER_PORT: 8080
+    networks:
+      - secretvault-db-net
+      - secretvault-cache-net
+      - secretvault-app-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    container_name: secretvault-frontend-prod
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${PORT:-80}:80"
+    networks:
+      - secretvault-app-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  secretvault-app-net:
+    driver: bridge
+  secretvault-db-net:
+    internal: true
+  secretvault-cache-net:
+    internal: true
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
