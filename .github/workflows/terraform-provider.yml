@@ -1,0 +1,66 @@
+name: SecretVault Terraform Provider CI
+
+on:
+  push:
+    branches: [ main, feature/** ]
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/terraform-provider.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/terraform-provider.yml'
+
+jobs:
+  terraform-provider-build-test:
+    name: Terraform Provider (Go & Test Matrix)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: 'infrastructure/terraform/go.sum'
+
+      - name: Set up Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.8.0'
+
+      - name: Set up Node.js for Provider Test Suite
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Go Format Check
+        working-directory: infrastructure/terraform
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted according to gofmt:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Go Vet Analysis
+        working-directory: infrastructure/terraform
+        run: go vet ./...
+
+      - name: Run Provider Unit & Security Tests
+        working-directory: infrastructure/terraform
+        run: go test -v -race -cover ./...
+
+      - name: Build Provider Binary
+        working-directory: infrastructure/terraform
+        run: go build -v -ldflags="-X main.ProviderVersion=1.0.0" -o bin/terraform-provider-secretvault .
+
+      - name: Run Contract & State-Safety Validation Suite
+        run: node infrastructure/terraform/test/terraform_provider_test.js
+
+      - name: Validate Example Terraform Configurations
+        working-directory: infrastructure/terraform/examples
+        run: |
+          terraform fmt -check

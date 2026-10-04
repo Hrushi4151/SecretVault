@@ -1,0 +1,10 @@
+# SecretVault Terraform Provider - Example Variable Values
+# Copy this file to terraform.tfvars or set environment variables.
+# NEVER commit unencrypted production credentials.
+
+secretvault_address  = "https://127.0.0.1:8443"
+secretvault_token    = "sv_pat_EXAMPLE_TOKEN_CHANGE_ME"
+workspace_id         = "00000000-0000-0000-0000-000000000001"
+ca_cert_file         = "/etc/ssl/certs/secretvault-ca.pem"
+db_connection_string = "postgres://app_user:placeholder_pass@db.internal:5432/app"
+render_api_key       = "rnd_placeholder_api_key"
