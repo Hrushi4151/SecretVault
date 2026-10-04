@@ -1,0 +1,13 @@
+package com.secretvault.ai.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import java.util.UUID;
+
+public record AiChatRequest(
+        @NotBlank(message = "Prompt must not be blank")
+        String prompt,
+        String intentType,
+        UUID targetProjectId,
+        UUID targetEnvironmentId
+) {
+}

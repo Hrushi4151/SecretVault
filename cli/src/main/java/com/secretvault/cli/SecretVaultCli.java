@@ -1,5 +1,6 @@
 package com.secretvault.cli;
 
+import com.secretvault.cli.command.AiCommand;
 import com.secretvault.cli.command.AuthCommand;
 import com.secretvault.cli.command.AutomationCommand;
 import com.secretvault.cli.command.CompletionCommand;
@@ -58,6 +59,7 @@ import java.util.concurrent.Callable;
                 WebhookCommand.class,
                 IncidentCommand.class,
                 NotificationCommand.class,
+                AiCommand.class,
                 EnvCommand.class,
                 RunCommand.class,
                 DevCommand.class,

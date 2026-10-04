@@ -18,6 +18,8 @@ import { WebhookCenterView } from './components/webhook/WebhookCenterView';
 import { SecurityOperationsView } from './components/incident/SecurityOperationsView';
 import { RepositorySecurityView } from './components/repository/RepositorySecurityView';
 import { SettingsView } from './components/settings/SettingsView';
+import { AiCopilotView } from './components/ai/AiCopilotView';
+import { AiRemediationWorkbenchView } from './components/ai/AiRemediationWorkbenchView';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
@@ -122,6 +124,10 @@ const MainRouter = () => {
         <SecurityOperationsView />
       ) : currentTab === 'repo-security' ? (
         <RepositorySecurityView />
+      ) : currentTab === 'ai-assistant' ? (
+        <AiCopilotView onNavigateToWorkbench={() => setCurrentTab('ai-workbench')} />
+      ) : currentTab === 'ai-workbench' ? (
+        <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
       ) : currentTab === 'settings' ? (
         <SettingsView
           initialSection={settingsSection}

@@ -13,6 +13,8 @@ import com.secretvault.cli.client.dto.RotationCliDtos;
 import com.secretvault.cli.client.dto.RotationCliDtos.*;
 import com.secretvault.cli.client.dto.RepositoryCliDtos;
 import com.secretvault.cli.client.dto.SecretDtos;
+import com.secretvault.cli.client.dto.AiCliDtos;
+import com.secretvault.cli.client.dto.AiCliDtos.*;
 import com.secretvault.cli.client.dto.StepUpDtos;
 import com.secretvault.cli.client.dto.WorkspaceDto;
 import com.secretvault.cli.security.RedactionHelper;
@@ -800,6 +802,55 @@ public class SecretVaultApiClient {
         String path = String.format("/api/v1/workspaces/%s/repository-remediations/%s", workspaceId, findingId);
         var req = java.util.Map.of("action", action, "notes", notes != null ? notes : "");
         return post(path, req, new TypeReference<ApiEnvelope<RepositoryCliDtos.RemediationJobDto>>() {}, true, workspaceId);
+    }
+
+    // ==========================================
+    // Phase 15: AI Intelligence & Remediation Ops
+    // ==========================================
+
+    public AiChatResponseCli chatAi(UUID workspaceId, AiChatRequestCli req) {
+        String path = String.format("/api/v1/workspaces/%s/ai/chat", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<AiChatResponseCli>>() {}, true, workspaceId);
+    }
+
+    public AiRcaReportCli runAiRca(UUID workspaceId, AiRcaRequestCli req) {
+        String path = String.format("/api/v1/workspaces/%s/ai/rca", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<AiRcaReportCli>>() {}, true, workspaceId);
+    }
+
+    public AiPostureForecastCli getAiPostureForecast(UUID workspaceId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/posture/forecast", workspaceId);
+        return get(path, new TypeReference<ApiEnvelope<AiPostureForecastCli>>() {}, workspaceId);
+    }
+
+    public List<AiRemediationPlanCli> listAiPlans(UUID workspaceId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/plans", workspaceId);
+        return get(path, new TypeReference<ApiEnvelope<List<AiRemediationPlanCli>>>() {}, workspaceId);
+    }
+
+    public AiRemediationPlanCli generateAiPlan(UUID workspaceId, AiPlanGenerateRequestCli req) {
+        String path = String.format("/api/v1/workspaces/%s/ai/plans/generate", workspaceId);
+        return post(path, req, new TypeReference<ApiEnvelope<AiRemediationPlanCli>>() {}, true, workspaceId);
+    }
+
+    public AiRemediationPlanCli approveAiPlan(UUID workspaceId, UUID planId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/plans/%s/approve", workspaceId, planId);
+        return post(path, java.util.Map.of(), new TypeReference<ApiEnvelope<AiRemediationPlanCli>>() {}, true, workspaceId);
+    }
+
+    public AiRemediationPlanCli executeAiPlan(UUID workspaceId, UUID planId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/plans/%s/execute", workspaceId, planId);
+        return post(path, java.util.Map.of(), new TypeReference<ApiEnvelope<AiRemediationPlanCli>>() {}, true, workspaceId);
+    }
+
+    public AiRemediationPlanCli rejectAiPlan(UUID workspaceId, UUID planId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/plans/%s/reject", workspaceId, planId);
+        return post(path, java.util.Map.of(), new TypeReference<ApiEnvelope<AiRemediationPlanCli>>() {}, true, workspaceId);
+    }
+
+    public AiTokenBudgetCli getAiTokenBudget(UUID workspaceId) {
+        String path = String.format("/api/v1/workspaces/%s/ai/token-budget", workspaceId);
+        return get(path, new TypeReference<ApiEnvelope<AiTokenBudgetCli>>() {}, workspaceId);
     }
 
     private <T> List<T> parsePageContent(com.fasterxml.jackson.databind.JsonNode node, TypeReference<List<T>> typeRef) {
