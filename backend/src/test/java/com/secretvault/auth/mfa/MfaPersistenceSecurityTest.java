@@ -136,18 +136,19 @@ class MfaPersistenceSecurityTest {
     @Test
     @DisplayName("Atomic recovery-code consumption under 10 concurrent racing threads")
     void testConcurrentRecoveryCodeConsumption() throws Exception {
-        EncryptedPayload payload = encryptionService.encrypt("secret".getBytes(StandardCharsets.UTF_8), "user-mfa:" + testUser.getId());
-        UserMfa userMfa = userMfaRepository.save(new UserMfa(testUser.getId(), payload));
-
-        MfaRecoveryCode code = new MfaRecoveryCode(userMfa.getId(), "$2a$10$hash", 0);
-        MfaRecoveryCode savedCode = recoveryCodeRepository.save(code);
-        UUID codeId = savedCode.getId();
+        TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+        UUID codeId = txTemplate.execute(status -> {
+            EncryptedPayload payload = encryptionService.encrypt("secret".getBytes(StandardCharsets.UTF_8), "user-mfa:" + testUser.getId());
+            UserMfa userMfa = userMfaRepository.save(new UserMfa(testUser.getId(), payload));
+            MfaRecoveryCode code = new MfaRecoveryCode(userMfa.getId(), "$2a$10$hash", 0);
+            MfaRecoveryCode savedCode = recoveryCodeRepository.save(code);
+            return savedCode.getId();
+        });
 
         int concurrency = 10;
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
-        TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 
         try {
             List<Callable<Void>> tasks = new ArrayList<>();

@@ -53,6 +53,7 @@ public class RotationSchedulerService {
         this(policyRepository, jobRepository, secretRepository, rotationService, rotatorRegistry, auditService, null);
     }
 
+    @Autowired
     public RotationSchedulerService(
             RotationPolicyRepository policyRepository,
             RotationJobRepository jobRepository,

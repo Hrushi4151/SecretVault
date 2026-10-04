@@ -76,6 +76,9 @@ public class ProviderCredentialRotator implements SecretRotator {
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
+    // Concurrent dedup map for active rotation job pushes to prevent duplicate synchronous + event delivery
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> recentlyPushedKeys = new java.util.concurrent.ConcurrentHashMap<>();
+
     public ProviderCredentialRotator(
             SecretGenerationEngine generationEngine,
             ProviderAdapterRegistry providerAdapterRegistry,
@@ -179,6 +182,13 @@ public class ProviderCredentialRotator implements SecretRotator {
                 continue;
             }
 
+            // Synchronously push to provider with retry, verification, and audit
+            pushToProviderWithRetry(mapping, secret, newPlaintext, policy, job);
+
+            // Register synchronous completion key to prevent duplicate delivery if in-process event listener fires
+            String pushKey = secretId + ":" + mapping.getId() + ":" + (job != null ? job.getId() : "");
+            recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
+
             // Publish secure integration contract event (strictly zero secret material)
             RotationProviderPushEvent pushEvent = new RotationProviderPushEvent(
                     secretId,
@@ -190,9 +200,6 @@ public class ProviderCredentialRotator implements SecretRotator {
             if (eventPublisher != null) {
                 eventPublisher.publishEvent(pushEvent);
             }
-
-            // Synchronously push to provider with retry, verification, and audit
-            pushToProviderWithRetry(mapping, secret, newPlaintext, policy, job);
         }
     }
 
@@ -279,6 +286,21 @@ public class ProviderCredentialRotator implements SecretRotator {
     public void handleRotationProviderPush(RotationProviderPushEvent event) {
         if (event == null || mappingRepository == null || secretRepository == null || secretVersionRepository == null || encryptionService == null) {
             return;
+        }
+
+        // Check deduplication guard: if this secret+mapping+job was already pushed synchronously during activate(), skip
+        String pushKey = event.secretId() + ":" + event.providerMappingId() + ":" + (event.rotationJobId() != null ? event.rotationJobId() : "");
+        Long pushedTime = recentlyPushedKeys.get(pushKey);
+        if (pushedTime != null && (System.currentTimeMillis() - pushedTime) < 300_000) {
+            log.info("Skipping duplicate provider push for secret {} on mapping {} (already completed in job {})",
+                    event.secretId(), event.providerMappingId(), event.rotationJobId());
+            return;
+        }
+
+        // Periodic maintenance cleanup of old dedup cache entries
+        if (recentlyPushedKeys.size() > 500) {
+            long now = System.currentTimeMillis();
+            recentlyPushedKeys.entrySet().removeIf(e -> (now - e.getValue()) > 600_000);
         }
 
         log.info("Handling RotationProviderPushEvent for secret {} on mapping {}", event.secretId(), event.providerMappingId());

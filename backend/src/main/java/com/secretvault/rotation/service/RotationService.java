@@ -16,7 +16,7 @@ import com.secretvault.events.model.EventSeverity;
 import com.secretvault.events.model.EventType;
 import com.secretvault.events.publisher.EventPublisher;
 import com.secretvault.rotation.dto.RotationDtos.*;
-import com.secretvault.rotation.dto.RotationProviderPushEvent;
+import com.secretvault.rotation.model.RotationProviderPushEvent;
 import com.secretvault.rotation.engine.RotationValidationEngine;
 import com.secretvault.rotation.entity.*;
 import com.secretvault.rotation.model.RolloutStrategy;
@@ -101,6 +101,7 @@ public class RotationService {
         );
     }
 
+    @Autowired
     public RotationService(
             RotationPolicyRepository policyRepository,
             RotationJobRepository jobRepository,
