@@ -8,10 +8,6 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
-    hikari:
-      maximum-pool-size: 50
-      minimum-idle: 10
-      connection-timeout: 10000
 
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect

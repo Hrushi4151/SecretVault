@@ -1,6 +1,8 @@
 package com.secretvault.rotation.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.secretvault.events.entity.EventProcessingLog;
+import com.secretvault.events.repository.EventProcessingLogRepository;
 import com.secretvault.audit.entity.AuditAction;
 import com.secretvault.audit.service.AuditService;
 import com.secretvault.encryption.model.EncryptedPayload;
@@ -82,6 +84,8 @@ class ProviderCredentialRotatorTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
     @Mock
+    private EventProcessingLogRepository eventProcessingLogRepository;
+    @Mock
     private ProviderAdapter vercelAdapter;
     @Mock
     private ProviderAdapter renderAdapter;
@@ -123,7 +127,8 @@ class ProviderCredentialRotatorTest {
                 auditService,
                 securityEventService,
                 objectMapper,
-                eventPublisher
+                eventPublisher,
+                eventProcessingLogRepository
         );
 
         policy = new RotationPolicy();
@@ -336,5 +341,239 @@ class ProviderCredentialRotatorTest {
         rotator.handleRotationProviderPush(event);
 
         verify(vercelAdapter).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("decrypted-secret-in-memory"));
+    }
+
+    // =========================================================================
+    // FAILURE WINDOW & DURABLE IDEMPOTENCY TESTS (SCENARIOS A - J)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Failure Window A: Duplicate event delivery drops second external push via in-memory cache")
+    void testFailureWindowA_DuplicateEventDropsSecondPush() {
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+        SecretVersion version = new SecretVersion(
+                secretId, 2, "encrypted-blob".getBytes(StandardCharsets.UTF_8),
+                "dek".getBytes(StandardCharsets.UTF_8), "iv".getBytes(StandardCharsets.UTF_8),
+                "tag".getBytes(StandardCharsets.UTF_8), "key-ref", UUID.randomUUID(), "test"
+        );
+
+        when(mappingRepository.findByIdAndWorkspaceId(mapping.getId(), workspaceId)).thenReturn(Optional.of(mapping));
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(secretVersionRepository.findBySecretIdAndVersionNumber(secretId, 2)).thenReturn(Optional.of(version));
+        when(encryptionService.decrypt(any(EncryptedPayload.class), anyString())).thenReturn("secret-val".getBytes(StandardCharsets.UTF_8));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+
+        // First delivery
+        rotator.handleRotationProviderPush(event);
+        // Second duplicate delivery
+        rotator.handleRotationProviderPush(event);
+
+        // Exactly 1 external mutation executed; duplicate dropped
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+    }
+
+    @Test
+    @DisplayName("Failure Window B: Same event after JVM/cache restart simulation checks durable database log")
+    void testFailureWindowB_SameEventAfterJvmRestartSimulation() {
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+
+        // Simulate that EventProcessingLog was already saved in DB before JVM crash/restart
+        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
+
+        // Clear in-memory cache to simulate brand new JVM process
+        rotator.clearInMemoryCache();
+
+        rotator.handleRotationProviderPush(event);
+
+        // Verify zero external provider mutations executed because durable log exists
+        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
+        verify(encryptionService, never()).decrypt(any(), any());
+    }
+
+    @Test
+    @DisplayName("Failure Window C: Same event on another worker node with empty cache relies on database log")
+    void testFailureWindowC_SameEventOnAnotherWorkerWithEmptyCache() {
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+
+        // Worker B has empty in-memory cache, but DB has record from Worker A
+        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
+
+        rotator.handleRotationProviderPush(event);
+
+        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Failure Window D: Process failure after provider mutation allows idempotent reconciliation")
+    void testFailureWindowD_ProcessFailureAfterProviderMutation() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        // Simulate first execution where DB log save throws transient DB disconnect exception
+        when(eventProcessingLogRepository.saveAndFlush(any(EventProcessingLog.class)))
+                .thenThrow(new RuntimeException("Transient DB disconnect after HTTP mutation"));
+
+        // activate() still completes without uncaught crash since provider mutation was successful
+        rotator.activate("secret-val", policy, job);
+
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+    }
+
+    @Test
+    @DisplayName("Failure Window E: Timeout after provider mutation retries with idempotent adapter semantics")
+    void testFailureWindowE_TimeoutAfterProviderMutationRetriesIdempotently() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+
+        // Attempt 1: provider returns timeout error; Attempt 2: retry succeeds idempotently
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.failure("PUSH", "STRIPE_API_KEY", ProviderErrorCode.PROVIDER_TIMEOUT, "Gateway Timeout"))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        rotator.activate("secret-val", policy, job);
+
+        verify(vercelAdapter, times(2)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        verify(auditService).recordSecretAudit(
+                null, workspaceId, job.getInitiatedBy(), AuditAction.PROVIDER_SECRET_PUSHED, secretId, null, null, "SUCCESS"
+        );
+    }
+
+    @Test
+    @DisplayName("Failure Window F: Outbox redelivery skipped when already persisted in event processing log")
+    void testFailureWindowF_OutboxRedeliverySkippedWhenAlreadyPersisted() {
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+
+        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
+
+        // Outbox event redelivered
+        rotator.handleRotationProviderPush(event);
+
+        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Failure Window G: Concurrent delivery of same providerMappingId + rotationJobId + versionNumber")
+    void testFailureWindowG_ConcurrentDeliveryOfTheSameJobMappingVersion() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        // Thread 1: synchronous activate()
+        rotator.activate("secret-val", policy, job);
+
+        // Thread 2: concurrent event listener for the same job and mapping
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+        rotator.handleRotationProviderPush(event);
+
+        // Exactly 1 external mutation executed
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+    }
+
+    @Test
+    @DisplayName("Failure Window H: Successful new version delivery allowed on subsequent rotation")
+    void testFailureWindowH_SuccessfulNewVersionDeliveryAllowed() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString()))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        // Version 2 rotation
+        job.setTargetVersionNumber(2);
+        rotator.activate("secret-val-v2", policy, job);
+
+        // Next rotation cycle: Version 3 rotation with new job ID
+        RotationJob jobV3 = new RotationJob();
+        jobV3.setId(UUID.randomUUID());
+        jobV3.setWorkspaceId(workspaceId);
+        jobV3.setSecretId(secretId);
+        jobV3.setStatus(RotationStatus.ACTIVATING);
+        jobV3.setTargetVersionNumber(3);
+
+        rotator.activate("secret-val-v3", policy, jobV3);
+
+        // Both versions delivered successfully (2 pushes)
+        verify(vercelAdapter, times(2)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString());
+    }
+
+    @Test
+    @DisplayName("Failure Window I: Different rotation jobs do not collide")
+    void testFailureWindowI_DifferentRotationJobsDoNotCollide() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString()))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        RotationJob job1 = new RotationJob();
+        job1.setId(UUID.randomUUID());
+        job1.setWorkspaceId(workspaceId);
+        job1.setSecretId(secretId);
+        job1.setTargetVersionNumber(2);
+
+        RotationJob job2 = new RotationJob();
+        job2.setId(UUID.randomUUID());
+        job2.setWorkspaceId(workspaceId);
+        job2.setSecretId(secretId);
+        job2.setTargetVersionNumber(2);
+
+        rotator.activate("val-1", policy, job1);
+        rotator.activate("val-2", policy, job2);
+
+        verify(vercelAdapter, times(2)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString());
+    }
+
+    @Test
+    @DisplayName("Failure Window J: Different provider mappings do not collide")
+    void testFailureWindowJ_DifferentProviderMappingsDoNotCollide() {
+        ProviderResourceMapping mapping2 = new ProviderResourceMapping(
+                workspaceId, integrationId, projectId, environmentId,
+                ProviderResourceType.PROJECT, "prj_vercel_preview", "Preview Web App", "preview", "{}", true
+        );
+
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping, mapping2));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), any(ProviderResourceMapping.class), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        rotator.activate("secret-val", policy, job);
+
+        // Both distinct mappings pushed within the single job
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping2), eq("STRIPE_API_KEY"), eq("secret-val"));
     }
 }

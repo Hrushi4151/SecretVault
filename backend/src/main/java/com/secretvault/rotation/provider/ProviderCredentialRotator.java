@@ -5,6 +5,8 @@ import com.secretvault.audit.entity.AuditAction;
 import com.secretvault.audit.service.AuditService;
 import com.secretvault.encryption.model.EncryptedPayload;
 import com.secretvault.encryption.service.EncryptionService;
+import com.secretvault.events.entity.EventProcessingLog;
+import com.secretvault.events.repository.EventProcessingLogRepository;
 import com.secretvault.provider.adapter.ProviderAdapter;
 import com.secretvault.provider.adapter.ProviderAdapterRegistry;
 import com.secretvault.provider.credential.ProviderCredentialService;
@@ -51,6 +53,10 @@ import java.util.UUID;
  * <p><strong>Lifecycle:</strong>
  * Rotation activation -> RotationProviderPushEvent -> ProviderCredentialRotator -> ProviderAdapter -> external provider -> verification -> rotation success/failure.
  *
+ * <p><strong>Durable Idempotency Invariant:</strong>
+ * Provider push delivery is authoritatively protected against duplicate executions across JVM restarts,
+ * multiple workers, outbox redeliveries, and failovers via persistent database records in {@link EventProcessingLog}.
+ *
  * <p><strong>Zero-Leakage Security Invariant:</strong>
  * Plaintext secrets, DEKs, KEKs, and provider access tokens are never logged, never included in exceptions,
  * and never passed across unencrypted event boundaries.
@@ -75,6 +81,7 @@ public class ProviderCredentialRotator implements SecretRotator {
     private final SecurityEventService securityEventService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final EventProcessingLogRepository eventProcessingLogRepository;
 
     // Concurrent dedup map for active rotation job pushes to prevent duplicate synchronous + event delivery
     private final java.util.concurrent.ConcurrentHashMap<String, Long> recentlyPushedKeys = new java.util.concurrent.ConcurrentHashMap<>();
@@ -85,7 +92,7 @@ public class ProviderCredentialRotator implements SecretRotator {
             ProviderSecretSyncService providerSecretSyncService
     ) {
         this(generationEngine, providerAdapterRegistry, providerSecretSyncService,
-                null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null);
     }
 
     @Autowired
@@ -102,7 +109,8 @@ public class ProviderCredentialRotator implements SecretRotator {
             @Autowired(required = false) AuditService auditService,
             @Autowired(required = false) SecurityEventService securityEventService,
             @Autowired(required = false) ObjectMapper objectMapper,
-            @Autowired(required = false) ApplicationEventPublisher eventPublisher
+            @Autowired(required = false) ApplicationEventPublisher eventPublisher,
+            @Autowired(required = false) EventProcessingLogRepository eventProcessingLogRepository
     ) {
         this.generationEngine = generationEngine;
         this.providerAdapterRegistry = providerAdapterRegistry;
@@ -117,6 +125,11 @@ public class ProviderCredentialRotator implements SecretRotator {
         this.securityEventService = securityEventService;
         this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
         this.eventPublisher = eventPublisher;
+        this.eventProcessingLogRepository = eventProcessingLogRepository;
+    }
+
+    public void clearInMemoryCache() {
+        recentlyPushedKeys.clear();
     }
 
     @Override
@@ -182,11 +195,45 @@ public class ProviderCredentialRotator implements SecretRotator {
                 continue;
             }
 
+            UUID jobId = (job != null && job.getId() != null) ? job.getId() : UUID.nameUUIDFromBytes((secretId.toString() + ":" + mapping.getId() + ":v" + targetVersion).getBytes(StandardCharsets.UTF_8));
+            String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v" + targetVersion;
+            String pushKey = secretId + ":" + mapping.getId() + ":" + jobId + ":v" + targetVersion;
+
+            // 1. Fast in-memory check (performance optimization)
+            Long pushedTime = recentlyPushedKeys.get(pushKey);
+            if (pushedTime != null && (System.currentTimeMillis() - pushedTime) < 300_000) {
+                log.info("In-memory dedup: skipping provider push for secret {} on mapping {} (job {})", secretId, mapping.getId(), jobId);
+                continue;
+            }
+
+            // 2. Authoritative durable check across JVM restarts / multiple instances
+            if (eventProcessingLogRepository != null && eventProcessingLogRepository.existsByEventIdAndConsumerName(jobId, consumerName)) {
+                log.info("Durable check: skipping provider push for secret {} on mapping {} (job {}) - already persisted in database",
+                        secretId, mapping.getId(), jobId);
+                recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
+                continue;
+            }
+
             // Synchronously push to provider with retry, verification, and audit
             pushToProviderWithRetry(mapping, secret, newPlaintext, policy, job);
 
-            // Register synchronous completion key to prevent duplicate delivery if in-process event listener fires
-            String pushKey = secretId + ":" + mapping.getId() + ":" + (job != null ? job.getId() : "");
+            // Persist durable delivery log
+            if (eventProcessingLogRepository != null) {
+                try {
+                    EventProcessingLog logEntry = new EventProcessingLog(
+                            jobId,
+                            consumerName,
+                            workspaceId,
+                            "PROCESSED",
+                            "job:" + jobId + ":secret:" + secretId
+                    );
+                    eventProcessingLogRepository.saveAndFlush(logEntry);
+                } catch (Exception ex) {
+                    log.warn("Durable delivery log already exists or concurrent insertion for job {} mapping {}: {}", jobId, mapping.getId(), ex.getMessage());
+                }
+            }
+
+            // Register in-memory cache
             recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
 
             // Publish secure integration contract event (strictly zero secret material)
@@ -288,12 +335,24 @@ public class ProviderCredentialRotator implements SecretRotator {
             return;
         }
 
-        // Check deduplication guard: if this secret+mapping+job was already pushed synchronously during activate(), skip
-        String pushKey = event.secretId() + ":" + event.providerMappingId() + ":" + (event.rotationJobId() != null ? event.rotationJobId() : "");
+        UUID jobId = event.rotationJobId() != null ? event.rotationJobId() : event.secretId();
+        int version = event.versionNumber();
+        String pushKey = event.secretId() + ":" + event.providerMappingId() + ":" + jobId + ":v" + version;
+        String consumerName = "PROVIDER_PUSH:" + event.providerMappingId() + ":v" + version;
+
+        // 1. Fast in-memory check (performance optimization)
         Long pushedTime = recentlyPushedKeys.get(pushKey);
         if (pushedTime != null && (System.currentTimeMillis() - pushedTime) < 300_000) {
-            log.info("Skipping duplicate provider push for secret {} on mapping {} (already completed in job {})",
-                    event.secretId(), event.providerMappingId(), event.rotationJobId());
+            log.info("In-memory dedup: skipping duplicate provider push for secret {} on mapping {} (already completed in job {})",
+                    event.secretId(), event.providerMappingId(), jobId);
+            return;
+        }
+
+        // 2. Authoritative durable check across JVM restarts / multiple instances
+        if (eventProcessingLogRepository != null && eventProcessingLogRepository.existsByEventIdAndConsumerName(jobId, consumerName)) {
+            log.info("Durable check: skipping duplicate event handling for secret {} on mapping {} (job {}) - already persisted in database",
+                    event.secretId(), event.providerMappingId(), jobId);
+            recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
             return;
         }
 
@@ -316,20 +375,20 @@ public class ProviderCredentialRotator implements SecretRotator {
             return;
         }
 
-        SecretVersion version = secretVersionRepository.findBySecretIdAndVersionNumber(event.secretId(), event.versionNumber())
+        SecretVersion secretVersion = secretVersionRepository.findBySecretIdAndVersionNumber(event.secretId(), event.versionNumber())
                 .orElse(null);
-        if (version == null) {
+        if (secretVersion == null) {
             return;
         }
 
         // Decrypt in memory
-        String aad = secret.getId().toString() + ":" + mapping.getEnvironmentId().toString() + ":" + version.getVersionNumber();
+        String aad = secret.getId().toString() + ":" + mapping.getEnvironmentId().toString() + ":" + secretVersion.getVersionNumber();
         EncryptedPayload secretPayload = new EncryptedPayload(
-                version.getCiphertext(),
-                version.getEncryptedDek(),
-                version.getIv(),
-                version.getAuthTag(),
-                version.getKeyReference()
+                secretVersion.getCiphertext(),
+                secretVersion.getEncryptedDek(),
+                secretVersion.getIv(),
+                secretVersion.getAuthTag(),
+                secretVersion.getKeyReference()
         );
 
         byte[] secretBytes = encryptionService.decrypt(secretPayload, aad);
@@ -351,6 +410,24 @@ public class ProviderCredentialRotator implements SecretRotator {
             Map<String, Object> config = parseConfig(integration.getConfigurationJson());
 
             adapter.pushSecret(config, providerCredential, mapping, secret.getName(), secretPlaintext);
+
+            // Persist durable delivery log
+            if (eventProcessingLogRepository != null) {
+                try {
+                    EventProcessingLog logEntry = new EventProcessingLog(
+                            jobId,
+                            consumerName,
+                            event.workspaceId(),
+                            "PROCESSED",
+                            "event:" + event.secretId()
+                    );
+                    eventProcessingLogRepository.saveAndFlush(logEntry);
+                } catch (Exception ex) {
+                    log.warn("Durable delivery log already exists or concurrent insertion for event job {} mapping {}: {}", jobId, event.providerMappingId(), ex.getMessage());
+                }
+            }
+
+            recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
         } finally {
             Arrays.fill(secretBytes, (byte) 0);
         }

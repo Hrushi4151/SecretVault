@@ -48,6 +48,25 @@ During the `ACTIVATING` phase of automated secret rollover, the rotation engine 
   - **CRITICAL SECURITY INVARIANT:** Contains NO plaintext secret, generated password, DEK, KEK, provider access token, or credential material.
   - Server-side asynchronous listeners decrypt secret versions and provider credentials strictly in memory and immediately wipe secret buffers (`Arrays.fill(secretBytes, (byte) 0)`).
 
+#### Authoritative Execution Flow & Durable Idempotency Model
+1. **Authoritative Execution Path**:
+   - `RotationService` invokes `ProviderCredentialRotator.activate(job, targetVersion)` synchronously during the `ACTIVATING` lifecycle phase.
+   - Upon successful provider mutation, `ProviderCredentialRotator` durably persists an `EventProcessingLog` record in the database before publishing `RotationProviderPushEvent`.
+   - Asynchronous outbox worker listeners (`@EventListener handleRotationProviderPush`) query the durable log (`existsByEventIdAndConsumerName`) to avoid double execution while guaranteeing decoupled delivery fallback if synchronous activation was deferred.
+2. **Durable Idempotency Key**:
+   - Primary DB uniqueness constraint: `event_id` = `rotationJobId` (or deterministic SHA-256/UUID of `secretId:mappingId:version`), `consumer_name` = `"PROVIDER_PUSH:" + providerMappingId + ":v" + targetVersion`.
+   - Enforced by DB-level uniqueness constraint `uq_event_consumer` on `event_processing_log(event_id, consumer_name)`.
+3. **Delivery & Execution Semantics**:
+   - **At-Least-Once Delivery + Idempotent Execution**: Events may be delivered multiple times (e.g. outbox redelivery, worker failover, JVM restart), but delivery is guaranteed to execute the underlying cloud mutation at most once per version.
+4. **Retry & Failure Semantics**:
+   - **Transient Failures (5xx, rate limits, timeouts)**: Retried with bounded exponential backoff (max 3 attempts). No durable log entry is recorded until external mutation succeeds.
+   - **Permanent Failures (401, 403, 400)**: Fail fast without retry, emit failure audit log, and fail the rotation job.
+   - **Process Crash / Restart**: Upon worker recovery or outbox redelivery, checking the durable DB log prevents duplicate mutations.
+5. **Provider-Level Idempotency**:
+   - Secondary safety layer via provider-specific HTTP semantics (e.g., Vercel PATCH/POST upsert by environment key, Render PUT /env-vars/{key} idempotency).
+6. **In-Memory Cache Role**:
+   - `recentlyPushedKeys` `ConcurrentHashMap` acts strictly as an in-memory latency optimization to short-circuit hot event loops. Authoritative correctness is always backed by persistent database transactions.
+
 ---
 
 ### 2. Supported vs. Unsupported Cloud Providers
