@@ -231,6 +231,10 @@ public enum AuditAction {
     SECRET_REVOKED,
     HISTORY_REWRITE_REQUESTED,
     ALLOWLIST_CREATED,
-    ALLOWLIST_CHANGED
+    ALLOWLIST_CHANGED,
+
+    // Phase 16 Enterprise Operations & Maintenance Mode
+    MAINTENANCE_MODE_ENABLED,
+    MAINTENANCE_MODE_DISABLED
 }
 

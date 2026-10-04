@@ -1,0 +1,74 @@
+# SecretVault — Prometheus Alerting Rules for Enterprise Operations
+
+groups:
+  - name: secretvault-platform-alerts
+    rules:
+      - alert: SecretVaultHigh5xxRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m])) * 100 > 1
+        for: 2m
+        labels:
+          severity: critical
+          tier: application
+        annotations:
+          summary: "SecretVault API high 5xx error rate"
+          description: "Over 1% of incoming HTTP requests are failing with 5xx status codes for > 2m."
+
+      - alert: SecretVaultSecretRetrievalHighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=~"/api/v1/secrets/.*"}[5m])) by (le)) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          tier: application
+        annotations:
+          summary: "Secret retrieval p95 latency exceeds 50ms SLO"
+          description: "95th percentile secret fetch and decryption latency is {{ $value }}s."
+
+      - alert: SecretVaultRotationJobFailed
+        expr: increase(secretvault_rotation_failed_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: high
+          tier: rotation
+        annotations:
+          summary: "Secret rotation job failure detected"
+          description: "An automated 21-state secret rotation failed during lifecycle execution."
+
+      - alert: SecretVaultKmsOutage
+        expr: increase(secretvault_kms_errors_total[5m]) > 3
+        for: 1m
+        labels:
+          severity: critical
+          tier: cryptography
+        annotations:
+          summary: "AWS KMS / Cryptographic Subsystem Failure"
+          description: "Repeated KMS key wrap/unwrap operations are failing; check AWS KMS permissions or network."
+
+      - alert: SecretVaultDatabasePoolSaturated
+        expr: hikaricp_connections_active{pool="SecretVault-HikariCP-Prod"} / hikaricp_connections_max{pool="SecretVault-HikariCP-Prod"} * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+          tier: database
+        annotations:
+          summary: "PostgreSQL Hikari connection pool over 85% utilization"
+          description: "Database connection pool is near saturation (current: {{ $value }}%)."
+
+      - alert: SecretVaultRedisDegraded
+        expr: redis_connected_clients == 0
+        for: 1m
+        labels:
+          severity: critical
+          tier: cache
+        annotations:
+          summary: "Redis unreachable or disconnected"
+          description: "SecretVault cannot connect to ElastiCache Redis cluster."
+
+      - alert: SecretVaultSecurityBruteForceDetected
+        expr: increase(secretvault_mfa_verification_failed_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: high
+          tier: security
+        annotations:
+          summary: "High volume of MFA verification failures"
+          description: "Possible brute-force or credential stuffing attack detected against user MFA challenges."

@@ -534,9 +534,9 @@ Observability should answer what changed, who initiated it, which request/job/pr
 
 ## Deployment architecture
 
-**Target architecture:** containerized React, Spring Boot, and FastAPI workloads operate alongside managed or isolated PostgreSQL and Redis. Background workers execute synchronization separately from the interactive request path. Provider calls leave through the adapter boundary, with credentials and encryption material supplied by an approved secret-management and key-management process.
+**Target architecture:** containerized React, Spring Boot, and FastAPI workloads operate alongside managed or isolated PostgreSQL 16 and Redis 7. Background workers execute synchronization separately from the interactive request path. Provider calls leave through the adapter boundary, with credentials and encryption material supplied by an approved secret-management and key-management process.
 
-Production deployment details—including cloud, hosting, identity, encryption-key management, networking, backups, disaster recovery, and monitoring vendors—remain decisions for the implementation team and must be documented before production use. Do not promote a local Compose setup as a production security architecture.
+**Production Cloud Foundation (Phase 16):** Fully codified via [infrastructure/terraform/aws](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/terraform/aws) supporting Amazon ECS Fargate across 3 Availability Zones, TLS 1.3 ALB, AWS WAF v2, AWS KMS Customer Managed Key (CMK) envelope encryption, Amazon RDS PostgreSQL 16 Multi-AZ, and Amazon ElastiCache Redis 7 Multi-AZ. See [docs/DEPLOYMENT.md](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/docs/DEPLOYMENT.md) and [docs/operations/DISASTER_RECOVERY_PLAN.md](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/docs/operations/DISASTER_RECOVERY_PLAN.md) for complete cloud provisioning guides and incident runbooks.
 
 ## MVP and roadmap
 
