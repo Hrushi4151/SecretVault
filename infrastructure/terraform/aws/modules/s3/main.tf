@@ -56,6 +56,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
     id     = "archive-and-retention"
     status = "Enabled"
 
+    filter {
+      prefix = ""
+    }
+
     transition {
       days          = 30
       storage_class = "STANDARD_IA"
