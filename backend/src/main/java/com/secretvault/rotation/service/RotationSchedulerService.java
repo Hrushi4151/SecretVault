@@ -2,6 +2,10 @@ package com.secretvault.rotation.service;
 
 import com.secretvault.audit.entity.AuditAction;
 import com.secretvault.audit.service.AuditService;
+import com.secretvault.events.model.BaseDomainEvent;
+import com.secretvault.events.model.EventSeverity;
+import com.secretvault.events.model.EventType;
+import com.secretvault.events.publisher.EventPublisher;
 import com.secretvault.rotation.dto.RotationDtos.TriggerRotationRequest;
 import com.secretvault.rotation.entity.RotationJob;
 import com.secretvault.rotation.entity.RotationPolicy;
@@ -15,6 +19,7 @@ import com.secretvault.secret.entity.Secret;
 import com.secretvault.secret.repository.SecretRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +41,7 @@ public class RotationSchedulerService {
     private final RotationService rotationService;
     private final SecretRotatorRegistry rotatorRegistry;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     public RotationSchedulerService(
             RotationPolicyRepository policyRepository,
@@ -44,12 +50,24 @@ public class RotationSchedulerService {
             RotationService rotationService,
             SecretRotatorRegistry rotatorRegistry,
             AuditService auditService) {
+        this(policyRepository, jobRepository, secretRepository, rotationService, rotatorRegistry, auditService, null);
+    }
+
+    public RotationSchedulerService(
+            RotationPolicyRepository policyRepository,
+            RotationJobRepository jobRepository,
+            SecretRepository secretRepository,
+            RotationService rotationService,
+            SecretRotatorRegistry rotatorRegistry,
+            AuditService auditService,
+            @Autowired(required = false) EventPublisher eventPublisher) {
         this.policyRepository = policyRepository;
         this.jobRepository = jobRepository;
         this.secretRepository = secretRepository;
         this.rotationService = rotationService;
         this.rotatorRegistry = rotatorRegistry;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -106,6 +124,7 @@ public class RotationSchedulerService {
 
                 if (policy != null && policy.isAutoRevokePrevious()) {
                     job.setStatus(RotationStatus.REVOKING);
+                    publishJobEvent(job, EventType.ROTATION_REVOKING);
                     SecretRotator rotator = rotatorRegistry.getRotator(policy.getSecretType(), policy);
                     rotator.revokePrevious(null, policy, job);
                     auditService.recordSecretAudit(null, job.getWorkspaceId(), null, AuditAction.OLD_VERSION_REVOKED, job.getSecretId(), null, null, "SUCCESS");
@@ -114,10 +133,33 @@ public class RotationSchedulerService {
                 job.setStatus(RotationStatus.COMPLETED);
                 job.setCompletedAt(Instant.now());
                 jobRepository.save(job);
+                publishJobEvent(job, EventType.ROTATION_COMPLETED);
                 log.info("Rotation job {} successfully completed post-grace-period", job.getId());
             } catch (Exception e) {
                 log.error("Failed to revoke previous credential for job {}: {}", job.getId(), e.getMessage(), e);
             }
+        }
+    }
+
+    private void publishJobEvent(RotationJob job, EventType eventType) {
+        if (eventPublisher == null || job == null) return;
+        try {
+            BaseDomainEvent event = BaseDomainEvent.builder()
+                    .eventType(eventType)
+                    .workspaceId(job.getWorkspaceId())
+                    .secretId(job.getSecretId())
+                    .actorType("SYSTEM")
+                    .actorId("SYSTEM_SCHEDULER")
+                    .source("secretvault-rotation-scheduler")
+                    .aggregateType("ROTATION_JOB")
+                    .aggregateId(job.getId().toString())
+                    .severity(EventSeverity.INFO)
+                    .addMetadata("jobId", job.getId().toString())
+                    .addMetadata("status", job.getStatus() != null ? job.getStatus().name() : null)
+                    .build();
+            eventPublisher.publish(event);
+        } catch (Exception e) {
+            log.warn("Failed to publish job event {}: {}", eventType, e.getMessage());
         }
     }
 }

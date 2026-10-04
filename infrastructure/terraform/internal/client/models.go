@@ -188,3 +188,80 @@ type OidcTokenResponse struct {
 	ExpiresIn   int64  `json:"expiresIn"`
 	Scope       string `json:"scope,omitempty"`
 }
+
+// RotationPolicyResponse represents a SecretVault Secret Rotation Policy.
+type RotationPolicyResponse struct {
+	ID                    string     `json:"id"`
+	WorkspaceID           string     `json:"workspaceId"`
+	SecretID              string     `json:"secretId"`
+	Enabled               bool       `json:"enabled"`
+	Strategy              string     `json:"strategy"`
+	SecretType            string     `json:"secretType"`
+	IntervalSeconds       int64      `json:"intervalSeconds"`
+	MinIntervalSeconds    int64      `json:"minIntervalSeconds"`
+	MaxSecretAgeSeconds   *int64     `json:"maxSecretAgeSeconds,omitempty"`
+	RotationWindowSeconds int64      `json:"rotationWindowSeconds"`
+	CronExpression        string     `json:"cronExpression,omitempty"`
+	Timezone              string     `json:"timezone,omitempty"`
+	MaxRetries            int        `json:"maxRetries"`
+	RetryBackoffSeconds   int        `json:"retryBackoffSeconds"`
+	ValidationType        string     `json:"validationType"`
+	RolloutStrategy       string     `json:"rolloutStrategy"`
+	GracePeriodSeconds    int64      `json:"gracePeriodSeconds"`
+	AutoRevokePrevious    bool       `json:"autoRevokePrevious"`
+	AutoRollbackOnFailure bool       `json:"autoRollbackOnFailure"`
+	RequireApproval       bool       `json:"requireApproval"`
+	RequireJitApproval    bool       `json:"requireJitApproval"`
+	SecretGeneratorConfig string     `json:"secretGeneratorConfig,omitempty"`
+	LastRotatedAt         *time.Time `json:"lastRotatedAt,omitempty"`
+	NextRotationDueAt     *time.Time `json:"nextRotationDueAt,omitempty"`
+	CreatedAt             time.Time  `json:"createdAt"`
+	UpdatedAt             time.Time  `json:"updatedAt"`
+}
+
+// CreateRotationPolicyRequest payload for creating a rotation policy.
+type CreateRotationPolicyRequest struct {
+	SecretID              string `json:"secretId"`
+	Enabled               bool   `json:"enabled"`
+	Strategy              string `json:"strategy,omitempty"`
+	SecretType            string `json:"secretType,omitempty"`
+	IntervalSeconds       int64  `json:"intervalSeconds,omitempty"`
+	MinIntervalSeconds    int64  `json:"minIntervalSeconds,omitempty"`
+	MaxSecretAgeSeconds   *int64 `json:"maxSecretAgeSeconds,omitempty"`
+	RotationWindowSeconds int64  `json:"rotationWindowSeconds,omitempty"`
+	CronExpression        string `json:"cronExpression,omitempty"`
+	Timezone              string `json:"timezone,omitempty"`
+	MaxRetries            int    `json:"maxRetries,omitempty"`
+	RetryBackoffSeconds   int    `json:"retryBackoffSeconds,omitempty"`
+	ValidationType        string `json:"validationType,omitempty"`
+	RolloutStrategy       string `json:"rolloutStrategy,omitempty"`
+	GracePeriodSeconds    int64  `json:"gracePeriodSeconds,omitempty"`
+	AutoRevokePrevious    bool   `json:"autoRevokePrevious"`
+	AutoRollbackOnFailure bool   `json:"autoRollbackOnFailure"`
+	RequireApproval       bool   `json:"requireApproval"`
+	RequireJitApproval    bool   `json:"requireJitApproval"`
+	SecretGeneratorConfig string `json:"secretGeneratorConfig,omitempty"`
+}
+
+// UpdateRotationPolicyRequest payload for updating a rotation policy.
+type UpdateRotationPolicyRequest struct {
+	Enabled               bool   `json:"enabled"`
+	Strategy              string `json:"strategy,omitempty"`
+	SecretType            string `json:"secretType,omitempty"`
+	IntervalSeconds       int64  `json:"intervalSeconds,omitempty"`
+	MinIntervalSeconds    int64  `json:"minIntervalSeconds,omitempty"`
+	MaxSecretAgeSeconds   *int64 `json:"maxSecretAgeSeconds,omitempty"`
+	RotationWindowSeconds int64  `json:"rotationWindowSeconds,omitempty"`
+	CronExpression        string `json:"cronExpression,omitempty"`
+	Timezone              string `json:"timezone,omitempty"`
+	MaxRetries            int    `json:"maxRetries,omitempty"`
+	RetryBackoffSeconds   int    `json:"retryBackoffSeconds,omitempty"`
+	ValidationType        string `json:"validationType,omitempty"`
+	RolloutStrategy       string `json:"rolloutStrategy,omitempty"`
+	GracePeriodSeconds    int64  `json:"gracePeriodSeconds,omitempty"`
+	AutoRevokePrevious    bool   `json:"autoRevokePrevious"`
+	AutoRollbackOnFailure bool   `json:"autoRollbackOnFailure"`
+	RequireApproval       bool   `json:"requireApproval"`
+	RequireJitApproval    bool   `json:"requireJitApproval"`
+	SecretGeneratorConfig string `json:"secretGeneratorConfig,omitempty"`
+}

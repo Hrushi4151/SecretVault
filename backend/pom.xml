@@ -141,7 +141,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-XX:+EnableDynamicAgentLoading -Dnet.bytebuddy.experimental=true</argLine>
+                    <argLine>-XX:+UseSerialGC -Xmx128m -Xms32m -XX:+EnableDynamicAgentLoading -Dnet.bytebuddy.experimental=true</argLine>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
                     </systemPropertyVariables>
