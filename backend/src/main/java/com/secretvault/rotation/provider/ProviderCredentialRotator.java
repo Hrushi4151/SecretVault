@@ -128,6 +128,148 @@ public class ProviderCredentialRotator implements SecretRotator {
         this.eventProcessingLogRepository = eventProcessingLogRepository;
     }
 
+    public enum ClaimResult {
+        ACQUIRED,          // Claim successfully acquired (inserted or renewed) with status 'PROCESSING'
+        ALREADY_PROCESSED, // Already completed with status 'PROCESSED'
+        IN_PROGRESS,       // Claimed by another active worker within stale threshold
+        RECOVERED_STALE    // Claim was stale/abandoned and reclaimed for recovery/reconciliation
+    }
+
+    private volatile long staleClaimThresholdMs = 120_000; // 2 minutes default
+
+    public void setStaleClaimThresholdMs(long ms) {
+        this.staleClaimThresholdMs = ms;
+    }
+
+    public long getStaleClaimThresholdMs() {
+        return this.staleClaimThresholdMs;
+    }
+
+    /**
+     * Atomically attempts to acquire a durable execution claim in the database before performing
+     * external provider mutation. Prevents concurrent workers from both executing external mutations.
+     */
+    public ClaimResult acquireDurableClaim(UUID eventId, String consumerName, UUID workspaceId, String correlationId) {
+        if (eventProcessingLogRepository == null) {
+            return ClaimResult.ACQUIRED;
+        }
+
+        // 1. Check existing record
+        try {
+            java.util.Optional<EventProcessingLog> existing = eventProcessingLogRepository.findByEventIdAndConsumerName(eventId, consumerName);
+            if (existing.isPresent()) {
+                EventProcessingLog record = existing.get();
+                if ("PROCESSED".equalsIgnoreCase(record.getStatus())) {
+                    return ClaimResult.ALREADY_PROCESSED;
+                }
+                if ("PROCESSING".equalsIgnoreCase(record.getStatus())) {
+                    long age = (record.getProcessedAt() != null)
+                            ? (System.currentTimeMillis() - record.getProcessedAt().toEpochMilli())
+                            : ((record.getCreatedAt() != null) ? (System.currentTimeMillis() - record.getCreatedAt().toEpochMilli()) : Long.MAX_VALUE);
+
+                    if (age < staleClaimThresholdMs) {
+                        log.info("Durable claim in progress by another worker for event {} consumer {} (age: {}ms)", eventId, consumerName, age);
+                        return ClaimResult.IN_PROGRESS;
+                    } else {
+                        log.warn("Durable claim for event {} consumer {} is stale (age: {}ms > {}ms); reclaiming for recovery/reconciliation",
+                                eventId, consumerName, age, staleClaimThresholdMs);
+                        record.setAttemptCount(record.getAttemptCount() + 1);
+                        record.setProcessedAt(java.time.Instant.now());
+                        record.setStatus("PROCESSING");
+                        eventProcessingLogRepository.saveAndFlush(record);
+                        return ClaimResult.RECOVERED_STALE;
+                    }
+                }
+                if ("FAILED".equalsIgnoreCase(record.getStatus())) {
+                    log.info("Retrying previously failed delivery for event {} consumer {}", eventId, consumerName);
+                    record.setAttemptCount(record.getAttemptCount() + 1);
+                    record.setProcessedAt(java.time.Instant.now());
+                    record.setStatus("PROCESSING");
+                    record.setError(null);
+                    eventProcessingLogRepository.saveAndFlush(record);
+                    return ClaimResult.ACQUIRED;
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Error checking existing durable claim for event {} consumer {}: {}", eventId, consumerName, ex.getMessage());
+        }
+
+        // 2. Atomic insert for new claim
+        try {
+            EventProcessingLog claim = new EventProcessingLog(
+                    eventId,
+                    consumerName,
+                    workspaceId,
+                    "PROCESSING",
+                    correlationId
+            );
+            claim.setProcessedAt(java.time.Instant.now());
+            eventProcessingLogRepository.saveAndFlush(claim);
+            return ClaimResult.ACQUIRED;
+        } catch (Exception ex) {
+            // Unique constraint violation on uq_event_consumer (or concurrent insertion)
+            log.info("Concurrent claim acquisition collision for event {} consumer {}. Re-evaluating DB state...", eventId, consumerName);
+            try {
+                java.util.Optional<EventProcessingLog> existing = eventProcessingLogRepository.findByEventIdAndConsumerName(eventId, consumerName);
+                if (existing.isPresent()) {
+                    EventProcessingLog record = existing.get();
+                    if ("PROCESSED".equalsIgnoreCase(record.getStatus())) {
+                        return ClaimResult.ALREADY_PROCESSED;
+                    }
+                    if ("PROCESSING".equalsIgnoreCase(record.getStatus())) {
+                        long age = (record.getProcessedAt() != null)
+                                ? (System.currentTimeMillis() - record.getProcessedAt().toEpochMilli())
+                                : 0;
+                        if (age < staleClaimThresholdMs) {
+                            return ClaimResult.IN_PROGRESS;
+                        } else {
+                            record.setAttemptCount(record.getAttemptCount() + 1);
+                            record.setProcessedAt(java.time.Instant.now());
+                            record.setStatus("PROCESSING");
+                            eventProcessingLogRepository.saveAndFlush(record);
+                            return ClaimResult.RECOVERED_STALE;
+                        }
+                    }
+                }
+            } catch (Exception e2) {
+                log.warn("Error re-evaluating claim collision: {}", e2.getMessage());
+            }
+            return ClaimResult.IN_PROGRESS;
+        }
+    }
+
+    public void recordDurableCompletion(UUID eventId, String consumerName) {
+        if (eventProcessingLogRepository == null) return;
+        try {
+            java.util.Optional<EventProcessingLog> existing = eventProcessingLogRepository.findByEventIdAndConsumerName(eventId, consumerName);
+            if (existing.isPresent()) {
+                EventProcessingLog record = existing.get();
+                record.setStatus("PROCESSED");
+                record.setProcessedAt(java.time.Instant.now());
+                record.setError(null);
+                eventProcessingLogRepository.saveAndFlush(record);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to mark durable completion for event {} consumer {}: {}", eventId, consumerName, ex.getMessage());
+        }
+    }
+
+    public void recordDurableFailure(UUID eventId, String consumerName, String errorMessage) {
+        if (eventProcessingLogRepository == null) return;
+        try {
+            java.util.Optional<EventProcessingLog> existing = eventProcessingLogRepository.findByEventIdAndConsumerName(eventId, consumerName);
+            if (existing.isPresent()) {
+                EventProcessingLog record = existing.get();
+                record.setStatus("FAILED");
+                record.setError(errorMessage);
+                record.setProcessedAt(java.time.Instant.now());
+                eventProcessingLogRepository.saveAndFlush(record);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to mark durable failure for event {} consumer {}: {}", eventId, consumerName, ex.getMessage());
+        }
+    }
+
     public void clearInMemoryCache() {
         recentlyPushedKeys.clear();
     }
@@ -199,53 +341,46 @@ public class ProviderCredentialRotator implements SecretRotator {
             String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v" + targetVersion;
             String pushKey = secretId + ":" + mapping.getId() + ":" + jobId + ":v" + targetVersion;
 
-            // 1. Fast in-memory check (performance optimization)
+            // 1. Fast in-memory check (latency optimization only)
             Long pushedTime = recentlyPushedKeys.get(pushKey);
             if (pushedTime != null && (System.currentTimeMillis() - pushedTime) < 300_000) {
                 log.info("In-memory dedup: skipping provider push for secret {} on mapping {} (job {})", secretId, mapping.getId(), jobId);
                 continue;
             }
 
-            // 2. Authoritative durable check across JVM restarts / multiple instances
-            if (eventProcessingLogRepository != null && eventProcessingLogRepository.existsByEventIdAndConsumerName(jobId, consumerName)) {
-                log.info("Durable check: skipping provider push for secret {} on mapping {} (job {}) - already persisted in database",
-                        secretId, mapping.getId(), jobId);
+            // 2. Authoritative durable atomic claim before external mutation
+            ClaimResult claimResult = acquireDurableClaim(jobId, consumerName, workspaceId, "job:" + jobId + ":secret:" + secretId);
+            if (claimResult == ClaimResult.ALREADY_PROCESSED) {
+                log.info("Durable check: skipping provider push for secret {} on mapping {} (job {}) - already completed", secretId, mapping.getId(), jobId);
                 recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
                 continue;
             }
-
-            // Synchronously push to provider with retry, verification, and audit
-            pushToProviderWithRetry(mapping, secret, newPlaintext, policy, job);
-
-            // Persist durable delivery log
-            if (eventProcessingLogRepository != null) {
-                try {
-                    EventProcessingLog logEntry = new EventProcessingLog(
-                            jobId,
-                            consumerName,
-                            workspaceId,
-                            "PROCESSED",
-                            "job:" + jobId + ":secret:" + secretId
-                    );
-                    eventProcessingLogRepository.saveAndFlush(logEntry);
-                } catch (Exception ex) {
-                    log.warn("Durable delivery log already exists or concurrent insertion for job {} mapping {}: {}", jobId, mapping.getId(), ex.getMessage());
-                }
+            if (claimResult == ClaimResult.IN_PROGRESS) {
+                log.info("Durable claim in progress by concurrent worker for secret {} on mapping {} (job {}). Skipping duplicate mutation.", secretId, mapping.getId(), jobId);
+                continue;
             }
 
-            // Register in-memory cache
-            recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
+            // claimResult is ACQUIRED or RECOVERED_STALE -> perform external mutation
+            try {
+                pushToProviderWithRetry(mapping, secret, newPlaintext, policy, job);
+                // Record completion
+                recordDurableCompletion(jobId, consumerName);
+                recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
 
-            // Publish secure integration contract event (strictly zero secret material)
-            RotationProviderPushEvent pushEvent = new RotationProviderPushEvent(
-                    secretId,
-                    targetVersion,
-                    mapping.getId(),
-                    job.getId(),
-                    workspaceId
-            );
-            if (eventPublisher != null) {
-                eventPublisher.publishEvent(pushEvent);
+                // Publish secure integration contract event (strictly zero secret material)
+                RotationProviderPushEvent pushEvent = new RotationProviderPushEvent(
+                        secretId,
+                        targetVersion,
+                        mapping.getId(),
+                        job.getId(),
+                        workspaceId
+                );
+                if (eventPublisher != null) {
+                    eventPublisher.publishEvent(pushEvent);
+                }
+            } catch (Exception ex) {
+                recordDurableFailure(jobId, consumerName, ex.getMessage());
+                throw ex;
             }
         }
     }
@@ -340,7 +475,7 @@ public class ProviderCredentialRotator implements SecretRotator {
         String pushKey = event.secretId() + ":" + event.providerMappingId() + ":" + jobId + ":v" + version;
         String consumerName = "PROVIDER_PUSH:" + event.providerMappingId() + ":v" + version;
 
-        // 1. Fast in-memory check (performance optimization)
+        // 1. Fast in-memory check (latency optimization only)
         Long pushedTime = recentlyPushedKeys.get(pushKey);
         if (pushedTime != null && (System.currentTimeMillis() - pushedTime) < 300_000) {
             log.info("In-memory dedup: skipping duplicate provider push for secret {} on mapping {} (already completed in job {})",
@@ -348,11 +483,17 @@ public class ProviderCredentialRotator implements SecretRotator {
             return;
         }
 
-        // 2. Authoritative durable check across JVM restarts / multiple instances
-        if (eventProcessingLogRepository != null && eventProcessingLogRepository.existsByEventIdAndConsumerName(jobId, consumerName)) {
-            log.info("Durable check: skipping duplicate event handling for secret {} on mapping {} (job {}) - already persisted in database",
+        // 2. Authoritative durable atomic claim before external mutation
+        ClaimResult claimResult = acquireDurableClaim(jobId, consumerName, event.workspaceId(), "event:" + event.secretId());
+        if (claimResult == ClaimResult.ALREADY_PROCESSED) {
+            log.info("Durable check: skipping duplicate event handling for secret {} on mapping {} (job {}) - already completed",
                     event.secretId(), event.providerMappingId(), jobId);
             recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
+            return;
+        }
+        if (claimResult == ClaimResult.IN_PROGRESS) {
+            log.info("Durable claim in progress by concurrent worker for secret {} on mapping {} (job {}). Skipping duplicate mutation.",
+                    event.secretId(), event.providerMappingId(), jobId);
             return;
         }
 
@@ -367,17 +508,20 @@ public class ProviderCredentialRotator implements SecretRotator {
         ProviderResourceMapping mapping = mappingRepository.findByIdAndWorkspaceId(event.providerMappingId(), event.workspaceId())
                 .orElse(null);
         if (mapping == null || !mapping.isSyncEnabled()) {
+            recordDurableFailure(jobId, consumerName, "Mapping not found or sync disabled");
             return;
         }
 
         Secret secret = secretRepository.findById(event.secretId()).orElse(null);
         if (secret == null) {
+            recordDurableFailure(jobId, consumerName, "Secret not found");
             return;
         }
 
         SecretVersion secretVersion = secretVersionRepository.findBySecretIdAndVersionNumber(event.secretId(), event.versionNumber())
                 .orElse(null);
         if (secretVersion == null) {
+            recordDurableFailure(jobId, consumerName, "SecretVersion not found");
             return;
         }
 
@@ -398,11 +542,13 @@ public class ProviderCredentialRotator implements SecretRotator {
             ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(mapping.getIntegrationId(), event.workspaceId())
                     .orElse(null);
             if (integration == null || integration.getStatus() == IntegrationStatus.DISABLED || integration.getStatus() == IntegrationStatus.REVOKED) {
+                recordDurableFailure(jobId, consumerName, "Provider integration disabled or revoked");
                 return;
             }
 
             ProviderAdapter adapter = providerAdapterRegistry.getAdapter(integration.getProviderType());
             if (adapter == null) {
+                recordDurableFailure(jobId, consumerName, "Adapter not found for " + integration.getProviderType());
                 return;
             }
 
@@ -411,23 +557,12 @@ public class ProviderCredentialRotator implements SecretRotator {
 
             adapter.pushSecret(config, providerCredential, mapping, secret.getName(), secretPlaintext);
 
-            // Persist durable delivery log
-            if (eventProcessingLogRepository != null) {
-                try {
-                    EventProcessingLog logEntry = new EventProcessingLog(
-                            jobId,
-                            consumerName,
-                            event.workspaceId(),
-                            "PROCESSED",
-                            "event:" + event.secretId()
-                    );
-                    eventProcessingLogRepository.saveAndFlush(logEntry);
-                } catch (Exception ex) {
-                    log.warn("Durable delivery log already exists or concurrent insertion for event job {} mapping {}: {}", jobId, event.providerMappingId(), ex.getMessage());
-                }
-            }
-
+            // Record completion
+            recordDurableCompletion(jobId, consumerName);
             recentlyPushedKeys.put(pushKey, System.currentTimeMillis());
+        } catch (Exception ex) {
+            recordDurableFailure(jobId, consumerName, ex.getMessage());
+            throw ex;
         } finally {
             Arrays.fill(secretBytes, (byte) 0);
         }

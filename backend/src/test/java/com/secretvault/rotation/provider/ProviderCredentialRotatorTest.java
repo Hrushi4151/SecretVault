@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -344,78 +345,48 @@ class ProviderCredentialRotatorTest {
     }
 
     // =========================================================================
-    // FAILURE WINDOW & DURABLE IDEMPOTENCY TESTS (SCENARIOS A - J)
+    // REALISTIC CONCURRENCY & FAILURE WINDOW TESTS (SCENARIOS A - L)
     // =========================================================================
 
-    @Test
-    @DisplayName("Failure Window A: Duplicate event delivery drops second external push via in-memory cache")
-    void testFailureWindowA_DuplicateEventDropsSecondPush() {
-        RotationProviderPushEvent event = new RotationProviderPushEvent(
-                secretId, 2, mapping.getId(), job.getId(), workspaceId
-        );
-        SecretVersion version = new SecretVersion(
-                secretId, 2, "encrypted-blob".getBytes(StandardCharsets.UTF_8),
-                "dek".getBytes(StandardCharsets.UTF_8), "iv".getBytes(StandardCharsets.UTF_8),
-                "tag".getBytes(StandardCharsets.UTF_8), "key-ref", UUID.randomUUID(), "test"
-        );
+    private Map<String, EventProcessingLog> setupSimulatedDbRepository() {
+        Map<String, EventProcessingLog> dbStore = new java.util.concurrent.ConcurrentHashMap<>();
 
-        when(mappingRepository.findByIdAndWorkspaceId(mapping.getId(), workspaceId)).thenReturn(Optional.of(mapping));
-        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
-        when(secretVersionRepository.findBySecretIdAndVersionNumber(secretId, 2)).thenReturn(Optional.of(version));
-        when(encryptionService.decrypt(any(EncryptedPayload.class), anyString())).thenReturn("secret-val".getBytes(StandardCharsets.UTF_8));
-        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
-        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
-        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        org.mockito.Mockito.lenient().when(eventProcessingLogRepository.findByEventIdAndConsumerName(any(UUID.class), anyString()))
+                .thenAnswer(inv -> {
+                    UUID eventId = inv.getArgument(0);
+                    String consumer = inv.getArgument(1);
+                    return Optional.ofNullable(dbStore.get(eventId + ":" + consumer));
+                });
 
-        // First delivery
-        rotator.handleRotationProviderPush(event);
-        // Second duplicate delivery
-        rotator.handleRotationProviderPush(event);
+        org.mockito.Mockito.lenient().when(eventProcessingLogRepository.existsByEventIdAndConsumerName(any(UUID.class), anyString()))
+                .thenAnswer(inv -> {
+                    UUID eventId = inv.getArgument(0);
+                    String consumer = inv.getArgument(1);
+                    return dbStore.containsKey(eventId + ":" + consumer);
+                });
 
-        // Exactly 1 external mutation executed; duplicate dropped
-        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        org.mockito.Mockito.lenient().when(eventProcessingLogRepository.saveAndFlush(any(EventProcessingLog.class)))
+                .thenAnswer(inv -> {
+                    EventProcessingLog logEntry = inv.getArgument(0);
+                    String key = logEntry.getEventId() + ":" + logEntry.getConsumerName();
+                    EventProcessingLog existing = dbStore.putIfAbsent(key, logEntry);
+                    if (existing != null && !existing.getId().equals(logEntry.getId())) {
+                        throw new org.springframework.dao.DataIntegrityViolationException("Unique constraint violation: uq_event_consumer on (" + key + ")");
+                    }
+                    if (existing != null) {
+                        dbStore.put(key, logEntry);
+                    }
+                    return logEntry;
+                });
+
+        return dbStore;
     }
 
     @Test
-    @DisplayName("Failure Window B: Same event after JVM/cache restart simulation checks durable database log")
-    void testFailureWindowB_SameEventAfterJvmRestartSimulation() {
-        RotationProviderPushEvent event = new RotationProviderPushEvent(
-                secretId, 2, mapping.getId(), job.getId(), workspaceId
-        );
+    @DisplayName("Failure Window A: 10+ concurrent workers for same delivery -> Exactly 1 performs external mutation")
+    void testFailureWindowA_TenConcurrentWorkers_ExactlyOneMutates() throws Exception {
+        setupSimulatedDbRepository();
 
-        // Simulate that EventProcessingLog was already saved in DB before JVM crash/restart
-        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
-        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
-
-        // Clear in-memory cache to simulate brand new JVM process
-        rotator.clearInMemoryCache();
-
-        rotator.handleRotationProviderPush(event);
-
-        // Verify zero external provider mutations executed because durable log exists
-        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
-        verify(encryptionService, never()).decrypt(any(), any());
-    }
-
-    @Test
-    @DisplayName("Failure Window C: Same event on another worker node with empty cache relies on database log")
-    void testFailureWindowC_SameEventOnAnotherWorkerWithEmptyCache() {
-        RotationProviderPushEvent event = new RotationProviderPushEvent(
-                secretId, 2, mapping.getId(), job.getId(), workspaceId
-        );
-
-        // Worker B has empty in-memory cache, but DB has record from Worker A
-        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
-        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
-
-        rotator.handleRotationProviderPush(event);
-
-        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Failure Window D: Process failure after provider mutation allows idempotent reconciliation")
-    void testFailureWindowD_ProcessFailureAfterProviderMutation() {
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
         when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
         when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
@@ -424,28 +395,207 @@ class ProviderCredentialRotatorTest {
         when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
                 .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
 
-        // Simulate first execution where DB log save throws transient DB disconnect exception
-        when(eventProcessingLogRepository.saveAndFlush(any(EventProcessingLog.class)))
-                .thenThrow(new RuntimeException("Transient DB disconnect after HTTP mutation"));
+        int workerCount = 12;
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(workerCount);
+        java.util.concurrent.CountDownLatch startGate = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch doneGate = new java.util.concurrent.CountDownLatch(workerCount);
+        java.util.concurrent.atomic.AtomicInteger executedCount = new java.util.concurrent.atomic.AtomicInteger(0);
 
-        // activate() still completes without uncaught crash since provider mutation was successful
+        for (int i = 0; i < workerCount; i++) {
+            executor.submit(() -> {
+                try {
+                    startGate.await();
+                    rotator.activate("secret-val", policy, job);
+                    executedCount.incrementAndGet();
+                } catch (Exception ignored) {
+                } finally {
+                    doneGate.countDown();
+                }
+            });
+        }
+
+        startGate.countDown();
+        doneGate.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        executor.shutdown();
+
+        // Exactly 1 external provider mutation was executed across all 12 concurrent workers
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+    }
+
+    @Test
+    @DisplayName("Failure Window B: JVM restart after claim -> In-flight claim in DB prevents duplicate execution")
+    void testFailureWindowB_JvmRestartAfterClaim_PreventsDuplicate() {
+        Map<String, EventProcessingLog> dbStore = setupSimulatedDbRepository();
+
+        String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        EventProcessingLog inFlightClaim = new EventProcessingLog(
+                job.getId(), consumerName, workspaceId, "PROCESSING", "job:" + job.getId()
+        );
+        inFlightClaim.setProcessedAt(java.time.Instant.now());
+        dbStore.put(job.getId() + ":" + consumerName, inFlightClaim);
+
+        // Clear JVM in-memory cache
+        rotator.clearInMemoryCache();
+
+        // When activate() runs on restarted JVM
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+
+        rotator.activate("secret-val", policy, job);
+
+        // Zero external mutations because DB has active claim in progress
+        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Failure Window C: Worker failover -> Stale claim is reclaimed and completed by failover worker")
+    void testFailureWindowC_WorkerFailover_ReclaimsAndCompletes() {
+        Map<String, EventProcessingLog> dbStore = setupSimulatedDbRepository();
+
+        String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        EventProcessingLog staleClaim = new EventProcessingLog(
+                job.getId(), consumerName, workspaceId, "PROCESSING", "job:" + job.getId()
+        );
+        // Stale claim from crashed worker (5 minutes ago)
+        staleClaim.setProcessedAt(java.time.Instant.now().minusSeconds(300));
+        staleClaim.setAttemptCount(1);
+        dbStore.put(job.getId() + ":" + consumerName, staleClaim);
+
+        rotator.setStaleClaimThresholdMs(10_000); // 10s threshold
+        rotator.clearInMemoryCache();
+
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        rotator.activate("secret-val", policy, job);
+
+        // Failover worker reclaimed and executed mutation
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        assertThat(dbStore.get(job.getId() + ":" + consumerName).getStatus()).isEqualTo("PROCESSED");
+        assertThat(dbStore.get(job.getId() + ":" + consumerName).getAttemptCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Failure Window D: Crash before provider mutation -> Reclaimed and executed cleanly")
+    void testFailureWindowD_CrashBeforeProviderMutation_RecoversCleanly() {
+        Map<String, EventProcessingLog> dbStore = setupSimulatedDbRepository();
+
+        String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        EventProcessingLog abandonedClaim = new EventProcessingLog(
+                job.getId(), consumerName, workspaceId, "PROCESSING", "job:" + job.getId()
+        );
+        abandonedClaim.setProcessedAt(java.time.Instant.now().minusSeconds(200));
+        dbStore.put(job.getId() + ":" + consumerName, abandonedClaim);
+
+        rotator.setStaleClaimThresholdMs(1000);
+        rotator.clearInMemoryCache();
+
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        rotator.activate("secret-val", policy, job);
+
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        assertThat(dbStore.get(job.getId() + ":" + consumerName).getStatus()).isEqualTo("PROCESSED");
+    }
+
+    @Test
+    @DisplayName("Failure Window E: Crash immediately after provider mutation -> Idempotent recovery reconciles")
+    void testFailureWindowE_CrashImmediatelyAfterProviderMutation_IdempotentReconciliation() {
+        Map<String, EventProcessingLog> dbStore = setupSimulatedDbRepository();
+
+        String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        EventProcessingLog crashedClaim = new EventProcessingLog(
+                job.getId(), consumerName, workspaceId, "PROCESSING", "job:" + job.getId()
+        );
+        crashedClaim.setProcessedAt(java.time.Instant.now().minusSeconds(150));
+        dbStore.put(job.getId() + ":" + consumerName, crashedClaim);
+
+        rotator.setStaleClaimThresholdMs(5000);
+        rotator.clearInMemoryCache();
+
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        // Vercel adapter returns idempotent update
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        rotator.activate("secret-val", policy, job);
+
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        assertThat(dbStore.get(job.getId() + ":" + consumerName).getStatus()).isEqualTo("PROCESSED");
+    }
+
+    @Test
+    @DisplayName("Failure Window F: Completion DB failure -> Handled gracefully and recorded")
+    void testFailureWindowF_CompletionDbFailure_HandledGracefully() {
+        when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
+        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        // Claim succeeds, but recording completion throws transient exception
+        when(eventProcessingLogRepository.findByEventIdAndConsumerName(any(UUID.class), anyString()))
+                .thenReturn(Optional.empty()) // for acquireClaim
+                .thenThrow(new RuntimeException("DB connection dropped during completion record"));
+
+        // activate() still completes provider mutation without breaking rotation
         rotator.activate("secret-val", policy, job);
 
         verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
     }
 
     @Test
-    @DisplayName("Failure Window E: Timeout after provider mutation retries with idempotent adapter semantics")
-    void testFailureWindowE_TimeoutAfterProviderMutationRetriesIdempotently() {
+    @DisplayName("Failure Window G: Outbox redelivery -> Skipped when DB status is PROCESSED")
+    void testFailureWindowG_OutboxRedelivery_SkippedWhenAlreadyProcessed() {
+        Map<String, EventProcessingLog> dbStore = setupSimulatedDbRepository();
+
+        String consumerName = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
+        EventProcessingLog completed = new EventProcessingLog(
+                job.getId(), consumerName, workspaceId, "PROCESSED", "job:" + job.getId()
+        );
+        dbStore.put(job.getId() + ":" + consumerName, completed);
+
+        rotator.clearInMemoryCache();
+
+        RotationProviderPushEvent event = new RotationProviderPushEvent(
+                secretId, 2, mapping.getId(), job.getId(), workspaceId
+        );
+
+        rotator.handleRotationProviderPush(event);
+        rotator.handleRotationProviderPush(event);
+
+        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Failure Window H: Timeout after successful provider mutation -> Retries idempotently")
+    void testFailureWindowH_TimeoutAfterSuccessfulProviderMutation_RetriesIdempotently() {
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
         when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
         when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
         when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
         when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
 
-        // Attempt 1: provider returns timeout error; Attempt 2: retry succeeds idempotently
+        // Attempt 1 fails with timeout, Attempt 2 succeeds
         when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
-                .thenReturn(ProviderSecretOperationResult.failure("PUSH", "STRIPE_API_KEY", ProviderErrorCode.PROVIDER_TIMEOUT, "Gateway Timeout"))
+                .thenReturn(ProviderSecretOperationResult.failure("PUSH", "STRIPE_API_KEY", ProviderErrorCode.PROVIDER_TIMEOUT, "Read timeout"))
                 .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
 
         rotator.activate("secret-val", policy, job);
@@ -457,48 +607,46 @@ class ProviderCredentialRotatorTest {
     }
 
     @Test
-    @DisplayName("Failure Window F: Outbox redelivery skipped when already persisted in event processing log")
-    void testFailureWindowF_OutboxRedeliverySkippedWhenAlreadyPersisted() {
-        RotationProviderPushEvent event = new RotationProviderPushEvent(
-                secretId, 2, mapping.getId(), job.getId(), workspaceId
+    @DisplayName("Failure Window I: Same version / different mappings do not collide")
+    void testFailureWindowI_SameVersionDifferentMappings_DoNotCollide() {
+        setupSimulatedDbRepository();
+
+        ProviderResourceMapping renderMapping = new ProviderResourceMapping(
+                workspaceId, UUID.randomUUID(), projectId, environmentId,
+                ProviderResourceType.SERVICE, "srv_render_456", "Render Backend", "production", "{}", true
         );
 
-        String expectedConsumer = "PROVIDER_PUSH:" + mapping.getId() + ":v2";
-        when(eventProcessingLogRepository.existsByEventIdAndConsumerName(job.getId(), expectedConsumer)).thenReturn(true);
+        ProviderIntegration renderIntegration = new ProviderIntegration();
+        renderIntegration.setWorkspaceId(workspaceId);
+        renderIntegration.setProviderType(ProviderType.RENDER);
+        renderIntegration.setStatus(IntegrationStatus.ACTIVE);
 
-        // Outbox event redelivered
-        rotator.handleRotationProviderPush(event);
-
-        verify(vercelAdapter, never()).pushSecret(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Failure Window G: Concurrent delivery of same providerMappingId + rotationJobId + versionNumber")
-    void testFailureWindowG_ConcurrentDeliveryOfTheSameJobMappingVersion() {
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
-        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
-        when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping, renderMapping));
+        when(integrationRepository.findByIdAndWorkspaceId(eq(integrationId), eq(workspaceId))).thenReturn(Optional.of(integration));
+        when(integrationRepository.findByIdAndWorkspaceId(eq(renderMapping.getIntegrationId()), eq(workspaceId))).thenReturn(Optional.of(renderIntegration));
         when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
-        when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
-        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
-                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+        when(adapterRegistry.getAdapter(ProviderType.RENDER)).thenReturn(renderAdapter);
+        when(credentialService.decryptCredential(integration)).thenReturn("vercel_token");
+        when(credentialService.decryptCredential(renderIntegration)).thenReturn("render_token");
 
-        // Thread 1: synchronous activate()
+        when(vercelAdapter.pushSecret(anyMap(), eq("vercel_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+        when(renderAdapter.pushSecret(anyMap(), eq("render_token"), eq(renderMapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("PUSH", "STRIPE_API_KEY", "STRIPE_API_KEY"));
+
         rotator.activate("secret-val", policy, job);
 
-        // Thread 2: concurrent event listener for the same job and mapping
-        RotationProviderPushEvent event = new RotationProviderPushEvent(
-                secretId, 2, mapping.getId(), job.getId(), workspaceId
-        );
-        rotator.handleRotationProviderPush(event);
-
-        // Exactly 1 external mutation executed
-        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        // Both distinct mappings executed independently
+        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("vercel_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
+        verify(renderAdapter, times(1)).pushSecret(anyMap(), eq("render_token"), eq(renderMapping), eq("STRIPE_API_KEY"), eq("secret-val"));
     }
 
     @Test
-    @DisplayName("Failure Window H: Successful new version delivery allowed on subsequent rotation")
-    void testFailureWindowH_SuccessfulNewVersionDeliveryAllowed() {
+    @DisplayName("Failure Window J: Same mapping / different versions execute in sequence without collision")
+    void testFailureWindowJ_SameMappingDifferentVersions_ExecuteInSequence() {
+        setupSimulatedDbRepository();
+
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
         when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
         when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
@@ -507,27 +655,22 @@ class ProviderCredentialRotatorTest {
         when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString()))
                 .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
 
-        // Version 2 rotation
+        // Version 2
         job.setTargetVersionNumber(2);
-        rotator.activate("secret-val-v2", policy, job);
+        rotator.activate("val-v2", policy, job);
 
-        // Next rotation cycle: Version 3 rotation with new job ID
-        RotationJob jobV3 = new RotationJob();
-        jobV3.setId(UUID.randomUUID());
-        jobV3.setWorkspaceId(workspaceId);
-        jobV3.setSecretId(secretId);
-        jobV3.setStatus(RotationStatus.ACTIVATING);
-        jobV3.setTargetVersionNumber(3);
+        // Version 3
+        job.setTargetVersionNumber(3);
+        rotator.activate("val-v3", policy, job);
 
-        rotator.activate("secret-val-v3", policy, jobV3);
-
-        // Both versions delivered successfully (2 pushes)
         verify(vercelAdapter, times(2)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), anyString());
     }
 
     @Test
-    @DisplayName("Failure Window I: Different rotation jobs do not collide")
-    void testFailureWindowI_DifferentRotationJobsDoNotCollide() {
+    @DisplayName("Failure Window K: Different rotation jobs do not collide")
+    void testFailureWindowK_DifferentRotationJobs_DoNotCollide() {
+        setupSimulatedDbRepository();
+
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
         when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
         when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
@@ -555,25 +698,20 @@ class ProviderCredentialRotatorTest {
     }
 
     @Test
-    @DisplayName("Failure Window J: Different provider mappings do not collide")
-    void testFailureWindowJ_DifferentProviderMappingsDoNotCollide() {
-        ProviderResourceMapping mapping2 = new ProviderResourceMapping(
-                workspaceId, integrationId, projectId, environmentId,
-                ProviderResourceType.PROJECT, "prj_vercel_preview", "Preview Web App", "preview", "{}", true
-        );
-
+    @DisplayName("Failure Window L: Provider idempotency & reconciliation executes safely without errors")
+    void testFailureWindowL_ProviderIdempotencyAndReconciliation() {
         when(secretRepository.findById(secretId)).thenReturn(Optional.of(secret));
-        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping, mapping2));
+        when(mappingRepository.findByEnvironmentId(environmentId)).thenReturn(List.of(mapping));
         when(integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)).thenReturn(Optional.of(integration));
         when(adapterRegistry.getAdapter(ProviderType.VERCEL)).thenReturn(vercelAdapter);
         when(credentialService.decryptCredential(integration)).thenReturn("sec_token");
-        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), any(ProviderResourceMapping.class), eq("STRIPE_API_KEY"), eq("secret-val")))
-                .thenReturn(ProviderSecretOperationResult.success("UPDATE", "STRIPE_API_KEY", "env_123"));
+
+        // Provider adapter returns idempotent upsert result for multiple calls
+        when(vercelAdapter.pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val")))
+                .thenReturn(ProviderSecretOperationResult.success("UPSERT", "STRIPE_API_KEY", "env_123"));
 
         rotator.activate("secret-val", policy, job);
 
-        // Both distinct mappings pushed within the single job
         verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping), eq("STRIPE_API_KEY"), eq("secret-val"));
-        verify(vercelAdapter, times(1)).pushSecret(anyMap(), eq("sec_token"), eq(mapping2), eq("STRIPE_API_KEY"), eq("secret-val"));
     }
 }
