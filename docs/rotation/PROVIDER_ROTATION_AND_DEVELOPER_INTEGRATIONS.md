@@ -52,18 +52,20 @@ During the `ACTIVATING` phase of automated secret rollover, the rotation engine 
 1. **Authoritative Execution Path**:
    - `RotationService` invokes `ProviderCredentialRotator.activate(job, targetVersion)` synchronously during the `ACTIVATING` lifecycle phase.
    - **Atomic Durable Claim**: Before executing any network call to external providers, the rotator attempts to acquire an atomic database claim via `EventProcessingLog` with status `'PROCESSING'`.
-   - The unique constraint `uq_event_consumer(event_id, consumer_name)` at the database level ensures that concurrent threads/workers cannot both acquire the initial claim.
+   - The unique constraint `uq_event_consumer(event_id, consumer_name)` at the database level ensures that concurrent threads/workers cannot both acquire the initial claim. Exactly one worker acquires the initial durable claim.
    - Upon successful provider mutation, `ProviderCredentialRotator` updates the `EventProcessingLog` record to `'PROCESSED'` and publishes `RotationProviderPushEvent`.
    - Asynchronous outbox worker listeners (`@EventListener handleRotationProviderPush`) acquire the durable claim before executing, dropping redundant execution if already `'PROCESSED'` or in progress.
 2. **Durable Idempotency Key**:
    - Primary DB uniqueness constraint: `event_id` = `rotationJobId` (or deterministic SHA-256/UUID of `secretId:mappingId:version`), `consumer_name` = `"PROVIDER_PUSH:" + providerMappingId + ":v" + targetVersion`.
    - Enforced by DB-level uniqueness constraint `uq_event_consumer` on `event_processing_log(event_id, consumer_name)`.
 3. **Delivery & Execution Semantics**:
-   - **Real Guarantee**: "At-least-once delivery with durable deduplication and provider-level idempotent mutation semantics."
-   - Because distributed network mutations across external cloud providers cannot guarantee pure two-phase commit with external APIs, SecretVault combines atomic database claims with provider-level idempotent upserts.
+   - **Guaranteed Delivery Model**: "At-least-once delivery with durable concurrency claims, durable deduplication, and provider-level idempotent mutation semantics."
+   - Distributed network mutations across external cloud providers cannot guarantee pure two-phase commit across autonomous external APIs. SecretVault combines atomic database claims with provider-level idempotent upserts.
+   - **Initial Concurrent Delivery**: Exactly one worker acquires the initial durable claim.
+   - **Stale/Crash Recovery**: Repeated provider operations converge safely through provider-level idempotency.
 4. **Crash-Window Modeling & Reconciliation Strategy**:
    - **Window 1: Crash before provider mutation**: The DB claim remains `'PROCESSING'`. When the stale threshold (2 minutes) expires, a failover worker or redelivery reclaims the record (`RECOVERED_STALE`), executes the provider mutation, and updates status to `'PROCESSED'`.
-   - **Window 2: Crash after provider mutation, before DB completion**: External provider received the secret, but the worker died before saving `'PROCESSED'`. Upon stale claim recovery, the failover worker re-executes the provider mutation using idempotent provider semantics (Vercel PATCH/POST upsert by key, Render PUT /env-vars/{key}), and updates DB status to `'PROCESSED'`.
+   - **Window 2: Crash after provider mutation, before DB completion**: External provider received the secret, but the worker died before saving `'PROCESSED'`. Upon stale claim recovery, the failover worker re-executes the provider mutation using idempotent provider semantics (Vercel PATCH/POST upsert by key, Render PUT /env-vars/{key}), and updates DB status to `'PROCESSED'`. Repeated operations converge safely through provider-level idempotency.
    - **Window 3: DB failure during completion recording**: The provider mutation succeeded; on retry, provider-level idempotent upsert reconciles safely when DB connectivity returns.
 5. **Provider-Level Idempotency**:
    - Vercel: Queries existing environment variables and issues `PATCH /v10/projects/{id}/env/{envId}` for update or `POST` for create.

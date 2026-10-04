@@ -130,13 +130,13 @@ ProviderCredentialRotator.activate(job, targetVersion)  [Authoritative Synchrono
 ```
 
 #### Real Delivery Guarantees & Semantics
-- **Delivery Guarantee:** **"At-least-once delivery with durable deduplication and provider-level idempotent mutation semantics."**
-- **Atomic Concurrency Protection:** Inserting/reclaiming the initial `'PROCESSING'` claim is atomic at the database level via `uq_event_consumer(event_id, consumer_name)`. When 10+ concurrent workers attempt delivery, exactly one acquires the claim while all others observe `IN_PROGRESS` or `ALREADY_PROCESSED`.
+- **Delivery Guarantee:** **"At-least-once delivery with durable concurrency claims, durable deduplication, and provider-level idempotent mutation semantics."**
+- **Atomic Concurrency Protection (Initial Delivery):** Inserting/reclaiming the initial `'PROCESSING'` claim is atomic at the database level via `uq_event_consumer(event_id, consumer_name)`. For concurrent initial delivery: **"Exactly one worker acquires the initial durable claim."** All other workers observe `IN_PROGRESS` or `ALREADY_PROCESSED` and skip mutation without executing any external API calls.
 - **Crash-Window Reconciliation Strategy:**
   1. *Crash before provider mutation:* Claim remains `'PROCESSING'`. After stale threshold (2 minutes), failover worker reclaims (`RECOVERED_STALE`), executes mutation, and sets `'PROCESSED'`.
-  2. *Crash after provider mutation, before completion record:* Provider has the secret. Stale claim recovery executes provider-level idempotent upsert (Vercel PATCH/POST by key, Render PUT by key) without duplicate variables, then sets `'PROCESSED'`.
+  2. *Crash after provider mutation, before completion record:* Provider has the secret. For stale/crash recovery, repeated provider operations converge safely through provider-level idempotency (Vercel PATCH/POST by key, Render PUT by key) without duplicate variables, then sets `'PROCESSED'`.
   3. *Completion DB failure:* Handled gracefully without crashing rotation; subsequent retries reconcile idempotently.
-- **In-Memory Cache Role:** `recentlyPushedKeys` acts strictly as an in-memory latency optimization to short-circuit hot event loops in the same JVM cycle.
+- **In-Memory Cache Role:** `recentlyPushedKeys` acts strictly as an in-memory latency optimization to short-circuit hot event loops in the same JVM cycle. Correctness is always backed by persistent database transactions.
 
 ---
 
