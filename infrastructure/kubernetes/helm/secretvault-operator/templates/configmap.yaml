@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "secretvault-operator.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "secretvault-operator.labels" . | nindent 4 }}
+data:
+  OPERATOR_SCOPE: {{ .Values.operator.scope | quote }}
+  WATCH_NAMESPACE: {{ default "" .Values.operator.watchNamespace | quote }}
+  LOG_LEVEL: {{ .Values.operator.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.operator.logFormat | quote }}
+  AUDIT_SAFE_LOGGING: {{ .Values.operator.auditSafeLogging | quote }}
+  SECRETVAULT_SERVER_URL: {{ .Values.secretvault.serverUrl | quote }}
+  TLS_ENABLED: {{ .Values.secretvault.tls.enabled | quote }}
+  TLS_INSECURE_SKIP_VERIFY: {{ .Values.secretvault.tls.insecureSkipVerify | quote }}
+  OIDC_AUDIENCE: {{ .Values.secretvault.oidc.audience | quote }}
+  OIDC_ISSUER: {{ default "" .Values.secretvault.oidc.issuer | quote }}
+  LEADER_ELECTION_ENABLED: {{ .Values.leaderElection.enabled | quote }}
+  LEADER_ELECTION_ID: {{ .Values.leaderElection.leaseName | quote }}
+  LEADER_ELECTION_LEASE_DURATION: {{ default "15s" .Values.leaderElection.leaseDuration | quote }}
+  LEADER_ELECTION_RENEW_DEADLINE: {{ default "10s" .Values.leaderElection.renewDeadline | quote }}
+  LEADER_ELECTION_RETRY_PERIOD: {{ default "2s" .Values.leaderElection.retryPeriod | quote }}
+  METRICS_ENABLED: {{ .Values.metrics.enabled | quote }}
+  METRICS_PORT: {{ .Values.metrics.port | quote }}

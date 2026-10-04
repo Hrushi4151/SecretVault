@@ -1,0 +1,28 @@
+================================================================================
+SecretVault Kubernetes Operator has been successfully deployed!
+================================================================================
+
+Release Name: {{ .Release.Name }}
+Namespace:    {{ .Release.Namespace }}
+Scope:        {{ .Values.operator.scope }}
+{{- if eq .Values.operator.scope "namespace" }}
+Target Watch Namespace: {{ default .Release.Namespace .Values.operator.watchNamespace }}
+{{- end }}
+
+1. Verify operator pod readiness:
+   kubectl get pods -n {{ .Release.Namespace }} -l {{ include "secretvault-operator.selectorLabels" . | replace ": " "=" }}
+
+2. Check operator reconciliation logs (Audit-Safe):
+   kubectl logs -n {{ .Release.Namespace }} -l {{ include "secretvault-operator.selectorLabels" . | replace ": " "=" }} -c manager -f
+
+3. Inspect available CustomResourceDefinitions:
+   kubectl get crds | grep secretvault.io
+
+4. Create your first SecretVaultSecret or SecretVaultSync resource:
+   See documentation and samples at:
+   https://github.com/Hrushi4151/SecretVault/tree/main/infrastructure/kubernetes
+
+IMPORTANT SECURITY NOTICE:
+Native Kubernetes Secret synchronization delivers decrypted secret data to cluster v1/Secret objects.
+Ensure your Kubernetes cluster has KMS / etcd encryption-at-rest configured in production.
+================================================================================

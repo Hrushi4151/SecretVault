@@ -166,11 +166,21 @@ The operator requires minimal scoped permissions:
 
 ---
 
-## 10. Phase Roadmap Status
+## 10. Production Helm Charts & Deployment Hardening (Phase 13.5)
+
+The production Helm chart is located at [`helm/secretvault-operator/`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/helm/secretvault-operator/).
+- **Chart Name:** `secretvault-operator` (v2 application chart)
+- **Deployment Guide:** [`docs/HELM_DEPLOYMENT.md`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/docs/HELM_DEPLOYMENT.md)
+- **Threat Model:** [`docs/THREAT_MODEL.md`](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/kubernetes/docs/THREAT_MODEL.md)
+- **Security Features:** Non-root (`runAsNonRoot: true`, UID/GID `65532`), read-only root filesystem, drop ALL capabilities, seccomp `RuntimeDefault`, Zero-Trust `NetworkPolicy`, optional Prometheus `ServiceMonitor`, optional `PodDisruptionBudget`, and least-privilege RBAC.
+
+---
+
+## 11. Phase Roadmap Status
 - [x] **Phase 13.1:** Kubernetes CRDs & Resource Contracts (`SecretVaultSecret`, `SecretVaultSync`).
 - [x] **Phase 13.2:** Kubernetes Workload OIDC Authentication & Projected Token Client.
 - [x] **Phase 13.3:** Kubernetes Operator Reconciler Core (manager, leader election, events).
 - [x] **Phase 13.4:** Kubernetes Secret Synchronization, Ephemeral Leases & Dynamic Rotation.
-- [ ] **Phase 13.5:** Production Helm Charts & Hardening (Deferred).
+- [x] **Phase 13.5:** Production Helm Charts & Hardening.
 - [ ] **Phase 13.6:** Production Terraform Provider (Deferred).
 - [ ] **Phase 13.7:** End-to-End Testing & Certification (Deferred).

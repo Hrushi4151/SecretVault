@@ -1,0 +1,161 @@
+# Default values for secretvault-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+
+image:
+  repository: hrushikesh4151/secretvault-operator
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+  # Optional immutable image digest (e.g. sha256:...)
+  digest: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ServiceAccount settings for the operator pod
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount ServiceAccount token for Kubernetes API communication
+  automountServiceAccountToken: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod-level security context (strict non-root, seccomp RuntimeDefault)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context (read-only root, drop all capabilities)
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Operator Operational Settings
+operator:
+  # Scope: "cluster" to manage CRDs across all namespaces, or "namespace" for single-namespace isolation
+  scope: cluster
+  # Target namespace to watch if scope is "namespace" (defaults to Release namespace if empty)
+  watchNamespace: ""
+  # Log level: "debug", "info", "warn", "error"
+  logLevel: info
+  # Log format: "json" or "text"
+  logFormat: json
+  # Audit-safe logging guarantees no secret material or tokens in logs
+  auditSafeLogging: true
+
+# SecretVault Control Plane API Configuration
+secretvault:
+  # Base URL of the authoritative SecretVault API server
+  serverUrl: "https://secretvault-backend.secretvault.svc.cluster.local:8080"
+  # TLS validation settings
+  tls:
+    enabled: true
+    insecureSkipVerify: false
+    # Optional base64-encoded PEM CA certificate bundle
+    caBundle: ""
+    # Optional existing Secret containing custom CA certificate under ca.crt
+    caSecretRef: ""
+  # OIDC workload identity configuration
+  oidc:
+    # Expected audience claim in projected ServiceAccount tokens
+    audience: "https://api.secretvault.io"
+    # Expected OIDC issuer URL
+    issuer: ""
+
+# Leader Election for High Availability
+leaderElection:
+  enabled: true
+  leaseName: "secretvault-operator-lock.secretvault.io"
+  leaseDuration: 15s
+  renewDeadline: 10s
+  retryPeriod: 2s
+
+# Resource requests and limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Liveness and Readiness Probes
+probes:
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Metrics and Observability
+metrics:
+  enabled: true
+  port: 8080
+  # Prometheus Operator ServiceMonitor
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+    annotations: {}
+
+# NetworkPolicy for Zero-Trust Ingress/Egress Isolation
+networkPolicy:
+  enabled: true
+  ingress:
+    # Allow Prometheus / monitoring systems to scrape metrics
+    allowMetrics: true
+  egress:
+    # Allow communication to Kubernetes API server
+    allowKubeApi: true
+    # Allow communication to SecretVault API server
+    allowSecretVaultApi: true
+    secretVaultApiPort: 8080
+    # Optional CIDR restriction for SecretVault API egress
+    secretVaultApiCidr: ""
+
+# PodDisruptionBudget for High Availability
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+priorityClassName: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+# Pod anti-affinity to schedule replicas across different nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - secretvault-operator
+          topologyKey: kubernetes.io/hostname

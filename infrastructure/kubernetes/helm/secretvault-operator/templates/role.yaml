@@ -1,0 +1,67 @@
+{{- if eq .Values.operator.scope "namespace" -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "secretvault-operator.fullname" . }}-manager-role
+  namespace: {{ default .Release.Namespace .Values.operator.watchNamespace }}
+  labels:
+    {{- include "secretvault-operator.labels" . | nindent 4 }}
+rules:
+  # SecretVault CRDs permissions
+  - apiGroups:
+      - secretvault.io
+    resources:
+      - secretvaultsecrets
+      - secretvaultsyncs
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - secretvault.io
+    resources:
+      - secretvaultsecrets/status
+      - secretvaultsyncs/status
+    verbs:
+      - get
+      - patch
+      - update
+  # Kubernetes core Secret synchronization permissions
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  # Workload rolling restart permissions on secret rotation (apps/v1)
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  # Event emission permissions
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+{{- end }}

@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SecretVaultOperatorValues",
+  "description": "Validation schema for SecretVault Operator Helm values",
+  "type": "object",
+  "required": [
+    "replicaCount",
+    "image",
+    "podSecurityContext",
+    "securityContext",
+    "secretvault"
+  ],
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of operator pod replicas"
+    },
+    "image": {
+      "type": "object",
+      "required": ["repository", "pullPolicy"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        },
+        "tag": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^(sha256:[a-f0-9]{64})?$"
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "required": ["runAsNonRoot"],
+      "properties": {
+        "runAsNonRoot": {
+          "type": "boolean",
+          "const": true
+        },
+        "runAsUser": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runAsGroup": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fsGroup": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seccompProfile": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["RuntimeDefault", "Localhost"]
+            }
+          }
+        }
+      }
+    },
+    "securityContext": {
+      "type": "object",
+      "required": ["allowPrivilegeEscalation", "readOnlyRootFilesystem", "capabilities"],
+      "properties": {
+        "allowPrivilegeEscalation": {
+          "type": "boolean",
+          "const": false
+        },
+        "readOnlyRootFilesystem": {
+          "type": "boolean",
+          "const": true
+        },
+        "capabilities": {
+          "type": "object",
+          "required": ["drop"],
+          "properties": {
+            "drop": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "contains": {
+                "const": "ALL"
+              }
+            }
+          }
+        }
+      }
+    },
+    "operator": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["cluster", "namespace"]
+        },
+        "watchNamespace": {
+          "type": "string"
+        },
+        "logLevel": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"]
+        },
+        "logFormat": {
+          "type": "string",
+          "enum": ["json", "text"]
+        },
+        "auditSafeLogging": {
+          "type": "boolean"
+        }
+      }
+    },
+    "secretvault": {
+      "type": "object",
+      "required": ["serverUrl", "tls"],
+      "properties": {
+        "serverUrl": {
+          "type": "string",
+          "pattern": "^https?://.*"
+        },
+        "tls": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "insecureSkipVerify": {
+              "type": "boolean"
+            },
+            "caBundle": {
+              "type": "string"
+            },
+            "caSecretRef": {
+              "type": "string"
+            }
+          }
+        },
+        "oidc": {
+          "type": "object",
+          "properties": {
+            "audience": {
+              "type": "string"
+            },
+            "issuer": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "leaderElection": {
+      "type": "object",
+      "required": ["enabled", "leaseName"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "leaseName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "leaseDuration": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$"
+        },
+        "renewDeadline": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$"
+        },
+        "retryPeriod": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["requests", "limits"],
+      "properties": {
+        "limits": {
+          "type": "object",
+          "required": ["cpu", "memory"],
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "required": ["cpu", "memory"],
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "interval": { "type": "string" },
+            "scrapeTimeout": { "type": "string" }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}
