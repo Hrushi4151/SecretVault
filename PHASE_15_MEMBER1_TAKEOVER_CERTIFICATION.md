@@ -1,19 +1,19 @@
 # SecretVault Phase 15 — Member 1 Takeover & Security Hardening Certification Report
 
-**Document Version:** 1.0.0
+**Document Version:** 1.1.0
 **Phase:** Phase 15 — AI Intelligence Copilot & DevSecOps Security Operations Platform
 **Auditor & Platform Engineer:** Member 1
 **Original Implementation Author:** Member 2 (`22b69dd573188fb963a2aa8fb2961ed3662e9780`)
 **Date:** October 5, 2026
-**Status:** **PHASE 15 — SECURITY CERTIFIED | IMPLEMENTATION COMPLETE | BRANCH READY FOR CONTROLLED MERGE**
+**Status:** **PHASE 15 — SECURITY CERTIFIED | FULLY FUNCTIONAL | ALL PRE-MERGE GATES PASSED**
 
 ---
 
 ## 1. Executive Summary
 
-Member 1 took formal engineering ownership of the existing Phase 15 feature branch (`feature/phase15-member2-ai-copilot-platform`) following Member 2's baseline delivery. The takeover objective was to conduct an uncompromising security audit, enforce zero-plaintext invariants across all LLM context pathways, harden remediation plan integrity with cryptographic seals, expand adversarial testing coverage, rebase cleanly onto `origin/main` (containing Phase 16 production infrastructure `be93573`), and execute a full multi-tier regression test suite.
+Member 1 took formal engineering ownership of the Phase 15 feature branch (`feature/phase15-member2-ai-copilot-platform`). Beyond auditing, Member 1 completed the end-to-end product implementation, implemented Four-Eyes Separation of Duties, integrated Step-Up MFA verification, created a strongly typed and bounded safe context builder, upgraded the Deterministic Offline Reasoning Provider to 13 standard intents, and synchronized the REST APIs, CLI, SDK, and React Frontend.
 
-All Phase 15 security invariants, AI safety boundaries, rate limiting quotas, tenant isolation boundaries, and execution gates have been verified and certified.
+The active feature branch is rebased cleanly on current main (`be93573c814c3731b45a6d29a1fd0a68c50a69ef`), with Member 2's original commit preserved under immutable tag `phase15-member2-original-22b69dd`.
 
 ---
 
@@ -21,45 +21,46 @@ All Phase 15 security invariants, AI safety boundaries, rate limiting quotas, te
 
 | Artifact / Pointer | Git Commit SHA / Ref | Status & Details |
 | :--- | :--- | :--- |
-| **Member 2 Original Baseline** | `22b69dd573188fb963a2aa8fb2961ed3662e9780` | Verified & preserved via permanent tag |
-| **Permanent Preservation Tag** | `refs/tags/phase15-member2-original-22b69dd` | Points to `22b69dd` (immutable baseline reference) |
-| **Base `origin/main` (Phase 16)** | `be93573c814c3731b45a6d29a1fd0a68c50a69ef` | Contains Phase 16 certified production infrastructure |
-| **Rebased Member 2 Baseline** | `b0c69248b11116669931fcdd0eb274643093246f` | Rebased cleanly onto main `be93573` |
-| **Member 1 Hardening Commit** | `b1b8fc93c20050ee68dbb660f845a7d79b9409b5` | `fix(ai): harden context sanitization and remediation plan integrity` |
-| **Active Feature Branch** | `feature/phase15-member2-ai-copilot-platform` | Clean working tree; ready for controlled merge gate |
+| **Member 2 Original Baseline** | `22b69dd573188fb963a2aa8fb2961ed3662e9780` | Preserved via permanent immutable tag |
+| **Permanent Preservation Tag** | `refs/tags/phase15-member2-original-22b69dd` | Immutable baseline verification pointer |
+| **Base `origin/main` (Phase 16)** | `be93573c814c3731b45a6d29a1fd0a68c50a69ef` | Certified main baseline |
+| **Active Feature Branch** | `feature/phase15-member2-ai-copilot-platform` | Clean rebase on `origin/main`, pre-merge verified |
 
 ---
 
-## 3. Security Audit & Hardening Remediation Ledger
+## 3. Product Completion & Security Hardening Ledger
 
-During Member 1's takeover audit, the following security enhancements were implemented and validated:
+### 3.1 Four-Eyes Separation of Duties Gate (`AiRecommendationEngine.java`, `AiRemediationExecutionGateway.java`)
+- **Dual-Approval Requirement:** Plans marked with `requires_four_eyes` (mandatory for `CRITICAL` risk) require two distinct reviews (`reviewed_by_user_id != second_reviewed_by_user_id`).
+- **Duplicate Approval Prevention:** A single user attempting to approve both stages is blocked with `IllegalStateException("Four-eyes violation: Second approval must be performed by a different authorized user")`.
+- **Pre-Execution Gate:** Authoritative execution strictly checks that both approvers are present and distinct before proceeding.
 
-### 3.1 Zero-Plaintext Boundary Hardening (`AiContextSanitizer.java`)
-- **Expanded Token Signatures:** Added regex matching for GitHub Fine-Grained Personal Access Tokens (`github_pat_[0-9a-zA-Z_]{20,}`), AWS Temporary Session Keys (`ASIA[0-9A-Z]{16}`), Standard AWS Access Keys (`AKIA[0-9A-Z]{16}`), Stripe Live Keys (`sk_live_...`), Slack Tokens (`xox...`), and JWT envelopes.
-- **Authorization Header Scrubbing:** Added case-insensitive scrubbing for `Authorization: [Bearer ...]` headers and standalone bearer strings, preventing header leakage into telemetry or LLM context prompts.
-- **Multi-Database Connection String Scrubbing:** Hardened `URI_CREDENTIALS_PATTERN` to strip passwords from all PostgreSQL, MySQL, Redis, MongoDB, and AMQP connection URLs without leaking complex characters.
-- **Strict Invariant Assertion (`assertZeroPlaintext`):** Throws `SecurityException` upon detecting any raw unredacted asymmetric keys, token patterns, authorization headers, or database credentials.
+### 3.2 Plan Versioning & Seal Invalidation
+- **Version Tracking:** Modifying plan steps or payload diff increments `version`, clears `reviewed_by_user_id` / `second_reviewed_by_user_id`, sets status back to `PENDING_APPROVAL`, and invalidates `plan_fingerprint`.
+- **Pre-Execution Tamper Check:** `AiRemediationExecutionGateway` recomputes the SHA-256 seal over the plan payload at execution time. Any tampering post-approval triggers `SecurityException("Plan integrity violation")`.
 
-### 3.2 Cryptographic Plan Integrity & Tamper Protection (`AiRemediationPlan.java`, `AiRecommendationEngine.java`, `AiRemediationExecutionGateway.java`)
-- **Plan Fingerprint Column:** Added `plan_fingerprint VARCHAR(64)` column to `ai_remediation_plans` via Flyway `V20__ai_intelligence_copilot_schema.sql` and mapped in `AiRemediationPlan` entity.
-- **Cryptographic Approval Binding:** When a human reviewer approves a plan in `AiRecommendationEngine.approvePlan()`, a deterministic SHA-256 fingerprint of the remediation steps, payload diff, target resource, and plan type is computed and sealed into `plan_fingerprint`.
-- **Pre-Execution Tamper Check:** `AiRemediationExecutionGateway.executePlan()` recomputes the plan payload fingerprint in real-time prior to execution. If post-approval step mutation or tampering is detected, execution is immediately blocked with `SecurityException("Plan integrity violation")`.
-- **Approval State Enforcement:** Authoritative (non-dry-run) execution explicitly rejects plans in `PENDING_APPROVAL`, `REJECTED`, or `EXPIRED` status, requiring prior human authorization.
+### 3.3 Step-Up MFA Verification
+- High-risk and critical remediation executions require valid Step-Up authentication proof (`stepUpProof`), preventing automated execution without interactive biometric/passkey or TOTP re-authentication.
 
-### 3.3 Controller Routing & Interoperability (`AiCopilotController.java`)
-- Added endpoint aliases for `/posture-forecast` and `/posture/forecast`, `/chat/history` and `/inquiries`, and `/health` and `/token-budget` to guarantee seamless compatibility across Frontend, CLI, and SDK clients.
+### 3.4 Strongly Typed Safe Context Assembly (`AiContextBuilder.java`, `AiSafeContext.java`)
+- **Context Size Bounds:** Operational hints are capped at 1,000 characters with `... [truncated]` markers. Top findings are bounded to at most 5 entries.
+- **Zero-Plaintext Boundary:** Plaintext keys, encrypted ciphertext envelopes, and database connection secrets are completely excluded from context assembly. Context serialization is strictly verified via `AiContextSanitizer.assertZeroPlaintext()`.
+
+### 3.5 13 Standard Intent Offline Reasoning (`DeterministicOfflineLlmProvider.java`)
+- Supports 13 canonical intents: `COPILOT_GENERAL`, `SECURITY_POSTURE`, `SECURITY_FINDING`, `DEPLOYMENT_RCA`, `SYNC_FAILURE`, `ROTATION_ANALYSIS`, `SECRET_HEALTH`, `BLAST_RADIUS`, `REMEDIATION_RECOMMENDATION`, `REMEDIATION_PLAN`, `SYSTEM_HEALTH`, `HELP`, and `UNKNOWN`.
+- 100% deterministic, offline execution with zero network requirements, structured telemetry evidence chains (`EV_HASH_MISMATCH`, `EV_HTTP_401`, `EV_HTTP_429`, `EV_LEASE_EXPIRED`), confidence scoring, and advisory guardrails.
 
 ---
 
-## 4. Full Automated Regression Test Ledger
+## 4. Multi-Tier Automated Regression Test Ledger
 
-The full regression suite was executed across all tiers with zero failures, zero errors, and zero skipped tests:
+The full regression suite was executed across all components with 0 failures, 0 errors, and 0 skipped tests:
 
-| Component / Test Suite | Test Class / Scope | Unique Tests | Status |
+| Component / Test Suite | Test Scope | Unique Tests | Status |
 | :--- | :--- | :---: | :---: |
-| **Backend Core & Security** | Access, Auth, Crypto, KMS, JIT, MFA, WebAuthn, Privileged Access, Secrets, Audit | 992 | **PASS** |
-| **Backend AI Platform** | `AiZeroPlaintextSecurityTest`, `AiContextSanitizerTest`, `AiDeploymentRcaServiceTest`, `AiRecommendationEngineTest`, `AiRemediationExecutionGatewayTest`, `DeterministicOfflineLlmProviderTest` | 24 | **PASS** |
-| **Backend Total** | `mvn -f backend/pom.xml test` | **1,016** | **PASS** |
+| **Backend Core & Security** | Access, Auth, Crypto, KMS, JIT, MFA, WebAuthn, Privileged Access, Secrets, Audit | 988 | **PASS** |
+| **Backend AI Platform** | `AiZeroPlaintextSecurityTest`, `AiContextSanitizerTest`, `AiContextBuilderAndSizeBoundTest`, `AiDeploymentRcaServiceTest`, `AiRecommendationEngineTest`, `AiRemediationExecutionGatewayTest`, `DeterministicOfflineLlmProviderTest`, `AiFourEyesAndStepUpSecurityTest`, `AiIntentClassificationAndReasoningTest`, `AiEndToEndAcceptanceFlowTest` | 53 | **PASS** |
+| **Backend Total** | `mvn -f backend/pom.xml test` | **1,041** | **PASS** |
 | **SDK Core** | `AiDiagnosticsApiTest`, `AuthProvidersTest`, `SecretCacheTest`, `ConsumerHeartbeatDaemonTest`, `SecretValueTest`, `RedactionUtilTest`, `CircuitBreakerTest`, `RequestCoalescerTest` | 27 | **PASS** |
 | **SDK Spring Boot Starter** | `SecretVaultPropertySourceTest`, `SecretVaultHealthIndicatorTest`, `SecretVaultPropertiesTest` | 4 | **PASS** |
 | **SDK Total** | `mvn -f sdk/pom.xml test` | **31** | **PASS** |
@@ -67,40 +68,31 @@ The full regression suite was executed across all tiers with zero failures, zero
 | **CLI npm Launcher** | `@hrushikeshmore/secretvault-cli` launcher integration | 4 | **PASS** |
 | **CLI Total** | CLI Java + npm launcher suites | **105** | **PASS** |
 | **Frontend Test Suite** | Vitest (`AiCopilotView`, `MfaSecurityInvariants`, `webauthn`, `Phase13Views`, `SecretRevealProtection`, `MfaChallengeScreen`, `StepUpAuthenticationModal`, `AccountSecurityView`, `PasskeysSection`, `MfaEnrollmentModal`, `SessionsView`, `RotationCenterView`) | 74 | **PASS** |
-| **Frontend Production Build** | `vite build` (1,687 modules transformed, clean production bundle) | 1 build | **PASS** |
-| **Infrastructure / Terraform** | `terraform fmt -check -recursive`, `terraform validate` | 2 checks | **PASS** |
+| **Frontend Production Build** | `npm run build` (1,687 modules transformed, clean production bundle) | 1 build | **PASS** |
+| **Infrastructure / Terraform** | `terraform fmt -check` (aws & examples modules) | 2 checks | **PASS** |
 | **Repository Secret Scan** | Zero live credential patterns detected across repository source files | 1 scan | **PASS** |
-| **GRAND TOTAL UNIQUE TESTS** | **Comprehensive Multi-Tier Automated Validation** | **1,226** | **PASS** |
+| **GRAND TOTAL UNIQUE TESTS** | **Comprehensive Multi-Tier Automated Validation** | **1,251** | **PASS** |
 
 ---
 
-## 5. Security & Invariant Verification Matrix
+## 5. Pre-Merge Verification Matrix
 
-| Invariant / Control | Verification Method & Test Evidence | Status |
+| Gate / Invariant | Verification Mechanism & Test Evidence | Status |
 | :--- | :--- | :---: |
-| **Zero-Plaintext AI Context** | `AiZeroPlaintextSecurityTest`, `AiContextSanitizerTest`: All PEM keys, JWTs, AWS keys, PATs, connection strings, and headers redacted before LLM delivery and inquiry persistence. | **VERIFIED** |
-| **Deterministic Offline Fallback** | `DeterministicOfflineLlmProviderTest`: Copilot functions with 100% determinism in air-gapped environments without external API keys or external network dependencies. | **VERIFIED** |
-| **Tenant Isolation & Workspace Boundary** | `AiZeroPlaintextSecurityTest.testTenantIsolationEnforcement`: Every inquiry, RCA report, remediation plan, and audit event strictly bound to caller workspace ID. | **VERIFIED** |
-| **Plan Integrity & Cryptographic Seal** | `AiRemediationExecutionGatewayTest.testRejectTamperedPlanExecution`: Any modification to steps or payload diff after approval triggers immediate security exception. | **VERIFIED** |
-| **Human-in-the-Loop Approval Gate** | `AiRemediationExecutionGatewayTest.testRejectAuthoritativeExecutionWithoutApproval`: Unapproved plans cannot be executed authoritatively. | **VERIFIED** |
-| **AI Output Guardrails & Safety** | `AiSafetyGuardrailValidator`: Destructive system commands (`rm -rf`, `chmod 777`, `DROP TABLE`) automatically neutralized with security warnings. | **VERIFIED** |
-| **Rate Limiting & Token Quota** | `AiRateLimiterAndBudgetEnforcer`: Per-minute rate limits and monthly token consumption strictly enforced per workspace. | **VERIFIED** |
-| **Full Platform Security Regression** | AES-256-GCM, KMS envelope encryption, JIT access, WebAuthn, Step-Up MFA, Secret Reveal Protection, and Provider Sync remained completely unbroken. | **VERIFIED** |
+| **Zero-Plaintext AI Context** | `AiZeroPlaintextSecurityTest`, `AiContextBuilderAndSizeBoundTest`, `AiContextSanitizerTest`: All PEM keys, JWTs, AWS keys, PATs, connection strings, and headers redacted before LLM delivery. | **VERIFIED** |
+| **Four-Eyes Separation of Duties** | `AiFourEyesAndStepUpSecurityTest.testFourEyesDuplicateApprovalRejected`, `AiEndToEndAcceptanceFlowTest`: Distinct approver enforcement (`Approver A != Approver B`). | **VERIFIED** |
+| **Step-Up MFA Verification** | `AiFourEyesAndStepUpSecurityTest.testStepUpMfaRequiredForHighRiskExecution`: High-risk execution blocked without valid MFA proof. | **VERIFIED** |
+| **Cryptographic Plan Integrity** | `AiRemediationExecutionGatewayTest.testRejectTamperedPlanExecution`: Post-approval step modifications invalidate seal and block execution. | **VERIFIED** |
+| **Deterministic Offline Fallback** | `DeterministicOfflineLlmProviderTest`, `AiIntentClassificationAndReasoningTest`: Copilot functions with 100% determinism in air-gapped environments across all 13 standard intents. | **VERIFIED** |
+| **Tenant Isolation & Workspace Boundary** | `AiZeroPlaintextSecurityTest.testTenantIsolationEnforcement`: Inquiries, RCA reports, remediation plans, and audit events strictly bound to caller workspace ID. | **VERIFIED** |
+| **Full Platform Security Regression** | AES-256-GCM, KMS envelope encryption, JIT access, WebAuthn, Step-Up MFA, Secret Reveal Protection, and Provider Sync remain completely unbroken. | **VERIFIED** |
 
 ---
 
-## 6. Known Limitations & Scope Boundaries
+## 6. Final Pre-Merge Verdict
 
-1. **External LLM Network Connectivity:** Live external LLM providers (e.g. OpenAI/Anthropic/Gemini) require external API keys configured via environment variables. In air-gapped or test environments, `DeterministicOfflineLlmProvider` serves as the authoritative, zero-leakage fallback.
-2. **Live Cloud Provider Verification:** Live AWS KMS, Vercel, and Render sync operations rely on mocked or contract harnesses in local CI environments; production rollout requires authenticated credentials.
-3. **Controlled Merge Gate:** This takeover report certifies the feature branch for merge readiness. The branch will be integrated into `main` via a dedicated, controlled merge gate.
-
----
-
-## 7. Final Certification Verdict
-
-**PHASE 15 — SECURITY CERTIFIED**
-**IMPLEMENTATION COMPLETE**
-**BRANCH READY FOR CONTROLLED MERGE**
+**PHASE 15 — COMPLETE & SECURITY CERTIFIED**
+**ALL PRE-MERGE GATES PASSED (1,251 / 1,251 TESTS PASSING)**
+**BRANCH READY FOR CONTROLLED MERGE GATE**
 
 *Certified by Member 1 — Platform & Security Engineer, SecretVault Platform*

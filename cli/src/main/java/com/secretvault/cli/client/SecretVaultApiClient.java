@@ -825,7 +825,8 @@ public class SecretVaultApiClient {
 
     public List<AiRemediationPlanCli> listAiPlans(UUID workspaceId) {
         String path = String.format("/api/v1/workspaces/%s/ai/plans", workspaceId);
-        return get(path, new TypeReference<ApiEnvelope<List<AiRemediationPlanCli>>>() {}, workspaceId);
+        com.fasterxml.jackson.databind.JsonNode node = get(path, new TypeReference<ApiEnvelope<com.fasterxml.jackson.databind.JsonNode>>() {}, workspaceId);
+        return parsePageContent(node, new TypeReference<List<AiRemediationPlanCli>>() {});
     }
 
     public AiRemediationPlanCli generateAiPlan(UUID workspaceId, AiPlanGenerateRequestCli req) {

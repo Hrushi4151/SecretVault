@@ -30,6 +30,9 @@ public class AiRemediationPlan {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "version", nullable = false)
+    private int version = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", nullable = false, length = 32)
     private AiRiskLevel riskLevel = AiRiskLevel.MEDIUM;
@@ -55,6 +58,12 @@ public class AiRemediationPlan {
     @Column(name = "plan_fingerprint", length = 64)
     private String planFingerprint;
 
+    @Column(name = "requires_four_eyes", nullable = false)
+    private boolean requiresFourEyes = false;
+
+    @Column(name = "requires_step_up", nullable = false)
+    private boolean requiresStepUp = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     private AiPlanStatus status = AiPlanStatus.PENDING_APPROVAL;
@@ -64,6 +73,9 @@ public class AiRemediationPlan {
 
     @Column(name = "reviewed_by_user_id")
     private UUID reviewedByUserId;
+
+    @Column(name = "second_reviewed_by_user_id")
+    private UUID secondReviewedByUserId;
 
     @Column(name = "executed_at")
     private Instant executedAt;
@@ -201,6 +213,30 @@ public class AiRemediationPlan {
         this.status = status;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    public boolean isRequiresFourEyes() {
+        return requiresFourEyes;
+    }
+
+    public void setRequiresFourEyes(boolean requiresFourEyes) {
+        this.requiresFourEyes = requiresFourEyes;
+    }
+
+    public boolean isRequiresStepUp() {
+        return requiresStepUp;
+    }
+
+    public void setRequiresStepUp(boolean requiresStepUp) {
+        this.requiresStepUp = requiresStepUp;
+    }
+
     public UUID getCreatedByUserId() {
         return createdByUserId;
     }
@@ -215,6 +251,14 @@ public class AiRemediationPlan {
 
     public void setReviewedByUserId(UUID reviewedByUserId) {
         this.reviewedByUserId = reviewedByUserId;
+    }
+
+    public UUID getSecondReviewedByUserId() {
+        return secondReviewedByUserId;
+    }
+
+    public void setSecondReviewedByUserId(UUID secondReviewedByUserId) {
+        this.secondReviewedByUserId = secondReviewedByUserId;
     }
 
     public Instant getExecutedAt() {

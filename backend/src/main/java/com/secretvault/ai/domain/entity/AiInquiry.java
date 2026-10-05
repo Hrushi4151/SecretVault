@@ -20,6 +20,9 @@ public class AiInquiry {
     @Column(name = "user_id")
     private UUID userId;
 
+    @Column(name = "conversation_id")
+    private UUID conversationId;
+
     @Column(name = "prompt", nullable = false, columnDefinition = "TEXT")
     private String prompt;
 
@@ -76,6 +79,14 @@ public class AiInquiry {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public UUID getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(UUID conversationId) {
+        this.conversationId = conversationId;
     }
 
     public String getPrompt() {

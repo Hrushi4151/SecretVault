@@ -124,19 +124,58 @@ public class DefaultAiDiagnosticsApi implements AiDiagnosticsApi {
         UUID wsId = getWorkspaceId();
         JsonNode node = httpClient.executeApi("GET", "/api/v1/workspaces/" + wsId + "/ai/plans", null, wsId);
         List<AiPlanInfo> plans = new ArrayList<>();
-        if (node != null && node.isArray()) {
-            for (JsonNode p : node) {
-                plans.add(new AiPlanInfo(
-                        UUID.fromString(p.get("id").asText()),
-                        p.has("title") ? p.get("title").asText() : "",
-                        p.has("description") ? p.get("description").asText() : "",
-                        p.has("status") ? p.get("status").asText() : "PROPOSED",
-                        p.has("riskLevel") ? p.get("riskLevel").asText() : "LOW",
-                        p.has("confidenceScore") ? p.get("confidenceScore").asDouble() : 0.95
-                ));
+        if (node != null) {
+            JsonNode items = node.has("content") && node.get("content").isArray() ? node.get("content") : (node.isArray() ? node : null);
+            if (items != null) {
+                for (JsonNode p : items) {
+                    plans.add(mapPlanNode(p));
+                }
             }
         }
         return plans;
+    }
+
+    @Override
+    public AiPlanInfo getPlan(UUID planId) {
+        UUID wsId = getWorkspaceId();
+        JsonNode node = httpClient.executeApi("GET", "/api/v1/workspaces/" + wsId + "/ai/plans/" + planId, null, wsId);
+        if (node == null) return null;
+        return mapPlanNode(node);
+    }
+
+    @Override
+    public AiPlanInfo generatePlan(String goal) {
+        UUID wsId = getWorkspaceId();
+        Map<String, Object> body = Map.of("goal", goal != null ? goal : "Auto Remediation");
+        String bodyJson;
+        try {
+            bodyJson = mapper.writeValueAsString(body);
+        } catch (Exception e) {
+            bodyJson = "{}";
+        }
+        JsonNode node = httpClient.executeApi("POST", "/api/v1/workspaces/" + wsId + "/ai/plans/generate", bodyJson, wsId);
+        if (node == null) return null;
+        return mapPlanNode(node);
+    }
+
+    @Override
+    public AiPlanInfo approvePlan(UUID planId) {
+        UUID wsId = getWorkspaceId();
+        JsonNode node = httpClient.executeApi("POST", "/api/v1/workspaces/" + wsId + "/ai/plans/" + planId + "/approve", "{}", wsId);
+        if (node == null) return null;
+        return mapPlanNode(node);
+    }
+
+    @Override
+    public AiPlanInfo rejectPlan(UUID planId, String reason) {
+        UUID wsId = getWorkspaceId();
+        String path = "/api/v1/workspaces/" + wsId + "/ai/plans/" + planId + "/reject";
+        if (reason != null && !reason.isBlank()) {
+            path += "?reason=" + java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        JsonNode node = httpClient.executeApi("POST", path, "{}", wsId);
+        if (node == null) return null;
+        return mapPlanNode(node);
     }
 
     @Override
@@ -144,14 +183,18 @@ public class DefaultAiDiagnosticsApi implements AiDiagnosticsApi {
         UUID wsId = getWorkspaceId();
         JsonNode node = httpClient.executeApi("POST", "/api/v1/workspaces/" + wsId + "/ai/plans/" + planId + "/execute", "{}", wsId);
         if (node == null) return null;
+        return mapPlanNode(node);
+    }
 
+    private AiPlanInfo mapPlanNode(JsonNode p) {
+        if (p == null) return null;
         return new AiPlanInfo(
-                UUID.fromString(node.get("id").asText()),
-                node.has("title") ? node.get("title").asText() : "",
-                node.has("description") ? node.get("description").asText() : "",
-                node.has("status") ? node.get("status").asText() : "EXECUTED",
-                node.has("riskLevel") ? node.get("riskLevel").asText() : "LOW",
-                node.has("confidenceScore") ? node.get("confidenceScore").asDouble() : 0.95
+                p.has("id") ? UUID.fromString(p.get("id").asText()) : UUID.randomUUID(),
+                p.has("title") ? p.get("title").asText() : "",
+                p.has("description") ? p.get("description").asText() : "",
+                p.has("status") ? p.get("status").asText() : "PENDING_APPROVAL",
+                p.has("riskLevel") ? p.get("riskLevel").asText() : "LOW",
+                p.has("confidenceScore") ? p.get("confidenceScore").asDouble() : 0.95
         );
     }
 }

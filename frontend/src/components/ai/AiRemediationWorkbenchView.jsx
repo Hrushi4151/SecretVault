@@ -44,9 +44,10 @@ export const AiRemediationWorkbenchView = ({ onNavigateToCopilot }) => {
     setIsLoading(true);
     try {
       const data = await aiApi.listPlans(activeWorkspace.id);
-      setPlans(data || []);
+      const items = Array.isArray(data) ? data : (data?.content || []);
+      setPlans(items);
       if (selectedPlan) {
-        const refreshed = (data || []).find((p) => p.id === selectedPlan.id);
+        const refreshed = items.find((p) => p.id === selectedPlan.id);
         if (refreshed) setSelectedPlan(refreshed);
       }
     } catch (err) {

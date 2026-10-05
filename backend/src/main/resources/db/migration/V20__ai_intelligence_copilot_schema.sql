@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS ai_inquiries (
     id UUID PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    conversation_id UUID,
     prompt TEXT NOT NULL,
     intent_type VARCHAR(64) NOT NULL,
     model_provider VARCHAR(64) NOT NULL,
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS ai_inquiries (
 
 CREATE INDEX idx_ai_inquiries_workspace_created ON ai_inquiries(workspace_id, created_at DESC);
 CREATE INDEX idx_ai_inquiries_user_created ON ai_inquiries(user_id, created_at DESC);
+CREATE INDEX idx_ai_inquiries_conversation ON ai_inquiries(workspace_id, conversation_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS ai_rca_reports (
     id UUID PRIMARY KEY,
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS ai_remediation_plans (
     plan_type VARCHAR(64) NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
     risk_level VARCHAR(32) NOT NULL DEFAULT 'MEDIUM',
     confidence_score DOUBLE PRECISION NOT NULL DEFAULT 0.95,
     target_resource_type VARCHAR(64) NOT NULL,
@@ -54,9 +57,12 @@ CREATE TABLE IF NOT EXISTS ai_remediation_plans (
     payload_diff_json TEXT,
     blast_radius_json TEXT,
     plan_fingerprint VARCHAR(64),
+    requires_four_eyes BOOLEAN NOT NULL DEFAULT FALSE,
+    requires_step_up BOOLEAN NOT NULL DEFAULT FALSE,
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING_APPROVAL',
     created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    second_reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     executed_at TIMESTAMP WITH TIME ZONE,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     execution_result_json TEXT,

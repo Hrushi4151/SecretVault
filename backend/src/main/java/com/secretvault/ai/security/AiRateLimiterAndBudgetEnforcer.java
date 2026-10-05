@@ -34,7 +34,7 @@ public class AiRateLimiterAndBudgetEnforcer {
         Instant now = Instant.now();
 
         // 1. Check & reset minute window
-        if (Duration.between(budget.getMinuteWindowStart(), now).toSeconds() >= 60) {
+        if (budget.getMinuteWindowStart() == null || Duration.between(budget.getMinuteWindowStart(), now).toSeconds() >= 60) {
             budget.setMinuteWindowStart(now);
             budget.setInquiriesThisMinute(0);
         }
@@ -45,7 +45,7 @@ public class AiRateLimiterAndBudgetEnforcer {
         }
 
         // 2. Check & reset monthly window
-        if (Duration.between(budget.getMonthWindowStart(), now).toDays() >= 30) {
+        if (budget.getMonthWindowStart() == null || Duration.between(budget.getMonthWindowStart(), now).toDays() >= 30) {
             budget.setMonthWindowStart(now);
             budget.setTokensConsumedThisMonth(0);
         }

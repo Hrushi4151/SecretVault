@@ -167,7 +167,10 @@ public class AiDeploymentRcaService {
         plan.setPlanType("SYNC_RECONCILIATION".equals(report.getTargetType()) ? "SYNC_RECONCILIATION" : "ROTATION_ROLLOVER");
         plan.setTitle("Remediate: " + report.getRootCauseSummary());
         plan.setDescription(report.getRemediationStrategy());
+        plan.setVersion(1);
         plan.setRiskLevel(AiRiskLevel.HIGH);
+        plan.setRequiresFourEyes(true);
+        plan.setRequiresStepUp(true);
         plan.setConfidenceScore(report.getConfidenceScore());
         plan.setTargetResourceType(report.getTargetType());
         plan.setTargetResourceId(report.getTargetId());
@@ -203,6 +206,13 @@ public class AiDeploymentRcaService {
         }
 
         planRepository.save(plan);
+    }
+
+    public AiRcaReportDto getReport(UUID workspaceId, UUID reportId) {
+        AiRcaReport report = rcaRepository.findById(reportId)
+                .filter(r -> r.getWorkspaceId().equals(workspaceId))
+                .orElseThrow(() -> new IllegalArgumentException("RCA report not found: " + reportId));
+        return toDtoFromEntity(report);
     }
 
     public List<AiRcaReportDto> getReportsForTarget(UUID workspaceId, String targetType, String targetId) {

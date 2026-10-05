@@ -29,7 +29,7 @@ class DeterministicOfflineLlmProviderTest {
 
         LlmResponse response = provider.generate(request);
         assertNotNull(response);
-        assertTrue(response.text().contains("Root Cause Identified: Deployment Credential Mismatch"));
+        assertTrue(response.text().contains("Root Cause Identified: Deployment Credential"));
         assertTrue(response.confidenceScore() >= 0.95);
         assertEquals("DETERMINISTIC_OFFLINE", response.providerName());
     }

@@ -21,5 +21,13 @@ public interface AiDiagnosticsApi {
 
     List<AiPlanInfo> listPlans();
 
+    AiPlanInfo getPlan(UUID planId);
+
+    AiPlanInfo generatePlan(String goal);
+
+    AiPlanInfo approvePlan(UUID planId);
+
+    AiPlanInfo rejectPlan(UUID planId, String reason);
+
     AiPlanInfo executePlan(UUID planId);
 }

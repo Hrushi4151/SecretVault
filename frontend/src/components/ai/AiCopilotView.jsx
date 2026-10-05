@@ -62,7 +62,8 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     if (!activeWorkspace?.id) return;
     try {
       const list = await aiApi.listInquiries(activeWorkspace.id);
-      setInquiries(list || []);
+      const items = Array.isArray(list) ? list : (list?.content || []);
+      setInquiries(items);
     } catch (e) {
       console.warn('Failed to load inquiries', e);
     }

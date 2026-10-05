@@ -7,7 +7,14 @@ public record AiChatRequest(
         @NotBlank(message = "Prompt must not be blank")
         String prompt,
         String intentType,
+        UUID conversationId,
         UUID targetProjectId,
-        UUID targetEnvironmentId
+        UUID targetEnvironmentId,
+        String targetType,
+        String targetId,
+        String contextHint
 ) {
+    public AiChatRequest(String prompt, String intentType, UUID targetProjectId, UUID targetEnvironmentId) {
+        this(prompt, intentType, null, targetProjectId, targetEnvironmentId, null, null, null);
+    }
 }

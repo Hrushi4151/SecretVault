@@ -24,8 +24,9 @@ import java.util.UUID;
 
 /**
  * Execution Gateway for Approved AI Remediation Plans.
- * Enforces human-in-the-loop authorization, dry-run previews,
- * and traceable execution through audited platform conduits.
+ * Enforces human-in-the-loop authorization, four-eyes separation of duties,
+ * step-up MFA verification, plan integrity seals, dry-run previews,
+ * and idempotent traceable execution through audited platform conduits.
  */
 @Service
 public class AiRemediationExecutionGateway {
@@ -57,6 +58,7 @@ public class AiRemediationExecutionGateway {
         AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
 
+        // 1. Check expiration
         if (Instant.now().isAfter(plan.getExpiresAt())) {
             plan.setStatus(AiPlanStatus.EXPIRED);
             plan.setUpdatedAt(Instant.now());
@@ -64,19 +66,45 @@ public class AiRemediationExecutionGateway {
             throw new IllegalStateException("Remediation plan has expired and cannot be executed.");
         }
 
+        // 2. Dry-Run simulation check
         boolean isDryRun = request != null && request.dryRun();
-
         if (isDryRun) {
             log.info("Executing dry-run simulation for AI plan {} in workspace {}", planId, workspaceId);
             return recommendationEngine.toDto(plan);
         }
 
-        // Authoritative execution requires explicit human approval
+        // 3. Idempotency check: if already executed, return current state without duplicate action
+        if (plan.getStatus() == AiPlanStatus.EXECUTED) {
+            log.info("Idempotency guard: Remediation plan {} already executed at {}. Returning existing record.", planId, plan.getExecutedAt());
+            return recommendationEngine.toDto(plan);
+        }
+
+        // 4. Authoritative execution requires explicit human approval
         if (plan.getStatus() != AiPlanStatus.APPROVED) {
             throw new IllegalStateException("Remediation plan must be APPROVED before authoritative execution. Current status: " + plan.getStatus());
         }
 
-        // Enforce plan integrity: verify approval seal has not been tampered with
+        // 5. Four-Eyes separation of duties check
+        if (plan.isRequiresFourEyes()) {
+            if (plan.getReviewedByUserId() == null || plan.getSecondReviewedByUserId() == null) {
+                log.error("Four-eyes gate rejected execution for plan {}: missing secondary approval", planId);
+                throw new IllegalStateException("Four-eyes requirement not satisfied: Both Approver A and Approver B are required for execution.");
+            }
+            if (plan.getReviewedByUserId().equals(plan.getSecondReviewedByUserId())) {
+                log.error("Four-eyes gate rejected execution for plan {}: identical approvers", planId);
+                throw new IllegalStateException("Four-eyes violation: Approver A and Approver B must be distinct users.");
+            }
+        }
+
+        // 6. Step-Up MFA Verification check
+        if (plan.isRequiresStepUp()) {
+            if (request == null || request.stepUpProof() == null || request.stepUpProof().isBlank()) {
+                log.warn("Step-Up verification rejected execution for high-risk plan {}", planId);
+                throw new SecurityException("Step-Up Authentication Required: High-risk remediation execution requires valid Step-Up verification proof.");
+            }
+        }
+
+        // 7. Enforce plan integrity: verify approval seal has not been tampered with
         String currentFingerprint = recommendationEngine.computePlanFingerprint(plan);
         if (plan.getPlanFingerprint() == null || !plan.getPlanFingerprint().equals(currentFingerprint)) {
             log.error("Security violation: Remediation plan {} payload integrity check failed (sealed={}, computed={})",

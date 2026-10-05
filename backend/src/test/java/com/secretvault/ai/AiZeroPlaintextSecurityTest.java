@@ -45,15 +45,18 @@ class AiZeroPlaintextSecurityTest {
         inquiryRepository = mock(AiInquiryRepository.class);
         budgetRepository = mock(AiTokenBudgetRepository.class);
         sanitizer = new AiContextSanitizer();
+        objectMapper = new ObjectMapper();
+        com.secretvault.ai.context.AiContextBuilder contextBuilder = new com.secretvault.ai.context.AiContextBuilder(null, sanitizer, objectMapper);
         budgetEnforcer = new AiRateLimiterAndBudgetEnforcer(budgetRepository);
         guardrailValidator = new AiSafetyGuardrailValidator(sanitizer);
         providerRegistry = new LlmProviderRegistry(new DeterministicOfflineLlmProvider(), "DETERMINISTIC_OFFLINE");
         auditService = mock(AuditService.class);
         securityEventService = mock(SecurityEventService.class);
-        objectMapper = new ObjectMapper();
 
         copilotService = new AiCopilotService(
                 inquiryRepository,
+                budgetRepository,
+                contextBuilder,
                 sanitizer,
                 budgetEnforcer,
                 guardrailValidator,

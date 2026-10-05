@@ -102,6 +102,16 @@ public class AiCopilotController {
         return ResponseEntity.ok(ApiResponse.success(reports, "RCA reports retrieved"));
     }
 
+    @GetMapping("/rca/{reportId}")
+    @Operation(summary = "Get specific Root Cause Analysis (RCA) report by ID")
+    public ResponseEntity<ApiResponse<AiRcaReportDto>> getRcaReport(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID reportId
+    ) {
+        AiRcaReportDto report = rcaService.getReport(workspaceId, reportId);
+        return ResponseEntity.ok(ApiResponse.success(report, "RCA report retrieved"));
+    }
+
     @GetMapping({"/posture-forecast", "/posture/forecast"})
     @Operation(summary = "Get predictive security posture forecast and drift decay trajectory")
     public ResponseEntity<ApiResponse<AiPostureForecastResponse>> getPostureForecast(
@@ -122,6 +132,19 @@ public class AiCopilotController {
                 ? recommendationEngine.getPendingPlans(workspaceId, pageable)
                 : recommendationEngine.getPlans(workspaceId, pageable);
         return ResponseEntity.ok(ApiResponse.success(plans, "Remediation plans retrieved"));
+    }
+
+    @PostMapping("/plans/generate")
+    @Operation(summary = "Generate a new reviewable AI remediation plan")
+    public ResponseEntity<ApiResponse<AiRemediationPlanDto>> generatePlan(
+            @PathVariable UUID workspaceId,
+            @RequestBody(required = false) AiPlanGenerateRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        AiRemediationPlanDto plan = recommendationEngine.generatePlan(workspaceId, request, userId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(plan, "Remediation plan generated"));
     }
 
     @GetMapping("/plans/{planId}")
