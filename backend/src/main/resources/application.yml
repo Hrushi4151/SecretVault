@@ -108,3 +108,24 @@ secretvault:
     user-verification: PREFERRED
     allow-origin-port: true
     clone-detection-action: BLOCK
+  ai:
+    provider: ${AI_PROVIDER:OLLAMA}
+    fallback-provider: ${AI_FALLBACK_PROVIDER:DETERMINISTIC_OFFLINE}
+    ollama:
+      base-url: ${AI_OLLAMA_BASE_URL:http://localhost:11434}
+      model: ${AI_OLLAMA_MODEL:qwen3:8b}
+      timeout-seconds: ${AI_OLLAMA_TIMEOUT_SECONDS:120}
+      temperature: 0.2
+      max-tokens: 2048
+    gemini:
+      base-url: ${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      model: ${AI_GEMINI_MODEL:gemini-1.5-flash}
+      api-key: ${AI_GEMINI_API_KEY:}
+      timeout-seconds: ${AI_GEMINI_TIMEOUT_SECONDS:60}
+      temperature: 0.1
+      max-tokens: 2048
+    openai:
+      base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+      api-key: ${AI_API_KEY:}
+      model: ${AI_MODEL:gpt-4o-mini}
+      timeout-seconds: ${AI_OPENAI_TIMEOUT_SECONDS:60}
