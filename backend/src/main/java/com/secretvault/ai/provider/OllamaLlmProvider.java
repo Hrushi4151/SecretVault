@@ -128,16 +128,14 @@ public class OllamaLlmProvider implements LlmProvider {
             messages.add(Map.of("role", "system", "content", request.systemPrompt()));
         }
 
-        if (request.conversationHistory() != null) {
+        if (request.conversationHistory() != null && !request.conversationHistory().isEmpty()) {
             for (ChatMessage msg : request.conversationHistory()) {
                 Map<String, Object> msgMap = new HashMap<>();
                 msgMap.put("role", msg.role());
                 msgMap.put("content", msg.content() != null ? msg.content() : "");
                 messages.add(msgMap);
             }
-        }
-
-        if (request.userPrompt() != null && !request.userPrompt().isBlank()) {
+        } else if (request.userPrompt() != null && !request.userPrompt().isBlank()) {
             StringBuilder sb = new StringBuilder();
             if (request.sanitizedContextJson() != null && !request.sanitizedContextJson().equals("{}")) {
                 sb.append("[Safe Context Summary: ").append(request.sanitizedContextJson()).append("]\n\n");

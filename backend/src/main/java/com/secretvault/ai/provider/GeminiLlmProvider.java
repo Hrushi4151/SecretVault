@@ -153,7 +153,7 @@ public class GeminiLlmProvider implements LlmProvider {
         // 2. Contents / Conversation History
         List<Map<String, Object>> contents = new ArrayList<>();
 
-        if (request.conversationHistory() != null) {
+        if (request.conversationHistory() != null && !request.conversationHistory().isEmpty()) {
             for (ChatMessage msg : request.conversationHistory()) {
                 String role = "user";
                 if ("ASSISTANT".equalsIgnoreCase(msg.role()) || "model".equalsIgnoreCase(msg.role())) {
@@ -179,10 +179,7 @@ public class GeminiLlmProvider implements LlmProvider {
                     ));
                 }
             }
-        }
-
-        // Add current user prompt
-        if (request.userPrompt() != null && !request.userPrompt().isBlank()) {
+        } else if (request.userPrompt() != null && !request.userPrompt().isBlank()) {
             StringBuilder sb = new StringBuilder();
             if (request.sanitizedContextJson() != null && !request.sanitizedContextJson().equals("{}")) {
                 sb.append("[Safe Platform Context: ").append(request.sanitizedContextJson()).append("]\n\n");
