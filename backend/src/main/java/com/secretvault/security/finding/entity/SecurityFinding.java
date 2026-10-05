@@ -106,6 +106,10 @@ public class SecurityFinding {
     public SecurityFinding() {
     }
 
+    public SecurityFinding(UUID workspaceId, String title, FindingSeverity severity, String safeDescription) {
+        this(workspaceId, null, null, FindingCategory.SECRET_ROTATION_RISK, severity, FindingConfidence.HIGH, title, safeDescription, "Remediate finding", "{}", "fp-" + UUID.randomUUID().toString().substring(0, 8));
+    }
+
     public SecurityFinding(
             UUID workspaceId,
             UUID projectId,

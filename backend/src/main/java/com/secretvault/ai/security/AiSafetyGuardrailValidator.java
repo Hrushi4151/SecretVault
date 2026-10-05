@@ -20,8 +20,12 @@ public class AiSafetyGuardrailValidator {
 
     private final AiContextSanitizer sanitizer;
 
+    public AiSafetyGuardrailValidator() {
+        this(new AiContextSanitizer());
+    }
+
     public AiSafetyGuardrailValidator(AiContextSanitizer sanitizer) {
-        this.sanitizer = sanitizer;
+        this.sanitizer = sanitizer != null ? sanitizer : new AiContextSanitizer();
     }
 
     public String validateAndSanitizeResponse(String modelResponse) {

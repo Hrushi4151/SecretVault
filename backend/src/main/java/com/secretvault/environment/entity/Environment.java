@@ -68,6 +68,10 @@ public class Environment {
     public Environment() {
     }
 
+    public Environment(UUID projectId, String name, String slug, EnvType envType) {
+        this(projectId, name, slug, envType, null, false, null);
+    }
+
     public Environment(UUID projectId, String name, String slug, EnvType envType, String description, boolean isProtected, UUID createdBy) {
         this.projectId = projectId;
         this.name = name;

@@ -2,7 +2,9 @@ package com.secretvault.ai.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.secretvault.ai.context.AiContextBuilder;
+import com.secretvault.ai.context.AiContextOrchestrator;
 import com.secretvault.ai.context.AiSafeContext;
+import com.secretvault.ai.domain.entity.AiConversation;
 import com.secretvault.ai.domain.entity.AiInquiry;
 import com.secretvault.ai.domain.entity.AiTokenBudget;
 import com.secretvault.ai.domain.model.AiIntentType;
@@ -12,12 +14,14 @@ import com.secretvault.ai.domain.repository.AiTokenBudgetRepository;
 import com.secretvault.ai.dto.AiChatRequest;
 import com.secretvault.ai.dto.AiChatResponse;
 import com.secretvault.ai.dto.AiModelHealthResponse;
+import com.secretvault.ai.provider.ChatMessage;
 import com.secretvault.ai.provider.LlmProviderRegistry;
 import com.secretvault.ai.provider.LlmRequest;
 import com.secretvault.ai.provider.LlmResponse;
 import com.secretvault.ai.security.AiContextSanitizer;
 import com.secretvault.ai.security.AiRateLimiterAndBudgetEnforcer;
 import com.secretvault.ai.security.AiSafetyGuardrailValidator;
+import com.secretvault.ai.security.AiSecretFirewall;
 import com.secretvault.audit.entity.AuditAction;
 import com.secretvault.audit.service.AuditService;
 import com.secretvault.security.event.model.SecurityEventOutcome;
@@ -31,17 +35,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Natural Language AI Copilot Service.
  * Coordinates multi-turn conversation, typed safe context assembly,
- * intent classification, sanitization, LLM invocation with deterministic fallback,
+ * agentic multi-step tool reasoning, sanitization, LLM invocation with deterministic fallback,
  * and safety guardrails.
  */
 @Service
@@ -59,7 +63,11 @@ public class AiCopilotService {
     private final AuditService auditService;
     private final SecurityEventService securityEventService;
     private final ObjectMapper objectMapper;
+    private final AiContextOrchestrator orchestrator;
+    private final AiConversationService conversationService;
+    private final AiSecretFirewall secretFirewall;
 
+    @Autowired
     public AiCopilotService(
             AiInquiryRepository inquiryRepository,
             @Autowired(required = false) AiTokenBudgetRepository budgetRepository,
@@ -70,7 +78,10 @@ public class AiCopilotService {
             LlmProviderRegistry providerRegistry,
             AuditService auditService,
             @Autowired(required = false) SecurityEventService securityEventService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Autowired(required = false) AiContextOrchestrator orchestrator,
+            @Autowired(required = false) AiConversationService conversationService,
+            @Autowired(required = false) AiSecretFirewall secretFirewall
     ) {
         this.inquiryRepository = inquiryRepository;
         this.budgetRepository = budgetRepository;
@@ -82,10 +93,35 @@ public class AiCopilotService {
         this.auditService = auditService;
         this.securityEventService = securityEventService;
         this.objectMapper = objectMapper;
+        this.orchestrator = orchestrator;
+        this.conversationService = conversationService;
+        this.secretFirewall = secretFirewall != null ? secretFirewall : new AiSecretFirewall();
+    }
+
+    public AiCopilotService(
+            AiInquiryRepository inquiryRepository,
+            AiTokenBudgetRepository budgetRepository,
+            AiContextBuilder contextBuilder,
+            AiContextSanitizer sanitizer,
+            AiRateLimiterAndBudgetEnforcer budgetEnforcer,
+            AiSafetyGuardrailValidator guardrailValidator,
+            LlmProviderRegistry providerRegistry,
+            AuditService auditService,
+            SecurityEventService securityEventService,
+            ObjectMapper objectMapper
+    ) {
+        this(inquiryRepository, budgetRepository, contextBuilder, sanitizer, budgetEnforcer,
+             guardrailValidator, providerRegistry, auditService, securityEventService, objectMapper,
+             null, null, null);
     }
 
     @Transactional
     public AiChatResponse processInquiry(UUID workspaceId, AiChatRequest request, UUID userId) {
+        return processInquiry(workspaceId, request, userId, "DEVELOPER", Set.of());
+    }
+
+    @Transactional
+    public AiChatResponse processInquiry(UUID workspaceId, AiChatRequest request, UUID userId, String userRole, Set<String> permissions) {
         log.info("Processing AI inquiry for workspace={}, user={}", workspaceId, userId);
 
         budgetEnforcer.checkAndConsumeRateLimit(workspaceId, 150);
@@ -93,44 +129,117 @@ public class AiCopilotService {
         String rawPrompt = request.prompt();
         String sanitizedPrompt = sanitizer.sanitizeUserPrompt(rawPrompt);
 
-        AiIntentType intent = parseIntent(request.intentType(), sanitizedPrompt);
+        // Fetch conversation history if conversationId is provided
+        List<ChatMessage> conversationHistory = new ArrayList<>();
+        UUID conversationId = request.conversationId();
 
-        // Build typed, bounded, zero-plaintext safe context
-        AiSafeContext safeContext = contextBuilder.buildSafeContext(
-                workspaceId,
-                intent,
-                request.targetType(),
-                request.targetId(),
-                request.contextHint()
-        );
-        String contextJson = contextBuilder.serializeContext(safeContext);
+        if (conversationService != null) {
+            if (conversationId != null) {
+                try {
+                    conversationHistory = conversationService.getChatMessages(conversationId, workspaceId, userId);
+                } catch (Exception e) {
+                    log.debug("Conversation {} not found, initiating new conversation: {}", conversationId, e.getMessage());
+                    AiConversation created = conversationService.createConversation(workspaceId, userId, sanitizedPrompt, request.targetType(), request.targetId() != null ? UUID.fromString(request.targetId()) : null);
+                    conversationId = created.getId();
+                }
+            } else {
+                AiConversation created = conversationService.createConversation(workspaceId, userId, sanitizedPrompt, request.targetType(), request.targetId() != null ? UUID.fromString(request.targetId()) : null);
+                conversationId = created.getId();
+            }
 
-        LlmRequest llmRequest = new LlmRequest(
-                "You are SecretVault AI Security Copilot. Deliver concise, evidence-grounded DevSecOps intelligence. Never output or solicit plaintext credentials.",
-                sanitizedPrompt,
-                contextJson,
-                0.2,
-                512
-        );
+            // Save user message in conversation
+            conversationService.saveMessage(conversationId, workspaceId, userId, "user", sanitizedPrompt, null, null, 0);
+        } else if (conversationId == null) {
+            conversationId = UUID.randomUUID();
+        }
 
-        LlmResponse llmResponse = providerRegistry.executeWithFallback(llmRequest);
-        String validatedResponse = guardrailValidator.validateAndSanitizeResponse(llmResponse.text());
+        AiChatResponse response;
 
-        UUID conversationId = request.conversationId() != null ? request.conversationId() : UUID.randomUUID();
+        if (orchestrator != null) {
+            // Use Agentic Orchestrator
+            response = orchestrator.orchestrate(
+                    workspaceId,
+                    userId,
+                    userRole,
+                    permissions,
+                    new AiChatRequest(sanitizedPrompt, request.intentType(), request.targetType(), request.targetId(), conversationId, request.contextHint()),
+                    conversationHistory,
+                    null
+            );
+        } else {
+            // Fallback to classic pipeline
+            AiIntentType intent = parseIntent(request.intentType(), sanitizedPrompt);
+            AiSafeContext safeContext = contextBuilder.buildSafeContext(
+                    workspaceId,
+                    intent,
+                    request.targetType(),
+                    request.targetId(),
+                    request.contextHint()
+            );
+            String contextJson = contextBuilder.serializeContext(safeContext);
 
+            LlmRequest llmRequest = new LlmRequest(
+                    "You are SecretVault AI Security Copilot. Deliver concise, evidence-grounded DevSecOps intelligence. Never output or solicit plaintext credentials.",
+                    sanitizedPrompt,
+                    contextJson,
+                    0.2,
+                    512
+            );
+
+            LlmResponse llmResponse = providerRegistry.executeWithFallback(llmRequest);
+            String validatedResponse = guardrailValidator.validateAndSanitizeResponse(llmResponse.text());
+
+            List<TelemetryEvidence> evidenceList = extractEvidenceFromResponse(validatedResponse, request.targetId());
+            List<String> recommendations = extractRecommendationsFromResponse(validatedResponse);
+
+            response = new AiChatResponse(
+                    UUID.randomUUID(),
+                    conversationId,
+                    sanitizedPrompt,
+                    intent.name(),
+                    validatedResponse,
+                    llmResponse.confidenceScore(),
+                    llmResponse.confidenceScore() >= 0.90 ? "HIGH" : (llmResponse.confidenceScore() >= 0.70 ? "MEDIUM" : "LOW"),
+                    llmResponse.providerName(),
+                    llmResponse.modelName(),
+                    llmResponse.latencyMs(),
+                    evidenceList,
+                    recommendations,
+                    List.of(),
+                    List.of("Zero-knowledge metadata context applied", "Plaintext payload unreachable"),
+                    "AI recommendations are strictly advisory and require authorized approval before execution.",
+                    Instant.now()
+            );
+        }
+
+        // Save assistant message to conversation history
+        if (conversationService != null) {
+            conversationService.saveMessage(
+                    conversationId,
+                    workspaceId,
+                    userId,
+                    "assistant",
+                    response.responseText(),
+                    response.modelProvider(),
+                    response.modelName(),
+                    (int) (response.latencyMs() / 10)
+            );
+        }
+
+        // Save AI Inquiry record
         AiInquiry inquiry = new AiInquiry();
         inquiry.setWorkspaceId(workspaceId);
         inquiry.setUserId(userId);
         inquiry.setConversationId(conversationId);
         inquiry.setPrompt(sanitizedPrompt);
-        inquiry.setIntentType(intent);
-        inquiry.setModelProvider(llmResponse.providerName());
-        inquiry.setModelName(llmResponse.modelName());
-        inquiry.setResponseText(validatedResponse);
-        inquiry.setConfidenceScore(llmResponse.confidenceScore());
-        inquiry.setTokenCount(llmResponse.tokensUsed());
-        inquiry.setLatencyMs(llmResponse.latencyMs());
-        inquiry.setSanitizedContextSummaryJson(contextJson);
+        inquiry.setIntentType(parseIntent(request.intentType(), sanitizedPrompt));
+        inquiry.setModelProvider(response.modelProvider());
+        inquiry.setModelName(response.modelName());
+        inquiry.setResponseText(response.responseText());
+        inquiry.setConfidenceScore(response.confidenceScore());
+        inquiry.setTokenCount(100);
+        inquiry.setLatencyMs(response.latencyMs());
+        inquiry.setSanitizedContextSummaryJson("{}");
 
         AiInquiry saved = inquiryRepository.save(inquiry);
 
@@ -140,7 +249,7 @@ public class AiCopilotService {
                 saved.getId(),
                 userId,
                 workspaceId,
-                "AI Copilot inquiry executed: " + intent
+                "AI Copilot inquiry executed: " + inquiry.getIntentType()
         );
 
         if (securityEventService != null) {
@@ -156,31 +265,45 @@ public class AiCopilotService {
                     null,
                     null,
                     null,
-                    Map.of("inquiryId", saved.getId().toString(), "intent", intent.name())
+                    Map.of("inquiryId", saved.getId().toString(), "model", response.modelName())
             );
         }
 
-        List<TelemetryEvidence> evidenceList = extractEvidenceFromResponse(validatedResponse, request.targetId());
-        List<String> recommendations = extractRecommendationsFromResponse(validatedResponse);
+        return response;
+    }
 
-        return new AiChatResponse(
-                saved.getId(),
-                saved.getConversationId(),
-                saved.getPrompt(),
-                saved.getIntentType().name(),
-                saved.getResponseText(),
-                saved.getConfidenceScore(),
-                saved.getConfidenceScore() >= 0.90 ? "HIGH" : (saved.getConfidenceScore() >= 0.70 ? "MEDIUM" : "LOW"),
-                saved.getModelProvider(),
-                saved.getModelName(),
-                saved.getLatencyMs(),
-                evidenceList,
-                recommendations,
-                List.of(),
-                List.of("Zero-knowledge metadata context applied", "Plaintext payload unreachable"),
-                "AI recommendations are strictly advisory and require authorized approval before execution.",
-                saved.getCreatedAt()
-        );
+    public void processInquiryStream(
+            UUID workspaceId,
+            AiChatRequest request,
+            UUID userId,
+            String userRole,
+            Set<String> permissions,
+            SseEmitter emitter
+    ) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("status").data(Map.of("status", "STARTED", "message", "Initializing AI Copilot...")));
+
+                AiChatResponse response = processInquiry(
+                        workspaceId,
+                        request,
+                        userId,
+                        userRole,
+                        permissions
+                );
+
+                emitter.send(SseEmitter.event().name("result").data(response));
+                emitter.send(SseEmitter.event().name("done").data(Map.of("status", "COMPLETED")));
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("Streaming AI inquiry error: {}", e.getMessage(), e);
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(Map.of("error", e.getMessage() != null ? e.getMessage() : "AI inquiry processing failed")));
+                    emitter.complete();
+                } catch (IOException ignored) {
+                }
+            }
+        });
     }
 
     public Page<AiChatResponse> getInquiryHistory(UUID workspaceId, Pageable pageable) {
@@ -233,6 +356,10 @@ public class AiCopilotService {
         );
     }
 
+    public List<Map<String, Object>> getProviders() {
+        return providerRegistry.getProviderStatusList();
+    }
+
     private AiIntentType parseIntent(String providedIntent, String prompt) {
         if (providedIntent != null && !providedIntent.isBlank()) {
             AiIntentType parsed = AiIntentType.fromString(providedIntent);
@@ -240,6 +367,7 @@ public class AiCopilotService {
                 return parsed;
             }
         }
+        if (prompt == null) return AiIntentType.COPILOT_GENERAL;
         String p = prompt.toLowerCase();
         if (p.contains("help") || p.contains("command")) return AiIntentType.HELP;
         if (p.contains("drift") || p.contains("diff")) return AiIntentType.SYNC_FAILURE;

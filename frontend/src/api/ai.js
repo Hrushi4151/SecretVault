@@ -94,4 +94,30 @@ export const aiApi = {
       method: 'GET',
     });
   },
+
+  // LLM Providers
+  listProviders: async (workspaceId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/providers`, {
+      method: 'GET',
+    });
+  },
+
+  // Persistent Conversations
+  listConversations: async (workspaceId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/conversations`, {
+      method: 'GET',
+    });
+  },
+
+  getConversation: async (workspaceId, conversationId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/conversations/${conversationId}`, {
+      method: 'GET',
+    });
+  },
+
+  deleteConversation: async (workspaceId, conversationId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/conversations/${conversationId}`, {
+      method: 'DELETE',
+    });
+  },
 };

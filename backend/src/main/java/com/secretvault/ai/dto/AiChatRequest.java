@@ -17,4 +17,8 @@ public record AiChatRequest(
     public AiChatRequest(String prompt, String intentType, UUID targetProjectId, UUID targetEnvironmentId) {
         this(prompt, intentType, null, targetProjectId, targetEnvironmentId, null, null, null);
     }
+
+    public AiChatRequest(String prompt, String intentType, String targetType, String targetId, UUID conversationId, String contextHint) {
+        this(prompt, intentType, conversationId, null, null, targetType, targetId, contextHint);
+    }
 }

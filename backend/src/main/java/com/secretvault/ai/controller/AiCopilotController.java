@@ -1,6 +1,9 @@
 package com.secretvault.ai.controller;
 
+import com.secretvault.ai.domain.entity.AiConversation;
+import com.secretvault.ai.domain.entity.AiMessage;
 import com.secretvault.ai.dto.*;
+import com.secretvault.ai.service.AiConversationService;
 import com.secretvault.ai.service.AiCopilotService;
 import com.secretvault.ai.service.AiDeploymentRcaService;
 import com.secretvault.ai.service.AiRecommendationEngine;
@@ -12,16 +15,21 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -35,19 +43,22 @@ public class AiCopilotController {
     private final AiSecurityAnalysisService analysisService;
     private final AiRecommendationEngine recommendationEngine;
     private final AiRemediationExecutionGateway executionGateway;
+    private final AiConversationService conversationService;
 
     public AiCopilotController(
             AiCopilotService copilotService,
             AiDeploymentRcaService rcaService,
             AiSecurityAnalysisService analysisService,
             AiRecommendationEngine recommendationEngine,
-            AiRemediationExecutionGateway executionGateway
+            AiRemediationExecutionGateway executionGateway,
+            @Autowired(required = false) AiConversationService conversationService
     ) {
         this.copilotService = copilotService;
         this.rcaService = rcaService;
         this.analysisService = analysisService;
         this.recommendationEngine = recommendationEngine;
         this.executionGateway = executionGateway;
+        this.conversationService = conversationService;
     }
 
     @PostMapping("/chat")
@@ -58,8 +69,134 @@ public class AiCopilotController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         UUID userId = principal != null ? principal.getId() : null;
-        AiChatResponse response = copilotService.processInquiry(workspaceId, request, userId);
+        String userRole = "DEVELOPER";
+        if (principal != null && principal.getAuthorities() != null && !principal.getAuthorities().isEmpty()) {
+            userRole = principal.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+        }
+        Set<String> permissions = principal != null && principal.getAuthorities() != null
+                ? principal.getAuthorities().stream().map(Object::toString).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
+
+        AiChatResponse response = copilotService.processInquiry(workspaceId, request, userId, userRole, permissions);
         return ResponseEntity.ok(ApiResponse.success(response, "AI Copilot analysis generated"));
+    }
+
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream live AI Copilot reasoning and tool execution progress over SSE")
+    public SseEmitter chatStream(
+            @PathVariable UUID workspaceId,
+            @RequestBody @Valid AiChatRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        String userRole = "DEVELOPER";
+        if (principal != null && principal.getAuthorities() != null && !principal.getAuthorities().isEmpty()) {
+            userRole = principal.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+        }
+        Set<String> permissions = principal != null && principal.getAuthorities() != null
+                ? principal.getAuthorities().stream().map(Object::toString).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
+
+        SseEmitter emitter = new SseEmitter(60_000L);
+        copilotService.processInquiryStream(workspaceId, request, userId, userRole, permissions, emitter);
+        return emitter;
+    }
+
+    @GetMapping("/conversations")
+    @Operation(summary = "List persistent conversations in the authorized workspace")
+    public ResponseEntity<ApiResponse<Page<AiConversation>>> listConversations(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        Page<AiConversation> page = conversationService != null
+                ? conversationService.listConversations(workspaceId, userId, pageable)
+                : Page.empty(pageable);
+        return ResponseEntity.ok(ApiResponse.success(page, "Conversations retrieved"));
+    }
+
+    @PostMapping("/conversations")
+    @Operation(summary = "Create a new conversation session")
+    public ResponseEntity<ApiResponse<AiConversation>> createConversation(
+            @PathVariable UUID workspaceId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        String title = body.getOrDefault("title", "New Inquiry");
+        String scopeType = body.getOrDefault("scopeType", "WORKSPACE");
+        AiConversation created = conversationService != null
+                ? conversationService.createConversation(workspaceId, userId, title, scopeType, null)
+                : new AiConversation();
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Conversation created"));
+    }
+
+    @GetMapping("/conversations/{conversationId}")
+    @Operation(summary = "Get conversation by ID")
+    public ResponseEntity<ApiResponse<AiConversation>> getConversation(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        AiConversation conv = conversationService != null
+                ? conversationService.getConversation(conversationId, workspaceId, userId)
+                : null;
+        return ResponseEntity.ok(ApiResponse.success(conv, "Conversation retrieved"));
+    }
+
+    @PatchMapping("/conversations/{conversationId}")
+    @Operation(summary = "Rename conversation")
+    public ResponseEntity<ApiResponse<AiConversation>> renameConversation(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID conversationId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        String newTitle = body.getOrDefault("title", "Conversation");
+        AiConversation updated = conversationService != null
+                ? conversationService.renameConversation(conversationId, workspaceId, userId, newTitle)
+                : null;
+        return ResponseEntity.ok(ApiResponse.success(updated, "Conversation renamed"));
+    }
+
+    @DeleteMapping("/conversations/{conversationId}")
+    @Operation(summary = "Delete conversation")
+    public ResponseEntity<ApiResponse<Void>> deleteConversation(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        if (conversationService != null) {
+            conversationService.deleteConversation(conversationId, workspaceId, userId);
+        }
+        return ResponseEntity.ok(ApiResponse.success(null, "Conversation deleted"));
+    }
+
+    @GetMapping("/conversations/{conversationId}/messages")
+    @Operation(summary = "Get messages for a conversation")
+    public ResponseEntity<ApiResponse<List<AiMessage>>> getMessages(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        List<AiMessage> messages = conversationService != null
+                ? conversationService.getMessages(conversationId, workspaceId, userId)
+                : List.of();
+        return ResponseEntity.ok(ApiResponse.success(messages, "Messages retrieved"));
+    }
+
+    @GetMapping("/providers")
+    @Operation(summary = "List registered AI model providers and availability")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getProviders(
+            @PathVariable UUID workspaceId
+    ) {
+        List<Map<String, Object>> providers = copilotService.getProviders();
+        return ResponseEntity.ok(ApiResponse.success(providers, "Providers retrieved"));
     }
 
     @GetMapping({"/chat/history", "/inquiries"})
