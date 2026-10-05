@@ -3,71 +3,95 @@ import { apiClient } from './client';
 export const aiApi = {
   // Chat & Inquiries
   chat: async (workspaceId, data) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/chat`, data);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/chat`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
-  listInquiries: async (workspaceId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/inquiries`);
-    return res.data;
+  listInquiries: async (workspaceId, page = 0, size = 20) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/inquiries?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
   },
 
   // Deployment / Sync RCA
   runRca: async (workspaceId, data) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/rca`, data);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/rca`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   getRcaReport: async (workspaceId, reportId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/rca/${reportId}`);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/rca/${reportId}`, {
+      method: 'GET',
+    });
   },
 
   // Security Posture Forecasting
   getPostureForecast: async (workspaceId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/posture/forecast`);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/posture/forecast`, {
+      method: 'GET',
+    });
   },
 
   // Remediation Plans
-  listPlans: async (workspaceId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/plans`);
-    return res.data;
+  listPlans: async (workspaceId, page = 0, size = 20) => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
   },
 
   getPlan: async (workspaceId, planId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/plans/${planId}`);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/${planId}`, {
+      method: 'GET',
+    });
   },
 
   generatePlan: async (workspaceId, data) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/plans/generate`, data);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   approvePlan: async (workspaceId, planId) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/plans/${planId}/approve`);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/${planId}/approve`, {
+      method: 'POST',
+    });
   },
 
-  executePlan: async (workspaceId, planId) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/plans/${planId}/execute`);
-    return res.data;
+  executePlan: async (workspaceId, planId, data = {}) => {
+    const headers = {};
+    if (data?.stepUpProof) {
+      headers['X-Step-Up-Proof'] = data.stepUpProof;
+    }
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/${planId}/execute`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
   },
 
-  rejectPlan: async (workspaceId, planId) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/plans/${planId}/reject`);
-    return res.data;
+  rejectPlan: async (workspaceId, planId, reason = '') => {
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/${planId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
   },
 
   submitFeedback: async (workspaceId, planId, data) => {
-    const res = await apiClient.post(`/workspaces/${workspaceId}/ai/plans/${planId}/feedback`, data);
-    return res.data;
+    return apiClient.request(`/workspaces/${workspaceId}/ai/plans/${planId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   // Token Budget & Quota
   getTokenBudget: async (workspaceId) => {
-    const res = await apiClient.get(`/workspaces/${workspaceId}/ai/token-budget`);
-    return res.data;
-  }
+    return apiClient.request(`/workspaces/${workspaceId}/ai/token-budget`, {
+      method: 'GET',
+    });
+  },
 };
