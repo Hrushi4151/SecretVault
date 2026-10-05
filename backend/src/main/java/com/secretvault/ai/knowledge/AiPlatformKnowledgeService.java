@@ -199,7 +199,7 @@ public class AiPlatformKnowledgeService {
                 .filter(t -> t.length() > 2)
                 .toList();
 
-        return knowledgeBase.values().stream()
+        List<KnowledgeArticle> results = knowledgeBase.values().stream()
                 .map(article -> {
                     int score = 0;
                     if (article.topic().contains(normalized)) score += 10;
@@ -218,6 +218,11 @@ public class AiPlatformKnowledgeService {
                 .limit(limit)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+
+        if (results.isEmpty()) {
+            return knowledgeBase.values().stream().limit(Math.max(1, limit)).toList();
+        }
+        return results;
     }
 
     public Optional<KnowledgeArticle> getTopic(String topic) {

@@ -137,7 +137,8 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             prompt: conv.title,
             responseContent: lastAssistant.content,
             intent: 'CONVERSATIONAL_COPILOT',
-            modelUsed: conv.modelName || 'qwen3:8b',
+            modelProvider: lastAssistant.modelProvider || conv.modelProvider || 'OLLAMA',
+            modelUsed: lastAssistant.modelName || conv.modelName || 'qwen3:8b',
             confidenceScore: 0.95,
             latencyMs: 80,
             createdAt: lastAssistant.createdAt
@@ -461,7 +462,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                         </span>
                       </div>
                       <span className="text-[10px] font-mono text-[#A26377]">
-                        Provider: {activeProvider.name} • Model: {currentResponse.modelUsed || activeProvider.model || 'qwen3:8b'} • Latency: {currentResponse.latencyMs || 45}ms
+                        Provider: {currentResponse.modelProvider || activeProvider.name} • Model: {currentResponse.modelUsed || activeProvider.model || 'qwen3:8b'} • Latency: {currentResponse.latencyMs || 45}ms
                       </span>
                     </div>
                   </div>
@@ -598,6 +599,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                           prompt: inq.prompt,
                           responseContent: inq.responseContent,
                           intent: inq.intent,
+                          modelProvider: inq.modelProvider,
                           modelUsed: inq.modelUsed,
                           confidenceScore: inq.confidenceScore,
                           latencyMs: inq.latencyMs,

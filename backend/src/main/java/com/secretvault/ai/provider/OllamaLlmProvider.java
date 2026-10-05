@@ -38,14 +38,14 @@ public class OllamaLlmProvider implements LlmProvider {
     public OllamaLlmProvider(
             @Value("${secretvault.ai.ollama.base-url:${AI_OLLAMA_BASE_URL:${AI_BASE_URL:http://localhost:11434}}}") String baseUrl,
             @Value("${secretvault.ai.ollama.model:${AI_OLLAMA_MODEL:${AI_MODEL:qwen3:8b}}}") String modelName,
-            @Value("${secretvault.ai.ollama.timeout-seconds:30}") int timeoutSeconds,
+            @Value("${secretvault.ai.ollama.timeout-seconds:120}") int timeoutSeconds,
             @Value("${secretvault.ai.ollama.temperature:0.2}") double defaultTemperature,
             @Value("${secretvault.ai.ollama.max-tokens:2048}") int defaultMaxTokens,
             ObjectMapper objectMapper
     ) {
         this.baseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "http://localhost:11434";
         this.modelName = modelName != null && !modelName.isBlank() ? modelName.trim() : "qwen3:8b";
-        this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 30;
+        this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 120;
         this.defaultTemperature = defaultTemperature;
         this.defaultMaxTokens = defaultMaxTokens > 0 ? defaultMaxTokens : 2048;
         this.httpClient = HttpClient.newBuilder()
