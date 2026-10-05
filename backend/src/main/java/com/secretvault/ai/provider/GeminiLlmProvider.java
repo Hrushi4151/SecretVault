@@ -236,7 +236,7 @@ public class GeminiLlmProvider implements LlmProvider {
             String testUrl = String.format("%s/v1beta/models/%s?key=%s", baseUrl, modelName, apiKey);
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(testUrl))
-                    .timeout(Duration.ofSeconds(3))
+                    .timeout(Duration.ofSeconds(5))
                     .GET()
                     .build();
             HttpResponse<Void> resp = httpClient.send(req, HttpResponse.BodyHandlers.discarding());
