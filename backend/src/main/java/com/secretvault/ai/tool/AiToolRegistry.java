@@ -36,11 +36,18 @@ public class AiToolRegistry {
 
     public Optional<AiTool> getTool(String name) {
         if (name == null) return Optional.empty();
-        return Optional.ofNullable(tools.get(name));
+        AiTool tool = tools.get(name);
+        if (tool == null && name.contains("_")) {
+            tool = tools.get(name.replace("_", "."));
+        }
+        if (tool == null && name.contains(".")) {
+            tool = tools.get(name.replace(".", "_"));
+        }
+        return Optional.ofNullable(tool);
     }
 
     public boolean hasTool(String name) {
-        return name != null && tools.containsKey(name);
+        return getTool(name).isPresent();
     }
 
     public List<AiTool> getTools() {

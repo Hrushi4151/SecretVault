@@ -41,16 +41,18 @@ public class GeminiLlmProvider implements LlmProvider {
 
     public GeminiLlmProvider(
             @Value("${secretvault.ai.gemini.base-url:${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}}") String baseUrl,
-            @Value("${secretvault.ai.gemini.model:${AI_GEMINI_MODEL:gemini-1.5-flash}}") String modelName,
-            @Value("${secretvault.ai.gemini.api-key:${AI_GEMINI_API_KEY:AQ.Ab8RN6LAksSJYQ0MvCZOTswjv3KNPkLA6wroq8OsMH0m5Whf-A}}") String apiKey,
-            @Value("${secretvault.ai.gemini.timeout-seconds:30}") int timeoutSeconds,
+            @Value("${secretvault.ai.gemini.model:${AI_GEMINI_MODEL:gemini-3.5-flash}}") String modelName,
+            @Value("${secretvault.ai.gemini.api-key:${AI_GEMINI_API_KEY:}}") String apiKey,
+            @Value("${secretvault.ai.gemini.timeout-seconds:60}") int timeoutSeconds,
             @Value("${secretvault.ai.gemini.temperature:0.1}") double defaultTemperature,
             @Value("${secretvault.ai.gemini.max-tokens:2048}") int defaultMaxTokens,
             ObjectMapper objectMapper) {
         this.baseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "https://generativelanguage.googleapis.com";
-        this.modelName = modelName != null && !modelName.isBlank() ? modelName.trim() : "gemini-1.5-flash";
+        this.modelName = modelName != null && !modelName.isBlank()
+                ? modelName.trim().toLowerCase().replace("models/", "")
+                : "gemini-3.5-flash";
         this.apiKey = apiKey != null ? apiKey.trim() : "";
-        this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 30;
+        this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 60;
         this.defaultTemperature = defaultTemperature;
         this.defaultMaxTokens = defaultMaxTokens > 0 ? defaultMaxTokens : 2048;
         this.httpClient = HttpClient.newBuilder()
