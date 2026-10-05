@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS ai_remediation_plans (
     remediation_steps_json TEXT NOT NULL DEFAULT '[]',
     payload_diff_json TEXT,
     blast_radius_json TEXT,
+    plan_fingerprint VARCHAR(64),
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING_APPROVAL',
     created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,

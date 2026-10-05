@@ -85,9 +85,14 @@ class AiRemediationExecutionGatewayTest {
         plan.setWorkspaceId(workspaceId);
         plan.setStatus(AiPlanStatus.APPROVED);
         plan.setTitle("Authoritative Plan");
+        plan.setPlanType("SYNC_RECONCILIATION");
+        plan.setTargetResourceType("SYNC_JOB");
+        plan.setTargetResourceId("job-123");
+        plan.setPlanFingerprint("valid-hash-abc1234");
         plan.setExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
 
         when(planRepository.findByIdAndWorkspaceId(planId, workspaceId)).thenReturn(Optional.of(plan));
+        when(recommendationEngine.computePlanFingerprint(plan)).thenReturn("valid-hash-abc1234");
         when(recommendationEngine.toDto(any())).thenAnswer(invocation -> {
             AiRemediationPlan p = invocation.getArgument(0);
             return new AiRemediationPlanDto(
@@ -100,6 +105,49 @@ class AiRemediationExecutionGatewayTest {
         assertEquals(AiPlanStatus.EXECUTED, plan.getStatus());
         assertNotNull(plan.getExecutedAt());
         verify(auditService).logSuccess(any(), any(), eq(planId), eq(actorId), eq(workspaceId), any());
+    }
+
+    @Test
+    @DisplayName("SECURITY INVARIANT: Authoritative execution rejected when plan is PENDING_APPROVAL")
+    void testRejectAuthoritativeExecutionWithoutApproval() {
+        UUID workspaceId = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+
+        AiRemediationPlan plan = new AiRemediationPlan();
+        plan.setId(planId);
+        plan.setWorkspaceId(workspaceId);
+        plan.setStatus(AiPlanStatus.PENDING_APPROVAL);
+        plan.setExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
+
+        when(planRepository.findByIdAndWorkspaceId(planId, workspaceId)).thenReturn(Optional.of(plan));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                executionGateway.executePlan(workspaceId, planId, new ExecutePlanRequest(false, "Execute without approval"), null)
+        );
+        assertTrue(ex.getMessage().contains("must be APPROVED before authoritative execution"));
+    }
+
+    @Test
+    @DisplayName("SECURITY INVARIANT: Authoritative execution rejected when plan payload has been tampered post-approval")
+    void testRejectTamperedPlanExecution() {
+        UUID workspaceId = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+
+        AiRemediationPlan plan = new AiRemediationPlan();
+        plan.setId(planId);
+        plan.setWorkspaceId(workspaceId);
+        plan.setStatus(AiPlanStatus.APPROVED);
+        plan.setPlanFingerprint("original-approval-hash-1111");
+        plan.setExpiresAt(Instant.now().plus(1, ChronoUnit.HOURS));
+
+        when(planRepository.findByIdAndWorkspaceId(planId, workspaceId)).thenReturn(Optional.of(plan));
+        // Mock computation returning a different fingerprint due to modified steps/payload diff
+        when(recommendationEngine.computePlanFingerprint(plan)).thenReturn("tampered-hash-9999");
+
+        SecurityException ex = assertThrows(SecurityException.class, () ->
+                executionGateway.executePlan(workspaceId, planId, new ExecutePlanRequest(false, "Execute tampered"), null)
+        );
+        assertTrue(ex.getMessage().contains("Plan integrity violation"));
     }
 
     @Test

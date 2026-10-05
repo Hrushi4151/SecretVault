@@ -87,6 +87,40 @@ class AiContextSanitizerTest {
     }
 
     @Test
+    @DisplayName("Should scrub fine-grained GitHub PATs and AWS temporary session keys")
+    void testScrubPatAndAwsTokens() {
+        String raw = "Sync error with token github_pat_11AAABBBCCC000111222333444_XYZ and AWS key ASIAIOSFODNN7EXAMPLE";
+        String sanitized = sanitizer.sanitizeText(raw);
+
+        assertFalse(sanitized.contains("github_pat_11AAABBBCCC000111222333444_XYZ"));
+        assertFalse(sanitized.contains("ASIAIOSFODNN7EXAMPLE"));
+        assertTrue(sanitized.contains("[REDACTED_SECRET_TOKEN]"));
+    }
+
+    @Test
+    @DisplayName("Should scrub Authorization headers and Bearer tokens")
+    void testScrubAuthorizationHeaders() {
+        String raw = "Request failed: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        String sanitized = sanitizer.sanitizeText(raw);
+
+        assertFalse(sanitized.contains("eyJzdWIiOi"));
+        assertFalse(sanitized.contains("SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"));
+        assertTrue(sanitized.contains("Authorization: [REDACTED_AUTHORIZATION_HEADER]"));
+    }
+
+    @Test
+    @DisplayName("Should scrub MySQL and Redis connection string credentials")
+    void testScrubMultiDatabaseUriCredentials() {
+        String raw = "mysql://db_admin:P@ssw0rd123!@mysql.db:3306/prod and redis://app_user:RedisSecretToken99@redis-cluster:6379";
+        String sanitized = sanitizer.sanitizeText(raw);
+
+        assertFalse(sanitized.contains("P@ssw0rd123!"));
+        assertFalse(sanitized.contains("RedisSecretToken99"));
+        assertTrue(sanitized.contains("mysql://db_admin:[REDACTED_CREDENTIAL]@mysql.db:3306/prod"));
+        assertTrue(sanitized.contains("redis://app_user:[REDACTED_CREDENTIAL]@redis-cluster:6379"));
+    }
+
+    @Test
     @DisplayName("computeDigestPrefix produces deterministic 8-char hex prefix")
     void testComputeDigestPrefix() {
         String digest1 = sanitizer.computeDigestPrefix("constant-string-123");

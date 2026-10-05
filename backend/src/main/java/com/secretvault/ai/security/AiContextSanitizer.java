@@ -27,15 +27,24 @@ public class AiContextSanitizer {
     );
 
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
-            "\\b(sk_live_[0-9a-zA-Z]{16,}|ghp_[0-9a-zA-Z]{16,}|xox[baprs]-[0-9a-zA-Z]{10,}|AKIA[0-9A-Z]{16}|ey[A-Za-z0-9-_]{20,}\\.[A-Za-z0-9-_]{20,}\\.[A-Za-z0-9-_]{10,})\\b"
+            "\\b(sk_live_[0-9a-zA-Z]{16,}|ghp_[0-9a-zA-Z]{16,}|github_pat_[0-9a-zA-Z_]{20,}|xox[baprs]-[0-9a-zA-Z]{10,}|(?:AKIA|ASIA)[0-9A-Z]{16}|ey[A-Za-z0-9-_]{20,}\\.[A-Za-z0-9-_]{20,}\\.[A-Za-z0-9-_]{10,})\\b"
+    );
+
+    private static final Pattern AUTH_HEADER_PATTERN = Pattern.compile(
+            "(?i)Authorization:\\s*(?:Bearer\\s+)?[A-Za-z0-9\\-._~+/]+=*",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    private static final Pattern BEARER_TOKEN_PATTERN = Pattern.compile(
+            "(?i)\\bBearer\\s+[A-Za-z0-9\\-._~+/]{16,}={0,2}\\b"
     );
 
     private static final Pattern URI_CREDENTIALS_PATTERN = Pattern.compile(
-            "([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\\s]+):([^@/\\s]+)@"
+            "([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\\s]+):([^/\\s]+)@"
     );
 
     private static final Pattern KV_SECRET_PATTERN = Pattern.compile(
-            "(?i)\\b(password|secret|token|api[_-]?key|access[_-]?key|auth|bearer)\\s*[:=]\\s*['\"]?([^\\s,'\"}\\]]+)['\"]?"
+            "(?i)\\b(password|secret|token|api[_-]?key|access[_-]?key|auth|bearer|client_secret|aws_secret_access_key)\\s*[:=]\\s*['\"]?([^\\s,'\"}\\]]+)['\"]?"
     );
 
     private static final Pattern HIGH_ENTROPY_PATTERN = Pattern.compile(
@@ -59,10 +68,14 @@ public class AiContextSanitizer {
         // 2. Scrub Well-Known Tokens
         result = TOKEN_PATTERN.matcher(result).replaceAll("[REDACTED_SECRET_TOKEN]");
 
-        // 3. Scrub URI user:password credentials
+        // 3. Scrub Authorization Headers & Standalone Bearer Tokens
+        result = AUTH_HEADER_PATTERN.matcher(result).replaceAll("Authorization: [REDACTED_AUTHORIZATION_HEADER]");
+        result = BEARER_TOKEN_PATTERN.matcher(result).replaceAll("Bearer [REDACTED_BEARER_TOKEN]");
+
+        // 4. Scrub URI user:password credentials
         result = URI_CREDENTIALS_PATTERN.matcher(result).replaceAll("$1$2:[REDACTED_CREDENTIAL]@");
 
-        // 4. Scrub Key-Value credentials
+        // 5. Scrub Key-Value credentials
         Matcher kvMatcher = KV_SECRET_PATTERN.matcher(result);
         StringBuffer sb = new StringBuffer();
         while (kvMatcher.find()) {
@@ -102,6 +115,11 @@ public class AiContextSanitizer {
         if (TOKEN_PATTERN.matcher(context).find()) {
             log.error("Security violation: Live secret token pattern detected in AI context");
             throw new SecurityException("Security Invariant Violation: Secret token pattern detected in AI context");
+        }
+
+        if (AUTH_HEADER_PATTERN.matcher(context).find() || BEARER_TOKEN_PATTERN.matcher(context).find()) {
+            log.error("Security violation: Raw authorization credential detected in AI context");
+            throw new SecurityException("Security Invariant Violation: Authorization credential detected in AI context");
         }
 
         if (URI_CREDENTIALS_PATTERN.matcher(context).find()) {

@@ -62,7 +62,7 @@ public class AiCopilotController {
         return ResponseEntity.ok(ApiResponse.success(response, "AI Copilot analysis generated"));
     }
 
-    @GetMapping("/chat/history")
+    @GetMapping({"/chat/history", "/inquiries"})
     @Operation(summary = "Get historical AI inquiries for workspace")
     public ResponseEntity<ApiResponse<Page<AiChatResponse>>> getHistory(
             @PathVariable UUID workspaceId,
@@ -102,7 +102,7 @@ public class AiCopilotController {
         return ResponseEntity.ok(ApiResponse.success(reports, "RCA reports retrieved"));
     }
 
-    @GetMapping("/posture-forecast")
+    @GetMapping({"/posture-forecast", "/posture/forecast"})
     @Operation(summary = "Get predictive security posture forecast and drift decay trajectory")
     public ResponseEntity<ApiResponse<AiPostureForecastResponse>> getPostureForecast(
             @PathVariable UUID workspaceId
@@ -183,7 +183,7 @@ public class AiCopilotController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Feedback recorded"));
     }
 
-    @GetMapping("/health")
+    @GetMapping({"/health", "/token-budget"})
     @Operation(summary = "Check AI model health, active provider, and token quotas")
     public ResponseEntity<ApiResponse<AiModelHealthResponse>> getHealth(
             @PathVariable UUID workspaceId

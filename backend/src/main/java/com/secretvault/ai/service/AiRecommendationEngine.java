@@ -86,6 +86,7 @@ public class AiRecommendationEngine {
 
         plan.setStatus(AiPlanStatus.APPROVED);
         plan.setReviewedByUserId(reviewerId);
+        plan.setPlanFingerprint(computePlanFingerprint(plan));
         plan.setUpdatedAt(Instant.now());
         AiRemediationPlan saved = planRepository.save(plan);
 
@@ -234,5 +235,23 @@ public class AiRecommendationEngine {
                 entity.getFeedbackComment(),
                 entity.getCreatedAt()
         );
+    }
+
+    public String computePlanFingerprint(AiRemediationPlan plan) {
+        if (plan == null) {
+            return "";
+        }
+        String payload = (plan.getPlanType() != null ? plan.getPlanType() : "") + "|"
+                + (plan.getTargetResourceType() != null ? plan.getTargetResourceType() : "") + "|"
+                + (plan.getTargetResourceId() != null ? plan.getTargetResourceId() : "") + "|"
+                + (plan.getRemediationStepsJson() != null ? plan.getRemediationStepsJson() : "") + "|"
+                + (plan.getPayloadDiffJson() != null ? plan.getPayloadDiffJson() : "");
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (Exception e) {
+            return "sha256err";
+        }
     }
 }

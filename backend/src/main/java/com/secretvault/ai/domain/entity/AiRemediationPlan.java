@@ -52,6 +52,9 @@ public class AiRemediationPlan {
     @Column(name = "blast_radius_json", columnDefinition = "TEXT")
     private String blastRadiusJson;
 
+    @Column(name = "plan_fingerprint", length = 64)
+    private String planFingerprint;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     private AiPlanStatus status = AiPlanStatus.PENDING_APPROVAL;
@@ -252,6 +255,14 @@ public class AiRemediationPlan {
 
     public void setFeedbackComment(String feedbackComment) {
         this.feedbackComment = feedbackComment;
+    }
+
+    public String getPlanFingerprint() {
+        return planFingerprint;
+    }
+
+    public void setPlanFingerprint(String planFingerprint) {
+        this.planFingerprint = planFingerprint;
     }
 
     public Instant getCreatedAt() {

@@ -64,15 +64,24 @@ public class AiRemediationExecutionGateway {
             throw new IllegalStateException("Remediation plan has expired and cannot be executed.");
         }
 
-        if (plan.getStatus() != AiPlanStatus.APPROVED && plan.getStatus() != AiPlanStatus.PENDING_APPROVAL) {
-            throw new IllegalStateException("Remediation plan cannot be executed in status: " + plan.getStatus());
-        }
-
         boolean isDryRun = request != null && request.dryRun();
 
         if (isDryRun) {
             log.info("Executing dry-run simulation for AI plan {} in workspace {}", planId, workspaceId);
             return recommendationEngine.toDto(plan);
+        }
+
+        // Authoritative execution requires explicit human approval
+        if (plan.getStatus() != AiPlanStatus.APPROVED) {
+            throw new IllegalStateException("Remediation plan must be APPROVED before authoritative execution. Current status: " + plan.getStatus());
+        }
+
+        // Enforce plan integrity: verify approval seal has not been tampered with
+        String currentFingerprint = recommendationEngine.computePlanFingerprint(plan);
+        if (plan.getPlanFingerprint() == null || !plan.getPlanFingerprint().equals(currentFingerprint)) {
+            log.error("Security violation: Remediation plan {} payload integrity check failed (sealed={}, computed={})",
+                    planId, plan.getPlanFingerprint(), currentFingerprint);
+            throw new SecurityException("Plan integrity violation: Remediation plan payload has been modified post-approval.");
         }
 
         log.info("Executing authoritative AI remediation plan {} in workspace {} by actor {}", planId, workspaceId, actorId);
