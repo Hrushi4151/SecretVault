@@ -120,7 +120,7 @@ secretvault:
     gemini:
       base-url: ${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
       model: ${AI_GEMINI_MODEL:gemini-3.5-flash-lite}
-      api-key: ${AI_GEMINI_API_KEY:AQ.Ab8RN6LAksSJYQ0MvCZOTswjv3KNPkLA6wroq8OsMH0m5Whf-A}
+      api-key: ${AI_GEMINI_API_KEY:}
       timeout-seconds: ${AI_GEMINI_TIMEOUT_SECONDS:60}
       temperature: 0.1
       max-tokens: 2048
