@@ -24,4 +24,8 @@ public record ChatMessage(
     public static ChatMessage tool(String id, String toolName, String outputJson) {
         return new ChatMessage("tool", outputJson, toolName);
     }
+
+    public String toolName() {
+        return name;
+    }
 }

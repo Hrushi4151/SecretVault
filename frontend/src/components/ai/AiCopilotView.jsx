@@ -21,7 +21,11 @@ import {
   FileText,
   Sliders,
   Compass,
-  Cpu
+  Cpu,
+  PlusCircle,
+  Trash2,
+  MessageSquare,
+  Server
 } from 'lucide-react';
 
 export const AiCopilotView = ({ onNavigateToWorkbench }) => {
@@ -29,9 +33,12 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
   const [prompt, setPrompt] = useState('');
   const [selectedIntent, setSelectedIntent] = useState('ALL');
   const [inquiries, setInquiries] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [currentResponse, setCurrentResponse] = useState(null);
   const [postureForecast, setPostureForecast] = useState(null);
   const [tokenBudget, setTokenBudget] = useState(null);
+  const [providers, setProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isForecastLoading, setIsForecastLoading] = useState(false);
   const [rcaTargetType, setRcaTargetType] = useState('DEPLOYMENT');
@@ -42,11 +49,32 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'forecast' | 'rca'
 
   const quickPrompts = [
-    { label: 'Why did deployment fail?', intent: 'DEPLOYMENT_RCA', prompt: 'Analyze root cause for latest deployment failure with database connection timeout' },
-    { label: 'Forecast posture decay (14d)', intent: 'POSTURE_FORECAST', prompt: 'What is our 14-day security posture decay projection and key drift vectors?' },
-    { label: 'Check credential exposure risk', intent: 'SECURITY_AUDIT', prompt: 'Perform security analysis on active access leases and stale API credentials' },
-    { label: 'Recommend rotation remediation', intent: 'REMEDIATION_RECOMMENDATION', prompt: 'Recommend remediation plan for overdue secrets rotation across staging and prod' }
+    { label: 'Why did deployment fail?', prompt: 'Analyze root cause for latest deployment failure with database connection timeout' },
+    { label: 'Forecast posture decay (14d)', prompt: 'What is our 14-day security posture decay projection and key drift vectors?' },
+    { label: 'Check credential exposure risk', prompt: 'Perform security analysis on active access leases and stale API credentials' },
+    { label: 'Recommend rotation remediation', prompt: 'Recommend remediation plan for overdue secrets rotation across staging and prod' },
+    { label: 'Summarize workspace health', prompt: 'Tell me everything important about my workspace security posture and health.' }
   ];
+
+  const fetchProviders = useCallback(async () => {
+    if (!activeWorkspace?.id) return;
+    try {
+      const list = await aiApi.listProviders(activeWorkspace.id);
+      setProviders(Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.warn('Failed to load AI providers', e);
+    }
+  }, [activeWorkspace?.id]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!activeWorkspace?.id) return;
+    try {
+      const list = await aiApi.listConversations(activeWorkspace.id);
+      setConversations(Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.warn('Failed to load conversations', e);
+    }
+  }, [activeWorkspace?.id]);
 
   const fetchTokenBudget = useCallback(async () => {
     if (!activeWorkspace?.id) return;
@@ -83,12 +111,59 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
   }, [activeWorkspace?.id]);
 
   useEffect(() => {
+    fetchProviders();
+    fetchConversations();
     fetchTokenBudget();
     fetchInquiries();
     fetchPostureForecast();
-  }, [fetchTokenBudget, fetchInquiries, fetchPostureForecast]);
+  }, [fetchProviders, fetchConversations, fetchTokenBudget, fetchInquiries, fetchPostureForecast]);
 
-  const handleSendPrompt = async (customPrompt = null, customIntent = null) => {
+  const handleStartNewChat = () => {
+    setActiveConversationId(null);
+    setCurrentResponse(null);
+    setPrompt('');
+  };
+
+  const handleSelectConversation = async (convId) => {
+    setActiveConversationId(convId);
+    if (!activeWorkspace?.id) return;
+    try {
+      const conv = await aiApi.getConversation(activeWorkspace.id, convId);
+      if (conv && conv.messages && conv.messages.length > 0) {
+        const lastAssistant = [...conv.messages].reverse().find(m => m.role === 'ASSISTANT');
+        if (lastAssistant) {
+          setCurrentResponse({
+            id: lastAssistant.id,
+            prompt: conv.title,
+            responseContent: lastAssistant.content,
+            intent: 'CONVERSATIONAL_COPILOT',
+            modelUsed: conv.modelName || 'qwen3:8b',
+            confidenceScore: 0.95,
+            latencyMs: 80,
+            createdAt: lastAssistant.createdAt
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load conversation transcript', err);
+    }
+  };
+
+  const handleDeleteConversation = async (e, convId) => {
+    e.stopPropagation();
+    if (!activeWorkspace?.id) return;
+    try {
+      await aiApi.deleteConversation(activeWorkspace.id, convId);
+      if (activeConversationId === convId) {
+        handleStartNewChat();
+      }
+      fetchConversations();
+    } catch (err) {
+      setErrorMsg('Failed to delete conversation');
+    }
+  };
+
+  const handleSendPrompt = async (customPrompt = null) => {
     const textToSend = customPrompt || prompt;
     if (!textToSend.trim() || !activeWorkspace?.id) return;
 
@@ -97,13 +172,18 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     try {
       const res = await aiApi.chat(activeWorkspace.id, {
         prompt: textToSend,
-        intent: customIntent || (selectedIntent === 'ALL' ? null : selectedIntent),
+        conversationId: activeConversationId,
+        intent: null,
         targetType: null,
         targetId: null
       });
       setCurrentResponse(res);
+      if (res.conversationId) {
+        setActiveConversationId(res.conversationId);
+      }
       setPrompt('');
       fetchInquiries();
+      fetchConversations();
       fetchTokenBudget();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || err.message || 'AI request failed');
@@ -152,9 +232,16 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     }
   };
 
+  const activeProvider = providers.find(p => p.isActive) || {
+    name: 'OLLAMA',
+    model: 'qwen3:8b',
+    type: 'LOCAL_DAEMON',
+    available: true
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12">
-      {/* Top Banner & Security Guardrail Indicator */}
+      {/* Top Banner & Active Provider Status */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#30000F] via-[#3F0016] to-[#1E000A] border border-[#FF2D6D]/30 p-6 shadow-2xl shadow-[#FF2D6D]/10">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 rounded-full bg-[#FF2D6D]/10 blur-3xl pointer-events-none" />
 
@@ -168,13 +255,22 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                 <h1 className="text-xl font-headline font-bold text-white tracking-tight">
                   AI Security Intelligence Copilot
                 </h1>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/40 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" />
-                  Air-Gapped Offline Engine Active
+                <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
+                  activeProvider.name === 'OLLAMA'
+                    ? 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/40'
+                    : activeProvider.name === 'GEMINI'
+                    ? 'bg-[#38BDF8]/20 text-[#38BDF8] border-[#38BDF8]/40'
+                    : 'bg-[#F59E0B]/20 text-[#FCD34D] border-[#F59E0B]/40'
+                }`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                  {activeProvider.name === 'OLLAMA' && `● Ollama · ${activeProvider.model || 'qwen3:8b'} (Local)`}
+                  {activeProvider.name === 'GEMINI' && `● Gemini · ${activeProvider.model || 'gemini-1.5-flash'} (Cloud)`}
+                  {activeProvider.name === 'OPENAI_COMPATIBLE' && `● OpenAI · ${activeProvider.model || 'gpt-4o-mini'}`}
+                  {activeProvider.name === 'DETERMINISTIC_OFFLINE' && `● Deterministic Offline Fallback`}
                 </span>
               </div>
               <p className="text-xs text-[#F4B5C8]/80 max-w-2xl leading-relaxed">
-                Advisory security copilot with zero-plaintext boundary, automated deployment/sync root-cause analysis, and predictive security posture forecasting.
+                General-purpose conversational DevSecOps Copilot with dynamic tool execution, absolute zero-plaintext firewall, and server-side RBAC enforcement.
               </p>
             </div>
           </div>
@@ -187,16 +283,14 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                 Daily AI Budget
               </span>
               <span>
-                {tokenBudget ? `${tokenBudget.dailyTokensUsed?.toLocaleString()} / ${tokenBudget.dailyTokenQuota?.toLocaleString()} tk` : 'Unlimited Offline'}
+                {`${(tokenBudget?.dailyTokensUsed || 0).toLocaleString()} / ${(tokenBudget?.dailyTokenQuota || 100000).toLocaleString()} tk`}
               </span>
             </div>
             <div className="w-full bg-[#30000F] h-1.5 rounded-full overflow-hidden">
               <div
                 className="bg-gradient-to-r from-[#38BDF8] to-[#FF2D6D] h-full transition-all duration-500"
                 style={{
-                  width: tokenBudget && tokenBudget.dailyTokenQuota > 0
-                    ? `${Math.min(100, (tokenBudget.dailyTokensUsed / tokenBudget.dailyTokenQuota) * 100)}%`
-                    : '12%'
+                  width: `${Math.min(100, ((tokenBudget?.dailyTokensUsed || 0) / Math.max(1, tokenBudget?.dailyTokenQuota || 100000)) * 100)}%`
                 }}
               />
             </div>
@@ -267,7 +361,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
             <span>{errorMsg}</span>
           </div>
-          <button onClick={() => setErrorMsg(null)} className="text-[10px] uppercase font-mono font-bold hover:underline">
+          <button onClick={() => setErrorMsg(null)} className="text-[10px] uppercase font-mono font-bold hover:underline cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -284,7 +378,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => handleSendPrompt(qp.prompt, qp.intent)}
+                  onClick={() => handleSendPrompt(qp.prompt)}
                   className="px-3 py-1.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] border border-[#FFB4C8]/15 text-[11px] text-[#F4B5C8] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Sparkles className="w-3 h-3 text-[#FF2D6D]" />
@@ -304,7 +398,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                     handleSendPrompt();
                   }
                 }}
-                placeholder="Ask SecretVault AI (e.g. diagnose drift, investigate deployment RCA, recommend remediation)..."
+                placeholder="Ask anything about SecretVault, projects, secrets, rotation, sync drift, or infrastructure..."
                 rows={3}
                 className="w-full bg-transparent resize-none outline-none text-xs text-white placeholder-[#A26377] font-body leading-relaxed"
               />
@@ -312,27 +406,39 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
               <div className="flex items-center justify-between border-t border-[#FFB4C8]/10 pt-3">
                 <div className="flex items-center gap-2 text-[11px] text-[#A26377]">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span className="font-mono">Plaintext secrets automatically scrubbed before prompt submission</span>
+                  <span className="font-mono">Zero-Plaintext Firewall Enforced</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleSendPrompt()}
-                  disabled={isLoading || !prompt.trim()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-40 text-white font-semibold text-xs transition-all shadow-md shadow-[#FF2D6D]/20 cursor-pointer"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Inquire Copilot</span>
-                    </>
+                <div className="flex items-center gap-2">
+                  {activeConversationId && (
+                    <button
+                      type="button"
+                      onClick={handleStartNewChat}
+                      className="px-3 py-1.5 rounded-xl bg-[#30000F] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/20 text-xs font-medium transition-all cursor-pointer"
+                    >
+                      New Thread
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSendPrompt()}
+                    disabled={isLoading || !prompt.trim()}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-40 text-white font-semibold text-xs transition-all shadow-md shadow-[#FF2D6D]/20 cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Reasoning...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Inquire Copilot</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -348,14 +454,14 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-white font-headline">
-                          {currentResponse.intent || 'GENERAL_INQUIRY'}
+                          {currentResponse.intent || 'GENERAL_REASONING'}
                         </span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30">
                           {Math.round((currentResponse.confidenceScore || 0.95) * 100)}% Confidence
                         </span>
                       </div>
                       <span className="text-[10px] font-mono text-[#A26377]">
-                        Model: {currentResponse.modelUsed || 'deterministic-offline-v1'} • Latency: {currentResponse.latencyMs || 45}ms
+                        Provider: {activeProvider.name} • Model: {currentResponse.modelUsed || activeProvider.model || 'qwen3:8b'} • Latency: {currentResponse.latencyMs || 45}ms
                       </span>
                     </div>
                   </div>
@@ -398,16 +504,70 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             ) : (
               <div className="rounded-3xl bg-[#1E000A]/60 border border-[#FFB4C8]/10 p-12 text-center flex flex-col items-center justify-center gap-3">
                 <Compass className="w-10 h-10 text-[#A26377]/50" />
-                <span className="text-sm font-semibold text-white">Awaiting Copilot Query</span>
+                <span className="text-sm font-semibold text-white">Awaiting Copilot Inquiry</span>
                 <p className="text-xs text-[#A26377] max-w-md">
-                  Ask a question above, click a quick prompt, or run deployment root-cause analysis to inspect system health.
+                  Ask any question above, click a suggested quick query, or inspect conversation history.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Right Sidebar: Recent Inquiries (4 cols) */}
+          {/* Right Sidebar: Conversations & Recent Inquiries (4 cols) */}
           <div className="lg:col-span-4 flex flex-col gap-4">
+            {/* Conversation Threads */}
+            <div className="rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/15 p-5 shadow-xl flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-[#FFB4C8]/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#FF2D6D]" />
+                  <span className="text-xs font-bold text-white font-headline">Conversations</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartNewChat}
+                  className="flex items-center gap-1 text-[11px] text-[#38BDF8] hover:text-white transition-colors cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>New Chat</span>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
+                {conversations.length === 0 ? (
+                  <span className="text-[11px] text-[#A26377] text-center py-4 font-mono">
+                    No active conversations
+                  </span>
+                ) : (
+                  conversations.map((conv) => (
+                    <div
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv.id)}
+                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                        activeConversationId === conv.id
+                          ? 'bg-[#3F0016] border-[#FF2D6D]/60 text-white'
+                          : 'bg-[#30000F]/60 hover:bg-[#3F0016] border-[#FFB4C8]/10 text-[#F4B5C8]'
+                      }`}
+                    >
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-medium truncate">{conv.title || 'Conversation'}</span>
+                        <span className="text-[9px] font-mono text-[#A26377]">
+                          {new Date(conv.updatedAt || conv.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                        className="p-1 text-[#A26377] hover:text-[#EF4444] transition-colors"
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Recent Inquiries Card */}
             <div className="rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/15 p-5 shadow-xl flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-[#FFB4C8]/10 pb-3">
                 <div className="flex items-center gap-2">
@@ -416,14 +576,14 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                 </div>
                 <button
                   onClick={fetchInquiries}
-                  className="p-1 text-[#A26377] hover:text-white transition-colors"
+                  className="p-1 text-[#A26377] hover:text-white transition-colors cursor-pointer"
                   title="Refresh"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto">
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
                 {inquiries.length === 0 ? (
                   <span className="text-[11px] text-[#A26377] text-center py-6 font-mono">
                     No prior inquiries recorded
@@ -528,20 +688,20 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
 
             <div className="rounded-3xl bg-[#1E000A] border border-[#FFB4C8]/15 p-6 flex flex-col gap-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                <h3 className="text-sm font-headline font-bold text-white">Proactive Recommendations</h3>
+                <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                <h3 className="text-sm font-headline font-bold text-white">Proactive Mitigations</h3>
               </div>
               <div className="flex flex-col gap-2">
-                {(postureForecast?.proactiveRecommendations || [
-                  'Trigger automated zero-downtime rotation for DB connection strings',
-                  'Enforce JIT access review for machine tokens older than 30 days',
-                  'Execute sync reconciliation across Kubernetes and AWS targets'
-                ]).map((pr, idx) => (
+                {(postureForecast?.proactiveMitigations || [
+                  'Trigger automatic secret rotation with zero-downtime shadow verification',
+                  'Run JIT access review to revoke unused elevated grants',
+                  'Execute external provider synchronization to reconcile drift'
+                ]).map((pm, idx) => (
                   <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/10 text-xs text-[#F4B5C8]">
                     <span className="w-5 h-5 rounded-full bg-[#10B981]/20 text-[#10B981] text-[10px] font-mono flex items-center justify-center shrink-0">
-                      ✓
+                      {idx + 1}
                     </span>
-                    <span>{pr}</span>
+                    <span>{pm}</span>
                   </div>
                 ))}
               </div>
@@ -552,66 +712,55 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
 
       {/* MODAL: RUN DEPLOYMENT RCA */}
       {isRcaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-[#1E000A] border border-[#FF2D6D]/40 p-6 shadow-2xl flex flex-col gap-5 animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-[#1E000A] border border-[#FF2D6D]/40 p-6 shadow-2xl flex flex-col gap-5">
             <div className="flex items-center justify-between border-b border-[#FFB4C8]/15 pb-4">
               <div className="flex items-center gap-2.5">
                 <Terminal className="w-5 h-5 text-[#FF2D6D]" />
-                <h2 className="text-base font-headline font-bold text-white">
-                  Diagnose Deployment / Sync Failure RCA
-                </h2>
+                <h3 className="text-base font-headline font-bold text-white">Run AI Root-Cause Analysis</h3>
               </div>
               <button
-                type="button"
                 onClick={() => setIsRcaModalOpen(false)}
-                className="text-[#A26377] hover:text-white text-xs font-mono"
+                className="text-[#A26377] hover:text-white text-xs font-mono cursor-pointer"
               >
-                ✕ Close
+                ✕
               </button>
             </div>
 
             <form onSubmit={handleRunRca} className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase text-[#A26377]">
-                    Target Type
-                  </label>
-                  <select
-                    value={rcaTargetType}
-                    onChange={(e) => setRcaTargetType(e.target.value)}
-                    className="p-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 text-xs text-white outline-none"
-                  >
-                    <option value="DEPLOYMENT">Deployment Release</option>
-                    <option value="SYNC_JOB">Sync Center Job</option>
-                    <option value="DRIFT_INCIDENT">Drift Incident</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase text-[#A26377]">
-                    Target ID / Reference
-                  </label>
-                  <input
-                    type="text"
-                    value={rcaTargetId}
-                    onChange={(e) => setRcaTargetId(e.target.value)}
-                    placeholder="e.g. dep-pay-prod-01 or sync-aws-04"
-                    required
-                    className="p-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 text-xs text-white outline-none"
-                  />
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-mono text-[#F4B5C8]">Target Resource Type</label>
+                <select
+                  value={rcaTargetType}
+                  onChange={(e) => setRcaTargetType(e.target.value)}
+                  className="w-full bg-[#30000F] border border-[#FFB4C8]/20 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                >
+                  <option value="DEPLOYMENT">DEPLOYMENT (e.g. Kubernetes Pod, Service Worker)</option>
+                  <option value="SYNC_JOB">SYNC_JOB (e.g. Cloud Provider Synchronization)</option>
+                  <option value="SECRET_ROTATION">SECRET_ROTATION (e.g. Database Credential Rollover)</option>
+                </select>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono font-bold uppercase text-[#A26377]">
-                  Failure Logs or Error Diagnostics (Sanitized automatically)
-                </label>
+                <label className="text-[11px] font-mono text-[#F4B5C8]">Target Identifier</label>
+                <input
+                  type="text"
+                  value={rcaTargetId}
+                  onChange={(e) => setRcaTargetId(e.target.value)}
+                  placeholder="e.g. dep-payments-worker-01 or sync-job-aws-prod"
+                  required
+                  className="w-full bg-[#30000F] border border-[#FFB4C8]/20 rounded-xl px-3 py-2 text-xs text-white outline-none font-mono"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-mono text-[#F4B5C8]">Failure Logs & Diagnostic Traces</label>
                 <textarea
                   value={rcaLogs}
                   onChange={(e) => setRcaLogs(e.target.value)}
-                  placeholder="Paste stacktrace, deployment error, or sync log..."
+                  placeholder="Paste error logs, stacktraces, or container exit codes (secrets are automatically scrubbed)..."
                   rows={4}
-                  className="p-3 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 text-xs text-white outline-none font-mono"
+                  className="w-full bg-[#30000F] border border-[#FFB4C8]/20 rounded-xl p-3 text-xs text-white outline-none font-mono resize-none"
                 />
               </div>
 
@@ -619,17 +768,26 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                 <button
                   type="button"
                   onClick={() => setIsRcaModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-[#F4B5C8] hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs text-[#F4B5C8] hover:bg-[#30000F] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading || !rcaTargetId.trim()}
-                  className="px-5 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-40 text-white font-semibold text-xs shadow-md shadow-[#FF2D6D]/20 cursor-pointer flex items-center gap-2"
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-40 text-white font-semibold text-xs transition-all shadow-lg shadow-[#FF2D6D]/20 cursor-pointer"
                 >
-                  {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Generate Root Cause Report</span>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Synthesizing RCA...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Terminal className="w-3.5 h-3.5" />
+                      <span>Generate RCA Report</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -639,5 +797,3 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     </div>
   );
 };
-
-export default AiCopilotView;

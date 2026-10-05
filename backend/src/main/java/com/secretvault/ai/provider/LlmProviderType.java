@@ -3,6 +3,7 @@ package com.secretvault.ai.provider;
 public enum LlmProviderType {
     DETERMINISTIC_OFFLINE,
     OLLAMA,
+    GEMINI,
     OPENAI,
     CLAUDE_3_5_SONNET,
     OPENAI_GPT4O;
@@ -17,7 +18,8 @@ public enum LlmProviderType {
                 return type;
             }
         }
-        if (clean.contains("OLLAMA")) return OLLAMA;
+        if (clean.contains("OLLAMA") || clean.contains("QWEN")) return OLLAMA;
+        if (clean.contains("GEMINI")) return GEMINI;
         if (clean.contains("OPENAI") || clean.contains("GPT")) return OPENAI;
         if (clean.contains("CLAUDE") || clean.contains("ANTHROPIC")) return CLAUDE_3_5_SONNET;
         return DETERMINISTIC_OFFLINE;

@@ -209,4 +209,108 @@ class AiArbitraryQuestionsAcceptanceTest {
         assertNotNull(resp.responseText());
         assertFalse(resp.responseText().isBlank());
     }
+
+    @Test
+    @DisplayName("Scenario 8: Comprehensive multi-factor incident risk assessment")
+    void testComprehensiveMultiFactorRiskAssessment() {
+        AiChatRequest req = new AiChatRequest(
+                "Looking at my current workspace, identify the most likely operational risk that could cause a production incident in the next few days, explain the evidence behind your conclusion, identify the affected project/environment, and tell me what I should do first.",
+                "COPILOT_GENERAL", null, null, null, null
+        );
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+        assertFalse(resp.sanitizedTelemetryEvidence().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Scenario 9: Environment credential concentration query")
+    void testEnvironmentCredentialConcentrationQuery() {
+        AiChatRequest req = new AiChatRequest("Which environment has the highest concentration of unrotated credentials?", "ROTATION_ANALYSIS", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 10: Privilege escalation path inquiry")
+    void testPrivilegeEscalationPathInquiry() {
+        AiChatRequest req = new AiChatRequest("If an attacker compromises a developer token, what is the maximum privilege escalation path in this workspace?", "SECURITY_FINDING", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 11: Edge drift recovery inquiry")
+    void testEdgeDriftRecoveryInquiry() {
+        AiChatRequest req = new AiChatRequest("Explain how SecretVault reconciles AWS Secrets Manager drift when network fails halfway.", "SYNC_FAILURE", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 12: Architectural single points of failure inquiry")
+    void testArchitecturalSPOFInquiry() {
+        AiChatRequest req = new AiChatRequest("Are there any single points of failure in our current secret sync architecture?", "SYSTEM_HEALTH", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 13: Concurrency and race condition inquiry")
+    void testConcurrencyAndRaceConditionInquiry() {
+        AiChatRequest req = new AiChatRequest("What happens if two administrators attempt to rotate the same secret simultaneously?", "HELP", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 14: JIT break-glass access abuse prevention")
+    void testJitBreakGlassAbusePreventionInquiry() {
+        AiChatRequest req = new AiChatRequest("How does the JIT break-glass access review workflow prevent rogue administrator abuse?", "HELP", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 15: Four-eyes cryptographic seal guarantee")
+    void testFourEyesCryptographicSealGuarantee() {
+        AiChatRequest req = new AiChatRequest("What is the cryptographic guarantee behind our four-eyes approval signatures?", "HELP", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 16: Kubernetes sidecar injection best practice inquiry")
+    void testKubernetesSidecarInjectionBestPracticeInquiry() {
+        AiChatRequest req = new AiChatRequest("How should our DevOps team configure Kubernetes sidecar injection to avoid cold start latency?", "HELP", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
+
+    @Test
+    @DisplayName("Scenario 17: Proactive 30-day hygiene roadmap generation")
+    void testProactiveHygieneRoadmapGeneration() {
+        AiChatRequest req = new AiChatRequest("Provide a 30-day proactive hygiene checklist based on our open security findings.", "REMEDIATION_RECOMMENDATION", null, null, null, null);
+        AiChatResponse resp = orchestrator.orchestrate(workspaceId, userId, "DEVELOPER", Set.of(), req, List.of(), null);
+
+        assertNotNull(resp);
+        assertNotNull(resp.responseText());
+    }
 }

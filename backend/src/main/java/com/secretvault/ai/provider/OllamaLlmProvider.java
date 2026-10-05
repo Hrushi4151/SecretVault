@@ -36,15 +36,15 @@ public class OllamaLlmProvider implements LlmProvider {
     private final ObjectMapper objectMapper;
 
     public OllamaLlmProvider(
-            @Value("${secretvault.ai.ollama.base-url:${AI_BASE_URL:http://localhost:11434}}") String baseUrl,
-            @Value("${secretvault.ai.ollama.model:${AI_MODEL:llama3}}") String modelName,
+            @Value("${secretvault.ai.ollama.base-url:${AI_OLLAMA_BASE_URL:${AI_BASE_URL:http://localhost:11434}}}") String baseUrl,
+            @Value("${secretvault.ai.ollama.model:${AI_OLLAMA_MODEL:${AI_MODEL:qwen3:8b}}}") String modelName,
             @Value("${secretvault.ai.ollama.timeout-seconds:30}") int timeoutSeconds,
             @Value("${secretvault.ai.ollama.temperature:0.2}") double defaultTemperature,
             @Value("${secretvault.ai.ollama.max-tokens:2048}") int defaultMaxTokens,
             ObjectMapper objectMapper
     ) {
         this.baseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "http://localhost:11434";
-        this.modelName = modelName != null && !modelName.isBlank() ? modelName.trim() : "llama3";
+        this.modelName = modelName != null && !modelName.isBlank() ? modelName.trim() : "qwen3:8b";
         this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 30;
         this.defaultTemperature = defaultTemperature;
         this.defaultMaxTokens = defaultMaxTokens > 0 ? defaultMaxTokens : 2048;
@@ -169,6 +169,33 @@ public class OllamaLlmProvider implements LlmProvider {
         }
 
         return map;
+    }
+
+    public List<String> discoverInstalledModels() {
+        List<String> models = new ArrayList<>();
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/tags"))
+                    .timeout(Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(resp.body());
+                JsonNode modelsNode = root.path("models");
+                if (modelsNode.isArray()) {
+                    for (JsonNode m : modelsNode) {
+                        String name = m.path("name").asText();
+                        if (name != null && !name.isBlank()) {
+                            models.add(name);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to discover models from Ollama at {}: {}", baseUrl, e.getMessage());
+        }
+        return models;
     }
 
     @Override

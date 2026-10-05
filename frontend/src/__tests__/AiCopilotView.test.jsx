@@ -15,6 +15,10 @@ vi.mock('../context/AuthContext', () => ({
 // Mock AI API
 vi.mock('../api/ai', () => ({
   aiApi: {
+    listProviders: vi.fn().mockResolvedValue([
+      { name: 'OLLAMA', model: 'qwen3:8b', type: 'LOCAL_DAEMON', available: true, isActive: true }
+    ]),
+    listConversations: vi.fn().mockResolvedValue([]),
     getTokenBudget: vi.fn().mockResolvedValue({
       workspaceId: 'ws-phase15-ai',
       dailyTokenQuota: 100000,
@@ -65,10 +69,10 @@ vi.mock('../api/ai', () => ({
 }));
 
 describe('Phase 15: Frontend AI Intelligence Views', () => {
-  it('renders AiCopilotView with Air-Gapped offline badge and quick prompts', async () => {
+  it('renders AiCopilotView with active provider badge and quick prompts', async () => {
     render(<AiCopilotView />);
     expect(screen.getByText(/AI Security Intelligence Copilot/i)).toBeInTheDocument();
-    expect(screen.getByText(/Air-Gapped Offline Engine Active/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ollama · qwen3:8b/i)).toBeInTheDocument();
     expect(screen.getByText(/Why did deployment fail\?/i)).toBeInTheDocument();
     expect(screen.getByText(/Forecast posture decay/i)).toBeInTheDocument();
   });

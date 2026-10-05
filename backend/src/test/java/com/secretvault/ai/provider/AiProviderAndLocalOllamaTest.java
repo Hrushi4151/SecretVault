@@ -37,10 +37,10 @@ class AiProviderAndLocalOllamaTest {
     @Test
     @DisplayName("Ollama provider correctly initializes configuration and fallback on network unavailability")
     void testOllamaProviderFallback() {
-        OllamaLlmProvider ollama = new OllamaLlmProvider("http://127.0.0.1:9999", "llama3.2:3b", 10, 0.2, 512, objectMapper);
+        OllamaLlmProvider ollama = new OllamaLlmProvider("http://127.0.0.1:9999", "qwen3:8b", 10, 0.2, 512, objectMapper);
         assertFalse(ollama.isAvailable()); // Port 9999 is closed
 
-        LlmProviderRegistry registry = new LlmProviderRegistry(offlineProvider, ollama, null, "OLLAMA", "DETERMINISTIC_OFFLINE");
+        LlmProviderRegistry registry = new LlmProviderRegistry(offlineProvider, ollama, null, null, "OLLAMA", "DETERMINISTIC_OFFLINE");
         assertEquals("OLLAMA", registry.getConfiguredProviderName());
 
         LlmRequest req = new LlmRequest("system", "Explain encryption architecture", "", 0.2, 512);
@@ -48,6 +48,37 @@ class AiProviderAndLocalOllamaTest {
 
         assertNotNull(res);
         assertEquals("DETERMINISTIC_OFFLINE", res.providerName());
+    }
+
+    @Test
+    @DisplayName("Gemini provider correctly initializes configuration and protects API keys")
+    void testGeminiProviderConfigurationAndSecurity() {
+        GeminiLlmProvider gemini = new GeminiLlmProvider(
+                "https://generativelanguage.googleapis.com",
+                "gemini-1.5-flash",
+                "test-dummy-api-key",
+                10,
+                0.1,
+                2048,
+                objectMapper
+        );
+
+        assertEquals("GEMINI", gemini.getProviderName());
+        assertEquals("gemini-1.5-flash", gemini.getModelName());
+        assertTrue(gemini.isConfigured());
+
+        // Test unconfigured instance
+        GeminiLlmProvider unconfigured = new GeminiLlmProvider(
+                "https://generativelanguage.googleapis.com",
+                "gemini-1.5-flash",
+                "",
+                10,
+                0.1,
+                2048,
+                objectMapper
+        );
+        assertFalse(unconfigured.isConfigured());
+        assertFalse(unconfigured.isAvailable());
     }
 
     @Test
@@ -77,17 +108,19 @@ class AiProviderAndLocalOllamaTest {
     }
 
     @Test
-    @DisplayName("Provider registry accurately reflects multi-provider status list")
+    @DisplayName("Provider registry accurately reflects multi-provider status list including Gemini and Ollama")
     void testProviderStatusList() {
-        OllamaLlmProvider ollama = new OllamaLlmProvider("http://localhost:11434", "mistral", 10, 0.2, 512, objectMapper);
+        OllamaLlmProvider ollama = new OllamaLlmProvider("http://localhost:11434", "qwen3:8b", 10, 0.2, 512, objectMapper);
+        GeminiLlmProvider gemini = new GeminiLlmProvider("https://generativelanguage.googleapis.com", "gemini-1.5-flash", "", 10, 0.1, 2048, objectMapper);
         OpenAiCompatibleLlmProvider openAi = new OpenAiCompatibleLlmProvider("https://api.groq.com/openai/v1", "secret-key", "llama3-70b-8192", 10, 0.2, 512, objectMapper);
 
-        LlmProviderRegistry registry = new LlmProviderRegistry(offlineProvider, ollama, openAi, "OLLAMA", "DETERMINISTIC_OFFLINE");
+        LlmProviderRegistry registry = new LlmProviderRegistry(offlineProvider, ollama, gemini, openAi, "OLLAMA", "DETERMINISTIC_OFFLINE");
         List<Map<String, Object>> statuses = registry.getProviderStatusList();
 
-        assertEquals(3, statuses.size());
+        assertEquals(4, statuses.size());
         assertTrue(statuses.stream().anyMatch(s -> "DETERMINISTIC_OFFLINE".equals(s.get("name"))));
         assertTrue(statuses.stream().anyMatch(s -> "OLLAMA".equals(s.get("name"))));
+        assertTrue(statuses.stream().anyMatch(s -> "GEMINI".equals(s.get("name"))));
         assertTrue(statuses.stream().anyMatch(s -> "OPENAI_COMPATIBLE".equals(s.get("name"))));
     }
 }

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class DeterministicOfflineLlmProvider implements LlmProvider {
 
     private static final String PROVIDER_NAME = "DETERMINISTIC_OFFLINE";
-    private static final String MODEL_NAME = "SecretVault-Neural-SecOps-v4.2";
+    private static final String MODEL_NAME = "deterministic-offline-fallback-v1";
 
     private static final Pattern DEPLOY_PATTERN = Pattern.compile("(?i)\\b(deploy|deployment|worker|crash|fail|rca|rollback)\\b");
     private static final Pattern POSTURE_PATTERN = Pattern.compile("(?i)\\b(posture|score|forecast|trajectory|trend|risk|exposure)\\b");
