@@ -156,7 +156,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
       {/* Top Banner & Security Guardrail Indicator */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#30000F] via-[#3F0016] to-[#1E000A] border border-[#FF2D6D]/30 p-6 shadow-2xl shadow-[#FF2D6D]/10">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 rounded-full bg-[#FF2D6D]/10 blur-3xl pointer-events-none" />
-        
+
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-[#FF2D6D]/20 border border-[#FF2D6D]/50 flex items-center justify-center text-[#FF2D6D] shadow-lg shadow-[#FF2D6D]/20 shrink-0">
