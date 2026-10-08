@@ -45,6 +45,12 @@ export const repositoryApi = {
     });
   },
 
+  syncRepository: async (workspaceId, repositoryId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/repositories/${repositoryId}/sync`, {
+      method: 'POST',
+    });
+  },
+
   scanLocalDirectory: async (workspaceId, repositoryId, payload) => {
     const url = `/workspaces/${workspaceId}/repository-scans/local${repositoryId ? `?repositoryId=${repositoryId}` : ''}`;
     return apiClient.request(url, {

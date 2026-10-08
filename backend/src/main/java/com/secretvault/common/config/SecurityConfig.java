@@ -76,6 +76,12 @@ public class SecurityConfig {
                                 "/api/v1/auth/webauthn/authentication/**"
                         ).permitAll()
 
+                        // Inbound Repository Webhooks (e.g. GitHub push / commit events)
+                        .requestMatchers(
+                                "/api/v1/repositories/webhooks/**",
+                                "/api/v1/workspaces/*/repositories/*/webhook"
+                        ).permitAll()
+
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

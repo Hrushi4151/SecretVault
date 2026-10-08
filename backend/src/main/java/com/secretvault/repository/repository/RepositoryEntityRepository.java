@@ -24,6 +24,12 @@ public interface RepositoryEntityRepository extends JpaRepository<RepositoryEnti
 
     List<RepositoryEntity> findByWorkspaceIdAndStatus(UUID workspaceId, RepositoryStatus status);
 
+    List<RepositoryEntity> findByStatus(RepositoryStatus status);
+
+    List<RepositoryEntity> findByOwnerIgnoreCaseAndNameIgnoreCase(String owner, String name);
+
+    List<RepositoryEntity> findByCloneUrl(String cloneUrl);
+
     long countByWorkspaceId(UUID workspaceId);
 
     long countByWorkspaceIdAndStatus(UUID workspaceId, RepositoryStatus status);

@@ -235,6 +235,24 @@ export const RepositorySecurityView = () => {
     }
   };
 
+  const handleSyncAndScan = async (repoId) => {
+    setScanningRepoIds((prev) => new Set(prev).add(repoId));
+    try {
+      await repositoryApi.syncRepository(workspaceId, repoId);
+      await fetchData();
+    } catch (err) {
+      alert(err.message || 'Failed to sync repository');
+    } finally {
+      setTimeout(() => {
+        setScanningRepoIds((prev) => {
+          const next = new Set(prev);
+          next.delete(repoId);
+          return next;
+        });
+      }, 2500);
+    }
+  };
+
   const handleWhyExposed = async (findingId) => {
     try {
       const data = await repositoryApi.whyExposed(workspaceId, findingId);
@@ -511,14 +529,28 @@ export const RepositorySecurityView = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs font-mono text-slate-400 mt-3">
+                <div className="flex items-center gap-3 text-xs font-mono text-slate-400 mt-3 flex-wrap">
                   <span className="flex items-center gap-1">
                     <GitBranch className="w-3.5 h-3.5" /> {repo.defaultBranch}
                   </span>
                   <span>{repo.provider}</span>
+                  {repo.lastCommitSha && (
+                    <span
+                      className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-emerald-400 flex items-center gap-1"
+                      title={`Latest commit: ${repo.lastCommitSha}`}
+                    >
+                      <GitCommit className="w-3 h-3" />
+                      {repo.lastCommitSha.slice(0, 7)}
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-emerald-400/90 font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Auto-scan on push & new commits
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800/80">
                   <div>
                     <div className="text-[10px] font-mono text-slate-500 uppercase">Findings</div>
                     <div className="text-sm font-bold text-white mt-0.5">{repo.totalFindings || 0}</div>
@@ -541,6 +573,14 @@ export const RepositorySecurityView = () => {
                     className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700/60 hover:border-rose-500/40 transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleSyncAndScan(repo.id)}
+                    disabled={isRepoScanning(repo.id)}
+                    title="Sync commits from GitHub and scan immediately"
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/60 transition disabled:opacity-50"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 ${isRepoScanning(repo.id) ? 'animate-spin' : ''}`} />
                   </button>
                   <button
                     onClick={() => handleTriggerScan(repo.id)}
