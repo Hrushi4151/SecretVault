@@ -92,7 +92,8 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
             if (cleanUser.contains("@")) {
                 cleanUser = cleanUser.substring(0, cleanUser.indexOf("@"));
             }
-            url = GITHUB_API_BASE + "/users/" + cleanUser + "/repos?per_page=100&sort=updated";
+            String encodedUser = java.net.URLEncoder.encode(cleanUser, java.nio.charset.StandardCharsets.UTF_8);
+            url = GITHUB_API_BASE + "/users/" + encodedUser + "/repos?per_page=100&sort=updated";
         } else if (effectiveToken != null && !effectiveToken.isBlank()) {
             url = GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated";
         } else {

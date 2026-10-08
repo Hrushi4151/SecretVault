@@ -40,6 +40,7 @@ public class RepositoryService {
         this(repositoryRepo, findingRepo, accessService, auditService, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public RepositoryService(
             RepositoryEntityRepository repositoryRepo,
             SecretFindingRepository findingRepo,
@@ -97,6 +98,10 @@ public class RepositoryService {
             UUID actorId) {
 
         accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_VIEW);
+
+        if (providerRegistry == null) {
+            return List.of();
+        }
 
         RepositoryProvider effectiveProvider = provider != null ? provider : RepositoryProvider.GITHUB;
         com.secretvault.repository.provider.RepositoryProviderAdapter adapter = providerRegistry.requireAdapter(effectiveProvider);

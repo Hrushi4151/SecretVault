@@ -45,18 +45,6 @@ public class RepositoryController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    @GetMapping("/{repositoryId}")
-    @Operation(summary = "Get single repository metadata and leak detection status")
-    public ResponseEntity<ApiResponse<RepositorySummaryDto>> getRepository(
-            @PathVariable UUID workspaceId,
-            @PathVariable UUID repositoryId,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        UUID actorId = principal != null ? principal.getId() : null;
-        RepositorySummaryDto result = repositoryService.getRepository(workspaceId, repositoryId, actorId);
-        return ResponseEntity.ok(ApiResponse.success(result));
-    }
-
     @GetMapping("/remote/discover")
     @Operation(summary = "Discover remote repositories from connected SCM provider (e.g. GitHub)")
     public ResponseEntity<ApiResponse<java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto>>> discoverRemoteRepositories(
@@ -70,6 +58,18 @@ public class RepositoryController {
         java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto> repos = repositoryService.discoverRemoteRepositories(
                 workspaceId, provider, token, username, actorId);
         return ResponseEntity.ok(ApiResponse.success(repos));
+    }
+
+    @GetMapping("/{repositoryId:[0-9a-fA-F\\-]+}")
+    @Operation(summary = "Get single repository metadata and leak detection status")
+    public ResponseEntity<ApiResponse<RepositorySummaryDto>> getRepository(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID repositoryId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        RepositorySummaryDto result = repositoryService.getRepository(workspaceId, repositoryId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping
