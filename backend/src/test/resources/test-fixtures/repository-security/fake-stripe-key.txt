@@ -1,0 +1,2 @@
+# Fake Stripe Secret Key Test Fixture
+STRIPE_SECRET_KEY=sk_live_51Mzxyz123456789012345678

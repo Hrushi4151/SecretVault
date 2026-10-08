@@ -23,14 +23,17 @@ public class RepositorySourceAdapter {
     private final GitProcessExecutor gitExecutor;
     private final ArchiveScanner archiveScanner;
     private final PathTraversalGuard pathGuard;
+    private final GitCloneUrlValidator urlValidator;
 
     public RepositorySourceAdapter(
             GitProcessExecutor gitExecutor,
             ArchiveScanner archiveScanner,
-            PathTraversalGuard pathGuard) {
+            PathTraversalGuard pathGuard,
+            GitCloneUrlValidator urlValidator) {
         this.gitExecutor = gitExecutor;
         this.archiveScanner = archiveScanner;
         this.pathGuard = pathGuard;
+        this.urlValidator = urlValidator;
     }
 
     public record SourceContext(Path sourceDir, boolean requiresCleanup) implements AutoCloseable {
@@ -68,6 +71,7 @@ public class RepositorySourceAdapter {
     }
 
     public SourceContext cloneGitRepository(String cloneUrl, String branch) {
+        urlValidator.validateCloneUrl(cloneUrl);
         try {
             Path tempDir = Files.createTempDirectory("secretvault-repo-scan-");
             // Perform safe clone with hooks disabled

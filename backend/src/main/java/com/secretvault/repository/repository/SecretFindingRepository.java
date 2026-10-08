@@ -54,6 +54,10 @@ public interface SecretFindingRepository extends JpaRepository<SecretFinding, UU
     List<Object[]> countBySeverityAndActiveStatuses(
             @Param("workspaceId") UUID workspaceId, @Param("statuses") List<RepoFindingStatus> statuses);
 
+    List<SecretFinding> findByWorkspaceIdAndStatusIn(UUID workspaceId, List<RepoFindingStatus> statuses);
+
+    Page<SecretFinding> findByWorkspaceIdAndStatusIn(UUID workspaceId, List<RepoFindingStatus> statuses, Pageable pageable);
+
     List<SecretFinding> findByWorkspaceIdAndRepositoryIdAndStatusIn(
             UUID workspaceId, UUID repositoryId, List<RepoFindingStatus> statuses);
 }
