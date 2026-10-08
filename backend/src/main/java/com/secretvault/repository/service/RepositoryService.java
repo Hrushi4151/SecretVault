@@ -128,9 +128,7 @@ public class RepositoryService {
         RepositoryEntity repo = repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
 
-        repo.setStatus(RepositoryStatus.ARCHIVED);
-        repo.setUpdatedAt(Instant.now());
-        repositoryRepo.save(repo);
+        repositoryRepo.delete(repo);
 
         auditService.record(
                 workspaceId,
@@ -138,7 +136,7 @@ public class RepositoryService {
                 AuditAction.REPOSITORY_DISCONNECTED,
                 "REPOSITORY",
                 repo.getId().toString(),
-                Map.of("owner", repo.getOwner(), "name", repo.getName())
+                Map.of("owner", repo.getOwner(), "name", repo.getName(), "action", "DELETED")
         );
     }
 
