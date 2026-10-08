@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { aiApi } from '../../api/ai';
+import { workspaceApi } from '../../api/workspaces';
+import { PendingInvitationsDialog } from '../workspace/PendingInvitationsDialog';
 import {
   Sparkles,
   Search,
@@ -25,13 +27,27 @@ import {
   PlusCircle,
   Trash2,
   MessageSquare,
-  Server
+  Server,
+  Building2,
+  FolderGit2,
+  Key,
+  RotateCw,
+  Network,
+  Lock,
+  UserCheck,
+  ExternalLink,
+  Shield,
+  Bot
 } from 'lucide-react';
 
-export const AiCopilotView = ({ onNavigateToWorkbench }) => {
-  const { activeWorkspace } = useAuth();
+export const AiCopilotView = ({
+  onNavigateToWorkbench,
+  onNavigateToTab,
+  onNavigateToSecrets,
+  onNavigateToProjects
+}) => {
+  const { activeWorkspace, user, refreshWorkspaces, switchWorkspace } = useAuth();
   const [prompt, setPrompt] = useState('');
-  const [selectedIntent, setSelectedIntent] = useState('ALL');
   const [inquiries, setInquiries] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
@@ -40,20 +56,29 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
   const [tokenBudget, setTokenBudget] = useState(null);
   const [providers, setProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isForecastLoading, setIsForecastLoading] = useState(false);
+  const [progressStatus, setProgressStatus] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'forecast' | 'rca'
+
+  // Invitations modal state
+  const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+
+  // RCA modal state
   const [rcaTargetType, setRcaTargetType] = useState('DEPLOYMENT');
   const [rcaTargetId, setRcaTargetId] = useState('');
   const [rcaLogs, setRcaLogs] = useState('');
   const [isRcaModalOpen, setIsRcaModalOpen] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'forecast' | 'rca'
+
+  // Action execution state
+  const [executingActionId, setExecutingActionId] = useState(null);
+  const [actionSuccessMsg, setActionSuccessMsg] = useState(null);
 
   const quickPrompts = [
-    { label: 'Why did deployment fail?', prompt: 'Analyze root cause for latest deployment failure with database connection timeout' },
-    { label: 'Forecast posture decay (14d)', prompt: 'What is our 14-day security posture decay projection and key drift vectors?' },
-    { label: 'Check credential exposure risk', prompt: 'Perform security analysis on active access leases and stale API credentials' },
-    { label: 'Recommend rotation remediation', prompt: 'Recommend remediation plan for overdue secrets rotation across staging and prod' },
-    { label: 'Summarize workspace health', prompt: 'Tell me everything important about my workspace security posture and health.' }
+    { label: 'Do I have new invitations?', prompt: 'Do I have any new invitations?' },
+    { label: 'What is wrong with my workspace?', prompt: 'What is wrong with my workspace?' },
+    { label: 'What are my biggest risks?', prompt: 'What are my biggest security risks and overdue rotations?' },
+    { label: 'What changed today?', prompt: 'What changed today and what happened since my last login?' },
+    { label: 'Explain SecretVault encryption', prompt: 'Explain SecretVault architecture, zero-knowledge encryption, and JIT access.' }
   ];
 
   const fetchProviders = useCallback(async () => {
@@ -70,7 +95,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     if (!activeWorkspace?.id) return;
     try {
       const list = await aiApi.listConversations(activeWorkspace.id);
-      setConversations(Array.isArray(list) ? list : []);
+      setConversations(Array.isArray(list) ? list : (list?.content || []));
     } catch (e) {
       console.warn('Failed to load conversations', e);
     }
@@ -99,14 +124,11 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
 
   const fetchPostureForecast = useCallback(async () => {
     if (!activeWorkspace?.id) return;
-    setIsForecastLoading(true);
     try {
       const forecast = await aiApi.getPostureForecast(activeWorkspace.id);
       setPostureForecast(forecast);
     } catch (e) {
       console.warn('Failed to load posture forecast', e);
-    } finally {
-      setIsForecastLoading(false);
     }
   }, [activeWorkspace?.id]);
 
@@ -122,6 +144,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     setActiveConversationId(null);
     setCurrentResponse(null);
     setPrompt('');
+    setProgressStatus(null);
   };
 
   const handleSelectConversation = async (convId) => {
@@ -130,17 +153,20 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     try {
       const conv = await aiApi.getConversation(activeWorkspace.id, convId);
       if (conv && conv.messages && conv.messages.length > 0) {
-        const lastAssistant = [...conv.messages].reverse().find(m => m.role === 'ASSISTANT');
+        const lastAssistant = [...conv.messages].reverse().find(m => m.role === 'ASSISTANT' || m.role === 'assistant');
         if (lastAssistant) {
           setCurrentResponse({
             id: lastAssistant.id,
             prompt: conv.title,
             responseContent: lastAssistant.content,
             intent: 'CONVERSATIONAL_COPILOT',
-            modelProvider: lastAssistant.modelProvider || conv.modelProvider || 'OLLAMA',
-            modelUsed: lastAssistant.modelName || conv.modelName || 'qwen3:8b',
+            modelProvider: lastAssistant.modelProvider || conv.modelProvider || 'GEMINI',
+            modelUsed: lastAssistant.modelName || conv.modelName || 'gemini-3.5-flash-lite',
             confidenceScore: 0.95,
             latencyMs: 80,
+            resources: [],
+            actions: [],
+            sanitizedTelemetryEvidence: [],
             createdAt: lastAssistant.createdAt
           });
         }
@@ -170,6 +196,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
 
     setIsLoading(true);
     setErrorMsg(null);
+    setProgressStatus('Analyzing context and executing tools...');
     try {
       const res = await aiApi.chat(activeWorkspace.id, {
         prompt: textToSend,
@@ -190,6 +217,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
       setErrorMsg(err.response?.data?.message || err.message || 'AI request failed');
     } finally {
       setIsLoading(false);
+      setProgressStatus(null);
     }
   };
 
@@ -214,6 +242,8 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
         modelUsed: res.modelUsed,
         confidenceScore: res.confidenceScore,
         latencyMs: 140,
+        resources: [],
+        actions: [],
         sanitizedTelemetryEvidence: (res.evidencePointers || []).map(p => ({
           evidenceType: 'RCA_POINTER',
           source: 'AUDIT_TRAIL',
@@ -233,10 +263,118 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
     }
   };
 
+  const handleResourceClick = (resource) => {
+    if (!resource) return;
+    const type = (resource.resourceType || '').toUpperCase();
+
+    if (type === 'INVITATION') {
+      setIsInvitationsModalOpen(true);
+      return;
+    }
+
+    if (type === 'PROJECT') {
+      if (onNavigateToSecrets && resource.projectId) {
+        onNavigateToSecrets(resource.projectId);
+      } else if (onNavigateToProjects) {
+        onNavigateToProjects();
+      } else if (onNavigateToTab) {
+        onNavigateToTab('projects');
+      }
+      return;
+    }
+
+    if (type === 'SECRET') {
+      if (onNavigateToSecrets) {
+        onNavigateToSecrets(resource.projectId, resource.environmentId);
+      } else if (onNavigateToTab) {
+        onNavigateToTab('secrets');
+      }
+      return;
+    }
+
+    if (type === 'FINDING' || type === 'SECURITY') {
+      if (onNavigateToTab) onNavigateToTab('repo-security');
+      return;
+    }
+
+    if (type === 'ROTATION') {
+      if (onNavigateToTab) onNavigateToTab('rotation');
+      return;
+    }
+
+    if (type === 'SYNC' || type === 'PROVIDER') {
+      if (onNavigateToTab) onNavigateToTab('sync-center');
+      return;
+    }
+
+    if (type === 'INCIDENT') {
+      if (onNavigateToTab) onNavigateToTab('incidents');
+      return;
+    }
+
+    if (type === 'ACCESS' || type === 'JIT') {
+      if (onNavigateToTab) onNavigateToTab('access');
+      return;
+    }
+
+    // Default fallback
+    if (onNavigateToTab && resource.navigationTarget) {
+      const cleanRoute = resource.navigationTarget.replace(/^\//, '').split('?')[0];
+      onNavigateToTab(cleanRoute);
+    }
+  };
+
+  const handleActionClick = async (action) => {
+    if (!action) return;
+
+    if (action.type === 'NAVIGATE') {
+      if (action.resourceType === 'INVITATION') {
+        setIsInvitationsModalOpen(true);
+      } else if (action.route && onNavigateToTab) {
+        const cleanRoute = action.route.replace(/^\//, '').split('?')[0];
+        onNavigateToTab(cleanRoute);
+      }
+      return;
+    }
+
+    if (action.type === 'EXECUTE_ROTATION') {
+      if (onNavigateToTab) {
+        onNavigateToTab('rotation');
+      }
+      return;
+    }
+
+    if (action.type === 'RECONCILE_SYNC') {
+      if (onNavigateToTab) {
+        onNavigateToTab('sync-center');
+      }
+      return;
+    }
+
+    if (onNavigateToWorkbench) {
+      onNavigateToWorkbench();
+    }
+  };
+
+  const handleAcceptInvitationDirectly = async (invitationId) => {
+    setExecutingActionId(invitationId);
+    setErrorMsg(null);
+    try {
+      await workspaceApi.acceptInvitationById(invitationId);
+      setActionSuccessMsg('Successfully accepted invitation!');
+      await refreshWorkspaces();
+      setTimeout(() => setActionSuccessMsg(null), 4000);
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || err.message || 'Failed to accept invitation');
+    } finally {
+      setExecutingActionId(null);
+    }
+  };
+
   const activeProvider = providers.find(p => p.isActive) || {
-    name: 'OLLAMA',
-    model: 'qwen3:8b',
-    type: 'LOCAL_DAEMON',
+    name: 'GEMINI',
+    model: 'gemini-3.5-flash-lite',
+    type: 'CLOUD',
     available: true
   };
 
@@ -254,24 +392,24 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-headline font-bold text-white tracking-tight">
-                  AI Security Intelligence Copilot
+                  SecretVault AI Copilot
                 </h1>
                 <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
-                  activeProvider.name === 'OLLAMA'
-                    ? 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/40'
-                    : activeProvider.name === 'GEMINI'
+                  activeProvider.name === 'GEMINI'
                     ? 'bg-[#38BDF8]/20 text-[#38BDF8] border-[#38BDF8]/40'
+                    : activeProvider.name === 'OLLAMA'
+                    ? 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/40'
                     : 'bg-[#F59E0B]/20 text-[#FCD34D] border-[#F59E0B]/40'
                 }`}>
                   <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                  {activeProvider.name === 'GEMINI' && `● Gemini · ${activeProvider.model || 'gemini-3.5-flash-lite'} (Cloud)`}
                   {activeProvider.name === 'OLLAMA' && `● Ollama · ${activeProvider.model || 'qwen3:8b'} (Local)`}
-                  {activeProvider.name === 'GEMINI' && `● Gemini · ${activeProvider.model || 'gemini-1.5-flash'} (Cloud)`}
                   {activeProvider.name === 'OPENAI_COMPATIBLE' && `● OpenAI · ${activeProvider.model || 'gpt-4o-mini'}`}
                   {activeProvider.name === 'DETERMINISTIC_OFFLINE' && `● Deterministic Offline Fallback`}
                 </span>
               </div>
               <p className="text-xs text-[#F4B5C8]/80 max-w-2xl leading-relaxed">
-                General-purpose conversational DevSecOps Copilot with dynamic tool execution, absolute zero-plaintext firewall, and server-side RBAC enforcement.
+                Natural conversational assistant, live security analyst, and agentic remediation copilot with zero-plaintext firewall and server-authoritative resource navigation.
               </p>
             </div>
           </div>
@@ -297,7 +435,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             </div>
             <div className="flex items-center justify-between text-[9px] font-mono text-[#A26377]">
               <span>Requests Today: {tokenBudget?.requestsTodayCount || 0}</span>
-              <span>Boundary: SHA256 Masked</span>
+              <span>Firewall: Zero-Plaintext Active</span>
             </div>
           </div>
         </div>
@@ -355,7 +493,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
         )}
       </div>
 
-      {/* ERROR NOTICE */}
+      {/* ERROR / SUCCESS NOTICES */}
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#FCA5A5] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -363,6 +501,18 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
             <span>{errorMsg}</span>
           </div>
           <button onClick={() => setErrorMsg(null)} className="text-[10px] uppercase font-mono font-bold hover:underline cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {actionSuccessMsg && (
+        <div className="p-4 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 text-xs text-[#34D399] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+            <span>{actionSuccessMsg}</span>
+          </div>
+          <button onClick={() => setActionSuccessMsg(null)} className="text-[10px] uppercase font-mono font-bold hover:underline cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -399,7 +549,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                     handleSendPrompt();
                   }
                 }}
-                placeholder="Ask anything about SecretVault, projects, secrets, rotation, sync drift, or infrastructure..."
+                placeholder="Ask anything (e.g., 'Do I have any new invitations?', 'What is wrong with Payments?', 'What should I fix first?')..."
                 rows={3}
                 className="w-full bg-transparent resize-none outline-none text-xs text-white placeholder-[#A26377] font-body leading-relaxed"
               />
@@ -407,7 +557,7 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
               <div className="flex items-center justify-between border-t border-[#FFB4C8]/10 pt-3">
                 <div className="flex items-center gap-2 text-[11px] text-[#A26377]">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span className="font-mono">Zero-Plaintext Firewall Enforced</span>
+                  <span className="font-mono">Zero-Plaintext Isolation Enforced</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -443,6 +593,14 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
               </div>
             </div>
 
+            {/* Progress Status Bar */}
+            {isLoading && progressStatus && (
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#30000F] border border-[#FF2D6D]/30 text-xs text-[#FF85A2] animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin text-[#FF2D6D]" />
+                <span className="font-mono">{progressStatus}</span>
+              </div>
+            )}
+
             {/* Current AI Response Display */}
             {currentResponse ? (
               <div className="rounded-3xl bg-[#1E000A] border border-[#FF2D6D]/30 p-6 shadow-2xl flex flex-col gap-5 animate-scale-in">
@@ -455,14 +613,14 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-white font-headline">
-                          {currentResponse.intent || 'GENERAL_REASONING'}
+                          {currentResponse.intent || 'COPILOT_INTELLIGENCE'}
                         </span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30">
                           {Math.round((currentResponse.confidenceScore || 0.95) * 100)}% Confidence
                         </span>
                       </div>
                       <span className="text-[10px] font-mono text-[#A26377]">
-                        Provider: {currentResponse.modelProvider || activeProvider.name} • Model: {currentResponse.modelUsed || activeProvider.model || 'qwen3:8b'} • Latency: {currentResponse.latencyMs || 45}ms
+                        Provider: {currentResponse.modelProvider || activeProvider.name} • Model: {currentResponse.modelUsed || activeProvider.model || 'gemini-3.5-flash-lite'} • Latency: {currentResponse.latencyMs || 45}ms
                       </span>
                     </div>
                   </div>
@@ -474,8 +632,146 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
 
                 {/* Formatted Content */}
                 <div className="text-xs text-[#F4B5C8] font-body leading-relaxed whitespace-pre-wrap">
-                  {currentResponse.responseContent}
+                  {currentResponse.responseContent || currentResponse.responseText}
                 </div>
+
+                {/* INTERACTIVE RESOURCE CARDS */}
+                {currentResponse.resources && currentResponse.resources.length > 0 && (
+                  <div className="flex flex-col gap-3 rounded-2xl bg-[#30000F]/90 border border-[#FF2D6D]/30 p-4">
+                    <span className="text-[11px] font-mono font-bold text-[#FF85A2] flex items-center gap-1.5 uppercase">
+                      <Building2 className="w-3.5 h-3.5 text-[#FF2D6D]" />
+                      Interactive Resources ({currentResponse.resources.length})
+                    </span>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {currentResponse.resources.map((res, i) => {
+                        const rType = (res.resourceType || '').toUpperCase();
+                        const isInvitation = rType === 'INVITATION';
+                        const isProject = rType === 'PROJECT';
+                        const isSecret = rType === 'SECRET';
+                        const isFinding = rType === 'FINDING';
+                        const isRotation = rType === 'ROTATION';
+                        const isSync = rType === 'SYNC';
+
+                        return (
+                          <div
+                            key={i}
+                            className="p-3 rounded-2xl bg-[#1E000A] border border-[#FFB4C8]/15 hover:border-[#FF2D6D]/40 transition-all flex flex-col justify-between gap-3 shadow-md"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-[#4A001C] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D] shrink-0 mt-0.5">
+                                {isInvitation && <Building2 className="w-4 h-4" />}
+                                {isProject && <FolderGit2 className="w-4 h-4" />}
+                                {isSecret && <Key className="w-4 h-4" />}
+                                {isFinding && <ShieldAlert className="w-4 h-4 text-[#EF4444]" />}
+                                {isRotation && <RotateCw className="w-4 h-4 text-[#38BDF8]" />}
+                                {isSync && <RefreshCw className="w-4 h-4 text-[#818CF8]" />}
+                                {!isInvitation && !isProject && !isSecret && !isFinding && !isRotation && !isSync && <Server className="w-4 h-4" />}
+                              </div>
+
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs font-semibold text-white truncate">
+                                    {res.displayName || res.title || res.resourceType}
+                                  </span>
+                                  {res.status && (
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#34D399] border border-[#10B981]/30">
+                                      {res.status}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-mono text-[#A26377] mt-1">
+                                  {res.safeMetadata && Object.entries(res.safeMetadata).map(([k, v]) => (
+                                    <span key={k}>
+                                      {k}: <strong className="text-[#F4B5C8]">{String(v)}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 border-t border-[#FFB4C8]/10 pt-2">
+                              {isInvitation && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptInvitationDirectly(res.resourceId)}
+                                  disabled={executingActionId === res.resourceId}
+                                  className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[#10B981]/20 text-[#34D399] hover:bg-[#10B981]/30 border border-[#10B981]/40 transition-all flex items-center gap-1 cursor-pointer"
+                                >
+                                  {executingActionId === res.resourceId ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <UserCheck className="w-3 h-3" />
+                                  )}
+                                  <span>Accept & Join</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleResourceClick(res)}
+                                className="px-3 py-1 text-[11px] font-semibold rounded-lg bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 text-white transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                              >
+                                <span>{isInvitation ? 'Open Invitation' : `Open ${rType}`}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* AGENT ACTION PROPOSALS */}
+                {currentResponse.actions && currentResponse.actions.length > 0 && (
+                  <div className="flex flex-col gap-3 rounded-2xl bg-[#30000F] border border-[#FF85A2]/30 p-4">
+                    <span className="text-[11px] font-mono font-bold text-[#FF85A2] flex items-center gap-1.5 uppercase">
+                      <Bot className="w-3.5 h-3.5 text-[#FF85A2]" />
+                      Agent Action Proposals ({currentResponse.actions.length})
+                    </span>
+
+                    <div className="flex flex-col gap-2">
+                      {currentResponse.actions.map((act, i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/15 gap-3"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-white">{act.label}</span>
+                              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                                act.risk === 'HIGH' || act.risk === 'CRITICAL'
+                                  ? 'bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30'
+                                  : act.risk === 'MEDIUM'
+                                  ? 'bg-[#F59E0B]/20 text-[#FCD34D] border border-[#F59E0B]/30'
+                                  : 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30'
+                              }`}>
+                                {act.risk} RISK
+                              </span>
+                              {act.requiresStepUp && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#818CF8]/20 text-[#A5B4FC] border border-[#818CF8]/30">
+                                  Step-Up Auth Required
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-[#F4B5C8]/80">{act.description}</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleActionClick(act)}
+                            className="px-3 py-1.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+                          >
+                            <span>Execute Proposal</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Telemetry Evidence Chain */}
                 {currentResponse.sanitizedTelemetryEvidence && currentResponse.sanitizedTelemetryEvidence.length > 0 && (
@@ -597,24 +893,27 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
                         setCurrentResponse({
                           id: inq.id,
                           prompt: inq.prompt,
-                          responseContent: inq.responseContent,
-                          intent: inq.intent,
+                          responseContent: inq.responseContent || inq.responseText,
+                          intent: inq.intent || inq.intentType,
                           modelProvider: inq.modelProvider,
-                          modelUsed: inq.modelUsed,
+                          modelUsed: inq.modelUsed || inq.modelName,
                           confidenceScore: inq.confidenceScore,
                           latencyMs: inq.latencyMs,
+                          resources: [],
+                          actions: [],
+                          sanitizedTelemetryEvidence: [],
                           createdAt: inq.createdAt
                         });
                       }}
                       className="p-3 rounded-2xl bg-[#30000F]/60 hover:bg-[#3F0016] border border-[#FFB4C8]/10 hover:border-[#FF2D6D]/40 transition-all cursor-pointer flex flex-col gap-1.5"
                     >
                       <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-[#FF85A2] font-semibold">{inq.intent}</span>
+                        <span className="text-[#FF85A2] font-semibold">{inq.intent || inq.intentType}</span>
                         <span className="text-[#A26377]">{new Date(inq.createdAt).toLocaleDateString()}</span>
                       </div>
                       <p className="text-xs text-white line-clamp-2">{inq.prompt}</p>
                       <span className="text-[9px] font-mono text-[#38BDF8]">
-                        Model: {inq.modelUsed} • {Math.round(inq.confidenceScore * 100)}%
+                        Model: {inq.modelUsed || inq.modelName} • {Math.round((inq.confidenceScore || 0.9) * 100)}%
                       </span>
                     </div>
                   ))
@@ -796,6 +1095,18 @@ export const AiCopilotView = ({ onNavigateToWorkbench }) => {
           </div>
         </div>
       )}
+
+      {/* PENDING INVITATIONS MODAL */}
+      <PendingInvitationsDialog
+        isOpen={isInvitationsModalOpen}
+        onClose={() => setIsInvitationsModalOpen(false)}
+        onInvitationAccepted={async (inv) => {
+          await refreshWorkspaces();
+          if (inv?.workspaceId) {
+            switchWorkspace(inv.workspaceId);
+          }
+        }}
+      />
     </div>
   );
 };

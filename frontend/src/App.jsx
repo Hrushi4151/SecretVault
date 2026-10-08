@@ -125,7 +125,12 @@ const MainRouter = () => {
       ) : currentTab === 'repo-security' ? (
         <RepositorySecurityView />
       ) : currentTab === 'ai-assistant' ? (
-        <AiCopilotView onNavigateToWorkbench={() => setCurrentTab('ai-workbench')} />
+        <AiCopilotView
+          onNavigateToWorkbench={() => setCurrentTab('ai-workbench')}
+          onNavigateToTab={(tab) => setCurrentTab(tab)}
+          onNavigateToSecrets={handleNavigateToSecrets}
+          onNavigateToProjects={() => setCurrentTab('projects')}
+        />
       ) : currentTab === 'ai-workbench' ? (
         <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
       ) : currentTab === 'settings' ? (

@@ -3,14 +3,17 @@ package com.secretvault.ai.provider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.secretvault.ai.domain.model.AiIntentType;
+import com.secretvault.ai.tool.AiToolDefinition;
 import org.springframework.stereotype.Component;
 
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
  * High-performance deterministic offline reasoning provider for SecretVault AI Copilot.
  * Operates with ZERO network connectivity, ensuring 100% deterministic test execution,
  * air-gapped security, and zero external secret leakage risk.
+ * Supports tool calling emulation when tool definitions are supplied.
  */
 @Component
 public class DeterministicOfflineLlmProvider implements LlmProvider {
@@ -28,6 +31,9 @@ public class DeterministicOfflineLlmProvider implements LlmProvider {
     private static final Pattern PLAN_PATTERN = Pattern.compile("(?i)\\b(plan|generate\\s+plan|workflow|step)\\b");
     private static final Pattern SYSTEM_HEALTH_PATTERN = Pattern.compile("(?i)\\b(system|health|kms|envelope|db|platform|uptime)\\b");
     private static final Pattern HELP_PATTERN = Pattern.compile("(?i)\\b(help|commands|how\\s+to|what\\s+can\\s+you\\s+do|capabilities)\\b");
+    private static final Pattern INVITATION_PATTERN = Pattern.compile("(?i)\\b(invitation|invitations|invite|invited|pending\\s+invitations)\\b");
+    private static final Pattern USER_PATTERN = Pattern.compile("(?i)\\b(who\\s+am\\s+i|my\\s+role|my\\s+permissions|current\\s+user|my\\s+account)\\b");
+    private static final Pattern PROJECT_PATTERN = Pattern.compile("(?i)\\b(project|projects|payments|environment|environments)\\b");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -36,6 +42,41 @@ public class DeterministicOfflineLlmProvider implements LlmProvider {
         long start = System.currentTimeMillis();
         String prompt = request.userPrompt() != null ? request.userPrompt().trim() : "";
         String contextJson = request.sanitizedContextJson() != null ? request.sanitizedContextJson() : "{}";
+        List<ChatMessage> messages = request.conversationHistory() != null ? request.conversationHistory() : List.of();
+        List<AiToolDefinition> toolDefs = request.availableTools() != null ? request.availableTools() : List.of();
+
+        // Check if we are in tool-calling loop
+        if (!toolDefs.isEmpty()) {
+            // Check if any tool result is already present in conversation messages
+            Optional<ChatMessage> toolMsgOpt = messages.stream().filter(m -> "tool".equalsIgnoreCase(m.role())).reduce((first, second) -> second);
+
+            if (toolMsgOpt.isPresent()) {
+                // Synthesize final answer from tool execution result
+                ChatMessage toolMsg = toolMsgOpt.get();
+                String toolOutput = toolMsg.content();
+                String summary = synthesizeToolResult(toolMsg.name(), toolOutput);
+                long latency = Math.max(15, System.currentTimeMillis() - start);
+                return new LlmResponse(summary, 0.96, summary.length() / 4, latency, PROVIDER_NAME, MODEL_NAME);
+            }
+
+            // Decide which tool to call based on prompt
+            String pLower = prompt.toLowerCase();
+            if (INVITATION_PATTERN.matcher(pLower).find() && hasToolDef(toolDefs, "user.invitations", "invitation.list")) {
+                String toolName = hasToolDef(toolDefs, "user.invitations") ? "user.invitations" : "invitation.list";
+                List<AiToolCall> calls = List.of(new AiToolCall("call_inv_" + UUID.randomUUID().toString().substring(0, 6), toolName, Map.of()));
+                return new LlmResponse("Checking pending workspace invitations...", 0.95, 20, 15, PROVIDER_NAME, MODEL_NAME, calls);
+            }
+
+            if (USER_PATTERN.matcher(pLower).find() && hasToolDef(toolDefs, "user.getCurrent")) {
+                List<AiToolCall> calls = List.of(new AiToolCall("call_user_" + UUID.randomUUID().toString().substring(0, 6), "user.getCurrent", Map.of()));
+                return new LlmResponse("Querying authenticated user profile...", 0.95, 20, 15, PROVIDER_NAME, MODEL_NAME, calls);
+            }
+
+            if (PROJECT_PATTERN.matcher(pLower).find() && hasToolDef(toolDefs, "project.list")) {
+                List<AiToolCall> calls = List.of(new AiToolCall("call_proj_" + UUID.randomUUID().toString().substring(0, 6), "project.list", Map.of()));
+                return new LlmResponse("Retrieving authorized projects...", 0.95, 20, 15, PROVIDER_NAME, MODEL_NAME, calls);
+            }
+        }
 
         AiIntentType intent = resolveIntentFromContextOrPrompt(contextJson, prompt);
 
@@ -197,6 +238,60 @@ public class DeterministicOfflineLlmProvider implements LlmProvider {
                 PROVIDER_NAME,
                 MODEL_NAME
         );
+    }
+
+    private boolean hasToolDef(List<AiToolDefinition> defs, String... names) {
+        if (defs == null) return false;
+        Set<String> search = Set.of(names);
+        return defs.stream().anyMatch(d -> search.contains(d.name()));
+    }
+
+    private String synthesizeToolResult(String toolName, String outputJson) {
+        if (outputJson == null || outputJson.isBlank()) {
+            return "Tool executed successfully with zero plaintext exposure.";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(outputJson);
+
+            if (toolName.contains("invitation")) {
+                int total = root.has("totalPendingInvitations") ? root.get("totalPendingInvitations").asInt() : 0;
+                if (total == 0) {
+                    return "You don't have any pending invitations.";
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("You have ").append(total).append(" pending invitation(s):\n\n");
+                if (root.has("invitations") && root.get("invitations").isArray()) {
+                    int idx = 1;
+                    for (JsonNode inv : root.get("invitations")) {
+                        String wsName = inv.has("workspaceName") ? inv.get("workspaceName").asText() : "Workspace";
+                        String role = inv.has("role") ? inv.get("role").asText() : "MEMBER";
+                        String inviter = inv.has("invitedByName") ? inv.get("invitedByName").asText() : "Admin";
+                        String status = inv.has("status") ? inv.get("status").asText() : "Pending";
+                        sb.append(idx++).append(". **").append(wsName).append("**\n")
+                          .append("   - **Role:** ").append(role).append("\n")
+                          .append("   - **Invited by:** ").append(inviter).append("\n")
+                          .append("   - **Status:** ").append(status).append("\n\n");
+                    }
+                }
+                return sb.toString().trim();
+            }
+
+            if (toolName.contains("user.getCurrent")) {
+                String email = root.has("email") ? root.get("email").asText() : "User";
+                String name = root.has("fullName") ? root.get("fullName").asText() : "";
+                String role = root.has("standingRole") ? root.get("standingRole").asText() : "DEVELOPER";
+                return "### Authenticated User Identity\n\n- **Name:** " + name + "\n- **Email:** " + email + "\n- **Active Standing Role:** " + role;
+            }
+
+            if (toolName.contains("project.list")) {
+                int count = root.has("totalProjects") ? root.get("totalProjects").asInt() : 0;
+                return "Found " + count + " authorized project(s) in active workspace. All secrets protected under envelope encryption.";
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return "Analysis complete based on authoritative system metadata.";
     }
 
     private AiIntentType resolveIntentFromContextOrPrompt(String contextJson, String prompt) {

@@ -11,14 +11,18 @@ Designed for mission-critical enterprise environments, SecretVault AI operates u
 4. **Dynamic Server-Side RBAC Tool Calling (`AiToolRegistry`, `AiToolExecutor`)**: The AI autonomously selects and invokes authorized domain tools. Every tool execution is strictly validated server-side against the caller's workspace membership and effective permissions (`EffectiveAccessService`).
 5. **Multi-Step Agentic Reasoning Loop (`AiContextOrchestrator`)**: Performs dynamic multi-turn tool planning, execution, evidence collection, and response synthesis with cycle detection and bounded iterations (max 5 steps, max 10 tool calls).
 6. **Pluggable Multi-Provider Architecture (`LlmProviderRegistry`)**:
+   - **Google Gemini Cloud Provider**: `GeminiLlmProvider` supporting fast, high-quality cloud reasoning (`gemini-3.5-flash-lite`, `gemini-1.5-flash`).
    - **Local/Private LLMs**: `OllamaLlmProvider` for private, air-gapped on-premise execution (e.g., Llama 3, Mistral, DeepSeek).
    - **OpenAI-Compatible APIs**: `OpenAiCompatibleLlmProvider` supporting universal OpenAI-compatible endpoints with dynamic runtime credentials (zero disk/log persistence).
    - **Deterministic Offline Provider**: `DeterministicOfflineLlmProvider` for zero-network CI/CD test environments and instant fallback.
 7. **Persistent Conversational Memory (`AiConversationService`)**: Multi-turn conversation sessions (`ai_conversations`), message histories (`ai_messages`), and tool audit logs (`ai_tool_executions`) with composite indexes.
-8. **Four-Eyes Separation of Duties Gate**: Critical and high-risk remediation plans enforce mandatory dual-authorization (`Approver A != Approver B`) before execution can proceed.
-9. **Step-Up MFA Verification**: Authoritative execution of high-risk remediation plans requires valid Step-Up authentication proof.
-10. **Cryptographic Approval Binding**: Remediation plans are sealed with SHA-256 integrity fingerprints upon approval. Any subsequent modification increments the version and invalidates prior approvals.
-11. **Streaming Real-Time Responses**: Server-Sent Events (SSE) streaming endpoint (`/api/v1/workspaces/{id}/ai/chat/stream`) for fluid user experience.
+8. **Authenticated User State & Invitation Intelligence (`UserTools`)**: Autonomous detection and querying of real user profile, active roles, memberships, unread alerts, and pending workspace invitations (`user.getCurrent`, `user.invitations`, `invitation.list`, `user.notifications`, `user.activity`, `user.jit`, `user.securityAlerts`).
+9. **Zero-Trust Canonical Resource Navigation (`AiResourceReference`)**: The AI model never generates arbitrary external URLs. The platform maps validated resource IDs to canonical application routes (`/workspaces/invitations`, `/projects/{id}`, `/secrets?project={id}`, `/rotation`, `/sync-center`, `/repo-security`, `/incidents`, `/access`).
+10. **Action Proposals & Step-Up Boundary (`AiActionProposal`)**: Structured, non-autonomous action proposals categorized by risk levels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), with explicit Step-Up MFA flags and Four-Eyes review requirements.
+11. **Four-Eyes Separation of Duties Gate**: Critical and high-risk remediation plans enforce mandatory dual-authorization (`Approver A != Approver B`) before execution can proceed.
+12. **Step-Up MFA Verification**: Authoritative execution of high-risk remediation plans requires valid Step-Up authentication proof.
+13. **Cryptographic Approval Binding**: Remediation plans are sealed with SHA-256 integrity fingerprints upon approval. Any subsequent modification increments the version and invalidates prior approvals.
+14. **Streaming Real-Time Responses**: Server-Sent Events (SSE) streaming endpoint (`/api/v1/workspaces/{id}/ai/chat/stream`) for fluid user experience.
 
 ---
 
@@ -81,10 +85,17 @@ Designed for mission-critical enterprise environments, SecretVault AI operates u
 
 ## 3. Dynamic Tool Calling System
 
-SecretVault AI features 14 server-side domain tools categorized across platform subsystems:
+SecretVault AI features 34 server-side domain tools categorized across platform subsystems:
 
 | Tool Category | Tool Name | Description | Required Permission |
 |---|---|---|---|
+| **User** | `user.getCurrent` | Retrieves authenticated user identity, email, standing role, memberships | Authenticated |
+| **User** | `user.invitations` | Retrieves pending workspace invitations for user email | Authenticated |
+| **User** | `invitation.list` | Alias for listing pending workspace invitations | Authenticated |
+| **User** | `user.notifications` | Lists unread invitations, alerts, and critical findings | Authenticated |
+| **User** | `user.activity` | Retrieves recent audit events and security actions performed by user | Authenticated |
+| **User** | `user.jit` | Retrieves user's JIT access elevation requests and status | Authenticated |
+| **User** | `user.securityAlerts` | Retrieves active workspace security alerts and overdue rotations | Authenticated |
 | **Workspace** | `workspace.get` | Inspect current workspace configuration and settings | `WORKSPACE_READ` |
 | **Workspace** | `workspace.members` | List workspace members and role assignments | `WORKSPACE_MEMBERS_READ` |
 | **Project** | `project.list` | List all projects in active workspace | `PROJECT_READ` |
@@ -177,12 +188,15 @@ The `AiPlatformKnowledgeService` provides the LLM with deep architectural facts 
 
 | Variable | Property | Default | Description |
 |---|---|---|---|
-| `AI_PROVIDER` | `secretvault.ai.provider` | `DETERMINISTIC_OFFLINE` | Active LLM provider (`DETERMINISTIC_OFFLINE`, `OLLAMA`, `OPENAI_COMPATIBLE`) |
+| `AI_PROVIDER` | `secretvault.ai.provider` | `GEMINI` | Active LLM provider (`GEMINI`, `DETERMINISTIC_OFFLINE`, `OLLAMA`, `OPENAI_COMPATIBLE`) |
 | `AI_FALLBACK_PROVIDER` | `secretvault.ai.fallback-provider` | `DETERMINISTIC_OFFLINE` | Fallback provider on primary failure |
+| `AI_GEMINI_API_KEY` | `secretvault.ai.gemini.api-key` | `""` | Google Gemini Cloud API Key (loaded from environment) |
+| `AI_GEMINI_MODEL` | `secretvault.ai.gemini.model` | `gemini-3.5-flash-lite` | Gemini model name (`gemini-3.5-flash-lite`, `gemini-1.5-flash`) |
+| `AI_GEMINI_BASE_URL` | `secretvault.ai.gemini.base-url` | `https://generativelanguage.googleapis.com` | Gemini API endpoint |
 | `OLLAMA_BASE_URL` | `secretvault.ai.ollama.base-url` | `http://localhost:11434` | Ollama API endpoint |
 | `OLLAMA_MODEL` | `secretvault.ai.ollama.model` | `llama3:8b` | Ollama chat model name |
 | `OPENAI_BASE_URL` | `secretvault.ai.openai.base-url` | `https://api.openai.com` | OpenAI-compatible endpoint |
 | `OPENAI_MODEL` | `secretvault.ai.openai.model` | `gpt-4o-mini` | OpenAI-compatible model name |
-| `AI_API_KEY` | `secretvault.ai.openai.api-key` | `""` | Runtime API key (zero disk/log persistence) |
+| `AI_API_KEY` | `secretvault.ai.openai.api-key` | `""` | Runtime API key for OpenAI-compatible providers |
 | `AI_TEMPERATURE` | `secretvault.ai.temperature` | `0.1` | Sampling temperature |
 | `AI_MAX_TOKENS` | `secretvault.ai.max-tokens` | `2048` | Maximum token completion limit |

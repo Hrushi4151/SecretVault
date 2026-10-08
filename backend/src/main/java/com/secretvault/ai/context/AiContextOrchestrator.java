@@ -1,10 +1,13 @@
 package com.secretvault.ai.context;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.secretvault.ai.domain.model.TelemetryEvidence;
+import com.secretvault.ai.dto.AiActionProposal;
 import com.secretvault.ai.dto.AiChatRequest;
 import com.secretvault.ai.dto.AiChatResponse;
+import com.secretvault.ai.dto.AiResourceReference;
 import com.secretvault.ai.knowledge.AiPlatformKnowledgeService;
 import com.secretvault.ai.provider.*;
 import com.secretvault.ai.security.AiContextSanitizer;
@@ -25,9 +28,10 @@ import java.util.regex.Pattern;
 
 /**
  * Agentic Multi-Step Reasoning Orchestrator for SecretVault AI Copilot.
+ * Operates across THREE dynamic modes (Chatbot, Security / System Analyst, Agent) without requiring manual mode switching.
  * Dynamically plans tool invocations, executes authorized tools server-side,
- * passes context through the Absolute Secret Value Firewall, iterates until confidence is reached,
- * and synthesizes evidence-grounded responses without any hardcoded questions or canned intents.
+ * enforces Zero-Plaintext Invariant, resolves server-authoritative canonical resource references,
+ * and synthesizes evidence-grounded responses.
  */
 @Service
 public class AiContextOrchestrator {
@@ -117,20 +121,30 @@ public class AiContextOrchestrator {
         }
 
         String systemPrompt = """
-                You are SecretVault AI Security Copilot — a production-grade DevSecOps intelligence agent.
-                You assist engineers, security operators, and platform architects with arbitrary questions about SecretVault, their authorized workspace, projects, environments, secret metadata, rotation, synchronization, drift, cloud integrations, and incidents.
+                You are SecretVault AI Copilot — an intelligent DevSecOps assistant that operates dynamically in 3 modes:
+                1. CHATBOT MODE: Natural conversations ("Hi", "What can you help me with?", "Explain workspaces/rotation/encryption", "Who am I?").
+                2. SECURITY / SYSTEM ANALYST MODE: Live telemetry investigations ("What is wrong with my workspace?", "Why did sync fail?", "What are my biggest risks?", "Which credentials are overdue?").
+                3. AGENT MODE: Proposing safe remediation actions and step-up approvals ("Rotate credential", "Reconcile sync drift", "Prepare a fix").
 
-                ACTIVE WORKSPACE & CALL CONTEXT:
+                ACTIVE CONTEXT:
                 - Active Workspace ID: %s
                 - Active User ID: %s
                 - Active User Role: %s
 
-                CORE INVARIANTS:
-                1. Zero Plaintext Invariant: NEVER output, request, or simulate raw secrets, passwords, tokens, or private keys. Work only with safe metadata, fingerprints, and policy states.
-                2. Server-Side Tool Execution: When you need facts about projects, secrets, environments, drift, or posture, use the available tools (e.g. project.list, workspace.get, security.findings, secret.listMetadata, environment.list). Workspace-scoped tools operate directly on the Active Workspace ID; never ask the user for a workspace ID.
-                3. Evidence Grounding: State facts clearly with confidence and concrete resource references.
-                4. Tone: Technical, precise, authoritative DevSecOps engineer.
-                """.formatted(workspaceId, userId, userRole != null ? userRole : "DEVELOPER") + knowledgePrompt;
+                CORE RULES:
+                1. ZERO PLAINTEXT INVARIANT: NEVER output, request, or simulate raw plaintext secrets, passwords, tokens, or private keys. Work strictly with safe metadata, fingerprints, and policy states.
+                2. DYNAMIC REAL-DATA QUERIES: Never hallucinate or invent user state, workspaces, projects, or invitations.
+                   - For user state or invitations: Call `user.getCurrent` or `user.invitations`.
+                   - For projects / environments: Call `project.list` or `environment.list`.
+                   - For security findings / posture: Call `security.findings` or `security.posture`.
+                   - For rotation / sync / audit: Call `rotation.status`, `sync.status`, `audit.search`.
+                3. NEVER TRUST MODEL-GENERATED EXTERNAL URLS: Mention canonical resources by name/id; internal routing is managed server-side.
+                4. CONCISE & FACTUAL: Provide structured bullet points, clear recommendations, and evidence-grounded facts.
+                """.formatted(
+                        workspaceId != null ? workspaceId.toString() : "None",
+                        userId != null ? userId.toString() : "Anonymous",
+                        userRole != null ? userRole : "DEVELOPER"
+                ) + knowledgePrompt;
 
         // 4. Assemble Messages
         List<ChatMessage> messages = new ArrayList<>();
@@ -142,9 +156,11 @@ public class AiContextOrchestrator {
         List<AiToolDefinition> toolDefinitions = toolRegistry.getToolDefinitions();
         Set<String> executedToolSignatures = new HashSet<>();
         List<TelemetryEvidence> collectedEvidence = new ArrayList<>();
+        List<AiResourceReference> collectedResources = new ArrayList<>();
+        List<AiActionProposal> collectedActions = new ArrayList<>();
         int totalToolCallsCount = 0;
         String finalAnswer = null;
-        double confidence = 0.92;
+        double confidence = 0.95;
         String activeModel = "deterministic-offline";
         String activeProvider = "DETERMINISTIC_OFFLINE";
 
@@ -199,15 +215,17 @@ public class AiContextOrchestrator {
                 AiToolResult result = toolExecutor.executeTool(tc.name(), tc.arguments(), toolContext);
                 anyToolExecuted = true;
 
-                // Add tool result to evidence
+                // Process tool results for evidence and canonical resources
                 if (result.success()) {
                     collectedEvidence.add(new TelemetryEvidence(
                             "EV_TOOL_" + tc.name().toUpperCase().replace(".", "_"),
                             "Tool Output: " + tc.name(),
                             "Server-verified metadata from " + tc.name(),
-                            workspaceId.toString(),
+                            workspaceId != null ? workspaceId.toString() : "system",
                             Instant.now()
                     ));
+
+                    extractResourcesAndActionsFromToolResult(tc.name(), result.outputJson(), workspaceId, collectedResources, collectedActions);
                 }
 
                 // Append assistant tool intent and tool result to conversation messages for next reasoning turn
@@ -240,7 +258,7 @@ public class AiContextOrchestrator {
                     "EV_WORKSPACE_TELEMETRY",
                     "Authoritative Workspace Context",
                     "Safe metadata verified with zero detected plaintext.",
-                    workspaceId.toString(),
+                    workspaceId != null ? workspaceId.toString() : "system",
                     Instant.now()
             ));
         }
@@ -259,12 +277,114 @@ public class AiContextOrchestrator {
                 activeModel,
                 totalLatencyMs,
                 collectedEvidence,
+                collectedResources,
                 recommendations,
+                collectedActions,
+                false,
                 List.of(),
                 List.of("Zero-knowledge metadata isolation enforced", "Server-side RBAC boundary applied"),
                 "AI responses are strictly advisory and require authorized approval before executing changes.",
                 Instant.now()
         );
+    }
+
+    private void extractResourcesAndActionsFromToolResult(
+            String toolName,
+            String outputJson,
+            UUID workspaceId,
+            List<AiResourceReference> resources,
+            List<AiActionProposal> actions
+    ) {
+        if (outputJson == null || outputJson.isBlank()) return;
+        try {
+            JsonNode root = objectMapper.readTree(outputJson);
+
+            // Handle user.invitations or invitation.list
+            if (toolName.contains("invitation") && root.has("invitations") && root.get("invitations").isArray()) {
+                for (JsonNode inv : root.get("invitations")) {
+                    String invId = inv.has("invitationId") ? inv.get("invitationId").asText() : "";
+                    String wsName = inv.has("workspaceName") ? inv.get("workspaceName").asText() : "Workspace";
+                    String role = inv.has("role") ? inv.get("role").asText() : "MEMBER";
+                    String inviter = inv.has("invitedByName") ? inv.get("invitedByName").asText() : "Admin";
+                    String status = inv.has("status") ? inv.get("status").asText() : "PENDING";
+                    String expiresAt = inv.has("expiresAt") ? inv.get("expiresAt").asText() : "";
+
+                    if (!invId.isBlank()) {
+                        UUID parsedInvId = UUID.fromString(invId);
+                        resources.add(AiResourceReference.invitation(parsedInvId, workspaceId, wsName, role, inviter, status, expiresAt));
+                        actions.add(AiActionProposal.openInvitation(invId));
+                    }
+                }
+            }
+
+            // Handle project.list
+            if (toolName.contains("project") && root.has("projects") && root.get("projects").isArray()) {
+                for (JsonNode p : root.get("projects")) {
+                    String pId = p.has("id") ? p.get("id").asText() : "";
+                    String pName = p.has("name") ? p.get("name").asText() : "Project";
+                    String slug = p.has("slug") ? p.get("slug").asText() : "";
+                    int envCount = p.has("environmentCount") ? p.get("environmentCount").asInt() : 0;
+                    int secCount = p.has("secretCount") ? p.get("secretCount").asInt() : 0;
+
+                    if (!pId.isBlank()) {
+                        resources.add(AiResourceReference.project(UUID.fromString(pId), workspaceId, pName, slug, envCount, secCount));
+                    }
+                }
+            }
+
+            // Handle security.findings
+            if (toolName.contains("finding") || toolName.contains("security")) {
+                if (root.has("findings") && root.get("findings").isArray()) {
+                    for (JsonNode f : root.get("findings")) {
+                        String fId = f.has("id") ? f.get("id").asText() : "";
+                        String title = f.has("title") ? f.get("title").asText() : "Security Finding";
+                        String severity = f.has("severity") ? f.get("severity").asText() : "HIGH";
+                        String category = f.has("category") ? f.get("category").asText() : "SECURITY";
+                        String status = f.has("status") ? f.get("status").asText() : "OPEN";
+
+                        if (!fId.isBlank()) {
+                            resources.add(AiResourceReference.finding(UUID.fromString(fId), workspaceId, title, severity, category, status));
+                        }
+                    }
+                }
+            }
+
+            // Handle rotation.status
+            if (toolName.contains("rotation") && root.has("rotations") && root.get("rotations").isArray()) {
+                for (JsonNode r : root.get("rotations")) {
+                    String rId = r.has("id") ? r.get("id").asText() : "";
+                    String secretKey = r.has("secretKey") ? r.get("secretKey").asText() : "Credential";
+                    String status = r.has("status") ? r.get("status").asText() : "SCHEDULED";
+                    String nextDue = r.has("nextDue") ? r.get("nextDue").asText() : "";
+
+                    if (!rId.isBlank()) {
+                        resources.add(AiResourceReference.rotation(UUID.fromString(rId), workspaceId, secretKey, status, nextDue));
+                        if ("OVERDUE".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
+                            actions.add(AiActionProposal.rotateSecret(rId, secretKey, "PROD", 4));
+                        }
+                    }
+                }
+            }
+
+            // Handle sync.status
+            if (toolName.contains("sync") && root.has("syncJobs") && root.get("syncJobs").isArray()) {
+                for (JsonNode s : root.get("syncJobs")) {
+                    String sId = s.has("id") ? s.get("id").asText() : "";
+                    String providerType = s.has("providerType") ? s.get("providerType").asText() : "Cloud";
+                    String status = s.has("status") ? s.get("status").asText() : "IN_SYNC";
+                    String lastSyncAt = s.has("lastSyncAt") ? s.get("lastSyncAt").asText() : "";
+
+                    if (!sId.isBlank()) {
+                        resources.add(AiResourceReference.syncJob(UUID.fromString(sId), workspaceId, providerType, status, lastSyncAt));
+                        if ("DRIFT_DETECTED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
+                            actions.add(AiActionProposal.reconcileSync(sId, providerType, "PROD"));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Resource extraction from tool result skipped: {}", e.getMessage());
+        }
     }
 
     private List<AiToolCall> extractJsonToolCalls(String text) {

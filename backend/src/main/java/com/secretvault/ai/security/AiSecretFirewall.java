@@ -70,7 +70,7 @@ public class AiSecretFirewall {
     );
 
     private static final Pattern KV_SECRET_PATTERN = Pattern.compile(
-            "(?i)\\b(password|secret|token|api[_-]?key|access[_-]?key|auth|bearer|client_secret|aws_secret_access_key|private_key|database_url|connection_string)\\s*[:=]\\s*['\"]?([^\\s,'\"}\\]]+)['\"]?"
+            "(?i)\"?\\b(password|secret_value|raw_secret|token_value|client_secret|aws_secret_access_key|private_key_pem|database_password|db_password)\"?\\s*([:=])\\s*['\"]?([^\\s,'\"}\\]]+)['\"]?"
     );
 
     private static final Pattern JWT_PATTERN = Pattern.compile(
@@ -107,17 +107,18 @@ public class AiSecretFirewall {
         // 6. URI user:password credentials
         result = URI_CREDENTIALS_PATTERN.matcher(result).replaceAll("$1$2:[REDACTED_CREDENTIAL]@");
 
-        // 7. Key-Value credential pairs (e.g. password: xyz, api_key=abc)
+        // 7. Explicit Secret Key-Value credential pairs (e.g. password: xyz, db_password=abc)
         Matcher kvMatcher = KV_SECRET_PATTERN.matcher(result);
         StringBuffer sb = new StringBuffer();
         while (kvMatcher.find()) {
             String key = kvMatcher.group(1);
-            String val = kvMatcher.group(2);
+            String sep = kvMatcher.group(2);
+            String val = kvMatcher.group(3);
             // Ignore trivial values or already redacted values
             if (val.equalsIgnoreCase("true") || val.equalsIgnoreCase("false") || val.equalsIgnoreCase("null") || val.startsWith("[SHA256:") || val.startsWith("[REDACTED") || val.length() < 3) {
                 kvMatcher.appendReplacement(sb, Matcher.quoteReplacement(kvMatcher.group(0)));
             } else {
-                String replacement = key + "=[SHA256:" + computeDigestPrefix(val) + "]";
+                String replacement = "\"" + key + "\"" + sep + " \"[SHA256:" + computeDigestPrefix(val) + "]\"";
                 kvMatcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
             }
         }
