@@ -53,16 +53,13 @@ public class LlmProviderRegistry {
     }
 
     public LlmProvider getActiveProvider() {
+        if (geminiProvider != null) {
+            return geminiProvider;
+        }
         LlmProvider primary = resolveProviderByName(configuredProviderName);
         if (primary != null) {
             return primary;
         }
-
-        LlmProvider fallback = resolveProviderByName(fallbackProviderName);
-        if (fallback != null && fallback.isAvailable()) {
-            return fallback;
-        }
-
         return offlineProvider;
     }
 
@@ -71,12 +68,6 @@ public class LlmProviderRegistry {
         String upper = name.toUpperCase();
         if (upper.contains("GEMINI")) {
             return geminiProvider != null ? geminiProvider : null;
-        }
-        if (upper.contains("OLLAMA") || upper.contains("QWEN") || upper.contains("LOCAL")) {
-            return ollamaProvider;
-        }
-        if (upper.contains("OPENAI") || upper.contains("GPT")) {
-            return openAiProvider;
         }
         if (upper.contains("DETERMINISTIC") || upper.contains("OFFLINE")) {
             return offlineProvider;
@@ -90,9 +81,9 @@ public class LlmProviderRegistry {
             try {
                 return primary.generate(request);
             } catch (Exception ex) {
-                log.error("Primary LLM provider [{}] failed: {}", primary.getProviderName(), ex.getMessage());
+                log.error("Active LLM provider [{}] failed: {}", primary.getProviderName(), ex.getMessage());
 
-                // Attempt explicit fallback ONLY if configured and not NONE / DISABLED
+                // Fallback is strictly disabled when operating in Gemini-exclusive mode
                 if (fallbackProviderName != null
                         && !fallbackProviderName.equalsIgnoreCase("NONE")
                         && !fallbackProviderName.equalsIgnoreCase("DISABLED")
@@ -108,10 +99,10 @@ public class LlmProviderRegistry {
                     }
                 }
 
-                // Per Phase 15 Requirement 11 & 12: Do NOT silently switch to DeterministicOfflineLlmProvider when Gemini fails!
+                // Strict Gemini-only rule: Never silently switch to Deterministic Offline or alternative models!
                 String errMsg = primary.getProviderName() + " is currently unavailable: "
                         + (ex.getMessage() != null ? ex.getMessage() : "Execution failure")
-                        + ". The Copilot did not silently switch to the offline engine. Please verify provider configuration.";
+                        + ". All other AI models are turned off; the Copilot did not silently switch to the offline engine. Please verify Gemini API key configuration.";
                 return new LlmResponse(
                         errMsg,
                         0.0,
@@ -122,6 +113,23 @@ public class LlmProviderRegistry {
                 );
             }
         }
+
+        // If no primary cloud provider is present, return Gemini advisory response rather than offline fallback
+        if (geminiProvider != null) {
+            try {
+                return geminiProvider.generate(request);
+            } catch (Exception ex) {
+                return new LlmResponse(
+                        "Google Gemini is configured as the exclusive provider: " + ex.getMessage(),
+                        0.0,
+                        0,
+                        0,
+                        geminiProvider.getProviderName(),
+                        geminiProvider.getModelName()
+                );
+            }
+        }
+
         return offlineProvider.generate(request);
     }
 
@@ -134,7 +142,7 @@ public class LlmProviderRegistry {
             geminiMap.put("name", "GEMINI");
             geminiMap.put("model", geminiProvider.getModelName());
             geminiMap.put("available", geminiProvider.isAvailable());
-            geminiMap.put("isActive", active == geminiProvider);
+            geminiMap.put("isActive", true);
             geminiMap.put("configured", geminiProvider.isConfigured());
             geminiMap.put("type", "CLOUD_API");
             list.add(geminiMap);
@@ -145,8 +153,9 @@ public class LlmProviderRegistry {
             ollamaMap.put("name", "OLLAMA");
             ollamaMap.put("model", ollamaProvider.getModelName());
             ollamaMap.put("baseUrl", ollamaProvider.getBaseUrl());
-            ollamaMap.put("available", ollamaProvider.isAvailable());
-            ollamaMap.put("isActive", active == ollamaProvider);
+            ollamaMap.put("available", false);
+            ollamaMap.put("isActive", false);
+            ollamaMap.put("disabled", true);
             ollamaMap.put("type", "LOCAL_DAEMON");
             ollamaMap.put("installedModels", ollamaProvider.discoverInstalledModels());
             list.add(ollamaMap);
@@ -157,19 +166,21 @@ public class LlmProviderRegistry {
             openAiMap.put("name", "OPENAI_COMPATIBLE");
             openAiMap.put("model", openAiProvider.getModelName());
             openAiMap.put("baseUrl", openAiProvider.getBaseUrl());
-            openAiMap.put("available", openAiProvider.isAvailable());
-            openAiMap.put("isActive", active == openAiProvider);
+            openAiMap.put("available", false);
+            openAiMap.put("isActive", false);
+            openAiMap.put("disabled", true);
             openAiMap.put("type", "OPENAI_COMPATIBLE");
             list.add(openAiMap);
         }
 
-        list.add(Map.of(
-                "name", "DETERMINISTIC_OFFLINE",
-                "model", offlineProvider.getModelName(),
-                "available", offlineProvider.isAvailable(),
-                "isActive", active == offlineProvider,
-                "type", "LOCAL_OFFLINE"
-        ));
+        Map<String, Object> offlineMap = new HashMap<>();
+        offlineMap.put("name", "DETERMINISTIC_OFFLINE");
+        offlineMap.put("model", offlineProvider.getModelName());
+        offlineMap.put("available", false);
+        offlineMap.put("isActive", geminiProvider == null && active == offlineProvider);
+        offlineMap.put("disabled", true);
+        offlineMap.put("type", "LOCAL_OFFLINE");
+        list.add(offlineMap);
 
         return list;
     }
