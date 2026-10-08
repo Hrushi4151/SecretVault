@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
@@ -42,16 +44,20 @@ public class LocalDevKmsKeyProvider implements KmsKeyProvider {
         }
 
         try {
-            byte[] keyBytes = Base64.getDecoder().decode(masterKeyConfig.trim());
+            byte[] keyBytes;
+            try {
+                keyBytes = Base64.getDecoder().decode(masterKeyConfig.trim());
+            } catch (IllegalArgumentException e) {
+                keyBytes = masterKeyConfig.trim().getBytes(StandardCharsets.UTF_8);
+            }
             if (keyBytes.length != EXPECTED_KEY_BYTES) {
-                throw new IllegalStateException(
-                        "CRITICAL: Master KEK must be exactly 256 bits (32 bytes). Found: " + keyBytes.length + " bytes"
-                );
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                keyBytes = md.digest(keyBytes);
             }
             this.kekSpec = new SecretKeySpec(keyBytes, "AES");
             log.info("Initialized LocalDevKmsKeyProvider with active KEK reference [{}] (256-bit AES)", DEFAULT_KEY_REF);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("CRITICAL: Master KEK is not a valid Base64 string", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("CRITICAL: Failed to initialize master KEK", e);
         }
     }
 
