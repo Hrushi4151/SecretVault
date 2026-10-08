@@ -74,20 +74,25 @@ public class RepositorySourceAdapter {
         urlValidator.validateCloneUrl(cloneUrl);
         try {
             Path tempDir = Files.createTempDirectory("secretvault-repo-scan-");
-            // Perform safe clone with hooks disabled
-            GitProcessExecutor.ExecutionResult res = gitExecutor.execute(
-                    null, "clone", "--depth=100", "-b", (branch != null ? branch : "main"), cloneUrl, tempDir.toString());
+            try {
+                // Perform safe clone with hooks disabled
+                GitProcessExecutor.ExecutionResult res = gitExecutor.execute(
+                        null, "clone", "--depth=100", "-b", (branch != null ? branch : "main"), cloneUrl, tempDir.toString());
 
-            if (!res.isSuccess()) {
-                // If branch main failed, try default clone
-                res = gitExecutor.execute(null, "clone", "--depth=100", cloneUrl, tempDir.toString());
                 if (!res.isSuccess()) {
-                    archiveScanner.cleanDirectory(tempDir);
-                    throw new IllegalStateException("Git clone failed: " + res.stderr());
+                    // If branch main failed, try default clone
+                    res = gitExecutor.execute(null, "clone", "--depth=100", cloneUrl, tempDir.toString());
+                    if (!res.isSuccess()) {
+                        String errMsg = res.stderr() != null && !res.stderr().isBlank() ? res.stderr().trim() : "Unknown Git error (exit code " + res.exitCode() + ")";
+                        throw new IllegalStateException("Git clone failed: " + errMsg);
+                    }
                 }
-            }
 
-            return new SourceContext(tempDir, true);
+                return new SourceContext(tempDir, true);
+            } catch (Exception e) {
+                archiveScanner.cleanDirectory(tempDir);
+                throw e;
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to acquire repository from " + cloneUrl + ": " + e.getMessage(), e);
         }

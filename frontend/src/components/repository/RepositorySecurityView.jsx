@@ -48,6 +48,7 @@ export const RepositorySecurityView = () => {
   const [triggerScanModal, setTriggerScanModal] = useState(null);
   const [remediationModal, setRemediationModal] = useState(null);
   const [actionNotes, setActionNotes] = useState('');
+  const [modalError, setModalError] = useState(null);
 
   // Onboarding Form
   const [newRepo, setNewRepo] = useState({
@@ -92,6 +93,7 @@ export const RepositorySecurityView = () => {
 
   const handleConnectRepository = async (e) => {
     e.preventDefault();
+    setModalError(null);
     try {
       await repositoryApi.connectRepository(workspaceId, newRepo);
       setConnectRepoModal(false);
@@ -105,7 +107,7 @@ export const RepositorySecurityView = () => {
       });
       fetchData();
     } catch (err) {
-      alert(err.message || 'Failed to connect repository');
+      setModalError(err.message || 'Failed to connect repository');
     }
   };
 
@@ -619,6 +621,13 @@ export const RepositorySecurityView = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleConnectRepository} className="flex flex-col gap-3 mt-4 text-xs">
               <div>
