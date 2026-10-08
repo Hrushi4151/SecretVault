@@ -157,7 +157,17 @@ public class GeminiLlmProvider implements LlmProvider {
                                     args.put(entry.getKey(), entry.getValue().toString());
                             });
                         }
-                        toolCalls.add(new AiToolCall("gemini_call_" + System.nanoTime(), toolName, args));
+                        String thoughtSig = null;
+                        if (part.has("thoughtSignature")) {
+                            thoughtSig = part.get("thoughtSignature").asText();
+                        } else if (part.has("thought_signature")) {
+                            thoughtSig = part.get("thought_signature").asText();
+                        } else if (funcCall.has("thoughtSignature")) {
+                            thoughtSig = funcCall.get("thoughtSignature").asText();
+                        } else if (funcCall.has("thought_signature")) {
+                            thoughtSig = funcCall.get("thought_signature").asText();
+                        }
+                        toolCalls.add(new AiToolCall("gemini_call_" + System.nanoTime(), toolName, args, null, thoughtSig));
                     }
                 }
             }
@@ -203,7 +213,14 @@ public class GeminiLlmProvider implements LlmProvider {
                             Map<String, Object> fc = new HashMap<>();
                             fc.put("name", tc.name() != null ? tc.name().replace(".", "_") : "tool");
                             fc.put("args", tc.arguments() != null ? tc.arguments() : Map.of());
-                            parts.add(Map.of("functionCall", fc));
+
+                            Map<String, Object> partMap = new HashMap<>();
+                            partMap.put("functionCall", fc);
+                            if (tc.thoughtSignature() != null && !tc.thoughtSignature().isBlank()) {
+                                partMap.put("thoughtSignature", tc.thoughtSignature());
+                                partMap.put("thought_signature", tc.thoughtSignature());
+                            }
+                            parts.add(partMap);
                         }
                         contents.add(Map.of("role", "model", "parts", parts));
                     } else {
