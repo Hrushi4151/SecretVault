@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class GitProcessExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(GitProcessExecutor.class);
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
     private static final int MAX_OUTPUT_CHARS = 10_000_000; // 10MB text limit
 
     public record ExecutionResult(int exitCode, String stdout, String stderr) {
@@ -48,7 +48,11 @@ public class GitProcessExecutor {
         command.add("-c");
         command.add("credential.helper=");
         command.add("-c");
-        command.add("core.askPass=");
+        command.add("core.askPass=echo");
+        command.add("-c");
+        command.add("credential.interactive=never");
+        command.add("-c");
+        command.add("http.sslVerify=true");
         command.addAll(Arrays.asList(gitArgs));
 
         ProcessBuilder pb = new ProcessBuilder(command);
@@ -59,7 +63,7 @@ public class GitProcessExecutor {
         // Environment sandboxing to completely prevent background modal / interactive freezes
         pb.environment().put("GIT_CONFIG_NOSYSTEM", "1");
         pb.environment().put("GIT_TERMINAL_PROMPT", "0");
-        pb.environment().put("GIT_ASKPASS", "");
+        pb.environment().put("GIT_ASKPASS", "echo");
         pb.environment().put("GCM_INTERACTIVE", "never");
         pb.environment().put("GCM_AUTO_DETECT", "false");
         pb.environment().put("GIT_SSH_COMMAND", "echo");

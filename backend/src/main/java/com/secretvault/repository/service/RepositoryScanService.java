@@ -88,7 +88,7 @@ public class RepositoryScanService {
         RepositoryScan scan = new RepositoryScan();
         scan.setWorkspaceId(workspaceId);
         scan.setRepositoryId(repositoryId);
-        scan.setScanType(scanType != null ? scanType : ScanType.INCREMENTAL);
+        scan.setScanType(scanType != null ? scanType : ScanType.FULL);
         scan.setBranch(branch != null ? branch : repo.getDefaultBranch());
         scan.setStatus(ScanStatus.QUEUED);
         scan.setTriggeredBy(actorId);
@@ -195,7 +195,7 @@ public class RepositoryScanService {
         }
 
         try (RepositorySourceAdapter.SourceContext ctx = sourceAdapter.cloneGitRepository(repo.getCloneUrl(), scan.getBranch())) {
-            boolean includeHistory = policy.isScanHistory() || scan.getScanType() == ScanType.GIT_HISTORY;
+            boolean includeHistory = policy.isScanHistory() || scan.getScanType() == ScanType.GIT_HISTORY || scan.getScanType() == ScanType.FULL;
             runScanOnDirectory(scan, repo, policy, ctx.sourceDir(), includeHistory, actorId);
         } catch (Exception e) {
             log.error("Scan pipeline execution failed for scan {}", scan.getId(), e);

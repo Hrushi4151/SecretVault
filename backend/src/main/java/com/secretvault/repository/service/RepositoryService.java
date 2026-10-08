@@ -31,13 +31,23 @@ public class RepositoryService {
     private final EffectiveAccessService accessService;
     private final AuditService auditService;
     private final com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry;
+    private final RepositoryScanService scanService;
 
     public RepositoryService(
             RepositoryEntityRepository repositoryRepo,
             SecretFindingRepository findingRepo,
             EffectiveAccessService accessService,
             AuditService auditService) {
-        this(repositoryRepo, findingRepo, accessService, auditService, null);
+        this(repositoryRepo, findingRepo, accessService, auditService, null, null);
+    }
+
+    public RepositoryService(
+            RepositoryEntityRepository repositoryRepo,
+            SecretFindingRepository findingRepo,
+            EffectiveAccessService accessService,
+            AuditService auditService,
+            com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry) {
+        this(repositoryRepo, findingRepo, accessService, auditService, providerRegistry, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -46,12 +56,14 @@ public class RepositoryService {
             SecretFindingRepository findingRepo,
             EffectiveAccessService accessService,
             AuditService auditService,
-            com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry) {
+            com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry,
+            @org.springframework.context.annotation.Lazy RepositoryScanService scanService) {
         this.repositoryRepo = repositoryRepo;
         this.findingRepo = findingRepo;
         this.accessService = accessService;
         this.auditService = auditService;
         this.providerRegistry = providerRegistry;
+        this.scanService = scanService;
     }
 
     public record RepositorySummaryDto(
@@ -149,6 +161,24 @@ public class RepositoryService {
                 saved.getId().toString(),
                 Map.of("owner", owner, "name", name, "provider", saved.getProvider().name())
         );
+
+        // Automatically trigger initial full scan upon repository connection
+        if (scanService != null) {
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    scanService.triggerRepositoryScan(
+                            workspaceId,
+                            saved.getId(),
+                            com.secretvault.repository.model.ScanType.FULL,
+                            saved.getDefaultBranch(),
+                            actorId
+                    );
+                } catch (Exception e) {
+                    org.slf4j.LoggerFactory.getLogger(RepositoryService.class)
+                            .warn("Automatic scan on connect failed for repo {}: {}", saved.getId(), e.getMessage());
+                }
+            });
+        }
 
         return saved;
     }

@@ -50,7 +50,7 @@ export const RepositorySecurityView = () => {
   // Modals
   const [whyExposedModal, setWhyExposedModal] = useState(null);
   const [connectRepoModal, setConnectRepoModal] = useState(false);
-  const [triggerScanModal, setTriggerScanModal] = useState(null);
+  const [scanningRepoIds, setScanningRepoIds] = useState(new Set());
   const [remediationModal, setRemediationModal] = useState(null);
   const [deleteRepoModal, setDeleteRepoModal] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -107,6 +107,26 @@ export const RepositorySecurityView = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Live polling when scans are in progress
+  useEffect(() => {
+    const hasActiveScans = scans.some((s) =>
+      ['QUEUED', 'CLONING', 'SCANNING', 'CLASSIFYING', 'IN_PROGRESS'].includes(s.status)
+    );
+    if (hasActiveScans || scanningRepoIds.size > 0) {
+      const interval = setInterval(() => {
+        fetchData();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [scans, scanningRepoIds.size, fetchData]);
+
+  const isRepoScanning = (repoId) => {
+    if (scanningRepoIds.has(repoId)) return true;
+    return scans.some(
+      (s) => s.repositoryId === repoId && ['QUEUED', 'CLONING', 'SCANNING', 'CLASSIFYING', 'IN_PROGRESS'].includes(s.status)
+    );
+  };
 
   const openConnectModal = () => {
     setConnectRepoModal(true);
@@ -197,13 +217,21 @@ export const RepositorySecurityView = () => {
     }
   };
 
-  const handleTriggerScan = async (repoId, scanType = 'INCREMENTAL') => {
+  const handleTriggerScan = async (repoId) => {
+    setScanningRepoIds((prev) => new Set(prev).add(repoId));
     try {
-      await repositoryApi.triggerScan(workspaceId, repoId, { scanType });
-      setTriggerScanModal(null);
-      fetchData();
+      await repositoryApi.triggerScan(workspaceId, repoId, { scanType: 'FULL' });
+      await fetchData();
     } catch (err) {
       alert(err.message || 'Failed to trigger scan');
+    } finally {
+      setTimeout(() => {
+        setScanningRepoIds((prev) => {
+          const next = new Set(prev);
+          next.delete(repoId);
+          return next;
+        });
+      }, 2500);
     }
   };
 
@@ -515,11 +543,25 @@ export const RepositorySecurityView = () => {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => setTriggerScanModal(repo)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition"
+                    onClick={() => handleTriggerScan(repo.id)}
+                    disabled={isRepoScanning(repo.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${
+                      isRepoScanning(repo.id)
+                        ? 'bg-rose-500/15 border border-rose-500/30 text-rose-300 opacity-90 cursor-not-allowed'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                    }`}
                   >
-                    <Play className="w-3.5 h-3.5 text-rose-400" />
-                    Scan Now
+                    {isRepoScanning(repo.id) ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 text-rose-400 animate-spin" />
+                        Scanning...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 text-rose-400" />
+                        Scan Now
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1030,52 +1072,7 @@ export const RepositorySecurityView = () => {
         </div>
       )}
 
-      {/* Modal: Trigger Scan */}
-      {triggerScanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-slate-200 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-2">
-              Trigger Secret Leak Scan
-            </h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Select scan depth for {triggerScanModal.owner}/{triggerScanModal.name}
-            </p>
 
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => handleTriggerScan(triggerScanModal.id, 'INCREMENTAL')}
-                className="w-full p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 transition"
-              >
-                <div className="font-semibold text-white text-xs">Incremental Scan (Fast)</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Scans commits since last successful scan</div>
-              </button>
-              <button
-                onClick={() => handleTriggerScan(triggerScanModal.id, 'FULL')}
-                className="w-full p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 transition"
-              >
-                <div className="font-semibold text-white text-xs">Full Working Tree Scan</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Scans all current working files</div>
-              </button>
-              <button
-                onClick={() => handleTriggerScan(triggerScanModal.id, 'GIT_HISTORY')}
-                className="w-full p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-left border border-slate-700 transition"
-              >
-                <div className="font-semibold text-white text-xs">Deep Git History Scan</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Inspects all commits and historical diffs</div>
-              </button>
-            </div>
-
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setTriggerScanModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal: Delete Repository Confirmation */}
       {deleteRepoModal && (

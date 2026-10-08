@@ -45,7 +45,7 @@ public class RepositoryScanController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         UUID actorId = principal != null ? principal.getId() : null;
-        ScanType scanType = request != null && request.scanType() != null ? request.scanType() : ScanType.INCREMENTAL;
+        ScanType scanType = request != null && request.scanType() != null ? request.scanType() : ScanType.FULL;
         String branch = request != null ? request.branch() : null;
 
         RepositoryScan scan = scanService.triggerRepositoryScan(workspaceId, repositoryId, scanType, branch, actorId);
