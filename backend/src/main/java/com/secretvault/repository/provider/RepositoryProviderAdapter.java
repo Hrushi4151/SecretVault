@@ -30,6 +30,10 @@ public interface RepositoryProviderAdapter {
 
     List<RemoteRepositoryDto> listRepositories(String token);
 
+    default List<RemoteRepositoryDto> listRepositories(String token, String username) {
+        return listRepositories(token);
+    }
+
     RemoteRepositoryDto getRepository(String owner, String name, String token);
 
     String buildAuthenticatedCloneUrl(String cloneUrl, String token);

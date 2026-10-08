@@ -30,16 +30,27 @@ public class RepositoryService {
     private final SecretFindingRepository findingRepo;
     private final EffectiveAccessService accessService;
     private final AuditService auditService;
+    private final com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry;
 
     public RepositoryService(
             RepositoryEntityRepository repositoryRepo,
             SecretFindingRepository findingRepo,
             EffectiveAccessService accessService,
             AuditService auditService) {
+        this(repositoryRepo, findingRepo, accessService, auditService, null);
+    }
+
+    public RepositoryService(
+            RepositoryEntityRepository repositoryRepo,
+            SecretFindingRepository findingRepo,
+            EffectiveAccessService accessService,
+            AuditService auditService,
+            com.secretvault.repository.provider.RepositoryProviderRegistry providerRegistry) {
         this.repositoryRepo = repositoryRepo;
         this.findingRepo = findingRepo;
         this.accessService = accessService;
         this.auditService = auditService;
+        this.providerRegistry = providerRegistry;
     }
 
     public record RepositorySummaryDto(
@@ -75,6 +86,22 @@ public class RepositoryService {
         RepositoryEntity repo = repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
         return toSummaryDto(repo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto> discoverRemoteRepositories(
+            UUID workspaceId,
+            RepositoryProvider provider,
+            String token,
+            String username,
+            UUID actorId) {
+
+        accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_VIEW);
+
+        RepositoryProvider effectiveProvider = provider != null ? provider : RepositoryProvider.GITHUB;
+        com.secretvault.repository.provider.RepositoryProviderAdapter adapter = providerRegistry.requireAdapter(effectiveProvider);
+
+        return adapter.listRepositories(token, username);
     }
 
     @Transactional

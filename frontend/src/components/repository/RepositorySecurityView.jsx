@@ -24,10 +24,14 @@ import {
   X,
   Filter,
   Trash2,
+  Sparkles,
+  Globe,
+  Key,
+  Check,
 } from 'lucide-react';
 
 export const RepositorySecurityView = () => {
-  const { activeWorkspace } = useAuth();
+  const { user, activeWorkspace } = useAuth();
   const workspaceId = activeWorkspace?.id;
 
   const [activeTab, setActiveTab] = useState('findings'); // 'findings' | 'repositories' | 'scans' | 'policies'
@@ -52,6 +56,16 @@ export const RepositorySecurityView = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionNotes, setActionNotes] = useState('');
   const [modalError, setModalError] = useState(null);
+
+  // GitHub Auto-Discovery States
+  const [connectMode, setConnectMode] = useState('discover'); // 'discover' | 'manual'
+  const [githubAccount, setGithubAccount] = useState('');
+  const [githubPat, setGithubPat] = useState('');
+  const [showPatInput, setShowPatInput] = useState(false);
+  const [discoveredRepos, setDiscoveredRepos] = useState([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryFilter, setDiscoveryFilter] = useState('');
+  const [selectedDiscoveredRepo, setSelectedDiscoveredRepo] = useState(null);
 
   // Onboarding Form
   const [newRepo, setNewRepo] = useState({
@@ -94,12 +108,68 @@ export const RepositorySecurityView = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleConnectRepository = async (e) => {
-    e.preventDefault();
+  const openConnectModal = () => {
+    setConnectRepoModal(true);
     setModalError(null);
+    setSelectedDiscoveredRepo(null);
+    setDiscoveryFilter('');
+    const initialAccount = githubAccount || (user?.email ? user.email.split('@')[0] : 'Hrushi4151');
+    setGithubAccount(initialAccount);
+    if (discoveredRepos.length === 0) {
+      handleFetchGitHubRepos(initialAccount, githubPat);
+    }
+  };
+
+  const handleFetchGitHubRepos = async (accountName = githubAccount, pat = githubPat) => {
+    const targetAccount = (accountName || '').trim();
+    if (!targetAccount && !pat) {
+      setModalError('Please enter a GitHub username/organization or a Personal Access Token.');
+      return;
+    }
+    setIsDiscovering(true);
+    setModalError(null);
+    try {
+      const res = await repositoryApi.discoverRemoteRepositories(workspaceId, {
+        provider: 'GITHUB',
+        username: targetAccount || undefined,
+        token: pat || undefined,
+      });
+      const list = res?.data || res || [];
+      const safeList = Array.isArray(list) ? list : [];
+      setDiscoveredRepos(safeList);
+      if (safeList.length === 0) {
+        setModalError(`No public repositories found for "${targetAccount}". If your repositories are private, please expand the PAT section and provide a GitHub Token.`);
+      }
+    } catch (err) {
+      setModalError(err.message || 'Failed to fetch repositories from GitHub');
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const handleSelectDiscoveredRepo = (repo) => {
+    setSelectedDiscoveredRepo(repo);
+    setNewRepo({
+      provider: 'GITHUB',
+      owner: repo.owner,
+      name: repo.name,
+      defaultBranch: repo.defaultBranch || 'main',
+      cloneUrl: repo.cloneUrl,
+      visibility: repo.visibility || (repo.isPrivate ? 'PRIVATE' : 'PUBLIC'),
+    });
+  };
+
+  const handleConnectRepository = async (e) => {
+    if (e) e.preventDefault();
+    setModalError(null);
+    if (!newRepo.owner || !newRepo.name || !newRepo.cloneUrl) {
+      setModalError('Please select or specify a repository to connect.');
+      return;
+    }
     try {
       await repositoryApi.connectRepository(workspaceId, newRepo);
       setConnectRepoModal(false);
+      setSelectedDiscoveredRepo(null);
       setNewRepo({
         provider: 'GITHUB',
         owner: '',
@@ -188,7 +258,7 @@ export const RepositorySecurityView = () => {
             Refresh
           </button>
           <button
-            onClick={() => setConnectRepoModal(true)}
+            onClick={openConnectModal}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold shadow-lg shadow-rose-950/40 transition"
           >
             <Plus className="w-4 h-4" />
@@ -628,15 +698,15 @@ export const RepositorySecurityView = () => {
       {/* Modal: Connect Repository */}
       {connectRepoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 text-slate-200 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 text-slate-200 shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <FolderGit2 className="w-5 h-5 text-rose-500" />
                   Connect Repository
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Onboard a Git repository for continuous secret detection
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Onboard a Git repository for continuous secret detection & leak prevention
                 </p>
               </div>
               <button
@@ -647,6 +717,34 @@ export const RepositorySecurityView = () => {
               </button>
             </div>
 
+            {/* Mode Switcher Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 mt-3">
+              <button
+                type="button"
+                onClick={() => setConnectMode('discover')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                  connectMode === 'discover'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                Auto-Fetch from GitHub
+              </button>
+              <button
+                type="button"
+                onClick={() => setConnectMode('manual')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                  connectMode === 'manual'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <FolderGit2 className="w-3.5 h-3.5" />
+                Manual URL Entry
+              </button>
+            </div>
+
             {modalError && (
               <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -654,97 +752,280 @@ export const RepositorySecurityView = () => {
               </div>
             )}
 
-            <form onSubmit={handleConnectRepository} className="flex flex-col gap-3 mt-4 text-xs">
-              <div>
-                <label className="text-slate-400">Provider</label>
-                <select
-                  value={newRepo.provider}
-                  onChange={(e) => setNewRepo({ ...newRepo, provider: e.target.value })}
-                  className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                >
-                  <option value="GITHUB">GitHub</option>
-                  <option value="GITLAB">GitLab</option>
-                  <option value="BITBUCKET">Bitbucket</option>
-                  <option value="AZURE_DEVOPS">Azure DevOps</option>
-                </select>
-              </div>
+            {/* Tab: Auto-Fetch from GitHub */}
+            {connectMode === 'discover' && (
+              <div className="flex flex-col gap-3 mt-3 text-xs">
+                {/* Account Fetch Toolbar */}
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col gap-2">
+                  <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                    GitHub Account / Username / Org
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="e.g. Hrushi4151 or email"
+                        value={githubAccount}
+                        onChange={(e) => setGithubAccount(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleFetchGitHubRepos(githubAccount, githubPat)}
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleFetchGitHubRepos(githubAccount, githubPat)}
+                      disabled={isDiscovering}
+                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center gap-1.5 border border-slate-700 shrink-0 transition"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-rose-400 ${isDiscovering ? 'animate-spin' : ''}`} />
+                      {isDiscovering ? 'Fetching...' : 'Fetch Repos'}
+                    </button>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-slate-400">Owner / Org</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. acme-corp"
-                    value={newRepo.owner}
-                    onChange={(e) => setNewRepo({ ...newRepo, owner: e.target.value })}
-                    className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                  {/* Optional PAT Toggle */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowPatInput(!showPatInput)}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 transition"
+                    >
+                      <Key className="w-3 h-3" />
+                      {showPatInput ? 'Hide Personal Access Token' : '+ Include Private Repos (Personal Access Token / PAT)'}
+                    </button>
+                    {showPatInput && (
+                      <div className="mt-2">
+                        <input
+                          type="password"
+                          placeholder="GitHub PAT (ghp_... with repo scope)"
+                          value={githubPat}
+                          onChange={(e) => setGithubPat(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 text-white font-mono text-xs focus:border-rose-500 focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Used strictly for discovering and scanning authorized repositories.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="text-slate-400">Repository Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. payment-service"
-                    value={newRepo.name}
-                    onChange={(e) => setNewRepo({ ...newRepo, name: e.target.value })}
-                    className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+
+                {/* Repository Listing & Selection */}
+                {discoveredRepos.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                        Select Repository ({discoveredRepos.length} found)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Search repos..."
+                        value={discoveryFilter}
+                        onChange={(e) => setDiscoveryFilter(e.target.value)}
+                        className="w-40 bg-slate-950/60 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                      {discoveredRepos
+                        .filter((r) => {
+                          const q = discoveryFilter.toLowerCase();
+                          return (
+                            r.name?.toLowerCase().includes(q) ||
+                            r.owner?.toLowerCase().includes(q) ||
+                            r.description?.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((repo) => {
+                          const isSelected =
+                            selectedDiscoveredRepo?.owner === repo.owner &&
+                            selectedDiscoveredRepo?.name === repo.name;
+                          return (
+                            <div
+                              key={repo.id || `${repo.owner}/${repo.name}`}
+                              onClick={() => handleSelectDiscoveredRepo(repo)}
+                              className={`p-3 rounded-xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                                isSelected
+                                  ? 'bg-rose-500/15 border-rose-500 text-white shadow-lg shadow-rose-950/30'
+                                  : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 text-slate-300 hover:bg-slate-800/40'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <FolderGit2 className={`w-4 h-4 shrink-0 ${isSelected ? 'text-rose-400' : 'text-slate-400'}`} />
+                                  <span className="font-semibold text-white text-xs truncate">
+                                    {repo.owner} / <span className="text-rose-400">{repo.name}</span>
+                                  </span>
+                                </div>
+                                {repo.description && (
+                                  <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                    {repo.description}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700/60 font-mono text-slate-300">
+                                  {repo.defaultBranch || 'main'}
+                                </span>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded font-mono font-medium ${
+                                    repo.isPrivate || repo.visibility === 'PRIVATE'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                      : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                                  }`}
+                                >
+                                  {repo.isPrivate || repo.visibility === 'PRIVATE' ? 'PRIVATE' : 'PUBLIC'}
+                                </span>
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
+                                    isSelected
+                                      ? 'bg-rose-500 border-rose-500 text-white'
+                                      : 'border-slate-700 bg-slate-900'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Repository Confirmation Card */}
+                {selectedDiscoveredRepo && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-semibold text-white">
+                        Selected: <span className="text-rose-400">{newRepo.owner}/{newRepo.name}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        Branch: <span className="font-mono text-slate-200">{newRepo.defaultBranch}</span> • Visibility: <span className="font-mono text-slate-200">{newRepo.visibility}</span>
+                      </div>
+                    </div>
+                    <span className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                    </span>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setConnectRepoModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleConnectRepository()}
+                    disabled={!selectedDiscoveredRepo}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold flex items-center gap-1.5 shadow-lg shadow-rose-950/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Connect {selectedDiscoveredRepo ? `${selectedDiscoveredRepo.name}` : 'Selected Repo'}
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div>
-                <label className="text-slate-400">Clone URL (HTTPS)</label>
-                <input
-                  type="text"
-                  placeholder="https://github.com/acme-corp/payment-service.git"
-                  value={newRepo.cloneUrl}
-                  onChange={(e) => setNewRepo({ ...newRepo, cloneUrl: e.target.value })}
-                  className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+            {/* Tab: Manual URL Entry */}
+            {connectMode === 'manual' && (
+              <form onSubmit={handleConnectRepository} className="flex flex-col gap-3 mt-4 text-xs">
                 <div>
-                  <label className="text-slate-400">Default Branch</label>
-                  <input
-                    type="text"
-                    value={newRepo.defaultBranch}
-                    onChange={(e) => setNewRepo({ ...newRepo, defaultBranch: e.target.value })}
-                    className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400">Visibility</label>
+                  <label className="text-slate-400">Provider</label>
                   <select
-                    value={newRepo.visibility}
-                    onChange={(e) => setNewRepo({ ...newRepo, visibility: e.target.value })}
+                    value={newRepo.provider}
+                    onChange={(e) => setNewRepo({ ...newRepo, provider: e.target.value })}
                     className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   >
-                    <option value="PRIVATE">PRIVATE</option>
-                    <option value="PUBLIC">PUBLIC</option>
-                    <option value="INTERNAL">INTERNAL</option>
+                    <option value="GITHUB">GitHub</option>
+                    <option value="GITLAB">GitLab</option>
+                    <option value="BITBUCKET">Bitbucket</option>
+                    <option value="AZURE_DEVOPS">Azure DevOps</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setConnectRepoModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold"
-                >
-                  Connect & Verify
-                </button>
-              </div>
-            </form>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-slate-400">Owner / Org</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. acme-corp"
+                      value={newRepo.owner}
+                      onChange={(e) => setNewRepo({ ...newRepo, owner: e.target.value })}
+                      className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-400">Repository Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. payment-service"
+                      value={newRepo.name}
+                      onChange={(e) => setNewRepo({ ...newRepo, name: e.target.value })}
+                      className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400">Clone URL (HTTPS)</label>
+                  <input
+                    type="text"
+                    placeholder="https://github.com/acme-corp/payment-service.git"
+                    value={newRepo.cloneUrl}
+                    onChange={(e) => setNewRepo({ ...newRepo, cloneUrl: e.target.value })}
+                    className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-slate-400">Default Branch</label>
+                    <input
+                      type="text"
+                      value={newRepo.defaultBranch}
+                      onChange={(e) => setNewRepo({ ...newRepo, defaultBranch: e.target.value })}
+                      className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-400">Visibility</label>
+                    <select
+                      value={newRepo.visibility}
+                      onChange={(e) => setNewRepo({ ...newRepo, visibility: e.target.value })}
+                      className="w-full mt-1 bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    >
+                      <option value="PRIVATE">PRIVATE</option>
+                      <option value="PUBLIC">PUBLIC</option>
+                      <option value="INTERNAL">INTERNAL</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setConnectRepoModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold"
+                  >
+                    Connect & Verify
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

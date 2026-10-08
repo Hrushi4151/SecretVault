@@ -27,6 +27,16 @@ export const repositoryApi = {
     });
   },
 
+  discoverRemoteRepositories: async (workspaceId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.provider) query.append('provider', params.provider);
+    if (params.token) query.append('token', params.token);
+    if (params.username) query.append('username', params.username);
+    return apiClient.request(`/workspaces/${workspaceId}/repositories/remote/discover?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+
   // Scans
   triggerScan: async (workspaceId, repositoryId, payload = {}) => {
     return apiClient.request(`/workspaces/${workspaceId}/repositories/${repositoryId}/scans`, {

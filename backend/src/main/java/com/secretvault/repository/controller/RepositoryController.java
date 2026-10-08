@@ -57,6 +57,21 @@ public class RepositoryController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
+    @GetMapping("/remote/discover")
+    @Operation(summary = "Discover remote repositories from connected SCM provider (e.g. GitHub)")
+    public ResponseEntity<ApiResponse<java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto>>> discoverRemoteRepositories(
+            @PathVariable UUID workspaceId,
+            @RequestParam(required = false, defaultValue = "GITHUB") com.secretvault.repository.model.RepositoryProvider provider,
+            @RequestParam(required = false) String token,
+            @RequestParam(required = false) String username,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto> repos = repositoryService.discoverRemoteRepositories(
+                workspaceId, provider, token, username, actorId);
+        return ResponseEntity.ok(ApiResponse.success(repos));
+    }
+
     @PostMapping
     @Operation(summary = "Connect a code repository for continuous secret scanning")
     public ResponseEntity<ApiResponse<RepositoryEntity>> connectRepository(

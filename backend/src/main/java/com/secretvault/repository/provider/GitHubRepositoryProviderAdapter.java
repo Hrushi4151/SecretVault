@@ -52,14 +52,15 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
 
     @Override
     public boolean validateConnection(String token) {
-        if (token == null || token.isBlank()) {
+        String effectiveToken = getEffectiveToken(token);
+        if (effectiveToken == null || effectiveToken.isBlank()) {
             return false;
         }
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(GITHUB_API_BASE + "/user"))
-                    .header("Authorization", "Bearer " + token.trim())
+                    .header("Authorization", "Bearer " + effectiveToken)
                     .header("Accept", "application/vnd.github+json")
                     .header("User-Agent", "SecretVault-RepoSecurity/1.0")
                     .GET()
@@ -76,22 +77,42 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
 
     @Override
     public List<RemoteRepositoryDto> listRepositories(String token) {
-        if (token == null || token.isBlank()) {
+        return listRepositories(token, null);
+    }
+
+    @Override
+    public List<RemoteRepositoryDto> listRepositories(String token, String username) {
+        String effectiveToken = getEffectiveToken(token);
+
+        String url;
+        if (effectiveToken != null && !effectiveToken.isBlank() && (username == null || username.isBlank())) {
+            url = GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated";
+        } else if (username != null && !username.isBlank()) {
+            String cleanUser = username.trim();
+            if (cleanUser.contains("@")) {
+                cleanUser = cleanUser.substring(0, cleanUser.indexOf("@"));
+            }
+            url = GITHUB_API_BASE + "/users/" + cleanUser + "/repos?per_page=100&sort=updated";
+        } else if (effectiveToken != null && !effectiveToken.isBlank()) {
+            url = GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated";
+        } else {
             return List.of();
         }
 
         List<RemoteRepositoryDto> results = new ArrayList<>();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated"))
-                    .header("Authorization", "Bearer " + token.trim())
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
                     .header("Accept", "application/vnd.github+json")
                     .header("User-Agent", "SecretVault-RepoSecurity/1.0")
                     .GET()
-                    .timeout(Duration.ofSeconds(15))
-                    .build();
+                    .timeout(Duration.ofSeconds(15));
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (effectiveToken != null && !effectiveToken.isBlank()) {
+                reqBuilder.header("Authorization", "Bearer " + effectiveToken);
+            }
+
+            HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 JsonNode arrayNode = objectMapper.readTree(response.body());
                 if (arrayNode.isArray()) {
@@ -101,7 +122,7 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                         String owner = repoNode.path("owner").path("login").asText();
                         String defaultBranch = repoNode.path("default_branch").asText("main");
                         String cloneUrl = repoNode.path("clone_url").asText();
-                        boolean isPrivate = repoNode.path("private").asBoolean(true);
+                        boolean isPrivate = repoNode.path("private").asBoolean(false);
                         String description = repoNode.path("description").asText("");
 
                         results.add(new RemoteRepositoryDto(
@@ -117,10 +138,10 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                     }
                 }
             } else {
-                log.warn("Failed to list GitHub repositories: HTTP {}", response.statusCode());
+                log.warn("Failed to list GitHub repositories from {}: HTTP {}", url, response.statusCode());
             }
         } catch (Exception e) {
-            log.error("Error discovering repositories from GitHub: {}", e.getMessage());
+            log.error("Error discovering repositories from GitHub URL {}: {}", url, e.getMessage());
         }
 
         return results;
@@ -128,6 +149,7 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
 
     @Override
     public RemoteRepositoryDto getRepository(String owner, String name, String token) {
+        String effectiveToken = getEffectiveToken(token);
         try {
             HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(GITHUB_API_BASE + "/repos/" + owner + "/" + name))
@@ -136,8 +158,8 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                     .GET()
                     .timeout(Duration.ofSeconds(10));
 
-            if (token != null && !token.isBlank()) {
-                reqBuilder.header("Authorization", "Bearer " + token.trim());
+            if (effectiveToken != null && !effectiveToken.isBlank()) {
+                reqBuilder.header("Authorization", "Bearer " + effectiveToken);
             }
 
             HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
@@ -148,7 +170,7 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                 String repoOwner = node.path("owner").path("login").asText();
                 String defaultBranch = node.path("default_branch").asText("main");
                 String cloneUrl = node.path("clone_url").asText();
-                boolean isPrivate = node.path("private").asBoolean(true);
+                boolean isPrivate = node.path("private").asBoolean(false);
                 String description = node.path("description").asText("");
 
                 return new RemoteRepositoryDto(
@@ -173,15 +195,27 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
     public String buildAuthenticatedCloneUrl(String cloneUrl, String token) {
         urlValidator.validateCloneUrl(cloneUrl);
 
-        if (token == null || token.isBlank()) {
+        String effectiveToken = getEffectiveToken(token);
+        if (effectiveToken == null || effectiveToken.isBlank()) {
             return cloneUrl;
         }
 
         // Convert https://github.com/owner/repo.git to https://x-access-token:<token>@github.com/owner/repo.git
         if (cloneUrl.startsWith("https://github.com/")) {
-            return "https://x-access-token:" + token.trim() + "@github.com/" + cloneUrl.substring("https://github.com/".length());
+            return "https://x-access-token:" + effectiveToken + "@github.com/" + cloneUrl.substring("https://github.com/".length());
         }
 
         return cloneUrl;
+    }
+
+    private String getEffectiveToken(String token) {
+        if (token != null && !token.isBlank()) {
+            return token.trim();
+        }
+        String envToken = System.getenv("GITHUB_TOKEN");
+        if (envToken != null && !envToken.isBlank()) {
+            return envToken.trim();
+        }
+        return System.getProperty("GITHUB_TOKEN");
     }
 }
