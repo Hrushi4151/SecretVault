@@ -83,26 +83,10 @@ public class LlmProviderRegistry {
             } catch (Exception ex) {
                 log.error("Active LLM provider [{}] failed: {}", primary.getProviderName(), ex.getMessage());
 
-                // Fallback is strictly disabled when operating in Gemini-exclusive mode
-                if (fallbackProviderName != null
-                        && !fallbackProviderName.equalsIgnoreCase("NONE")
-                        && !fallbackProviderName.equalsIgnoreCase("DISABLED")
-                        && !fallbackProviderName.equalsIgnoreCase(primary.getProviderName())) {
-                    LlmProvider fallback = resolveProviderByName(fallbackProviderName);
-                    if (fallback != null && fallback != primary && fallback.isAvailable()) {
-                        try {
-                            log.info("Attempting explicit fallback provider [{}]...", fallback.getProviderName());
-                            return fallback.generate(request);
-                        } catch (Exception fallbackEx) {
-                            log.error("Fallback LLM provider [{}] also failed: {}", fallback.getProviderName(), fallbackEx.getMessage());
-                        }
-                    }
-                }
-
-                // Strict Gemini-only rule: Never silently switch to Deterministic Offline or alternative models!
-                String errMsg = primary.getProviderName() + " is currently unavailable: "
+                // Strict Gemini-only rule: Never switch to Deterministic Offline or alternative models!
+                String errMsg = primary.getProviderName() + " error: "
                         + (ex.getMessage() != null ? ex.getMessage() : "Execution failure")
-                        + ". All other AI models are turned off; the Copilot did not silently switch to the offline engine. Please verify Gemini API key configuration.";
+                        + ". All other AI models are disabled; responses come exclusively from Gemini.";
                 return new LlmResponse(
                         errMsg,
                         0.0,

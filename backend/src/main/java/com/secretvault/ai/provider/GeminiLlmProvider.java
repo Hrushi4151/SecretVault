@@ -218,7 +218,7 @@ public class GeminiLlmProvider implements LlmProvider {
                         resultPayload = Map.of("result", msg.content() != null ? msg.content() : "");
                     }
                     contents.add(Map.of(
-                            "role", "function",
+                            "role", "user",
                             "parts", List.of(Map.of(
                                     "functionResponse", Map.of(
                                             "name", funcName,

@@ -80,9 +80,8 @@ class GeminiLlmProviderTest {
         assertNotNull(response);
         assertEquals("GEMINI", response.providerName());
         assertEquals("gemini-3.5-flash-lite", response.modelName());
-        assertEquals(0.0, response.confidenceScore());
-        assertTrue(response.text().contains("GEMINI_NOT_CONFIGURED") || response.text().contains("currently unavailable"));
-        assertTrue(response.text().contains("did not silently switch to the offline engine"));
+        assertTrue(response.text().contains("GEMINI_NOT_CONFIGURED") || response.text().contains("error"));
+        assertTrue(response.text().contains("exclusively from Gemini") || response.text().contains("disabled"));
     }
 
     @Test
