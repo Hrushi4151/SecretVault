@@ -12,17 +12,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Google Gemini Cloud LLM Provider.
- * Integrates natively with Google Cloud / Generative Language API (Gemini 1.5
- * Flash / Pro).
- * Enforces zero-plaintext invariants and zero disk/log persistence of runtime
- * API credentials.
+ * Integrates natively with Google Generative Language API (Gemini 3.5 Flash Lite / Pro).
+ * Enforces zero-plaintext invariants, server-side function calling, and zero disk/log persistence
+ * of runtime API credentials.
  */
 @Component
 public class GeminiLlmProvider implements LlmProvider {
@@ -56,7 +52,7 @@ public class GeminiLlmProvider implements LlmProvider {
         this.defaultTemperature = defaultTemperature;
         this.defaultMaxTokens = defaultMaxTokens > 0 ? defaultMaxTokens : 2048;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(Math.min(5, this.timeoutSeconds)))
+                .connectTimeout(Duration.ofSeconds(Math.min(10, this.timeoutSeconds)))
                 .build();
         this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
     }
@@ -65,7 +61,7 @@ public class GeminiLlmProvider implements LlmProvider {
     public LlmResponse generate(LlmRequest request) {
         if (!isConfigured()) {
             throw new IllegalStateException(
-                    "Gemini LLM Provider is not configured (missing runtime AI_GEMINI_API_KEY)");
+                    "GEMINI_NOT_CONFIGURED: Missing runtime AI_GEMINI_API_KEY environment variable.");
         }
 
         long start = System.currentTimeMillis();
@@ -73,8 +69,7 @@ public class GeminiLlmProvider implements LlmProvider {
             Map<String, Object> payload = buildGeminiPayload(request);
             String requestBody = objectMapper.writeValueAsString(payload);
 
-            String endpointUrl = String.format("%s/v1beta/models/%s:generateContent?key=%s", baseUrl, modelName,
-                    apiKey);
+            String endpointUrl = String.format("%s/v1beta/models/%s:generateContent?key=%s", baseUrl, modelName, apiKey);
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(endpointUrl))
@@ -87,14 +82,33 @@ public class GeminiLlmProvider implements LlmProvider {
             long latency = System.currentTimeMillis() - start;
 
             if (response.statusCode() != 200) {
-                log.warn("Gemini API returned HTTP status {}: [REDACTED_ERROR_BODY]", response.statusCode());
-                throw new IllegalStateException("Gemini API returned HTTP " + response.statusCode());
+                int status = response.statusCode();
+                String errSummary = "HTTP " + status;
+                try {
+                    JsonNode errNode = objectMapper.readTree(response.body());
+                    if (errNode.has("error") && errNode.get("error").has("message")) {
+                        errSummary = errNode.get("error").get("message").asText();
+                    }
+                } catch (Exception ignored) {
+                }
+
+                if (status == 401 || status == 403) {
+                    throw new IllegalStateException("GEMINI_AUTH_ERROR: Invalid or unauthorized Gemini API key (" + errSummary + ")");
+                } else if (status == 404) {
+                    throw new IllegalStateException("GEMINI_MODEL_NOT_FOUND: Model '" + modelName + "' not found on Gemini API (" + errSummary + ")");
+                } else if (status == 429) {
+                    throw new IllegalStateException("GEMINI_RATE_LIMIT_EXCEEDED: Rate limit reached on Gemini API (" + errSummary + ")");
+                } else if (status >= 500) {
+                    throw new IllegalStateException("GEMINI_SERVICE_UNAVAILABLE: Google Generative Language service error (" + errSummary + ")");
+                } else {
+                    throw new IllegalStateException("GEMINI_API_ERROR: HTTP " + status + " - " + errSummary);
+                }
             }
 
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode candidatesNode = root.path("candidates");
             if (!candidatesNode.isArray() || candidatesNode.isEmpty()) {
-                throw new IllegalStateException("Gemini API returned no candidates");
+                throw new IllegalStateException("Gemini API returned no response candidates");
             }
 
             JsonNode firstCandidate = candidatesNode.get(0);
@@ -110,7 +124,9 @@ public class GeminiLlmProvider implements LlmProvider {
                     }
                     if (part.has("functionCall")) {
                         JsonNode funcCall = part.path("functionCall");
-                        String toolName = funcCall.path("name").asText();
+                        String rawToolName = funcCall.path("name").asText();
+                        // Map underscore function names back to canonical dot format if applicable
+                        String toolName = rawToolName.replace("_", ".");
                         Map<String, Object> args = new HashMap<>();
                         JsonNode argsNode = funcCall.path("args");
                         if (argsNode.isObject()) {
@@ -136,7 +152,7 @@ public class GeminiLlmProvider implements LlmProvider {
 
             return new LlmResponse(
                     textResponse.toString(),
-                    0.95,
+                    0.96,
                     promptTokens + candidateTokens,
                     latency,
                     PROVIDER_NAME,
@@ -158,30 +174,44 @@ public class GeminiLlmProvider implements LlmProvider {
                     "parts", List.of(Map.of("text", request.systemPrompt()))));
         }
 
-        // 2. Contents / Conversation History
+        // 2. Contents / Multi-Turn Conversation History
         List<Map<String, Object>> contents = new ArrayList<>();
 
         if (request.conversationHistory() != null && !request.conversationHistory().isEmpty()) {
             for (ChatMessage msg : request.conversationHistory()) {
-                String role = "user";
-                if ("ASSISTANT".equalsIgnoreCase(msg.role()) || "model".equalsIgnoreCase(msg.role())) {
-                    role = "model";
-                } else if ("TOOL".equalsIgnoreCase(msg.role()) || "function".equalsIgnoreCase(msg.role())) {
-                    role = "function";
-                }
-
-                if ("function".equals(role)) {
+                String role = msg.role() != null ? msg.role().toLowerCase() : "user";
+                if ("assistant".equals(role) || "model".equals(role)) {
+                    if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
+                        List<Map<String, Object>> parts = new ArrayList<>();
+                        for (AiToolCall tc : msg.toolCalls()) {
+                            Map<String, Object> fc = new HashMap<>();
+                            fc.put("name", tc.name() != null ? tc.name().replace(".", "_") : "tool");
+                            fc.put("args", tc.arguments() != null ? tc.arguments() : Map.of());
+                            parts.add(Map.of("functionCall", fc));
+                        }
+                        contents.add(Map.of("role", "model", "parts", parts));
+                    } else {
+                        contents.add(Map.of("role", "model", "parts", List.of(Map.of("text", msg.content() != null ? msg.content() : ""))));
+                    }
+                } else if ("tool".equals(role) || "function".equals(role)) {
+                    String funcName = msg.toolName() != null ? msg.toolName().replace(".", "_") : "tool";
+                    Object resultPayload;
+                    try {
+                        resultPayload = objectMapper.readValue(msg.content(), Map.class);
+                    } catch (Exception ignored) {
+                        resultPayload = Map.of("result", msg.content() != null ? msg.content() : "");
+                    }
                     contents.add(Map.of(
                             "role", "function",
                             "parts", List.of(Map.of(
                                     "functionResponse", Map.of(
-                                            "name", msg.toolName() != null ? msg.toolName() : "unknown_tool",
-                                            "response",
-                                            Map.of("result", msg.content() != null ? msg.content() : ""))))));
+                                            "name", funcName,
+                                            "response", Map.of("result", resultPayload)
+                                    )
+                            ))
+                    ));
                 } else {
-                    contents.add(Map.of(
-                            "role", role,
-                            "parts", List.of(Map.of("text", msg.content() != null ? msg.content() : ""))));
+                    contents.add(Map.of("role", "user", "parts", List.of(Map.of("text", msg.content() != null ? msg.content() : ""))));
                 }
             }
         } else if (request.userPrompt() != null && !request.userPrompt().isBlank()) {
@@ -202,10 +232,12 @@ public class GeminiLlmProvider implements LlmProvider {
             List<Map<String, Object>> funcDeclarations = new ArrayList<>();
             for (var tool : request.availableTools()) {
                 Map<String, Object> decl = new HashMap<>();
-                decl.put("name", tool.name().replace(".", "_")); // Gemini preferred function naming format
-                decl.put("description", tool.description());
-                if (tool.parameterSchema() != null) {
+                decl.put("name", tool.name().replace(".", "_"));
+                decl.put("description", tool.description() != null ? tool.description() : tool.name());
+                if (tool.parameterSchema() != null && !tool.parameterSchema().isEmpty()) {
                     decl.put("parameters", tool.parameterSchema());
+                } else {
+                    decl.put("parameters", Map.of("type", "OBJECT", "properties", Map.of()));
                 }
                 funcDeclarations.add(decl);
             }
@@ -227,21 +259,7 @@ public class GeminiLlmProvider implements LlmProvider {
 
     @Override
     public boolean isAvailable() {
-        if (!isConfigured()) {
-            return false;
-        }
-        try {
-            String testUrl = String.format("%s/v1beta/models/%s?key=%s", baseUrl, modelName, apiKey);
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(testUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .GET()
-                    .build();
-            HttpResponse<Void> resp = httpClient.send(req, HttpResponse.BodyHandlers.discarding());
-            return resp.statusCode() == 200;
-        } catch (Exception e) {
-            return false;
-        }
+        return isConfigured();
     }
 
     @Override

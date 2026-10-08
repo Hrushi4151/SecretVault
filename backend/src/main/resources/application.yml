@@ -109,8 +109,8 @@ secretvault:
     allow-origin-port: true
     clone-detection-action: BLOCK
   ai:
-    provider: ${AI_PROVIDER:OLLAMA}
-    fallback-provider: ${AI_FALLBACK_PROVIDER:DETERMINISTIC_OFFLINE}
+    provider: ${AI_PROVIDER:GEMINI}
+    fallback-provider: ${AI_FALLBACK_PROVIDER:NONE}
     ollama:
       base-url: ${AI_OLLAMA_BASE_URL:http://localhost:11434}
       model: ${AI_OLLAMA_MODEL:qwen3:8b}

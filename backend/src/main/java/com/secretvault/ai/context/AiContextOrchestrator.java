@@ -196,6 +196,8 @@ public class AiContextOrchestrator {
 
             // Execute requested tools
             boolean anyToolExecuted = false;
+            messages.add(ChatMessage.assistantWithToolCalls(response.text() != null ? response.text() : "", toolCalls));
+
             for (AiToolCall tc : toolCalls) {
                 if (totalToolCallsCount >= MAX_TOOL_CALLS) {
                     log.warn("AI Copilot exceeded maximum tool call budget ({})", MAX_TOOL_CALLS);
@@ -228,8 +230,7 @@ public class AiContextOrchestrator {
                     extractResourcesAndActionsFromToolResult(tc.name(), result.outputJson(), workspaceId, collectedResources, collectedActions);
                 }
 
-                // Append assistant tool intent and tool result to conversation messages for next reasoning turn
-                messages.add(new ChatMessage("assistant", "Invoking tool `" + tc.name() + "` with arguments " + tc.arguments()));
+                // Append tool result message for next reasoning turn
                 messages.add(ChatMessage.tool(tc.id() != null ? tc.id() : tc.name(), tc.name(), result.outputJson()));
             }
 

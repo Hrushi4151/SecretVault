@@ -189,7 +189,7 @@ The `AiPlatformKnowledgeService` provides the LLM with deep architectural facts 
 | Variable | Property | Default | Description |
 |---|---|---|---|
 | `AI_PROVIDER` | `secretvault.ai.provider` | `GEMINI` | Active LLM provider (`GEMINI`, `DETERMINISTIC_OFFLINE`, `OLLAMA`, `OPENAI_COMPATIBLE`) |
-| `AI_FALLBACK_PROVIDER` | `secretvault.ai.fallback-provider` | `DETERMINISTIC_OFFLINE` | Fallback provider on primary failure |
+| `AI_FALLBACK_PROVIDER` | `secretvault.ai.fallback-provider` | `NONE` | Fallback provider (`NONE` prevents silent fallback to offline engine when Gemini fails) |
 | `AI_GEMINI_API_KEY` | `secretvault.ai.gemini.api-key` | `""` | Google Gemini Cloud API Key (loaded from environment) |
 | `AI_GEMINI_MODEL` | `secretvault.ai.gemini.model` | `gemini-3.5-flash-lite` | Gemini model name (`gemini-3.5-flash-lite`, `gemini-1.5-flash`) |
 | `AI_GEMINI_BASE_URL` | `secretvault.ai.gemini.base-url` | `https://generativelanguage.googleapis.com` | Gemini API endpoint |
