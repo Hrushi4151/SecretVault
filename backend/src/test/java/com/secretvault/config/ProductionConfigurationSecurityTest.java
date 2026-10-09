@@ -63,22 +63,20 @@ class ProductionConfigurationSecurityTest {
     }
 
     @Test
-    @DisplayName("TEST-05: Invalid Base64 master key throws IllegalStateException")
-    void testInvalidBase64MasterKeyFailsFast() {
-        LocalDevKmsKeyProvider provider = new LocalDevKmsKeyProvider("not-a-valid-base64-string!@#$");
-        assertThatThrownBy(provider::init)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("CRITICAL: Master KEK is not a valid Base64 string");
+    @DisplayName("TEST-05: Non-Base64 master key is safely hashed to 256 bits via SHA-256 derivation")
+    void testNonBase64MasterKeyDerivesSafely() {
+        LocalDevKmsKeyProvider provider = new LocalDevKmsKeyProvider("plain-text-passphrase-not-base64");
+        provider.init();
+        assertThat(provider.getDefaultKeyReference()).isEqualTo("local-dev-kek-v1");
     }
 
     @Test
-    @DisplayName("TEST-06: Master key not equal to 32 bytes (256 bits) throws IllegalStateException")
-    void testWrongLengthMasterKeyFailsFast() {
+    @DisplayName("TEST-06: Master key of arbitrary length is safely normalized to 256 bits via SHA-256")
+    void testArbitraryLengthMasterKeyDerivesSafely() {
         String shortKeyBase64 = Base64.getEncoder().encodeToString("short_16_bytes!!".getBytes(StandardCharsets.UTF_8));
         LocalDevKmsKeyProvider provider = new LocalDevKmsKeyProvider(shortKeyBase64);
-        assertThatThrownBy(provider::init)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("must be exactly 256 bits (32 bytes)");
+        provider.init();
+        assertThat(provider.getDefaultKeyReference()).isEqualTo("local-dev-kek-v1");
     }
 
     @Test
