@@ -256,6 +256,7 @@ public class RepositoryScanService {
             // Check if finding already exists in this repository
             Optional<SecretFinding> existingFindingOpt = findingRepository.findByWorkspaceIdAndRepositoryIdAndFingerprint(
                     scan.getWorkspaceId(), scan.getRepositoryId(), result.fingerprint());
+            boolean isNew = existingFindingOpt.isEmpty();
 
             SecretFinding finding;
             if (existingFindingOpt.isPresent()) {
@@ -289,19 +290,21 @@ public class RepositoryScanService {
                 finding.setMatchedSecretId(matchedSecretId);
                 finding.setFirstSeenAt(Instant.now());
                 finding.setLastSeenAt(Instant.now());
+            }
 
+            SecretFinding savedFinding = findingRepository.save(finding);
+            persistedFindings.add(savedFinding);
+
+            if (isNew) {
                 auditService.record(
                         scan.getWorkspaceId(),
                         actorId,
                         AuditAction.FINDING_CREATED,
                         "SECRET_FINDING",
-                        finding.getFingerprint(),
+                        savedFinding.getId().toString(),
                         Map.of("secretType", finding.getSecretType().name(), "severity", finding.getSeverity().name())
                 );
             }
-
-            SecretFinding savedFinding = findingRepository.save(finding);
-            persistedFindings.add(savedFinding);
 
             // Record Occurrence
             SecretFindingOccurrence occ = new SecretFindingOccurrence();

@@ -2,7 +2,9 @@ package com.secretvault.repository.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.secretvault.auth.security.UserPrincipal;
 import com.secretvault.common.dto.ApiResponse;
+import com.secretvault.common.exception.ApiException;
 import com.secretvault.repository.entity.RepositoryEntity;
 import com.secretvault.repository.model.ScanType;
 import com.secretvault.repository.repository.RepositoryEntityRepository;
@@ -14,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -152,7 +155,7 @@ public class GitHubRepositoryWebhookController {
             @RequestBody(required = false) String payload
     ) {
         RepositoryEntity repo = repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
+                .orElseThrow(() -> ApiException.notFound("Repository not found: " + repositoryId));
 
         String commitSha = "";
         String branch = repo.getDefaultBranch();
@@ -201,12 +204,14 @@ public class GitHubRepositoryWebhookController {
     @Operation(summary = "Check for new commits on GitHub and trigger an immediate scan")
     public ResponseEntity<ApiResponse<Map<String, Object>>> syncAndScanRepository(
             @PathVariable UUID workspaceId,
-            @PathVariable UUID repositoryId
+            @PathVariable UUID repositoryId,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
+        UUID actorId = principal != null ? principal.getId() : null;
         RepositoryEntity repo = repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
+                .orElseThrow(() -> ApiException.notFound("Repository not found: " + repositoryId));
 
-        boolean updated = syncService.checkAndScanIfUpdated(repo, null);
+        boolean updated = syncService.checkAndScanIfUpdated(repo, actorId);
 
         if (!updated) {
             // Force a full scan if no new commit was detected but user requested sync
@@ -215,7 +220,7 @@ public class GitHubRepositoryWebhookController {
                     repositoryId,
                     ScanType.FULL,
                     repo.getDefaultBranch(),
-                    null
+                    actorId
             );
         }
 

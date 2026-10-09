@@ -118,6 +118,11 @@ public class AuditService {
             }
         } catch (IllegalArgumentException ignored) {}
 
+        if (resourceUuid == null) {
+            String seed = (resourceType != null ? resourceType : "RESOURCE") + ":" + (resourceIdentifier != null ? resourceIdentifier : UUID.randomUUID().toString());
+            resourceUuid = UUID.nameUUIDFromBytes(seed.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
         return recordAudit(null, workspaceId, actorId, "USER", action, resourceType, resourceUuid, null, null, "SUCCESS");
     }
 

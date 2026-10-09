@@ -145,7 +145,7 @@ class RepositoryWebhookAndCommitSyncTest {
         when(repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId))
                 .thenReturn(Optional.of(testRepo));
 
-        ResponseEntity<ApiResponse<Map<String, Object>>> response = webhookController.syncAndScanRepository(workspaceId, repositoryId);
+        ResponseEntity<ApiResponse<Map<String, Object>>> response = webhookController.syncAndScanRepository(workspaceId, repositoryId, null);
 
         assertEquals(200, response.getStatusCode().value());
         verify(scanService, atLeastOnce()).triggerRepositoryScan(
