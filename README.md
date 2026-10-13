@@ -1,596 +1,777 @@
-# SecretVault
+<div align="center">
 
-> A secure DevSecOps control plane for managing application secrets once and synchronizing them across the platforms where software runs.
+# 🔐 SecretVault
 
-SecretVault gives engineering teams one place to manage secrets, environments, access, synchronization, security posture, and operational evidence. It is designed for application secrets—not as a consumer password manager—and treats projects, environments, providers, deployments, and auditability as first-class concepts.
+### Enterprise DevSecOps Secrets Management Platform
 
-> **Status:** Product specification and implementation foundation. Sections marked **Roadmap** describe intended future capabilities, not functionality that is already available.
+[![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-## Architecture at a glance
+**One control plane. Zero-trust encryption. Every secret. Every cloud.**
 
-```text
-People, CI/CD, and future CLI
-             │  authenticated, authorized requests
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                         SecretVault                          │
-│  React web app → Spring Boot services → PostgreSQL / Redis   │
-│       │                 │                   │                │
-│       │                 ├─ encrypted secret versions          │
-│       │                 ├─ audit & security events            │
-│       │                 └─ asynchronous sync jobs             │
-│       │                                     │                 │
-│       │                         provider adapter layer        │
-│       └─────────────────────────────────────┼─────────────────┘
-└─────────────────────────────────────────────┼─────────────────┘
-                                              ▼
-                         Vercel · AWS · Railway · Render
-                         Netlify · GitHub · future providers
+*A production-grade, zero-plaintext DevSecOps platform for managing, synchronizing, rotating, and auditing secrets across multi-cloud infrastructure — powered by an AI Security Copilot.*
 
-Python/FastAPI services support future security and AI analysis. AI receives only the minimum authorized operational context; it is never the system of record for secret values.
-```
-
-## The problem
-
-Modern software commonly spreads the same credential between a local `.env` file, staging hosting, production cloud infrastructure, CI/CD, background workers, and developer machines. That leads to duplicate secrets, out-of-date values, slow and error-prone rotations, unclear ownership, and little evidence of who accessed or changed something.
-
-It also creates configuration drift: for example, the central `DATABASE_URL` may be at version 5 while a deployment provider still uses version 4. Conventional stores may protect the value itself, but often leave teams without a unified view of drift, aging credentials, risky access patterns, integration health, or potential exposure.
-
-## The solution
-
-SecretVault is the central control plane between a team and its infrastructure providers:
-
-```text
-Developer / CI
-      │
-      ▼
-SecretVault: encrypted store + versions + RBAC + audit + security
-      │
-      ▼
-Async synchronization engine
-      │
-      ├── Vercel
-      ├── AWS
-      ├── Railway
-      ├── Render
-      ├── Netlify
-      └── GitHub
-```
-
-The system stores the authoritative secret version, records sensitive actions, and uses explicit project/environment mappings to synchronize safely. It never assumes a provider can reveal plaintext values in order to assess drift.
-
-## Product pillars
-
-1. **Secure secret management** — encrypted values, metadata, versions, controlled reveal, rotation, rollback, import, and deletion.
-2. **Multi-platform integrations** — a provider-adapter model so platforms can be connected without coupling the core domain to one vendor.
-3. **Reliable synchronization** — queued jobs, status tracking, verification, safe retries, and drift detection.
-4. **Security intelligence** — visibility into exposure, age, access, configuration health, and risk.
-5. **AI-assisted operations** — evidence-based explanations and recommendations, with human authorization for actions.
-
-## Core product model
-
-```text
-Organization
-├── Members and organization policies
-├── Projects
-│   └── Environments: Development, Staging, Production
-│       ├── Secrets and version history
-│       ├── Explicit provider mappings
-│       ├── Synchronization state
-│       └── Security findings
-├── Integrations
-└── Audit history
-```
-
-- An **organization** represents a company or team and owns members, policies, projects, integrations, and audit history.
-- A **project** represents an application, such as an API, web app, or mobile backend.
-- An **environment** scopes secrets and provider mappings. Initial environments are Development, Staging, and Production; custom environments are **Roadmap**.
-- A **secret** has encrypted value material plus metadata: ID, name, description, tags, environment, current version, timestamps, creator, last-access information, risk, and synchronization status.
-
-Secret search and global search operate on authorized metadata—not plaintext secret values—and must respect organization, project, and environment permissions.
-
-## Core features
-
-### Secret management
-
-- Create secrets with a name, value, description, environment, and tags.
-- Store values encrypted; plaintext secret values must never be stored in PostgreSQL.
-- Create a new version for every update. Do not silently overwrite history.
-- Support current and prior versions for safe change tracking and rollback.
-- Provide controlled rotation, revocation, and deletion workflows.
-- Import `.env` files after parsing and user confirmation; avoid showing values more than necessary.
-- Mask values by default. Reveal requires re-authentication and MFA where configured, is temporary, and is audited.
-- Permit export only where explicitly authorized; broad production-secret exports are not a casual action.
-
-### Secret lifecycle
-
-```text
-Create → Encrypt & store → Version → Sync → Use
-                    ↑                         │
-                    └── Update / Rotate ──────┘
-                                      ↓
-                              Revoke → Delete
-```
-
-Every sensitive transition—including create, update, reveal, rotate, sync, revoke, and delete—creates an audit event without recording the secret value.
-
-### Roles and access control (RBAC)
-
-Initial organization roles:
-
-| Role | Intended responsibility |
-|---|---|
-| `OWNER` | Organization ownership, policies, and highest-risk administration |
-| `ADMIN` | Team, integrations, and operational administration |
-| `DEVELOPER` | Day-to-day approved project/environment secret work |
-| `VIEWER` | Authorized visibility without secret-changing authority |
-
-Permissions evolve toward granular scopes such as `secret.read`, `secret.create`, `secret.update`, `secret.delete`, `secret.reveal`, `secret.rotate`, `integration.manage`, `sync.execute`, `audit.read`, `security.read`, `team.manage`, and `organization.manage`.
-
-Access is scoped further by project and environment. A developer may have read/write access to Development and Staging while having no Production access. Production reveal, deletion, export, and rotation should receive heightened protection.
-
-### Integrations and mappings
-
-Initial planned providers are Vercel, AWS, Railway, Render, Netlify, and GitHub. Providers are represented through a common adapter boundary with capabilities such as testing a connection, discovering projects/environments, synchronizing or deleting a secret, and reporting health.
-
-Connection flow: select provider → authenticate → select account and provider project → map a SecretVault project/environment → confirm permissions. Mappings must be explicit; no provider project or environment should be inferred silently.
-
-**Roadmap:** Azure, Google Cloud, Kubernetes, Cloudflare, Fly.io, and GitLab.
-
-### Synchronization and drift detection
-
-Sync is asynchronous so a browser does not wait on a provider operation:
-
-```text
-Requested → queued → worker loads value securely → provider update
-         → verification → audit event → completed or failed
-```
-
-Job states: `PENDING`, `RUNNING`, `SYNCED`, `FAILED`, `RETRYING`, `SKIPPED`, and `CANCELLED`.
-
-Transient errors should retry with exponential backoff. Authentication, permission, validation, rate-limit, network, outage, and unknown failures are classified so users can act on the real cause. Permanent failures must not retry forever.
-
-Drift reports whether the intended central state differs from observable provider state: `SYNCED`, `DRIFTED`, `MISSING`, or `UNKNOWN`. Since providers may not expose plaintext, comparison should rely on safe evidence such as version metadata, timestamps, provider metadata, hashes where appropriate, and observable status—not by retrieving or logging provider values.
-
-### Security intelligence
-
-Security views are intended to surface secret hygiene, rotation age, access control, synchronization health, leak protection, and risk severity. Risk can incorporate age, environment, privilege, exposure indicators, access frequency, rotation status, drift, and provider configuration.
-
-**Roadmap:**
-
-- Detection of likely leaked credentials in connected repositories, commits, files, and safely-integrated CI signals using patterns, entropy, contextual analysis, and classification.
-- Leak remediation workflow: investigate → rotate/revoke → remove exposure → verify → resolve.
-- Access anomaly detection based on baselines and evidence, especially for production access.
-- Actionable recommendations such as rotating old credentials, enabling MFA, reducing unnecessary production access, reconnecting stale integrations, or resolving drift.
-
-Findings must never display the exposed credential itself.
-
-### AI features
-
-**Roadmap:** An AI assistant answers authorized operational questions such as “Which production secrets need rotation?”, “Why did sync fail?”, and “Which projects have drift?” Responses should present a summary, evidence, risk, recommended next action, and related resources.
-
-AI analysis may help summarize posture, investigate sync failures, and perform deployment root-cause analysis from authorized events, changes, jobs, and provider signals. It must not:
-
-- become the secret-value storage layer;
-- receive secret plaintext as routine context;
-- bypass RBAC or reveal resources a user cannot access; or
-- execute remediation, particularly in production, without explicit authorization.
-
-### Audit and notifications
-
-Audit records cover actions such as secret create/update/reveal/rotate/delete, integration connect/disconnect, sync lifecycle, invitations and role changes, and API-key lifecycle. An event records actor, action, resource, project, environment, timestamp, request ID, and result—never a secret value.
-
-**Roadmap:** configurable in-app, email, Slack, and webhook notifications for critical exposures, risks, drift, sync failure, integration health, and relevant team events.
-
-### API keys and CLI
-
-API keys are intended for automation, CI/CD, infrastructure tooling, and a future CLI. Keys have a name, scopes, creation date, expiration, last-used time, and status. Their full value is shown only once.
-
-**CLI roadmap:** authenticated retrieval/injection for approved environments, scoped automation, safe sync triggers, and CI/CD-friendly status checks. CLI design must preserve least privilege and must not encourage printing values to logs.
-
-## Complete product experience — 54 screens
-
-The following is the complete planned product surface. It is a screen specification for implementation and design; it does **not** mean every item is part of the MVP. Items marked **Roadmap** are future work. The product must feel like a DevSecOps control plane—dense but understandable operational information—not a generic password manager.
-
-### Access, onboarding, and global workspace
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 1 | Sign in | Email/password access; later OAuth choices. Clear error, loading, and account-recovery paths. | MVP |
-| 2 | Create account | Account creation and acceptance of required terms/policies. | MVP |
-| 3 | Onboarding | Create or select an organization, then guide the user to create a first project or connect a provider. | MVP |
-| 4 | Dashboard | Organization-wide security score, project/secret/platform counts, sync health, high-priority findings, quick actions, and recent activity. | MVP |
-| 5 | Organization switcher | Switch only among organizations the user is authorized to access; never expose unauthorized organization metadata. | MVP |
-| 6 | Project switcher | Quickly choose an authorized project and preserve environment context. | MVP |
-| 7 | Global search | Search authorized projects, secret metadata, integrations, audit events, and findings. Never search plaintext values. | MVP |
-| 8 | Command palette | Keyboard-first actions: create secret/project, connect provider, synchronize, open audit/security views, and future AI queries. | MVP |
-| 9 | Notification center | Display actionable alerts with severity, resource, and resolution path. | Roadmap |
-| 10 | Help and documentation | In-product guidance, provider setup explanation, security warnings, and support links. | MVP |
-
-### Project and environment management
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 11 | Projects | Searchable cards/table with project name, environments, secret count, integrations, health, and warnings. | MVP |
-| 12 | Create project | Name, description, and initial Development/Staging/Production environments. | MVP |
-| 13 | Project overview | Security score, secret/platform counts, last sync, environment navigation, connected providers, quick actions, and recent activity. | MVP |
-| 14 | Environment overview | Environment tabs, counts for secrets/platforms/drift, and actions to add, import, or synchronize secrets. | MVP |
-| 15 | Project health | Dedicated health view showing secrets, integration health, drift, security posture, and last synchronization. | Roadmap |
-
-### Secret management
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 16 | Secrets list | Filter/search by name, tag, environment, provider, risk, and status. Columns include name, type, version, last update, sync status, risk, and actions. Values remain masked. | MVP |
-| 17 | Create secret | Name, masked value entry, description, environment, tags, validation, and clear warning that value is not shown casually after submission. | MVP |
-| 18 | Import `.env` | Parse a selected `.env`, show detected names/metadata for confirmation, and import only after user review. Avoid presenting values unnecessarily. | MVP |
-| 19 | Secret details | Masked value, metadata, current version, platform states, risk, usage context, activity, and authorized actions: reveal, edit, rotate, delete. | MVP |
-| 20 | Reveal-secret confirmation | Re-authentication and MFA where configured; explain that revealing is temporary and audited. | MVP |
-| 21 | Edit secret / new version | Change value or authorized metadata; every value update creates a version rather than overwriting history. | MVP |
-| 22 | Secret versions | Current, prior, and archived versions with timestamps, actor, metadata, and safe rollback/compare actions. Never casually show historical plaintext. | MVP |
-| 23 | Rotation workflow | Generate or accept a replacement credential, create a new version, queue sync, show provider verification, and preserve an audit trail. | MVP |
-| 24 | Secret activity | Timeline of updates, reveals, sync attempts, retries, rotations, and other value-free events. | MVP |
-| 25 | Delete/revoke confirmation | High-friction confirmation for destructive action, affected providers, authorization check, and audit warning. | MVP |
-| 26 | Controlled export | Explicitly scoped export with elevated permissions and safety warning; broad production exports are not a default flow. | Roadmap |
-
-### Integrations and synchronization
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 27 | Integration marketplace | Provider cards grouped by hosting, cloud, CI/CD, and infrastructure; show connected state and supported capability. | MVP |
-| 28 | Connect provider | Select OAuth/API token/access-key approach as supported; display requested provider permissions before authorization. | MVP |
-| 29 | Provider details | Connection health, selected account, mapped projects, last sync, drift/issue summary, test connection, sync, and disconnect actions. | MVP |
-| 30 | Project/environment mapping | Map a SecretVault project and environment explicitly to the provider project/environment; no implicit mapping. | MVP |
-| 31 | Sync center | Organization-wide synchronization percentage, active/failed/completed jobs, filters, and per-job status. | MVP |
-| 32 | Sync job details | Job ID, project/environment/provider, progress, each secret’s safe status, retry information, and request correlation. | MVP |
-| 33 | Failed synchronizations | Failed jobs grouped by classified cause—authentication, permission, validation, rate limit, network, outage, or unknown—with reconnect/retry guidance. | MVP |
-| 34 | Drift detection | Central versus observable provider state, with `SYNCED`, `DRIFTED`, `MISSING`, or `UNKNOWN` and an authorized “sync latest” action. | MVP |
-
-### Security and audit
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 35 | Security overview | Score and breakdown for secret age, rotation, access control, sync health, and leak protection; prioritize critical/high findings. | Roadmap |
-| 36 | Risk center | Findings by severity with safe explanation: age, privilege, environment, access, exposure indicator, rotation state, or drift. | Roadmap |
-| 37 | Secret leaks | Potential exposures in authorized, connected sources; show repository/file/commit/line/classification/confidence without displaying credential values. | Roadmap |
-| 38 | Leak investigation | Evidence, severity, safe remediation sequence—revoke/rotate, remove exposure, synchronize, verify, resolve—and false-positive handling. | Roadmap |
-| 39 | Access anomalies | Baseline versus unusual behavior, environment, severity, evidence, and authorized investigation/session-revocation actions. | Roadmap |
-| 40 | Audit logs | Filterable, searchable event table by actor, action, project, environment, platform, date, and outcome. | MVP |
-| 41 | Audit-event details | Action, actor, resource, scope, timestamp, request ID, result, and redacted context. No value data. | MVP |
-
-### AI intelligence
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 42 | AI assistant | Authorized natural-language questions about risks, rotation, provider health, and drift; responses include evidence and related resources. | Roadmap |
-| 43 | AI security analysis | Security summary with prioritized issues, evidence, risk, and recommended actions based on metadata and sanitized operational signals. | Roadmap |
-| 44 | Deployment analysis / RCA | Correlate authorized deployment, sync, change, and provider events to explain likely cause and confidence. No automatic production change. | Roadmap |
-| 45 | AI recommendations | Reviewable rotation, access, MFA, integration, and drift recommendations. Applying any consequential action requires explicit authorization. | Roadmap |
-
-### Team, account, and organization administration
-
-| # | Screen | Purpose and required content | Release |
-|---:|---|---|---|
-| 46 | Team members | Member list, role, project/environment access, invitation state, and safe administration actions. | MVP |
-| 47 | Invite member | Email, initial role, project selection, environment selection, and clearly scoped invitation. | MVP |
-| 48 | Roles and permissions | Role matrix for project visibility, secret actions, reveal, integrations, audit, and organization management; supports later granular permissions. | MVP |
-| 49 | Organization settings | Organization profile, security policies, rotation-policy direction, and future MFA requirement settings. | MVP |
-| 50 | Account security | Profile, password, MFA, passkeys, and session-security entry points. MFA/passkeys are Roadmap until implemented. | MVP / Roadmap |
-| 51 | API keys | Create scoped, expiring automation keys; present full key exactly once; list created/last-used/status and support revocation. | Roadmap |
-| 52 | Active sessions | Current and other authorized sessions with device/location/time context and revocation. | Roadmap |
-| 53 | Notification settings | Choose security, sync, and team events; configure in-app/email and future Slack/webhook channels. | Roadmap |
-| 54 | Billing and danger zone | Future subscription/usage management plus high-friction project/organization deletion. Billing is Roadmap; destructive administration requires confirmation and re-authentication. | Roadmap |
-
-### Required states across every relevant screen
-
-Each primary screen must design and implement the following states, not only the happy path: loading/skeleton; empty/onboarding; validation error; system error with retry; permission denied; success confirmation; partial success (for example, 38 of 40 secrets synchronized); destructive confirmation; and long-running sync progress. These are component states within the 54-screen catalogue, not additional product screens.
-
-### Global navigation and reusable UI
-
-The main navigation is organized around **Workspace** (Dashboard, Projects, Secrets, Integrations, Sync Center), **Security** (Security, Risks, Leaks, Drift, Audit), **AI** (Assistant and Analysis), and **Organization** (Team and Settings). Reusable components include organization/project/environment switchers, search, notification center, breadcrumbs, data tables, a masked secret input, status/risk/provider badges, sync progress, activity timeline, confirmation and danger modals, empty/error/loading states, and toasts.
-
-The visual language should be professional, technical, minimal, and information-dense: clear status colors, readable tables, restrained cards, monospace treatment for key names, and responsive layouts that prioritize dashboard, alerts, secrets, sync state, AI, and notifications on mobile.
-
-## Security architecture and non-negotiable rules
-
-SecretVault is a security product; its design must prioritize confidentiality, authorization, traceability, and safe failure.
-
-- Encrypt secret values before persistence. PostgreSQL may retain encrypted material and metadata, never plaintext values.
-- Treat encryption keys, provider tokens, session material, and API keys as highly sensitive secrets with a separate, reviewed key-management design.
-- TLS protects data in transit. Sensitive operations use authenticated, authorized server-side paths.
-- Apply least privilege at organization, project, environment, API-key, provider-token, and service boundaries.
-- Require re-authentication and MFA where configured before reveal and other high-risk operations.
-- Mask values in the UI; minimize plaintext handling and lifetime in every component.
-- Never put secret values in logs, audit records, analytics, error reports, browser storage, screenshots, issue trackers, commits, or AI prompts.
-- Never index plaintext values; search names, tags, and other permitted metadata only.
-- Clearly display provider permissions during connection and store only what the integration needs.
-- Design deletion, export, revoke, and production changes with confirmations and heightened authorization.
-- Redact secrets from error handling and test fixtures. Use synthetic values only.
-- Fail closed when authorization, scope, or integrity cannot be established.
-
-### Encryption boundary
-
-The planned design uses envelope encryption with authenticated encryption:
-
-```text
-KMS-managed master key
-          │ encrypts/wraps
-          ▼
-Per-secret or per-version data-encryption key
-          │ AES-256-GCM encrypts
-          ▼
-Secret plaintext ───────────────► ciphertext + IV + authentication tag
-                                      │
-                                      ▼
-PostgreSQL: ciphertext, encrypted data key, IV, tag, and safe metadata
-```
-
-Plaintext exists only for the minimum time required in authorized server-side processing or provider delivery. Encryption keys must not be co-located with plaintext values. Provider credentials follow the same protected-storage rule. This design must be reviewed and implemented with the selected KMS before production; no application-level shortcut replaces key-management controls.
-
-### Core domain entities
-
-```text
-User ── Membership ── Organization ── Project ── Environment ── Secret ── SecretVersion
-                                            │                         │
-                                            ├── Integration mapping   ├── SyncJob / SyncAttempt
-                                            ├── AuditEvent            └── Risk / drift evidence
-                                            └── ApiKey
-```
-
-The minimal secret shape is `id`, `environmentId`, `name`, `description`, `type`, `createdAt`, `updatedAt`, and `currentVersion`. A version retains the encrypted material—`ciphertext`, `encryptedDataKey`, `iv`, `authTag`, version number, creation time, and actor—not plaintext. Every tenant-owned resource must be associated with an organization, and the backend must verify the authenticated membership and permitted project/environment scope rather than trusting IDs submitted by a browser.
-
-## Technology stack
-
-The established application stack is:
-
-| Area | Technology |
-|---|---|
-| Web application | React.js |
-| Frontend language and UI direction | TypeScript, Tailwind CSS, and shadcn/ui |
-| Core services | Spring Boot microservices |
-| Backend platform direction | Java, Spring Security, Spring Data JPA/Hibernate, REST/OpenAPI |
-| Operational/security & AI services | Python / FastAPI |
-| Relational data | PostgreSQL |
-| Caching and asynchronous-work support | Redis |
-| Local and deployable containers | Docker / Docker Compose |
-
-The planned production direction is AWS behind Cloudflare, with managed key-management and production infrastructure decisions documented before release. Redis-backed asynchronous work is the initial direction; Kafka is a later scaling option only when justified. Exact package-manager/build commands, identity-provider implementation, and infrastructure modules must be documented when chosen rather than guessed in this README.
-
-### Planned service boundaries
-
-Do not attempt to generate a large set of disconnected microservices on day one. Establish contracts and a working vertical slice first. The planned boundaries are:
-
-```text
-API Gateway
-├── Auth service
-├── Organization service
-├── Secret service
-├── Integration service
-├── Sync service / workers
-├── Audit service
-├── AI service (FastAPI)
-├── Notification service (Roadmap)
-└── Billing service (Roadmap)
-```
-
-The API gateway is the public entry point for authentication, routing, rate limiting, request IDs, API versioning, and CORS. Direct synchronous requests use REST through the gateway; asynchronous domain events such as `SecretCreated`, `SecretUpdated`, `SecretDeleted`, `SecretRotated`, `IntegrationConnected`, `SyncRequested`, `SyncCompleted`, and `SyncFailed` drive downstream synchronization and audit work.
-
-Every sync operation must be idempotent. A job carries an idempotency key, operation ID, and desired state so a retry does not create duplicate provider changes.
-
-## Repository structure
-
-The repository should make domain ownership and service boundaries visible. The following is the target structure, to be finalized as implementation begins:
-
-```text
-secretvault/
-├── README.md
-├── docs/
-│   ├── PRODUCT.md
-│   ├── ARCHITECTURE.md
-│   ├── SECURITY.md
-│   ├── DATABASE.md
-│   ├── API.md
-│   ├── INTEGRATIONS.md
-│   ├── AI.md
-│   ├── DEPLOYMENT.md
-│   ├── TESTING.md
-│   └── DECISIONS.md
-├── apps/
-│   └── web/                 # React application
-├── services/
-│   ├── api-gateway/
-│   ├── auth-service/
-│   ├── organization-service/
-│   ├── secret-service/
-│   ├── integration-service/
-│   ├── sync-service/
-│   ├── audit-service/
-│   └── ai-service/          # FastAPI
-├── packages/
-│   ├── api-contracts/
-│   ├── shared-types/
-│   └── frontend-ui/
-├── infrastructure/
-│   └── docker/              # Compose and container configuration
-├── tests/
-│   ├── integration/
-│   └── e2e/
-└── .github/
-    └── workflows/
-```
-
-Keep frontend responsibility concentrated in `apps/web/` (components and feature areas such as auth, dashboard, projects, environments, secrets, integrations, sync, security, audit, AI, team, and settings). Keep backend logic organized by independently owned bounded contexts rather than by UI page. Provider adapters must remain behind a stable interface so a new integration does not require rewriting core synchronization behavior.
-
-## Local development
-
-### Prerequisites
-
-- Git
-- Docker Desktop (including Docker Compose)
-- A current Node.js runtime compatible with the selected React toolchain
-- A JDK compatible with the selected Spring Boot version
-- Python compatible with the selected FastAPI dependencies
-
-### Start-up flow
-
-1. Clone the repository and create a feature branch (see [Collaboration workflow](#collaboration-workflow)).
-2. Copy the version-controlled environment template(s) to local, ignored configuration files.
-3. Start local dependencies with the repository’s Docker Compose configuration once added.
-4. Start the React app, Spring Boot services, and any FastAPI service using the commands documented beside each initialized application.
-5. Run the relevant unit, integration, and end-to-end checks before opening a pull request.
-
-The exact package-manager and build commands will be added with the initial application scaffolding. Avoid adding guessed commands to automation before those choices are committed.
-
-### Environment configuration
-
-Commit only templates such as `.env.example`; never commit populated `.env` files, credentials, encryption keys, provider tokens, session secrets, or real connection strings.
-
-Environment templates should describe categories rather than ship credentials:
-
-```dotenv
-# Application/runtime identity and safe local settings
-APP_ENV=development
-
-# Local dependency endpoints (use non-production local values)
-DATABASE_URL=
-REDIS_URL=
-
-# Security material — local development values only; never commit populated values
-SECRET_ENCRYPTION_KEY=
-AUTH_CONFIGURATION=
-
-# Optional provider development credentials; leave blank unless required
-PROVIDER_TOKEN=
-```
-
-Use a secret-sharing method approved by the team for real development credentials. Rotate any value that reaches a commit, log, chat, ticket, or public location; removing it from the latest file revision alone is not sufficient remediation.
-
-### Docker Compose
-
-Docker Compose is the local orchestration boundary for PostgreSQL, Redis, and initialized service containers. Its goals are repeatable onboarding, isolated local dependencies, health checks, non-production volumes, and configuration from ignored environment files.
-
-The initial Compose file should define only the services that exist at that time. At minimum, it will provide PostgreSQL and Redis; web, Spring Boot, and FastAPI containers can be added as their applications become runnable. Do not embed live credentials in compose files, images, or build arguments.
-
-## Collaboration workflow
-
-This is a two-person team. Protect shared branches and make small, reviewable changes.
-
-### Branching strategy
-
-```text
-main       production-ready, protected
-  ↑
-develop    shared integration and testing branch
-  ↑
-feature/*  focused work branches
-```
-
-- Never develop directly on `main`.
-- Create `develop` from `main` once, then merge feature work into `develop` through pull requests.
-- Promote tested `develop` changes to `main` through a separate pull request.
-- Use focused names such as `feature/secrets`, `feature/sync-engine`, `feature/web-dashboard`, or `fix/audit-redaction`.
-- Pull/rebase or merge the current integration branch before opening a PR, according to the team’s chosen Git policy; do not rewrite shared branch history.
-
-### Ownership
-
-To reduce conflicts, initially divide primary ownership by boundary:
-
-- **Frontend owner:** React UI, reusable components, and feature screens.
-- **Platform owner:** Spring Boot services, persistence, Redis-backed operational work, security controls, and integrations.
-
-Both developers review security-sensitive changes and agree before changing shared contracts, schemas, permission models, encryption boundaries, provider adapters, or deployment configuration. Ownership is coordination, not an access-control boundary.
-
-### Pull request and CI rules
-
-- `main` requires pull requests, one approval, passing required checks, and no force pushes or direct pushes.
-- `develop` should also use pull requests and passing checks.
-- Keep PRs small, single-purpose, and linked to a clear issue or task.
-- Require review by the other developer for security-sensitive or shared-boundary changes.
-- CI should run formatting/linting, unit tests, relevant integration tests, build validation, and secret scanning once configured.
-- Do not merge a failing, unreviewed, or unresolved-conflict PR just to unblock work.
-
-## Testing and quality
-
-Testing is part of the feature definition, particularly for authorization and safety behavior.
-
-| Test layer | Focus |
-|---|---|
-| Unit | Domain rules, permissions, encryption-boundary behavior, redaction, validation, provider adapters |
-| Integration | Database/Redis interactions, service contracts, queued sync behavior, audit events |
-| End-to-end | Key user workflows: create/version/rotate, controlled reveal, mapping, sync, drift, and failure recovery |
-| Security | Authorization regression tests, scope isolation, redaction checks, dependency and secret scanning |
-
-Use synthetic fixtures. Tests must prove that unprivileged users cannot discover protected metadata or values, audit events contain no values, and failed synchronization cannot silently claim success.
-
-## Observability
-
-Observability should answer what changed, who initiated it, which request/job/provider was involved, and whether the action succeeded—without leaking secret material.
-
-- Structured, redacted application logs with request and job correlation IDs.
-- Metrics for sync volume, duration, queue health, retries, failures, drift counts, provider health, and authorization failures.
-- Tracing across request → job → provider adapter where supported.
-- Separate audit history for security-relevant user and system events.
-- Alerts for sustained sync failures, provider connection loss, failed jobs, and critical security events.
-
-## Deployment architecture
-
-**Target architecture:** containerized React, Spring Boot, and FastAPI workloads operate alongside managed or isolated PostgreSQL 16 and Redis 7. Background workers execute synchronization separately from the interactive request path. Provider calls leave through the adapter boundary, with credentials and encryption material supplied by an approved secret-management and key-management process.
-
-**Production Cloud Foundation (Phase 16):** Fully codified via [infrastructure/terraform/aws](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/infrastructure/terraform/aws) supporting Amazon ECS Fargate across 3 Availability Zones, TLS 1.3 ALB, AWS WAF v2, AWS KMS Customer Managed Key (CMK) envelope encryption, Amazon RDS PostgreSQL 16 Multi-AZ, and Amazon ElastiCache Redis 7 Multi-AZ. See [docs/DEPLOYMENT.md](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/docs/DEPLOYMENT.md) and [docs/operations/DISASTER_RECOVERY_PLAN.md](file:///d:/CodePlayground/JAVA%20SpringBoot/SecureVault/docs/operations/DISASTER_RECOVERY_PLAN.md) for complete cloud provisioning guides and incident runbooks.
-
-## MVP and roadmap
-
-### MVP
-
-1. Organization, project, and Development/Staging/Production model.
-2. Authenticated, scoped RBAC foundations.
-3. Encrypted secret creation, masked display, metadata, and version history.
-4. Audit events for sensitive operations.
-5. One provider adapter and explicit mapping flow.
-6. Asynchronous synchronization, job status, classified failure, and safe retry.
-7. Basic drift status based on safely observable provider state.
-8. Focused dashboard and project/environment/secret views.
-
-### After MVP
-
-- Additional providers and provider-specific capability improvements.
-- Advanced health, risk, leak, anomaly, and recommendation workflows.
-- Notification channels, API-key management, and CLI.
-- AI assistant, security summaries, and deployment RCA.
-- Custom environments, enhanced imports, controlled exports, billing, and SaaS administration.
-
-## Recommended development order
-
-1. Write and agree on security, API, database, and architectural decisions.
-2. Establish repository tooling, local dependency containers, CI, and safe configuration templates.
-3. Implement organization/project/environment ownership and RBAC checks.
-4. Implement encrypted secret versions and audit events before any provider synchronization.
-5. Build one end-to-end provider adapter, mapping, job, verification, and failure path.
-6. Deliver the core React workflows around those capabilities.
-7. Add drift visibility, testing depth, observability, and operational hardening.
-8. Extend to more providers and roadmap intelligence only after the core security boundary is proven.
-
-## Contributing
-
-1. Start from an up-to-date `develop` branch and create a focused `feature/*` or `fix/*` branch.
-2. Read the relevant documentation in `docs/` before changing a security, domain, API, or integration boundary.
-3. Keep values, credentials, and sensitive fixtures out of commits and discussion artifacts.
-4. Add or update tests and documentation with behavior changes.
-5. Run the applicable local checks and open a concise PR explaining intent, security impact, test evidence, and migration/deployment implications.
-6. Address review feedback and merge only after the branch policy is satisfied.
-
-Security issues should be reported privately to the project maintainers; do not publish active credentials or exploitable details in public issues.
-
-## Project principles
-
-- **Security before convenience.** A fast workflow is not acceptable if it weakens authorization, encryption, or auditability.
-- **Centralized authority, explicit delivery.** SecretVault is authoritative; external mappings are intentional and observable.
-- **Least privilege by default.** Access is scoped and production is treated as higher risk.
-- **No silent state.** Changes, synchronization, drift, and failure should be visible and attributable.
-- **Metadata over disclosure.** Make operations understandable without exposing values.
-- **Human control over automation.** Intelligence recommends; authorized people approve consequential actions.
-- **Small, testable increments.** Build the security-critical core before expanding integrations or AI capabilities.
+</div>
 
 ---
 
-SecretVault is intended to make the secure path the natural engineering workflow: one source of truth, explicit access, verified synchronization, and evidence for every important action.
+## 📖 Table of Contents
+
+- [What is SecretVault?](#-what-is-secretvault)
+- [The Problem We Solve](#-the-problem-we-solve)
+- [System Architecture](#-system-architecture)
+- [Feature Deep Dive (F01 – F18)](#-feature-deep-dive-f01--f18)
+  - [F01 · Authentication & Multi-Factor (MFA)](#f01--authentication--multi-factor-mfa)
+  - [F02 · Workspace & Multi-Tenant Governance](#f02--workspace--multi-tenant-governance)
+  - [F03 · Project & Environment Scoping](#f03--project--environment-scoping)
+  - [F04 · Granular RBAC & Just-In-Time (JIT) Access](#f04--granular-rbac--just-in-time-jit-access)
+  - [F05 · Cryptographic Secrets Engine (AES-256-GCM)](#f05--cryptographic-secrets-engine-aes-256-gcm)
+  - [F06 · Zero-Trust Secret Reveal Protection](#f06--zero-trust-secret-reveal-protection)
+  - [F07 · Automated Secret Rotation Engine](#f07--automated-secret-rotation-engine)
+  - [F08 · Machine Identities & Keyless OIDC Federation](#f08--machine-identities--keyless-oidc-federation)
+  - [F09 · Multi-Cloud Provider SPI Integrations](#f09--multi-cloud-provider-spi-integrations)
+  - [F10 · Resilient Multi-Cloud Synchronization](#f10--resilient-multi-cloud-synchronization)
+  - [F11 · Drift Detection & SOC 2 Continuous Attestation](#f11--drift-detection--soc-2-continuous-attestation)
+  - [F12 · Event Center & Transactional Outbox](#f12--event-center--transactional-outbox)
+  - [F13 · Automation Policy Engine & Loop Guard](#f13--automation-policy-engine--loop-guard)
+  - [F14 · Webhook Platform & Anti-SSRF Dispatcher](#f14--webhook-platform--anti-ssrf-dispatcher)
+  - [F15 · Security Incident Lifecycle Operations](#f15--security-incident-lifecycle-operations)
+  - [F16 · Repository Leak Scanner & Git Hook Guard](#f16--repository-leak-scanner--git-hook-guard)
+  - [F17 · Security Overview, Risk Center & Posture Score](#f17--security-overview--risk-center--posture-score)
+  - [F18 · AI Security Copilot & DevSecOps Workbench](#f18--ai-security-copilot--devsecops-workbench)
+- [Data Flow Diagrams (DFDs)](#-data-flow-diagrams-dfds)
+- [Cryptographic Workflow & Envelope Encryption](#-cryptographic-workflow--envelope-encryption)
+- [Multi-Cloud Sync & Auto-Remediation Pipeline](#-multi-cloud-sync--auto-remediation-pipeline)
+- [Access Control Model & Hierarchical Scoping](#-access-control-model--hierarchical-scoping)
+- [Technology Stack](#-technology-stack)
+- [Project Directory Structure](#-project-directory-structure)
+- [Getting Started & Local Development](#-getting-started--local-development)
+- [API Reference](#-api-reference)
+- [SDKs & Integrations](#-sdks--integrations)
+- [Security Policy & Hardening Checklist](#-security-policy--hardening-checklist)
+- [Contributing](#-contributing)
+
+---
+
+## 🚀 What is SecretVault?
+
+**SecretVault** is an enterprise-grade **DevSecOps Secrets Management Control Plane** architected as a **Spring Boot 3 Modular Monolith (Java 21)** with:
+
+- 🔒 **Zero-Trust AES-256-GCM Envelope Encryption** — every secret version is encrypted at rest using unique ephemeral Data Encryption Keys (DEKs) wrapped by KMS / PBKDF2 Master Key Encryption Keys (KEKs).
+- 🌐 **Asynchronous Multi-Cloud Synchronization** — pushes secrets to AWS Secrets Manager, AWS SSM, Vercel, Cloudflare Workers, and Kubernetes External Secrets in real time.
+- 🤖 **AI Security Copilot & Autonomous Remediation** — advisory DevSecOps copilot with a strict **Zero-Plaintext Firewall**, multi-step agentic tool calling, and Four-Eyes dual-custody verification.
+- 📋 **Tamper-Evident SHA-256 Hash-Chained Audit Ledger** — cryptographic proof for SOC 2, ISO 27001, and HIPAA compliance requirements.
+- 🛡️ **Comprehensive Operational Hardening** — WebAuthn FIDO2, TOTP RFC-6238, step-up MFA, Redis sliding-window fail-closed rate limiting, and full SSRF defense.
+
+> SecretVault is built specifically for **application workloads and infrastructure credentials** — treating environments, versioning, drift detection, provider targets, and blast-radius telemetry as first-class primitives.
+
+---
+
+## 🔥 The Problem We Solve
+
+Engineering teams routinely scatter identical credentials across `.env` files, staging environments, production cloud accounts, CI/CD runners, and developer laptops:
+
+| Challenge | Real-World Failure Scenario | How SecretVault Solves It |
+|---|---|---|
+| **Secret Duplication** | Same DB credential pasted into 5 different dashboards; updates missed. | **Single Source of Truth:** Update once in SecretVault; automatically sync everywhere. |
+| **Silent Drift** | Staging has v4 of an API key, while production has v5; deploys silently break. | **Continuous Drift Scanner:** Compares SHA-256 fingerprints across providers every 15 min. |
+| **Leak Vulnerability** | Developers accidentally commit `.env` or tokens into Git repositories. | **Repository Leak Guard:** Scans PRs and commits using pattern recognition and Shannon entropy. |
+| **High Blast Radius** | Compromised credentials take hours or days to identify, trace, and rotate. | **Blast Radius Graph & Instant Auto-Rotate:** Discovers all impacted workloads in seconds. |
+| **Zero Auditability** | No logs showing who viewed credentials or which CI/CD runner read production secrets. | **Cryptographic Audit Ledger:** SHA-256 tamper-evident chain tracking every reveal and sync. |
+| **Plaintext Leakage to AI** | Devs paste logs and credentials into cloud LLMs to troubleshoot outages. | **Zero-Plaintext AI Firewall:** Redacts credentials to `[SHA256:prefix]` before LLM processing. |
+
+---
+
+## 🏗️ System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       CLIENT & DEVELOPER SURFACE                                       │
+│                                                                                                        │
+│   ┌────────────────────┐   ┌─────────────────┐   ┌──────────────────┐   ┌──────────────────────────┐   │
+│   │ React 18 Dashboard │   │ SecretVault CLI │   │ VS Code Extension│   │ Java / JS / Python SDKs  │   │
+│   │ (Vite, Lazy views) │   │ (Picocli / M2M) │   │ (Direct IDE sync)│   │ (In-memory cached fetch) │   │
+│   └─────────┬──────────┘   └────────┬────────┘   └────────┬─────────┘   └────────────┬─────────────┘   │
+└─────────────┼───────────────────────┼─────────────────────┼──────────────────────────┼─────────────────┘
+              │                       │                     │                          │
+              └───────────────────────┴──────────┬──────────┴──────────────────────────┘
+                                                 │ TLS 1.3 / mTLS / JWT Bearer Tokens
+                                                 ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             SPRING BOOT 3 CONTROL PLANE (Modular Monolith)                             │
+│                                                                                                        │
+│   ┌─────────────────────────┐  ┌──────────────────────────────────┐  ┌─────────────────────────────┐   │
+│   │  SECURITY & GOVERNANCE  │  │   CRYPTOGRAPHIC SECRETS ENGINE   │  │    SYNC & DRIFT ENGINE      │   │
+│   │  - BCrypt + WebAuthn    │  │   - AES-256-GCM Envelope Crypto  │  │    - Redis Async Queue & DLQ│   │
+│   │  - TOTP MFA & Step-Up   │  │   - Ephemeral DEK / KMS KEK Wrap │  │    - Provider SPI Adapters  │   │
+│   │  - Scoped RBAC + JIT    │  │   - AAD Context Binding          │  │    - SHA-256 Drift Scanning │   │
+│   │  - Redis Rate Limiter   │  │   - Immutable Version Ledger     │  │    - Distributed Lock Safety│   │
+│   └─────────────────────────┘  └──────────────────────────────────┘  └─────────────────────────────┘   │
+│                                                                                                        │
+│   ┌─────────────────────────┐  ┌──────────────────────────────────┐  ┌─────────────────────────────┐   │
+│   │   EVENT & AUTOMATION    │  │   AUDIT & COMPLIANCE LEDGER      │  │   AI DEVSECOPS COPILOT      │   │
+│   │  - Transactional Outbox │  │   - SHA-256 Merkle-Style Chain   │  │   - Inbound/Outbound Wall   │   │
+│   │  - SSE / WS Broadcast   │  │   - Tamper-Evident Verification  │  │   - Multi-Step Tool Agent   │   │
+│   │  - Policy Rules Engine  │  │   - SOC 2 / ISO 27001 Evidence   │  │   - Gemini 3.5 Flash / Ollama│  │
+│   │  - Anti-SSRF Webhooks   │  │   - Non-Repudiation Logging      │  │   - Four-Eyes Gatekeeper    │   │
+│   └─────────────────────────┘  └──────────────────────────────────┘  └─────────────────────────────┘   │
+└────────────────────────────────────────────────┬───────────────────────────────────────────────────────┘
+                                                 │
+                        ┌────────────────────────┴────────────────────────┐
+                        ▼                                                 ▼
+      ┌───────────────────────────────────┐             ┌───────────────────────────────────┐
+      │           PostgreSQL 16           │             │              Redis 7              │
+      │  - Encrypted Secret Versions      │             │  - Distributed Mutual Exclusion   │
+      │  - Workspaces, Projects, Envs     │             │  - Async Sync Queues & Retries    │
+      │  - Tamper-Proof Audit Chain       │             │  - Sliding-Window Rate Limiting   │
+      │  - Outbox Events & AI Memory      │             │  - Token Rotation Grace Windows   │
+      └───────────────────────────────────┘             └───────────────────────────────────┘
+                                                                          │
+                                                                          ▼
+                                                        ┌───────────────────────────────────┐
+                                                        │       EXTERNAL CLOUD FABRIC       │
+                                                        │  - AWS Secrets Manager / SSM      │
+                                                        │  - Vercel Environment API         │
+                                                        │  - Cloudflare Workers Secrets     │
+                                                        │  - Kubernetes External Secrets CRD│
+                                                        │  - GitHub Actions Secret Ingress  │
+                                                        └───────────────────────────────────┘
+```
+
+---
+
+## 🎯 Feature Deep Dive (F01 – F18)
+
+### F01 · Authentication & Multi-Factor (MFA)
+- **Primary Credentials:** BCrypt (`$2a$`, cost factor 12) password hashing with email verification.
+- **Passkeys & Hardware Tokens:** WebAuthn FIDO2 attestation with anti-replay signature challenge counters.
+- **Time-Based One-Time Passwords:** TOTP RFC-6238 compliant 6-digit verification with encrypted secret seeds.
+- **Step-Up MFA Challenges:** High-impact operations (secret reveal, force rotation, deletion, AI high-risk executions) require a freshly minted Step-Up token (valid 5 minutes).
+- **Concurrency-Safe OTP Delivery:** Uses in-place JPA `saveAndFlush` upsert patterns (`findByEmail` + update) to completely eliminate 409 conflict race conditions during rapid OTP re-sends.
+- **Fail-Closed Rate Limiting:** Redis sliding-window limiter blocks brute-force authentication attacks (10 attempts/min per IP/email).
+
+### F02 · Workspace & Multi-Tenant Governance
+- **Strict Tenant Boundaries:** All database entities enforce foreign keys anchored directly to `workspace_id`.
+- **Cryptographic Invitations:** 256-bit secure invitation tokens (`SecureRandom`) with strict 7-day TTL and email-locked acceptance validation.
+- **Sole Owner Preservation Invariant:** The platform forbids workspace owners from downgrading or deleting the final remaining `OWNER` of a tenant.
+- **Multi-Workspace Tenancy:** Users can switch workspaces instantaneously with isolated permission sets and distinct role scopes.
+
+### F03 · Project & Environment Scoping
+- **Hierarchical Containment:** Workspaces own Projects, and Projects own Environments (`development`, `staging`, `production`).
+- **Path IDOR Elimination:** Every incoming request verifies that `Project.workspaceId == caller.workspaceId` and `Environment.projectId == caller.projectId`. Mismatched IDs return `404 RESOURCE_NOT_FOUND` to prevent IDOR enumeration.
+- **Protected Environment Guards:** Production environments are marked `is_protected = true`, preventing direct mutations and requiring admin authorization or JIT access grants.
+
+### F04 · Granular RBAC & Just-In-Time (JIT) Access
+- **Mathematical Access Formula:**
+  $$\text{Effective Permission} = \text{Workspace Role} \cap \text{Project Scope} \cap \text{Environment Scope} \cap \text{Security Guardrails}$$
+- **Role Hierarchy:** `OWNER` > `ADMIN` > `DEVELOPER` > `VIEWER`. Child grants can restrict access, but can never elevate privileges above the workspace parent role.
+- **JIT Elevation Lifecycle:** Developers can submit temporary elevation tickets (duration: 1 hour to 24 hours) with mandatory justification. Expired JIT grants are automatically revoked by background eviction jobs.
+
+### F05 · Cryptographic Secrets Engine (AES-256-GCM)
+- **Zero-Plaintext Memory Guarantee:** Plaintext secrets enter heap memory strictly during encryption/decryption execution and are never logged or stored in cache.
+- **Envelope Encryption Protocol:**
+  1. Generate unique 256-bit Data Encryption Key (DEK) and 96-bit Initialization Vector (IV) using `SecureRandom`.
+  2. Encrypt plaintext payload with **AES-256-GCM** binding Authenticated Additional Data (`AAD = "secretId:envId:versionNumber"`).
+  3. Wrap the DEK with KMS / PBKDF2 Master Key Encryption Key (KEK).
+  4. Persist ciphertext, wrapped DEK, IV, 128-bit authentication tag, and SHA-256 content fingerprint.
+- **Immutable Version History:** Updates generate sequential versions (`v1`, `v2`, ...). Zero-downtime rollback to any prior historical version is fully supported.
+
+### F06 · Zero-Trust Secret Reveal Protection
+- **Step-Up Verification Gate:** Decryption endpoints mandate recent Step-Up MFA authentication proof.
+- **GHASH Tag Validation:** AES-GCM validates the 128-bit authentication tag; any ciphertext tampering triggers immediate payload rejection.
+- **Audit Logging & Browser Defense:** Every reveal event writes caller identity, IP, user agent, and timestamp to the audit chain. Responses include `Cache-Control: no-store, no-cache, private` headers.
+
+### F07 · Automated Secret Rotation Engine
+- **Shadow Rollout Pattern:** Dual-credential workflow pushes new secret versions to targets before deactivating old versions, ensuring zero downtime for live services.
+- **Blast Radius Analysis:** Computes which applications, microservices, machine tokens, and environments consume the secret prior to triggering rotation.
+- **Grace Window Transition:** Old credentials remain valid during a configurable window (e.g., 15 minutes) before being permanently decommissioned.
+- **Scheduled & Emergency Policies:** Supports scheduled cron intervals (30/60/90 days) and automated emergency rotations triggered by security incident alerts.
+
+### F08 · Machine Identities & Keyless OIDC Federation
+- **M2M Token Service:** Issues scoped, short-lived JWT machine tokens with 15-second rotation grace windows to prevent concurrent API renewal collisions.
+- **Keyless OIDC Ingress:** Validates OIDC JWTs issued by GitHub Actions, GitLab CI, and Kubernetes Service Accounts against configured issuer, audience, and subject claims.
+- **Zero Static Credentials:** Eliminates hardcoded long-lived API keys inside CI/CD runners by mapping verified OIDC claims directly to scoped workspace roles.
+
+### F09 · Multi-Cloud Provider SPI Integrations
+- **Pluggable Architecture:** The `SecretProvider` interface decouples the core domain from external cloud APIs:
+  - **AWS Secrets Manager & SSM:** Native SDK v2 integration with KMS key mapping.
+  - **Vercel:** Direct synchronization into project environment variables.
+  - **Cloudflare Workers:** REST sync into Cloudflare encrypted script secrets.
+  - **Kubernetes:** In-cluster and remote synchronization into `ExternalSecret` CRDs.
+  - **GitHub Actions Secrets:** Syncs secrets into GitHub repository and organization secrets.
+
+### F10 · Resilient Multi-Cloud Synchronization
+- **Redis Queue Worker Pipeline:** Mutations enqueue background sync jobs processed asynchronously by worker daemons.
+- **Exponential Backoff & Jitter:** Transient network or cloud provider outages retry automatically ($2^n$ second backoff, max 6 attempts).
+- **Dead-Letter Queue (DLQ):** Exhausted jobs transfer to the DLQ, emitting notification alerts and preserving full failure payloads for manual replay.
+- **Distributed Lock Mutual Exclusion:** Employs Redis `SETNX` distributed locking to ensure concurrent updates to identical secret-provider pairs never execute out of order.
+
+### F11 · Drift Detection & SOC 2 Continuous Attestation
+- **Fingerprint-Only Comparison:** Drift detection hashes provider-side values into SHA-256 fingerprints, eliminating the need to expose plaintext secrets during reconciliation.
+- **Automated Drift Classification:** Categorizes discrepancies into `STALE` (provider lagging), `MODIFIED` (unauthorized out-of-band change), or `MISSING`.
+- **Continuous Attestation:** Hourly automated audits certify synchronization state, exporting cryptographic compliance evidence formatted for SOC 2 Type II and ISO 27001 auditors.
+
+### F12 · Event Center & Transactional Outbox
+- **Transactional Outbox Guarantee:** Domain events are committed inside the exact same database transaction as the business entity changes, guaranteeing zero missed events.
+- **Real-Time Client Streaming:** Outbox event dispatchers push updates to browser dashboards via Server-Sent Events (SSE) and WebSocket channels.
+- **Event Replay Capability:** Administrators can replay specific event sequences from historical ledger checkpoints for auditing, testing, or system recovery.
+
+### F13 · Automation Policy Engine & Loop Guard
+- **Event-Driven Rules:** Configure automated triggers (e.g., `ON REPO_LEAK_DETECTED WHERE severity >= HIGH DO ROTATE_SECRET AND NOTIFY_TEAM`).
+- **Infinite Loop Defense:** Tracks event causality chains and terminates cyclical triggers if identical rules fire more than 3 times within 60 seconds.
+- **Four-Eyes Custody Requirement:** Destructive or high-impact actions (mass revocation, emergency provider detachment) require approvals from two distinct authorized administrators.
+
+### F14 · Webhook Platform & Anti-SSRF Dispatcher
+- **HMAC-SHA256 Payload Signing:** Outbound webhook payloads include `X-SecretVault-Signature: sha256={hmac}` signed with tenant-specific shared secrets.
+- **Strict SSRF Mitigation:** All webhook target URLs are dynamically validated against DNS rebinding and internal network blocklists (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`, `169.254.0.0/16`).
+- **Resilient Delivery:** Implements retry exponential backoff with delivery logs, payload inspectors, and manual redelivery controls.
+
+### F15 · Security Incident Lifecycle Operations
+- **Full Operational Lifecycle:** Manages incidents from creation (`INC-####`) through `OPEN` → `INVESTIGATING` → `CONTAINED` → `RESOLVED` → `POST-MORTEM`.
+- **Automated Containment Workflows:** One-click quarantine immediately suspends associated machine identities, isolates target environments, and queues secret rotations.
+- **Cryptographic Audit Attachment:** Automatically attaches all relevant audit logs, affected secret versions, and telemetry snapshots directly to the incident record.
+
+### F16 · Repository Leak Scanner & Git Hook Guard
+- **Multi-Engine Detection:** Evaluates Git repositories using regex pattern recognition, provider signatures (AWS, Stripe, GitHub, Slack), and **Shannon Entropy** analysis (> 4.5 bits/char).
+- **GitHub Push Webhook Scanning:** Ingests repository push events via webhooks, downloads repository archives with HTTP fallback mechanisms, and executes scans within isolated sandboxes.
+- **Context-Aware Noise Suppression:** Evaluates surrounding code syntax and test-fixture allowlists to prevent false alarms on mock credentials.
+
+### F17 · Security Overview, Risk Center & Posture Score
+- **Dynamic Posture Scoring (0–100):** Real-time algorithm calculates workspace health based on secret age, encryption strength, MFA adoption, unresolved drift, and leak findings.
+- **Visual Blast Radius Heatmaps:** Displays an interactive dependency matrix illustrating which services, projects, and environments depend on each secret.
+- **Access Certification Reviews:** Provides security officers with scheduled quarterly access review workflows to certify team permissions.
+
+### F18 · AI Security Copilot & DevSecOps Workbench
+- **Strict Zero-Plaintext Firewall (`AiSecretFirewall`):** Dual-pass filter scans inbound questions, tool parameters, tool outputs, and LLM responses, stripping and redacting credentials into `[SHA256:prefix]` hashes.
+- **Server-Side RBAC Tool Invocation:** The AI model autonomously selects domain tools (`secrets.summary`, `rotation.schedule`, `drift.scan`, `user.getCurrent`), with each call validated server-side against caller permissions.
+- **Multi-Turn Agentic Reasoning:** `AiContextOrchestrator` executes bounded multi-turn tool calling (max 5 iterations, max 10 tool calls) with cycle detection.
+- **Pluggable LLM Providers:** Supports **Google Gemini 3.5 Flash Lite** (primary cloud reasoning), **Ollama** (air-gapped local execution), and an **Offline Provider** for CI/CD environments.
+- **Four-Eyes & Step-Up Guardrail:** High-risk actions proposed by the AI generate structured remediation plans requiring Step-Up MFA and dual-custody approval before execution.
+
+---
+
+## 📊 Data Flow Diagrams (DFDs)
+
+### Level 1: System-Wide Data Flow
+
+```mermaid
+graph TD
+    User([Developer / DevOps Engineer])
+    CI([CI/CD Runner / GitHub Actions])
+    AI_Model([Gemini / Ollama LLM])
+
+    subgraph SecretVault_Boundary["SecretVault Control Plane"]
+        Gateway[API Gateway & Rate Limiter]
+        AuthSvc[Auth & WebAuthn Service]
+        SecretEngine[Cryptographic Secrets Engine]
+        SyncEngine[Sync & Drift Engine]
+        Outbox[Transactional Event Outbox]
+        AuditLedger[Tamper-Evident Audit Ledger]
+        AIFirewall[Zero-Plaintext AI Firewall]
+        AIAgent[AI Context Orchestrator]
+    end
+
+    DB[(PostgreSQL 16: Encrypted Store)]
+    Cache[(Redis 7: Queues & Locks)]
+    KMS[(KMS / HSM Key Provider)]
+    CloudTargets[(AWS / Vercel / Cloudflare / K8s)]
+
+    User -->|1. TLS REST / MFA / JWT| Gateway
+    CI -->|2. Keyless OIDC Token| Gateway
+    Gateway --> AuthSvc
+    AuthSvc --> Cache
+    Gateway --> SecretEngine
+
+    SecretEngine -->|3. Wrap/Unwrap DEK| KMS
+    SecretEngine -->|4. Store Ciphertext & AAD| DB
+    SecretEngine -->|5. Record Mutation| Outbox
+    SecretEngine -->|6. Append Hash Chain| AuditLedger
+
+    Outbox -->|7. Enqueue Sync Jobs| Cache
+    Cache -->|8. Process Jobs| SyncEngine
+    SyncEngine -->|9. Propagate Secrets| CloudTargets
+    SyncEngine -->|10. Check SHA-256 Drift| CloudTargets
+
+    User -->|11. Advisory Prompts| AIFirewall
+    AIFirewall -->|12. Redacted Context| AIAgent
+    AIAgent -->|13. Function Calling Prompts| AI_Model
+    AI_Model -->|14. Tool Request| AIAgent
+    AIAgent -->|15. Execute Scoped Tool| SecretEngine
+    AIAgent -->|16. Redacted Response| AIFirewall
+    AIFirewall --> User
+```
+
+### Level 2: AI Security Copilot & Zero-Plaintext Boundary
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant FW_In as AiSecretFirewall (Inbound)
+    participant Orch as AiContextOrchestrator
+    participant LLM as Google Gemini 3.5 Flash Lite
+    participant Tools as AiToolExecutor (RBAC Checked)
+    participant Sec as SecretService
+    participant FW_Out as AiSecretFirewall (Outbound)
+
+    Dev->>FW_In: "Why is our production database credential out of sync with AWS?"
+    FW_In->>FW_In: Scan & Redact Inbound (Tokens, Secrets, Connection Strings)
+    FW_In->>Orch: Clean Prompt + Workspace Session State
+    Orch->>LLM: System Prompt + Tool Declarations (drift.scan, secret.metadata)
+    LLM-->>Orch: Tool Call Request: drift.scan(projectId="p-101", env="prod")
+    Orch->>Tools: Execute drift.scan with Caller Security Context
+    Tools->>Tools: Verify Workspace Role & Project Permissions
+    Tools->>Sec: Fetch Drift Status (SHA-256 Fingerprints only)
+    Sec-->>Tools: DriftReport: AWS has hash 7a8f..., Vault has hash 9c2b...
+    Tools-->>Orch: Tool Result (Fingerprints only, Zero Plaintext)
+    Orch->>LLM: Function Response Payload (Role: USER/TOOL)
+    LLM-->>Orch: Synthesis & Remediation Plan Proposal
+    Orch->>FW_Out: Scan Outbound Response Payload
+    FW_Out->>FW_Out: Ensure Zero Credentials Leaked
+    FW_Out-->>Dev: Plan: "Drift detected on DATABASE_URL. Run shadow rotation?"
+```
+
+---
+
+## 🔐 Cryptographic Workflow & Envelope Encryption
+
+SecretVault utilizes multi-layered envelope encryption designed to meet **NIST SP 800-57** standards:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Authorized Client
+    participant API as SecretController
+    participant Crypto as EnvelopeEncryptionService
+    participant KMS as KMS / PBKDF2 Key Provider
+    participant DB as PostgreSQL 16 (secret_versions)
+    participant Ledger as AuditLedgerService
+
+    Note over Dev, DB: 1. Secret Ingestion & Envelope Encryption
+    Dev->>API: POST /secrets (name="STRIPE_KEY", plaintext="sk_live_...")
+    API->>Crypto: encrypt(plaintext, AAD="secretId:envId:v1")
+    Crypto->>Crypto: Generate 256-bit DEK & 96-bit IV via SecureRandom
+    Crypto->>Crypto: AES-256-GCM Encrypt (Plaintext + AAD) -> Ciphertext + 128-bit Tag
+    Crypto->>KMS: wrapKey(plaintextDEK, MasterKeyRef)
+    KMS-->>Crypto: wrappedDEK
+    Crypto->>Crypto: Zero plaintextDEK from memory
+    Crypto-->>API: EncryptedPayload (ciphertext, wrappedDEK, IV, authTag, fingerprint)
+    API->>DB: INSERT secret_versions (v1, ciphertext, wrappedDEK, IV, authTag)
+    API->>Ledger: Append Tamper-Evident Event (SECRET_CREATED, hashChain)
+    API-->>Dev: 201 Created (Metadata only, ZERO plaintext returned)
+
+    Note over Dev, DB: 2. Zero-Trust Reveal (Step-Up Authenticated)
+    Dev->>API: POST /secrets/{id}/reveal (with valid Step-Up Token)
+    API->>API: Verify Step-Up Token (< 5 min old) & Permission
+    API->>DB: SELECT encrypted version payload
+    API->>Crypto: decrypt(ciphertext, wrappedDEK, IV, authTag, AAD)
+    Crypto->>KMS: unwrapKey(wrappedDEK, MasterKeyRef)
+    KMS-->>Crypto: plaintextDEK
+    Crypto->>Crypto: AES-256-GCM Decrypt & Validate 128-bit GHASH Tag
+    Crypto-->>API: plaintext
+    API->>Ledger: Append Event (SECRET_REVEALED, caller, ip, timestamp)
+    API-->>Dev: 200 OK { value: "sk_live_..." } (Cache-Control: no-store)
+```
+
+---
+
+## ☁️ Multi-Cloud Sync & Auto-Remediation Pipeline
+
+```mermaid
+flowchart TD
+    A[Secret Created / Rotated] --> B[Commit to PostgreSQL]
+    B --> C[Transactional Outbox Pattern]
+    C --> D[Redis Sync Queue]
+
+    subgraph WorkerDaemon["Sync Worker Daemon"]
+        D --> E{Acquire Redis Lock}
+        E -- Lock Failed --> D
+        E -- Lock Acquired --> F[Fetch Provider SPI Adapters]
+        F --> G1[AWS Secrets Manager]
+        F --> G2[Vercel Environment API]
+        F --> G3[Cloudflare Workers API]
+        F --> G4[Kubernetes External Secrets]
+    end
+
+    G1 & G2 & G3 & G4 --> H{All Targets Succeeded?}
+    H -- Yes --> I[Emit SYNC_COMPLETED Event]
+    H -- No --> J{Retries Remaining?}
+    J -- Yes --> K[Exponential Backoff Queue]
+    K --> D
+    J -- No --> L[Dead Letter Queue DLQ]
+    L --> M[Raise Critical Security Incident]
+
+    subgraph DriftReconciliation["Continuous Drift Engine (Every 15m)"]
+        N[Scheduled Cron Scan] --> O[Fetch Target Fingerprints]
+        O --> P{Compare SHA-256 Hash}
+        P -- Matches Canonical --> Q[SOC 2 Attestation Certified]
+        P -- Mismatch --> R[Trigger Auto-Remediation Job]
+        R --> D
+    end
+```
+
+---
+
+## 🛡️ Access Control Model & Hierarchical Scoping
+
+Access is strictly evaluated through hierarchical containment, ensuring zero privilege escalation:
+
+```
+🏢 Organization Tenant Root
+└── 📁 Workspace (Hard Isolation Boundary)
+    ├── 👥 Members: [alice: OWNER], [bob: ADMIN], [carol: DEVELOPER], [dave: VIEWER]
+    │
+    ├── 📦 Project: "payment-gateway"
+    │   ├── 🌿 Environment: development   [Protected: false] -> Access: DEVELOPER+
+    │   ├── 🌿 Environment: staging       [Protected: false] -> Access: DEVELOPER+
+    │   └── 🌿 Environment: production    [Protected: TRUE]  -> Access: ADMIN or JIT
+    │
+    ├── 🤖 Machine Identities
+    │   ├── github-actions-runner   [OIDC Federated: repo:my-org/payment-gateway]
+    │   └── k8s-production-service  [M2M Token: 15-min TTL, rotation grace]
+    │
+    └── 🔗 Provider Mappings
+        ├── AWS Secrets Manager (us-east-1)
+        └── Vercel (Production)
+```
+
+### Effective Role & Permission Matrix
+
+| Capability | OWNER | ADMIN | DEVELOPER | VIEWER | JIT ELEVATED |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Manage Billing & Workspace Deletion** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Invite & Manage Team Members** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Create / Update Secrets (Dev / Staging)** | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **Mutate Secrets (Production)** | ✅ | ✅ | ❌ | ❌ | ✅ |
+| **Reveal Secret Plaintext** | ✅ *(Step-Up)* | ✅ *(Step-Up)* | ❌ | ❌ | ✅ *(Step-Up)* |
+| **Configure Provider Integrations** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Trigger Drift Scans & Sync** | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **View Audit Logs & Posture Dashboard** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Execute High-Risk AI Remediation Plans** | ✅ *(Four-Eyes)* | ✅ *(Four-Eyes)*| ❌ | ❌ | ❌ |
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Component | Version | Rationale & Responsibility |
+|---|---|---|---|
+| **Backend Runtime** | Java OpenJDK | 21 (LTS) | Virtual Threads (Project Loom), Records, Pattern Matching |
+| **Framework** | Spring Boot | 3.3.x | Modular monolith architecture, Spring Security 6, Data JPA |
+| **Frontend UI** | React | 18.x | Vite bundler, route code splitting (`React.lazy`), Suspense |
+| **Primary Database** | PostgreSQL | 16.x | Relational store, encrypted secret versions, Flyway migrations |
+| **Cache & Queues** | Redis | 7.x | Sliding-window rate limiters, distributed locks, sync queues |
+| **Cryptography** | JCA / JCE / AWS KMS | AES-256-GCM | Hardware-grade envelope encryption with AAD binding |
+| **Database Migrations** | Flyway | 10.x | Version-controlled, reproducible database schema (V1 – V22+) |
+| **CLI Client** | Picocli | 4.x | Native terminal CLI (`secretvault run`, `inject`, `ai`) |
+| **AI Cloud Provider** | Google Gemini | 3.5 Flash Lite | High-speed, context-aware DevSecOps copilot reasoning |
+| **AI Local Provider** | Ollama | Latest | Local, privacy-first, air-gapped LLM reasoning |
+| **Containerization** | Docker Compose | v2 | One-click local development stack |
+| **Orchestration** | Kubernetes & Helm | 1.28+ | High-availability production cloud deployments |
+| **Infrastructure as Code**| Terraform | 1.5+ | AWS infrastructure, KMS keys, and RDS provisioning |
+
+---
+
+## 📂 Project Directory Structure
+
+```
+SecureVault/
+├── 📁 backend/                          # Spring Boot 3 Modular Monolith (Java 21)
+│   └── src/main/java/com/secretvault/
+│       ├── ai/                          # AI Copilot: Orchestrator, Firewall, Tools, Providers
+│       ├── audit/                       # Tamper-Evident SHA-256 Audit Ledger & SOC 2 Exporter
+│       ├── auth/                        # JWT, WebAuthn FIDO2, TOTP, Step-Up MFA, Registration
+│       ├── automation/                  # Automation Rules Engine, Loop Guard, Actions
+│       ├── common/                      # Exception Handlers, Redis Rate Limiting, Caching
+│       ├── encryption/                  # AES-256-GCM Envelope Encryption Engine & KMS SPI
+│       ├── environment/                 # Environment Scoping & Protection Policies
+│       ├── incident/                    # Security Incident Lifecycle (INC-####)
+│       ├── machine/                     # Machine Identities, Service Accounts & OIDC Trust
+│       ├── project/                     # Project Containers & Scoped RBAC Permissions
+│       ├── provider/                    # Cloud Provider SPI Adapters (AWS, Vercel, CF, K8s)
+│       ├── repository/                  # Git Repo Scanner, Leak Detector & Webhook Ingress
+│       ├── secret/                      # Secret Core: CRUD, Versioning, Rollbacks, Reveals
+│       ├── security/                    # Risk Center, Posture Score & Blast Radius Engine
+│       ├── sync/                        # Redis Queue Daemon, Drift Detector & Dead-Letter Queue
+│       ├── webhook/                     # HMAC-SHA256 Webhook Dispatcher & SSRF Defense
+│       └── workspace/                   # Multi-Tenant Workspace & Member Governance
+│
+├── 📁 frontend/                         # React 18 SPA (Vite + TailwindCSS)
+│   └── src/
+│       ├── api/                         # Typed API client services
+│       ├── components/
+│       │   ├── ai/                      # AI Copilot & Remediation Workbench Views
+│       │   ├── audit/                   # Audit Logs Explorer & Verification Views
+│       │   ├── auth/                    # Login, MFA Setup & Step-Up Modals
+│       │   ├── risk/                    # Risk Center, Heatmaps & Blast Radius Views
+│       │   ├── security/                # Security Overview & Posture Dashboards
+│       │   ├── settings/                # Provider Integrations & GitHub Config Views
+│       │   └── workspace/               # Workspaces, Projects & Secrets Overview
+│       └── services/                    # Client-side state & notification services
+│
+├── 📁 cli/                              # SecretVault CLI (Picocli Java 21)
+│   └── src/main/java/com/secretvault/cli/command/
+│       ├── AiCommand.java               # Interactive AI DevSecOps CLI terminal
+│       ├── RunCommand.java              # secretvault run (injects secrets into child process)
+│       └── SecretsCommand.java          # CLI secret management commands
+│
+├── 📁 sdk/                              # Multi-Language Client SDKs
+│   ├── secretvault-sdk-core/            # Java Spring Boot Starter SDK
+│   ├── secretvault-sdk-js/              # TypeScript / Node.js Client SDK
+│   └── secretvault-sdk-python/          # Python 3 Client SDK
+│
+├── 📁 infrastructure/                   # Deployment & Cloud Automation
+│   ├── kubernetes/                      # Helm chart configurations
+│   └── terraform/                       # AWS IaC modules
+│
+├── 📁 docs/                             # Comprehensive Technical Documentation
+│   ├── WORKFLOW_ARCHITECTURE.md         # Full architecture specification
+│   ├── COMPLETE_FEATURE_DATA_FLOW_ARCHITECTURES.md # Level 1 & 2 DFD specifications
+│   ├── images/                          # High-resolution architectural flow diagrams
+│   └── phase15/                         # AI Copilot platform specifications
+│
+├── 📁 vscode-extension/                 # Official VS Code Extension
+├── 🐳 docker-compose.yml                # Multi-container local stack (App, DB, Redis)
+├── 🔒 .env.example                      # Production environment configuration template
+└── 📋 CHANGELOG.md                      # Release notes & version milestones
+```
+
+---
+
+## 🚀 Getting Started & Local Development
+
+### Prerequisites
+
+- **Java Development Kit (JDK):** Version 21 (Eclipse Temurin or OpenJDK recommended)
+- **Node.js:** Version 20.x or later with `npm`
+- **Docker & Docker Compose:** Version 24+
+- **Git**
+
+### 1. Clone & Setup Workspace
+
+```bash
+git clone https://github.com/Hrushi4151/SecretVault.git
+cd SecretVault
+cp .env.example .env
+```
+
+### 2. Configure Local Environment (`.env`)
+
+```env
+# Application Database
+DB_URL=jdbc:postgresql://localhost:5432/secretvault
+DB_USERNAME=secretvault
+DB_PASSWORD=secretvault_dev_password
+
+# Redis Cache & Sync Queues
+REDIS_URL=redis://localhost:6379
+
+# JWT Security
+JWT_SECRET=super_secret_jwt_signing_key_at_least_256_bits_long_for_security_12345
+JWT_ACCESS_TTL_SECONDS=900
+JWT_REFRESH_TTL_SECONDS=604800
+
+# Envelope Master Key Derivation (PBKDF2 mode for local dev)
+ENCRYPTION_PROVIDER=PBKDF2
+ENCRYPTION_MASTER_PASSWORD=my_ultra_secure_local_master_kek_passphrase
+
+# Optional: Google Gemini AI Copilot
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### 3. Spin Up Infrastructure (PostgreSQL 16 & Redis 7)
+
+```bash
+docker-compose up -d postgres redis
+```
+
+### 4. Launch Backend Control Plane
+
+```bash
+cd backend
+./mvnw clean spring-boot:run
+```
+*Backend initializes Flyway database migrations (V1 – V22) and starts listening on `http://localhost:3000`.*
+
+### 5. Launch React Frontend Dashboard
+
+```bash
+cd ../frontend
+npm install
+npm run dev
+```
+*Frontend opens at `http://localhost:5173` with full hot-module replacement (HMR).*
+
+---
+
+## 📡 API Reference
+
+All REST endpoints reside under the `/api/v1` namespace:
+
+### Authentication & Sessions
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/auth/register/send-otp` | Request email verification OTP |
+| `POST` | `/api/v1/auth/register/verify-otp` | Verify OTP and bootstrap account |
+| `POST` | `/api/v1/auth/login` | Authenticate with email and password |
+| `POST` | `/api/v1/auth/refresh` | Renew expiring access token via refresh token |
+| `POST` | `/api/v1/auth/step-up` | Complete Step-Up challenge for sensitive actions |
+
+### Secrets Engine
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets` | List secret metadata in environment |
+| `POST` | `/api/v1/workspaces/{wId}/projects/{pId}/environments/{eId}/secrets` | Ingest new encrypted secret version |
+| `GET` | `/api/v1/.../secrets/{id}` | Retrieve secret metadata & version list |
+| `PUT` | `/api/v1/.../secrets/{id}` | Push updated version (envelope encrypted) |
+| `DELETE` | `/api/v1/.../secrets/{id}` | Permanently delete secret & historical versions|
+| `POST` | `/api/v1/.../secrets/{id}/reveal` | Decrypt and reveal plaintext *(Step-Up MFA required)*|
+| `POST` | `/api/v1/.../secrets/{id}/rotate` | Trigger immediate rotation workflow |
+
+### Multi-Cloud Sync & Drift
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/workspaces/{wId}/sync/trigger` | Trigger immediate multi-cloud synchronization |
+| `GET` | `/api/v1/workspaces/{wId}/sync/status` | Retrieve status of active and recent sync jobs |
+| `POST` | `/api/v1/workspaces/{wId}/sync/drift-scan` | Execute live SHA-256 drift detection scan |
+
+### AI Security Copilot
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/workspaces/{wId}/ai/chat` | Send advisory query to AI Copilot |
+| `POST` | `/api/v1/workspaces/{wId}/ai/chat/stream` | Stream real-time AI responses via SSE |
+| `GET` | `/api/v1/workspaces/{wId}/ai/conversations` | Retrieve multi-turn chat history |
+| `POST` | `/api/v1/workspaces/{wId}/ai/remediation/execute`| Execute approved remediation plan *(Four-Eyes)*|
+
+### Audit & Compliance
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/workspaces/{wId}/audit-logs` | Paginated immutable audit ledger events |
+| `GET` | `/api/v1/workspaces/{wId}/audit-logs/export`| Export SOC 2 / ISO 27001 compliance audit trail |
+
+---
+
+## 📦 SDKs & Integrations
+
+### Java Spring Boot Integration
+Add the dependency to your `pom.xml`:
+```xml
+<dependency>
+    <groupId>io.secretvault</groupId>
+    <artifactId>secretvault-sdk-core</artifactId>
+    <version>1.5.0</version>
+</dependency>
+```
+Inject secrets seamlessly in your configuration:
+```java
+@Configuration
+public class DatabaseConfig {
+    @Autowired
+    private SecretVaultClient secretVault;
+
+    @Bean
+    public DataSource dataSource() {
+        String dbUrl = secretVault.getSecret("DATABASE_URL", "production");
+        return DataSourceBuilder.create().url(dbUrl).build();
+    }
+}
+```
+
+### Node.js / TypeScript SDK
+```typescript
+import { SecretVaultClient } from '@secretvault/sdk';
+
+const client = new SecretVaultClient({
+  baseUrl: 'https://vault.company.internal',
+  machineToken: process.env.SECRETVAULT_TOKEN,
+  cacheTtlMs: 300_000, // 5-minute in-memory caching
+});
+
+const apiKey = await client.getSecret('STRIPE_API_KEY', {
+  workspaceId: 'ws-prod-01',
+  environment: 'production'
+});
+```
+
+### Python SDK
+```python
+from secretvault import SecretVaultClient
+
+client = SecretVaultClient(
+    base_url="https://vault.company.internal",
+    token=os.getenv("SECRETVAULT_TOKEN")
+)
+
+db_password = client.get_secret(
+    name="DB_PASSWORD",
+    workspace_id="ws-prod-01",
+    environment="production"
+)
+```
+
+### SecretVault CLI (`secretvault run`)
+Safely inject secrets into applications without writing credentials to disk or `.env` files:
+```bash
+# Injects decrypted secrets directly into child process environment
+secretvault run --workspace ws-prod-01 --project api --env production -- node server.js
+```
+
+---
+
+## 🔒 Security Policy & Hardening Checklist
+
+SecretVault is designed to defend against advanced adversarial attacks. Our security posture includes:
+
+- [x] **Zero-Plaintext at Rest:** AES-256-GCM envelope encryption with unique ephemeral DEKs.
+- [x] **Zero-Plaintext in AI Workflows:** Complete redaction of credentials by `AiSecretFirewall`.
+- [x] **Zero-Knowledge Drift Scans:** Comparison performed via SHA-256 fingerprints without exposing plaintext values.
+- [x] **Anti-Tamper Audit Trail:** SHA-256 cryptographic hash-chaining prevents audit record alteration.
+- [x] **IDOR-Proof Hierarchy:** Every request validates workspace, project, and environment ownership.
+- [x] **SSRF Defense:** Webhooks and cloud provider integrations validate destination IPs against private CIDR blocklists and DNS rebinding attacks.
+- [x] **Four-Eyes Separation of Duties:** High-risk actions require dual-custody authorization (`Approver A != Approver B`).
+- [x] **Fail-Closed Rate Limiting:** Redis rate limits fail closed during cache partitions.
+
+### Reporting Security Vulnerabilities
+
+If you discover a security vulnerability within SecretVault, **please do NOT open a public GitHub issue.** Instead, send a detailed disclosure report directly to our security response team:
+
+📧 **security@secretvault.io**
+
+Please include:
+1. Description of the vulnerability and attack vector.
+2. Step-by-step reproduction steps or proof-of-concept (PoC).
+3. Potential impact and affected components.
+
+We acknowledge reports within **24 hours** and aim to release patches for confirmed critical vulnerabilities within **72 hours**.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the open-source community!
+
+1. Fork the repository on GitHub.
+2. Create your feature branch: `git checkout -b feat/my-new-feature`
+3. Commit your changes following [Conventional Commits](https://www.conventionalcommits.org/):
+   ```bash
+   git commit -m "feat(sync): add support for Azure Key Vault provider"
+   ```
+4. Ensure all tests pass:
+   ```bash
+   cd backend && ./mvnw test
+   ```
+5. Push to your branch and open a Pull Request against `main`.
+
+---
+
+<div align="center">
+
+**Built with ❤️ for DevSecOps, Cloud Engineers, and Security Teams**
+
+[![GitHub Stars](https://img.shields.io/github/stars/Hrushi4151/SecretVault?style=social)](https://github.com/Hrushi4151/SecretVault)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
