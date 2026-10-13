@@ -67,6 +67,7 @@ public class AuthService {
     private final SessionService sessionService;
     private final com.secretvault.auth.repository.RegistrationVerificationRepository registrationVerificationRepository;
     private final com.secretvault.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+    private final com.secretvault.common.email.EmailService emailService;
     private final com.secretvault.audit.service.AuditService auditService;
     private final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
 
@@ -594,7 +595,21 @@ public class AuthService {
         // 1. Atomic Revocation: Guarantee only one concurrent caller can consume this active token
         int consumed = refreshTokenRepository.markRevokedIfActive(hashedToken);
         if (consumed != 1) {
-            // Either does not exist, or was already revoked (replay attack / concurrent use)
+            // Check if this token was already rotated within the short concurrent grace window (15 seconds)
+            if (stringRedisTemplate != null && keyBuilder != null && objectMapper != null) {
+                try {
+                    String rotationKey = keyBuilder.securityStateKey("token_rotation", hashedToken);
+                    String cachedJson = stringRedisTemplate.opsForValue().get(rotationKey);
+                    if (cachedJson != null && !cachedJson.isBlank()) {
+                        log.info("Concurrent refresh request for recently rotated token hash [{}] fulfilled via grace window", hashedToken);
+                        return objectMapper.readValue(cachedJson, AuthResponse.class);
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to check token rotation grace window in Redis: {}", ex.getMessage());
+                }
+            }
+
+            // Either does not exist, or was already revoked and outside grace window (replay attack)
             Optional<RefreshToken> tokenOpt = refreshTokenRepository.findByTokenHash(hashedToken);
             if (tokenOpt.isPresent() && tokenOpt.get().isRevoked()) {
                 log.warn("Replay attack detected: Attempt to reuse revoked refresh token for user [{}]", tokenOpt.get().getUserId());
@@ -639,7 +654,20 @@ public class AuthService {
                 : null;
         WorkspaceRole role = primaryMembership != null ? primaryMembership.getRole() : WorkspaceRole.VIEWER;
 
-        return generateAuthResponse(user, workspace, role, null, refreshToken.getSessionId());
+        AuthResponse authResponse = generateAuthResponse(user, workspace, role, null, refreshToken.getSessionId());
+
+        // Store in short-lived Redis grace window for concurrent requests (15 seconds)
+        if (stringRedisTemplate != null && keyBuilder != null && objectMapper != null) {
+            try {
+                String rotationKey = keyBuilder.securityStateKey("token_rotation", hashedToken);
+                String json = objectMapper.writeValueAsString(authResponse);
+                stringRedisTemplate.opsForValue().set(rotationKey, json, java.time.Duration.ofSeconds(15));
+            } catch (Exception ex) {
+                log.warn("Failed to store token rotation grace window in Redis: {}", ex.getMessage());
+            }
+        }
+
+        return authResponse;
     }
 
     /**
