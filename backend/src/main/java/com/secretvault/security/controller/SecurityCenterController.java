@@ -227,6 +227,13 @@ public class SecurityCenterController {
     }
 
     @PostMapping("/analyze")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "sec_analysis",
+            limit = 5,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many on-demand security analysis requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Trigger on-demand security intelligence analysis", description = "Executes full deterministic rule evaluation and updates workspace posture")
     public ResponseEntity<ApiResponse<SecurityIntelligenceEngine.SecurityAnalysisResult>> triggerAnalysis(
             @PathVariable UUID workspaceId,

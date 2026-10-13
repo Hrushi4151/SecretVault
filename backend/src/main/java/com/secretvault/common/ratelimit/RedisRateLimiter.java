@@ -54,6 +54,11 @@ public class RedisRateLimiter implements DistributedRateLimiter {
 
     @Override
     public RateLimitResult checkRateLimit(String key, int maxRequests, Duration window) {
+        return checkRateLimit(key, maxRequests, window, false);
+    }
+
+    @Override
+    public RateLimitResult checkRateLimit(String key, int maxRequests, Duration window, boolean failClosed) {
         if (!redisProperties.getRateLimit().isEnabled()) {
             return RateLimitResult.allow(maxRequests, 0);
         }
@@ -89,7 +94,8 @@ public class RedisRateLimiter implements DistributedRateLimiter {
             redisMetrics.redisFailure("ratelimit");
             log.error("Redis rate limiting error for key [{}]: {}", sanitizeKey(key), ex.getMessage());
 
-            if (redisProperties.getRateLimit().isFailOpen()) {
+            boolean shouldFailClosed = failClosed || !redisProperties.getRateLimit().isFailOpen();
+            if (!shouldFailClosed) {
                 log.warn("Rate limit policy is FAIL_OPEN. Permitting request on Redis failure.");
                 return RateLimitResult.allow(maxRequests, 0);
             } else {
@@ -101,7 +107,12 @@ public class RedisRateLimiter implements DistributedRateLimiter {
 
     @Override
     public void checkRateLimitOrThrow(String key, int maxRequests, Duration window, String message) {
-        RateLimitResult result = checkRateLimit(key, maxRequests, window);
+        checkRateLimitOrThrow(key, maxRequests, window, message, false);
+    }
+
+    @Override
+    public void checkRateLimitOrThrow(String key, int maxRequests, Duration window, String message, boolean failClosed) {
+        RateLimitResult result = checkRateLimit(key, maxRequests, window, failClosed);
         if (!result.allowed()) {
             throw new RateLimitExceededException(
                     message != null ? message : "Too many requests. Please try again later.",

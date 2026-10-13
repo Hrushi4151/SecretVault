@@ -67,9 +67,17 @@ public class AuthService {
     private final SessionService sessionService;
     private final com.secretvault.auth.repository.RegistrationVerificationRepository registrationVerificationRepository;
     private final com.secretvault.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
-    private final com.secretvault.common.email.EmailService emailService;
     private final com.secretvault.audit.service.AuditService auditService;
     private final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.secretvault.common.redis.RedisKeyBuilder keyBuilder;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public AuthService(
             UserRepository userRepository,

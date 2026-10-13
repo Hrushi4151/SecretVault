@@ -109,6 +109,7 @@ public class SecretVersionController {
             limit = 60,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            failClosed = true,
             message = "Too many reveal intent requests. Please try again later."
     )
     @Operation(summary = "Request a short-lived single-use reveal intent token for a historical version")
@@ -153,6 +154,7 @@ public class SecretVersionController {
             limit = 60,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            failClosed = true,
             message = "Too many secret reveal attempts. Please try again later."
     )
     @Operation(summary = "Explicitly decrypt and reveal a historical secret version value in memory")

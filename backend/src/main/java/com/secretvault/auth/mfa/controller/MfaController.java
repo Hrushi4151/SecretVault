@@ -114,6 +114,7 @@ public class MfaController {
             limit = 10,
             windowSeconds = 60,
             type = RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many MFA verification attempts. Please try again later."
     )
     @Operation(summary = "Verify TOTP Login Challenge", description = "Validates a time-based verification code against an active MFA challenge and issues session tokens.")
@@ -135,6 +136,7 @@ public class MfaController {
             limit = 10,
             windowSeconds = 60,
             type = RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many recovery code verification attempts. Please try again later."
     )
     @Operation(summary = "Verify Recovery Code Login Challenge", description = "Validates a single-use backup recovery code against an active MFA challenge and issues session tokens.")

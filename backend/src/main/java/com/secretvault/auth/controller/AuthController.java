@@ -57,6 +57,7 @@ public class AuthController {
             limit = 5,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many registration verification attempts. Please try again later."
     )
     @Operation(summary = "Send Registration OTP", description = "Dispatches a 6-digit verification code to the specified Gmail address.")
@@ -71,6 +72,7 @@ public class AuthController {
             limit = 10,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many verification attempts. Please try again later."
     )
     @Operation(summary = "Verify Registration OTP & Create Account", description = "Verifies the 6-digit code sent to Gmail and activates the user account.")
@@ -85,6 +87,7 @@ public class AuthController {
             limit = 5,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many password reset requests. Please try again later."
     )
     @Operation(summary = "Request Password Reset OTP", description = "Sends a 6-digit reset code to the registered Gmail account.")
@@ -99,6 +102,7 @@ public class AuthController {
             limit = 10,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many verification attempts. Please try again later."
     )
     @Operation(summary = "Verify Password Reset OTP", description = "Validates the OTP sent to Gmail and checks if MFA is enforced.")
@@ -113,6 +117,7 @@ public class AuthController {
             limit = 10,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many MFA attempts. Please try again later."
     )
     @Operation(summary = "Verify Step-Up MFA for Password Reset", description = "Validates TOTP or recovery code if user has MFA enabled.")
@@ -127,6 +132,7 @@ public class AuthController {
             limit = 5,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many password reset attempts. Please try again later."
     )
     @Operation(summary = "Reset Password", description = "Sets new password and revokes all active user sessions.")
@@ -153,6 +159,7 @@ public class AuthController {
             limit = 10,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP,
+            failClosed = true,
             message = "Too many login attempts. Please try again later."
     )
     @Operation(summary = "Authenticate User", description = "Validates credentials and issues access and refresh tokens.")

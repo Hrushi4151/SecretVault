@@ -38,7 +38,8 @@ public class RateLimitAspect {
                 key,
                 rateLimited.limit(),
                 Duration.ofSeconds(rateLimited.windowSeconds()),
-                rateLimited.message()
+                rateLimited.message(),
+                rateLimited.failClosed()
         );
 
         return joinPoint.proceed();

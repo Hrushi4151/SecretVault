@@ -33,6 +33,13 @@ public class SyncController {
     }
 
     @PostMapping("/sync/dry-run")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "provider_sync_dryrun",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many sync simulation requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Execute workspace-scoped dry-run drift simulation and sync planning")
     public ResponseEntity<ApiResponse<DryRunResponse>> executeWorkspaceDryRun(
             @PathVariable UUID workspaceId,
@@ -49,6 +56,13 @@ public class SyncController {
     }
 
     @PostMapping("/sync")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "provider_sync_live",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many live synchronization requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Execute workspace-scoped live synchronization to external providers")
     public ResponseEntity<ApiResponse<SyncExecutionResponse>> executeWorkspaceSync(
             @PathVariable UUID workspaceId,
