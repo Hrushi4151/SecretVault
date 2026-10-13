@@ -133,6 +133,21 @@ class RedisRateLimiterTest {
     }
 
     @Test
+    @DisplayName("Redis failure with failClosed=true overrides global fail-open policy for security endpoints")
+    void testRedisFailureFailClosedOverride() {
+        redisProperties.getRateLimit().setFailOpen(true);
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), anyString()))
+                .thenThrow(new RedisConnectionFailureException("Connection refused"));
+
+        ApiException ex = assertThrows(ApiException.class, () ->
+                rateLimiter.checkRateLimit("security-key", 5, Duration.ofSeconds(60), true)
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatus());
+        assertEquals("RATE_LIMIT_UNAVAILABLE", ex.getCode());
+    }
+
+    @Test
     @DisplayName("Disabled rate limiting always returns allowed")
     void testDisabledRateLimiting() {
         redisProperties.getRateLimit().setEnabled(false);
