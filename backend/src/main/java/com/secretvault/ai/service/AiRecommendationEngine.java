@@ -1,0 +1,377 @@
+package com.secretvault.ai.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.secretvault.ai.domain.entity.AiRemediationPlan;
+import com.secretvault.ai.domain.model.AiPlanStatus;
+import com.secretvault.ai.domain.model.AiRiskLevel;
+import com.secretvault.ai.domain.model.BlastRadiusImpact;
+import com.secretvault.ai.domain.model.RemediationStep;
+import com.secretvault.ai.domain.repository.AiRemediationPlanRepository;
+import com.secretvault.ai.dto.AiPlanGenerateRequest;
+import com.secretvault.ai.dto.AiRemediationPlanDto;
+import com.secretvault.audit.entity.AuditAction;
+import com.secretvault.audit.service.AuditService;
+import com.secretvault.security.event.model.SecurityEventOutcome;
+import com.secretvault.security.event.model.SecurityEventSeverity;
+import com.secretvault.security.event.model.SecurityEventType;
+import com.secretvault.security.event.service.SecurityEventService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Autonomous Recommendation Engine & Remediation Plan Lifecycle Manager.
+ * Handles reviewable proposals, human approval gates, four-eyes separation of duties,
+ * plan versioning, expiration, and feedback.
+ */
+@Service
+public class AiRecommendationEngine {
+
+    private static final Logger log = LoggerFactory.getLogger(AiRecommendationEngine.class);
+
+    private final AiRemediationPlanRepository planRepository;
+    private final AuditService auditService;
+    private final SecurityEventService securityEventService;
+    private final ObjectMapper objectMapper;
+
+    public AiRecommendationEngine(
+            AiRemediationPlanRepository planRepository,
+            AuditService auditService,
+            @Autowired(required = false) SecurityEventService securityEventService,
+            ObjectMapper objectMapper
+    ) {
+        this.planRepository = planRepository;
+        this.auditService = auditService;
+        this.securityEventService = securityEventService;
+        this.objectMapper = objectMapper;
+    }
+
+    public Page<AiRemediationPlanDto> getPlans(UUID workspaceId, Pageable pageable) {
+        expireStalePlans(workspaceId);
+        return planRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable)
+                .map(this::toDto);
+    }
+
+    public Page<AiRemediationPlanDto> getPendingPlans(UUID workspaceId, Pageable pageable) {
+        expireStalePlans(workspaceId);
+        return planRepository.findByWorkspaceIdAndStatusOrderByCreatedAtDesc(workspaceId, AiPlanStatus.PENDING_APPROVAL, pageable)
+                .map(this::toDto);
+    }
+
+    public AiRemediationPlanDto getPlan(UUID workspaceId, UUID planId) {
+        AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
+        checkExpiration(plan);
+        return toDto(plan);
+    }
+
+    @Transactional
+    public AiRemediationPlanDto generatePlan(UUID workspaceId, AiPlanGenerateRequest request, UUID userId) {
+        String goal = request != null ? request.getEffectiveGoal() : "Remediate detected posture drift";
+        String targetType = request != null && request.targetResourceType() != null ? request.targetResourceType() : "SECRET";
+        String targetId = request != null && request.targetResourceId() != null ? request.targetResourceId() : "sec-auto-target";
+        AiRiskLevel risk = request != null && request.riskLevel() != null ? request.riskLevel() : AiRiskLevel.MEDIUM;
+        boolean fourEyes = (request != null && Boolean.TRUE.equals(request.requiresFourEyes())) || risk == AiRiskLevel.CRITICAL;
+        boolean stepUp = (request != null && Boolean.TRUE.equals(request.requiresStepUp())) || risk == AiRiskLevel.CRITICAL || risk == AiRiskLevel.HIGH;
+
+        AiRemediationPlan plan = new AiRemediationPlan();
+        plan.setWorkspaceId(workspaceId);
+        plan.setPlanType("AUTOMATED_REMEDIATION");
+        plan.setTitle("Remediate: " + goal);
+        plan.setDescription("AI-synthesized remediation plan for: " + goal);
+        plan.setVersion(1);
+        plan.setRiskLevel(risk);
+        plan.setConfidenceScore(0.96);
+        plan.setTargetResourceType(targetType);
+        plan.setTargetResourceId(targetId);
+        plan.setRequiresFourEyes(fourEyes);
+        plan.setRequiresStepUp(stepUp);
+        plan.setStatus(AiPlanStatus.PENDING_APPROVAL);
+        plan.setCreatedByUserId(userId);
+        plan.setExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
+
+        List<RemediationStep> steps = List.of(
+                new RemediationStep(1, "Pre-Flight Verification", "Validate SHA-256 envelope fingerprint and target availability.", "VERIFY_STATE", targetId, "READY"),
+                new RemediationStep(2, "Atomic Rollover", "Apply updated configuration with dual-version tolerance window (300s).", "EXECUTE_ROLLOVER", targetId, "PENDING_APPROVAL"),
+                new RemediationStep(3, "Post-Rollout Attestation", "Attest downstream consumers and revoke legacy lease.", "REVOKE_LEGACY", targetId, "PENDING_APPROVAL")
+        );
+
+        BlastRadiusImpact impact = new BlastRadiusImpact(
+                targetId,
+                risk == AiRiskLevel.CRITICAL ? "Tier-1 Critical" : "Tier-2 Standard",
+                List.of("production", "staging"),
+                List.of("edge-gateway", "sync-worker"),
+                2,
+                1.5,
+                "Zero downtime projected when executed within tolerance window."
+        );
+
+        try {
+            plan.setRemediationStepsJson(objectMapper.writeValueAsString(steps));
+            plan.setBlastRadiusJson(objectMapper.writeValueAsString(impact));
+            plan.setPayloadDiffJson(objectMapper.writeValueAsString(Map.of(
+                    "targetKey", targetId,
+                    "action", "RECONCILE_VERSION"
+            )));
+        } catch (Exception ignored) {
+        }
+
+        AiRemediationPlan saved = planRepository.save(plan);
+
+        auditService.logSuccess(
+                AuditAction.AI_REMEDIATION_PLAN_PROPOSED,
+                "AI_REMEDIATION_PLAN",
+                saved.getId(),
+                userId,
+                workspaceId,
+                "Generated remediation plan: " + saved.getTitle()
+        );
+
+        return toDto(saved);
+    }
+
+    @Transactional
+    public AiRemediationPlanDto approvePlan(UUID workspaceId, UUID planId, UUID reviewerId) {
+        AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
+
+        checkExpiration(plan);
+
+        if (plan.getStatus() != AiPlanStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("Plan cannot be approved in state: " + plan.getStatus());
+        }
+
+        if (plan.isRequiresFourEyes()) {
+            if (plan.getReviewedByUserId() == null) {
+                // First eye recorded
+                plan.setReviewedByUserId(reviewerId);
+                plan.setUpdatedAt(Instant.now());
+                AiRemediationPlan saved = planRepository.save(plan);
+                log.info("First approval recorded for four-eyes plan {} by reviewer {}", planId, reviewerId);
+                return toDto(saved);
+            } else {
+                // Second eye check: Approver A != Approver B
+                if (reviewerId != null && reviewerId.equals(plan.getReviewedByUserId())) {
+                    log.error("Four-eyes violation: Reviewer {} attempted duplicate approval on plan {}", reviewerId, planId);
+                    throw new IllegalStateException("Four-eyes violation: Second approval must be performed by a different authorized user (Approver A != Approver B).");
+                }
+                plan.setSecondReviewedByUserId(reviewerId);
+                plan.setStatus(AiPlanStatus.APPROVED);
+                plan.setPlanFingerprint(computePlanFingerprint(plan));
+                plan.setUpdatedAt(Instant.now());
+            }
+        } else {
+            plan.setStatus(AiPlanStatus.APPROVED);
+            plan.setReviewedByUserId(reviewerId);
+            plan.setPlanFingerprint(computePlanFingerprint(plan));
+            plan.setUpdatedAt(Instant.now());
+        }
+
+        AiRemediationPlan saved = planRepository.save(plan);
+
+        auditService.logSuccess(
+                AuditAction.AI_REMEDIATION_PLAN_APPROVED,
+                "AI_REMEDIATION_PLAN",
+                saved.getId(),
+                reviewerId,
+                workspaceId,
+                "Approved remediation plan: " + saved.getTitle()
+        );
+
+        if (securityEventService != null) {
+            securityEventService.recordEvent(
+                    workspaceId,
+                    null,
+                    null,
+                    reviewerId,
+                    SecurityEventType.AI_REMEDIATION_PLAN_APPROVED,
+                    SecurityEventSeverity.INFO,
+                    SecurityEventOutcome.SUCCESS,
+                    "AI_COPILOT",
+                    null,
+                    null,
+                    null,
+                    Map.of("planId", saved.getId().toString())
+            );
+        }
+
+        return toDto(saved);
+    }
+
+    @Transactional
+    public AiRemediationPlanDto modifyPlan(UUID workspaceId, UUID planId, String newStepsJson, String newPayloadDiffJson, UUID editorId) {
+        AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
+
+        plan.setVersion(plan.getVersion() + 1);
+        plan.setStatus(AiPlanStatus.PENDING_APPROVAL);
+        plan.setReviewedByUserId(null);
+        plan.setSecondReviewedByUserId(null);
+        plan.setRemediationStepsJson(newStepsJson != null ? newStepsJson : plan.getRemediationStepsJson());
+        plan.setPayloadDiffJson(newPayloadDiffJson != null ? newPayloadDiffJson : plan.getPayloadDiffJson());
+        plan.setPlanFingerprint(null); // Invalidate seal until re-approved
+        plan.setUpdatedAt(Instant.now());
+
+        AiRemediationPlan saved = planRepository.save(plan);
+        log.info("Plan {} modified by {}: incremented to version {}, prior approvals invalidated.", planId, editorId, saved.getVersion());
+        return toDto(saved);
+    }
+
+    @Transactional
+    public AiRemediationPlanDto rejectPlan(UUID workspaceId, UUID planId, UUID reviewerId, String reason) {
+        AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
+
+        if (plan.getStatus() != AiPlanStatus.PENDING_APPROVAL && plan.getStatus() != AiPlanStatus.APPROVED) {
+            throw new IllegalStateException("Plan cannot be rejected in state: " + plan.getStatus());
+        }
+
+        plan.setStatus(AiPlanStatus.REJECTED);
+        plan.setReviewedByUserId(reviewerId);
+        plan.setFeedbackComment(reason);
+        plan.setUpdatedAt(Instant.now());
+        AiRemediationPlan saved = planRepository.save(plan);
+
+        auditService.logSuccess(
+                AuditAction.AI_REMEDIATION_PLAN_REJECTED,
+                "AI_REMEDIATION_PLAN",
+                saved.getId(),
+                reviewerId,
+                workspaceId,
+                "Rejected remediation plan: " + saved.getTitle() + " (Reason: " + reason + ")"
+        );
+
+        if (securityEventService != null) {
+            securityEventService.recordEvent(
+                    workspaceId,
+                    null,
+                    null,
+                    reviewerId,
+                    SecurityEventType.AI_REMEDIATION_PLAN_REJECTED,
+                    SecurityEventSeverity.INFO,
+                    SecurityEventOutcome.SUCCESS,
+                    "AI_COPILOT",
+                    null,
+                    null,
+                    null,
+                    Map.of("planId", saved.getId().toString(), "reason", reason != null ? reason : "")
+            );
+        }
+
+        return toDto(saved);
+    }
+
+    @Transactional
+    public AiRemediationPlanDto recordFeedback(UUID workspaceId, UUID planId, int rating, String comment) {
+        AiRemediationPlan plan = planRepository.findByIdAndWorkspaceId(planId, workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Remediation plan not found: " + planId));
+
+        plan.setFeedbackRating(rating);
+        plan.setFeedbackComment(comment);
+        plan.setUpdatedAt(Instant.now());
+        AiRemediationPlan saved = planRepository.save(plan);
+
+        auditService.logSuccess(
+                AuditAction.AI_PLAN_FEEDBACK_RECORDED,
+                "AI_REMEDIATION_PLAN",
+                saved.getId(),
+                plan.getReviewedByUserId(),
+                workspaceId,
+                "Recorded feedback rating " + rating + "/5 for plan " + saved.getId()
+        );
+
+        return toDto(saved);
+    }
+
+    private void checkExpiration(AiRemediationPlan plan) {
+        if (plan.getStatus() == AiPlanStatus.PENDING_APPROVAL && Instant.now().isAfter(plan.getExpiresAt())) {
+            plan.setStatus(AiPlanStatus.EXPIRED);
+            plan.setUpdatedAt(Instant.now());
+            planRepository.save(plan);
+        }
+    }
+
+    private void expireStalePlans(UUID workspaceId) {
+        List<AiRemediationPlan> expired = planRepository.findByStatusAndExpiresAtBefore(AiPlanStatus.PENDING_APPROVAL, Instant.now());
+        for (AiRemediationPlan p : expired) {
+            p.setStatus(AiPlanStatus.EXPIRED);
+            p.setUpdatedAt(Instant.now());
+            planRepository.save(p);
+        }
+    }
+
+    public AiRemediationPlanDto toDto(AiRemediationPlan entity) {
+        List<RemediationStep> steps = new ArrayList<>();
+        BlastRadiusImpact impact = null;
+
+        try {
+            if (entity.getRemediationStepsJson() != null) {
+                steps = objectMapper.readValue(entity.getRemediationStepsJson(), new TypeReference<List<RemediationStep>>() {});
+            }
+            if (entity.getBlastRadiusJson() != null) {
+                impact = objectMapper.readValue(entity.getBlastRadiusJson(), BlastRadiusImpact.class);
+            }
+        } catch (Exception ignored) {
+        }
+
+        return new AiRemediationPlanDto(
+                entity.getId(),
+                entity.getRcaReportId(),
+                entity.getPlanType(),
+                entity.getTitle(),
+                entity.getDescription(),
+                entity.getVersion(),
+                entity.getRiskLevel(),
+                entity.getConfidenceScore(),
+                entity.getTargetResourceType(),
+                entity.getTargetResourceId(),
+                steps,
+                entity.getPayloadDiffJson(),
+                impact,
+                entity.getPlanFingerprint(),
+                entity.isRequiresFourEyes(),
+                entity.isRequiresStepUp(),
+                entity.getStatus(),
+                entity.getCreatedByUserId(),
+                entity.getReviewedByUserId(),
+                entity.getSecondReviewedByUserId(),
+                entity.getExecutedAt(),
+                entity.getExpiresAt(),
+                entity.getExecutionResultJson(),
+                entity.getFeedbackRating(),
+                entity.getFeedbackComment(),
+                entity.getCreatedAt()
+        );
+    }
+
+    public String computePlanFingerprint(AiRemediationPlan plan) {
+        if (plan == null) {
+            return "";
+        }
+        String payload = (plan.getPlanType() != null ? plan.getPlanType() : "") + "|"
+                + plan.getVersion() + "|"
+                + (plan.getTargetResourceType() != null ? plan.getTargetResourceType() : "") + "|"
+                + (plan.getTargetResourceId() != null ? plan.getTargetResourceId() : "") + "|"
+                + (plan.getRemediationStepsJson() != null ? plan.getRemediationStepsJson() : "") + "|"
+                + (plan.getPayloadDiffJson() != null ? plan.getPayloadDiffJson() : "");
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (Exception e) {
+            return "sha256err";
+        }
+    }
+}

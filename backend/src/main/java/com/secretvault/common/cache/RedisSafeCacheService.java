@@ -69,16 +69,50 @@ public class RedisSafeCacheService implements SafeCacheService {
         } catch (Exception ex) {
             redisMetrics.redisFailure("cache_read");
             log.warn("Redis cache read error for key [{}], falling back to database: {}", sanitizeKey(key), ex.getMessage());
+            return dbSupplier.get();
         }
 
         redisMetrics.cacheMiss(domain);
-        T result = dbSupplier.get();
 
-        if (result != null) {
-            put(domain, identifier, result, ttl);
+        // Cache stampede prevention: acquire short distributed lock
+        String lockKey = key + ":lock";
+        boolean lockAcquired = false;
+        try {
+            Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(5));
+            lockAcquired = Boolean.TRUE.equals(acquired);
+        } catch (Exception ex) {
+            log.debug("Redis stampede lock acquisition error for key [{}]: {}", sanitizeKey(lockKey), ex.getMessage());
         }
 
-        return result;
+        if (!lockAcquired) {
+            // Another thread is actively computing this key; wait briefly and check cache once more
+            try {
+                Thread.sleep(75);
+                String json = stringRedisTemplate.opsForValue().get(key);
+                if (json != null && !json.isBlank()) {
+                    redisMetrics.cacheHit(domain);
+                    return objectMapper.readValue(json, type);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception ignored) {
+            }
+        }
+
+        try {
+            T result = dbSupplier.get();
+            if (result != null) {
+                put(domain, identifier, result, ttl);
+            }
+            return result;
+        } finally {
+            if (lockAcquired) {
+                try {
+                    stringRedisTemplate.delete(lockKey);
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 
     @Override

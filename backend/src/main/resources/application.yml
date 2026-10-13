@@ -16,9 +16,11 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
-      idle-timeout: 300000
+      idle-timeout: 60000
       connection-timeout: 20000
-      max-lifetime: 1200000
+      max-lifetime: 300000
+      keepalive-time: 30000
+      connection-test-query: SELECT 1
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -44,6 +46,23 @@ spring:
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
 
+  mail:
+    host: ${SPRING_MAIL_HOST:${MAIL_HOST:smtp.gmail.com}}
+    port: ${SPRING_MAIL_PORT:${MAIL_PORT:587}}
+    username: ${SPRING_MAIL_USERNAME:${MAIL_USERNAME:}}
+    password: ${SPRING_MAIL_PASSWORD:${MAIL_PASSWORD:}}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
 # Management & Observability
 management:
   endpoints:
@@ -55,6 +74,9 @@ management:
       show-details: when_authorized
       probes:
         enabled: true
+  health:
+    mail:
+      enabled: false
   info:
     env:
       enabled: true
@@ -70,6 +92,11 @@ springdoc:
 
 # Application Security Configuration
 secretvault:
+  incident:
+    worker:
+      enabled: ${INCIDENT_WORKER_ENABLED:true}
+      poll-interval-ms: ${INCIDENT_WORKER_POLL_INTERVAL_MS:2000}
+      stale-threshold-minutes: ${INCIDENT_WORKER_STALE_THRESHOLD_MINUTES:5}
   security:
     master-key: ${VAULT_MASTER_KEY:}
     jwt:
@@ -107,4 +134,38 @@ secretvault:
     timeout-seconds: 60
     user-verification: PREFERRED
     allow-origin-port: true
-    clone-detection-action: BLOCK
+  sync:
+    scheduler:
+      enabled: ${SYNC_SCHEDULER_ENABLED:true}
+      interval-ms: ${SYNC_SCHEDULER_INTERVAL_MS:300000}
+      batch-size: ${SYNC_SCHEDULER_BATCH_SIZE:50}
+    lock:
+      allow-local-fallback: ${SYNC_LOCK_ALLOW_LOCAL_FALLBACK:false}
+      lease-duration-ms: ${SYNC_LOCK_LEASE_DURATION_MS:60000}
+      renewal-interval-ms: ${SYNC_LOCK_RENEWAL_INTERVAL_MS:10000}
+  pingram:
+    api-key: ${PINGRAM_API_KEY:pingram_sk_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJrZXlfM2M3YTdiNjFkODZjZTEwYzNiZWYwZmE4NGJlYjU0ZWIiLCJ2ZXJzaW9uIjoxLCJhY2NvdW50SWQiOiJsZ3VlcmEwb2I5dzYzYmNodzVleTBkN3l3dSIsImtleVR5cGUiOiJzZWNyZXQiLCJlbnZpcm9ubWVudElkIjoibGd1ZXJhMG9iOXc2M2JjaHc1ZXkwZDd5d3UifQ.82RRX5wbb0-UvImvx7Yyv1YCB3FAl5IzZpVrDKYLyQQ}
+    base-url: ${PINGRAM_BASE_URL:https://api.pingram.io}
+    from-name: ${PINGRAM_FROM_NAME:SecretVault Security}
+    from-address: ${PINGRAM_FROM_ADDRESS:noreply@pingram.io}
+  ai:
+    provider: ${AI_PROVIDER:GEMINI}
+    fallback-provider: ${AI_FALLBACK_PROVIDER:NONE}
+    ollama:
+      base-url: ${AI_OLLAMA_BASE_URL:http://localhost:11434}
+      model: ${AI_OLLAMA_MODEL:qwen3:8b}
+      timeout-seconds: ${AI_OLLAMA_TIMEOUT_SECONDS:120}
+      temperature: 0.2
+      max-tokens: 2048
+    gemini:
+      base-url: ${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      model: ${AI_GEMINI_MODEL:gemini-3.5-flash-lite}
+      api-key: ${AI_GEMINI_API_KEY:${GEMINI_API_KEY:}}
+      timeout-seconds: ${AI_GEMINI_TIMEOUT_SECONDS:60}
+      temperature: 0.1
+      max-tokens: 2048
+    openai:
+      base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+      api-key: ${AI_API_KEY:}
+      model: ${AI_MODEL:gpt-4o-mini}
+      timeout-seconds: ${AI_OPENAI_TIMEOUT_SECONDS:60}

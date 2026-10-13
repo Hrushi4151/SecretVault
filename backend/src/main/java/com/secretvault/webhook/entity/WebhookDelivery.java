@@ -40,6 +40,15 @@ public class WebhookDelivery {
     @Column(name = "payload_digest", length = 128)
     private String payloadDigest;
 
+    @Column(name = "payload_json", columnDefinition = "TEXT")
+    private String payloadJson;
+
+    @Column(name = "worker_id", length = 128)
+    private String workerId;
+
+    @Column(name = "leased_until")
+    private Instant leasedUntil;
+
     @Column(name = "next_retry_at")
     private Instant nextRetryAt;
 
@@ -77,6 +86,12 @@ public class WebhookDelivery {
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
     public String getPayloadDigest() { return payloadDigest; }
     public void setPayloadDigest(String payloadDigest) { this.payloadDigest = payloadDigest; }
+    public String getPayloadJson() { return payloadJson; }
+    public void setPayloadJson(String payloadJson) { this.payloadJson = payloadJson; }
+    public String getWorkerId() { return workerId; }
+    public void setWorkerId(String workerId) { this.workerId = workerId; }
+    public Instant getLeasedUntil() { return leasedUntil; }
+    public void setLeasedUntil(Instant leasedUntil) { this.leasedUntil = leasedUntil; }
     public Instant getNextRetryAt() { return nextRetryAt; }
     public void setNextRetryAt(Instant nextRetryAt) { this.nextRetryAt = nextRetryAt; }
     public Instant getDeliveredAt() { return deliveredAt; }

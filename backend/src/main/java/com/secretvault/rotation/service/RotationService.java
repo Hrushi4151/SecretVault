@@ -51,6 +51,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -136,6 +137,28 @@ public class RotationService {
     // ==========================================
     // ROTATION POLICY MANAGEMENT
     // ==========================================
+
+    @Transactional(readOnly = true)
+    public List<RotationPolicyResponse> listPolicies(UUID workspaceId, UUID actorId) {
+        verifyAccess(workspaceId, null, null, null, actorId, AccessPermission.SECRET_ROTATION_READ);
+        List<RotationPolicy> policies = policyRepository.findByWorkspaceId(workspaceId);
+        return policies.stream()
+                .map(RotationPolicyResponse::fromEntity)
+                .toList();
+    }
+
+    @Transactional
+    public RotationPolicyResponse createPolicy(
+            UUID workspaceId, UUID secretId,
+            CreateRotationPolicyRequest req, UUID actorId) {
+
+        Secret secret = secretRepository.findById(secretId)
+                .orElseThrow(() -> ApiException.notFound("Secret not found"));
+        Environment env = environmentRepository.findById(secret.getEnvironmentId())
+                .orElseThrow(() -> ApiException.notFound("Environment not found"));
+
+        return createPolicy(workspaceId, env.getProjectId(), secret.getEnvironmentId(), secretId, req, actorId);
+    }
 
     @Transactional
     public RotationPolicyResponse createPolicy(

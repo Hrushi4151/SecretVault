@@ -22,7 +22,7 @@ export const oidcApi = {
 
   updateProvider(workspaceId, providerId, data) {
     return apiClient.request(`/workspaces/${workspaceId}/oidc-providers/${providerId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   },

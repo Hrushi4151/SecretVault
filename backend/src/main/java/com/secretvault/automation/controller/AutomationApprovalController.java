@@ -65,4 +65,16 @@ public class AutomationApprovalController {
         String msg = req.approve() ? "Automation action approved and executed" : "Automation action rejected";
         return ResponseEntity.ok(ApiResponse.success(decided, msg));
     }
+
+    @PostMapping("/{approvalId}/cancel")
+    @Operation(summary = "Cancel a pending automation approval request")
+    public ResponseEntity<ApiResponse<AutomationApproval>> cancel(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID approvalId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        AutomationApproval cancelled = approvalService.cancelApproval(workspaceId, approvalId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(cancelled, "Automation approval cancelled"));
+    }
 }

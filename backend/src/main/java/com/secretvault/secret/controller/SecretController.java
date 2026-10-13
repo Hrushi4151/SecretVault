@@ -190,6 +190,7 @@ public class SecretController {
             limit = 60,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            failClosed = true,
             message = "Too many reveal intent requests. Please try again later."
     )
     @Operation(summary = "Request a short-lived single-use reveal intent token")
@@ -226,6 +227,7 @@ public class SecretController {
             limit = 60,
             windowSeconds = 60,
             type = com.secretvault.common.ratelimit.RateLimitIdentifierType.IP_AND_USER,
+            failClosed = true,
             message = "Too many secret reveal attempts. Please try again later."
     )
     @Operation(summary = "Explicit reveal endpoint decrypting secret in-memory")

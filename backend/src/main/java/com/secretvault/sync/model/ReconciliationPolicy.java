@@ -18,5 +18,10 @@ public enum ReconciliationPolicy {
     /**
      * Complete safe reconciliation: creates missing and updates mismatched secrets.
      */
-    SAFE_RECONCILIATION
+    SAFE_RECONCILIATION,
+
+    /**
+     * Strict mirror reconciliation: creates missing, updates mismatched, and deletes extra remote variables.
+     */
+    MIRROR_EXACT
 }

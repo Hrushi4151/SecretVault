@@ -52,6 +52,7 @@ logs/
 *.log
 *.hprof
 hs_err_pid*
+replay_pid*
 
 # OS and Temporary Files
 tmp/

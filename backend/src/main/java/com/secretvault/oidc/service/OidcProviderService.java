@@ -13,6 +13,9 @@ import com.secretvault.oidc.security.OidcDiscoveryService;
 import com.secretvault.workspace.repository.WorkspaceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.secretvault.oidc.entity.OidcTrustPolicy;
+import com.secretvault.oidc.repository.OidcTrustPolicyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,7 @@ public class OidcProviderService {
     private final OidcDiscoveryService discoveryService;
     private final JwksKeyProvider jwksKeyProvider;
     private final AuditService auditService;
+    private final OidcTrustPolicyRepository policyRepository;
 
     public OidcProviderService(
             OidcProviderRepository providerRepository,
@@ -40,11 +44,24 @@ public class OidcProviderService {
             JwksKeyProvider jwksKeyProvider,
             AuditService auditService
     ) {
+        this(providerRepository, workspaceRepository, discoveryService, jwksKeyProvider, auditService, null);
+    }
+
+    @Autowired
+    public OidcProviderService(
+            OidcProviderRepository providerRepository,
+            WorkspaceRepository workspaceRepository,
+            OidcDiscoveryService discoveryService,
+            JwksKeyProvider jwksKeyProvider,
+            AuditService auditService,
+            @Autowired(required = false) OidcTrustPolicyRepository policyRepository
+    ) {
         this.providerRepository = providerRepository;
         this.workspaceRepository = workspaceRepository;
         this.discoveryService = discoveryService;
         this.jwksKeyProvider = jwksKeyProvider;
         this.auditService = auditService;
+        this.policyRepository = policyRepository;
     }
 
     @Transactional
@@ -302,16 +319,22 @@ public class OidcProviderService {
             Map<String, PublicKey> keys = jwksKeyProvider.forceRefreshJwks(jwksUrl);
 
             return Map.of(
+                    "success", true,
                     "status", "SUCCESS",
+                    "message", "Discovery and JWKS reachable. Verified " + keys.size() + " public keys.",
+                    "keysCount", keys.size(),
+                    "keysLoadedCount", keys.size(),
                     "discoveredIssuer", discovery.issuer(),
                     "jwksUri", jwksUrl,
-                    "supportedAlgorithms", discovery.idTokenSigningAlgValuesSupported(),
-                    "keysLoadedCount", keys.size()
+                    "supportedAlgorithms", discovery.idTokenSigningAlgValuesSupported()
             );
         } catch (Exception e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Discovery test failed";
             return Map.of(
+                    "success", false,
                     "status", "FAILED",
-                    "error", e.getMessage()
+                    "message", errorMsg,
+                    "error", errorMsg
             );
         }
     }
@@ -320,6 +343,17 @@ public class OidcProviderService {
     public void deleteProvider(UUID id, UUID workspaceId, UUID actorId) {
         OidcProvider provider = providerRepository.findByIdAndWorkspaceId(id, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("OIDC provider not found in this workspace"));
+
+        if (policyRepository != null) {
+            try {
+                List<OidcTrustPolicy> policies = policyRepository.findByOidcProviderId(id);
+                if (!policies.isEmpty()) {
+                    policyRepository.deleteAll(policies);
+                }
+            } catch (Exception e) {
+                log.warn("Could not delete trust policies for OIDC provider [{}]: {}", id, e.getMessage());
+            }
+        }
 
         providerRepository.delete(provider);
 

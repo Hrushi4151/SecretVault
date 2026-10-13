@@ -2,6 +2,8 @@ package com.secretvault.security.finding.service;
 
 import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.service.EffectiveAccessService;
+import com.secretvault.audit.entity.AuditAction;
+import com.secretvault.audit.service.AuditService;
 import com.secretvault.common.exception.ApiException;
 import com.secretvault.security.event.model.SecurityEventOutcome;
 import com.secretvault.security.event.model.SecurityEventSeverity;
@@ -39,17 +41,20 @@ public class SecurityFindingService {
     private final WorkspaceRepository workspaceRepository;
     private final EffectiveAccessService effectiveAccessService;
     private final SecurityEventService eventService;
+    private final AuditService auditService;
 
     public SecurityFindingService(
             SecurityFindingRepository findingRepository,
             WorkspaceRepository workspaceRepository,
             EffectiveAccessService effectiveAccessService,
-            SecurityEventService eventService
+            SecurityEventService eventService,
+            AuditService auditService
     ) {
         this.findingRepository = findingRepository;
         this.workspaceRepository = workspaceRepository;
         this.effectiveAccessService = effectiveAccessService;
         this.eventService = eventService;
+        this.auditService = auditService;
     }
 
     /**
@@ -125,6 +130,19 @@ public class SecurityFindingService {
                         "title", saved.getTitle(),
                         "severity", saved.getSeverity().name()
                 )
+        );
+
+        auditService.recordAudit(
+                null,
+                saved.getWorkspaceId(),
+                null,
+                "SYSTEM",
+                AuditAction.FINDING_CREATED,
+                "SECURITY_FINDING",
+                saved.getId(),
+                null,
+                null,
+                "SUCCESS"
         );
 
         return saved;
@@ -244,6 +262,27 @@ public class SecurityFindingService {
             finding.setResolutionReason(null);
         }
 
+        AuditAction auditAction = switch (newStatus) {
+            case ACKNOWLEDGED -> AuditAction.FINDING_CONFIRMED;
+            case RESOLVED -> AuditAction.REMEDIATION_COMPLETED;
+            case FALSE_POSITIVE -> AuditAction.FINDING_FALSE_POSITIVE;
+            case OPEN -> AuditAction.FINDING_REOPENED;
+            case IN_PROGRESS -> AuditAction.FINDING_CONFIRMED;
+        };
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                callerUserId,
+                "USER",
+                auditAction,
+                "SECURITY_FINDING",
+                finding.getId(),
+                null,
+                null,
+                "SUCCESS"
+        );
+
         SecurityFinding saved = findingRepository.save(finding);
         return SecurityFindingResponse.fromEntity(saved);
     }
@@ -268,6 +307,19 @@ public class SecurityFindingService {
 
         finding.setAssigneeUserId(req != null ? req.assigneeUserId() : null);
         finding.setUpdatedAt(Instant.now());
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                callerUserId,
+                "USER",
+                AuditAction.FINDING_CONFIRMED,
+                "SECURITY_FINDING",
+                finding.getId(),
+                null,
+                null,
+                "SUCCESS"
+        );
 
         SecurityFinding saved = findingRepository.save(finding);
         return SecurityFindingResponse.fromEntity(saved);

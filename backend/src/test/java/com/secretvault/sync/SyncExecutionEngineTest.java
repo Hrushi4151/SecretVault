@@ -7,6 +7,7 @@ import com.secretvault.provider.dto.PushSecretToProviderResponse;
 import com.secretvault.provider.entity.ProviderResourceMapping;
 import com.secretvault.provider.model.ProviderErrorCode;
 import com.secretvault.provider.model.ProviderResourceType;
+import com.secretvault.provider.model.ProviderSecretMetadata;
 import com.secretvault.provider.model.ProviderType;
 import com.secretvault.provider.repository.ProviderResourceMappingRepository;
 import com.secretvault.provider.service.ProviderSecretSyncService;
@@ -227,5 +228,39 @@ class SyncExecutionEngineTest {
         assertThat(response.successfulOperations()).isEqualTo(1);
         assertThat(response.failedOperations()).isEqualTo(1);
         assertThat(response.job().status()).isEqualTo(SyncJobStatus.PARTIAL);
+    }
+
+    @Test
+    @DisplayName("Live sync executes remote variable deletion when planned by MIRROR_EXACT policy")
+    void executeLiveSyncDeleteSuccess() {
+        // Empty desired state
+        when(desiredStateResolver.resolveDesiredState(workspaceId, SyncScope.WORKSPACE, null))
+                .thenReturn(Map.of(mapping, Collections.emptyList()));
+        // Remote state has an orphan variable
+        ProviderSecretState remoteVar = new ProviderSecretState(
+                integrationId, mappingId, "prj_vercel_123", "production",
+                "ORPHAN_KEY", "env_orphan_123", "fp_orphan", true, null, Instant.now()
+        );
+        when(actualStateResolver.resolveActualState(workspaceId, mapping))
+                .thenReturn(ActualStateResult.success(List.of(remoteVar)));
+        when(driftDetectionEngine.detectDriftForMapping(eq(workspaceId), eq(mapping), any(), any(), eq(actorUserId)))
+                .thenReturn(Collections.emptyList());
+
+        when(providerSecretSyncService.deleteSecretFromProvider(workspaceId, integrationId, mappingId, "ORPHAN_KEY", actorUserId))
+                .thenReturn(com.secretvault.provider.model.ProviderSecretOperationResult.success("DELETE", "ORPHAN_KEY", "env_orphan_123"));
+
+        when(mappingRepository.findById(mappingId)).thenReturn(Optional.of(mapping));
+
+        SyncExecutionResponse response = executionEngine.executeSync(
+                workspaceId, SyncScope.WORKSPACE, null,
+                ReconciliationPolicy.MIRROR_EXACT, actorUserId
+        );
+
+        assertThat(response.success()).isTrue();
+        assertThat(response.successfulOperations()).isEqualTo(1);
+        assertThat(response.failedOperations()).isEqualTo(0);
+        assertThat(response.job().status()).isEqualTo(SyncJobStatus.COMPLETED);
+
+        verify(providerSecretSyncService).deleteSecretFromProvider(workspaceId, integrationId, mappingId, "ORPHAN_KEY", actorUserId);
     }
 }

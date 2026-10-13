@@ -133,6 +133,33 @@ public class MachineIdentityController {
         return ResponseEntity.ok(ApiResponse.success(null, "Machine identity deleted successfully"));
     }
 
+    // --- Direct Token Generation (Service / Daemon / Script Access) ---
+
+    @PostMapping({"/{id}/tokens", "/{id}/generate-token"})
+    public ResponseEntity<ApiResponse<MachineDtos.GenerateMachineTokenResponse>> generateToken(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID id,
+            @RequestBody(required = false) MachineDtos.GenerateMachineTokenRequest request,
+            @AuthenticationPrincipal UserPrincipal principal,
+            jakarta.servlet.http.HttpServletRequest httpRequest
+    ) {
+        effectiveAccessService.checkPermission(workspaceId, null, null, null, AccessPermission.ACCESS_MANAGE, principal.getId());
+        String sourceIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        MachineDtos.GenerateMachineTokenResponse response = machineService.generateDirectToken(
+                workspaceId, id, request, sourceIp, userAgent, principal.getId()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Machine token generated successfully"));
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String xf = request.getHeader("X-Forwarded-For");
+        if (xf != null && !xf.isBlank()) {
+            return xf.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+
     // --- Granular Permissions Management ---
 
     @GetMapping({"/{id}/permissions", "/{id}/grants"})

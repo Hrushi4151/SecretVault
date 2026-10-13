@@ -1,5 +1,7 @@
 package com.secretvault.automation.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.service.EffectiveAccessService;
 import com.secretvault.audit.entity.AuditAction;
@@ -7,6 +9,9 @@ import com.secretvault.audit.service.AuditService;
 import com.secretvault.automation.engine.AutomationPolicySimulator;
 import com.secretvault.automation.entity.AutomationPolicy;
 import com.secretvault.automation.entity.AutomationPolicyScope;
+import com.secretvault.automation.model.AutomationAction;
+import com.secretvault.automation.model.AutomationCondition;
+import com.secretvault.automation.model.ConditionOperator;
 import com.secretvault.automation.model.SimulationResult;
 import com.secretvault.automation.repository.AutomationPolicyRepository;
 import com.secretvault.common.exception.ApiException;
@@ -30,17 +35,20 @@ public class AutomationPolicyService {
     private final AutomationPolicySimulator policySimulator;
     private final EffectiveAccessService effectiveAccessService;
     private final AuditService auditService;
+    private final ObjectMapper objectMapper;
 
     public AutomationPolicyService(
             AutomationPolicyRepository policyRepository,
             AutomationPolicySimulator policySimulator,
             EffectiveAccessService effectiveAccessService,
-            AuditService auditService
+            AuditService auditService,
+            ObjectMapper objectMapper
     ) {
         this.policyRepository = policyRepository;
         this.policySimulator = policySimulator;
         this.effectiveAccessService = effectiveAccessService;
         this.auditService = auditService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -70,6 +78,8 @@ public class AutomationPolicyService {
         if (policyRepository.findByWorkspaceIdAndName(workspaceId, name.trim()).isPresent()) {
             throw ApiException.conflict("Policy with name '" + name + "' already exists in this workspace");
         }
+
+        validatePolicyDefinition(conditionsJson, actionsJson);
 
         AutomationPolicy policy = new AutomationPolicy();
         policy.setWorkspaceId(workspaceId);
@@ -147,6 +157,8 @@ public class AutomationPolicyService {
         if (actionsJson != null) policy.setActionsJson(actionsJson);
         if (dryRun != null) policy.setDryRun(dryRun);
         if (approvalRequired != null) policy.setApprovalRequired(approvalRequired);
+
+        validatePolicyDefinition(policy.getConditionsJson(), policy.getActionsJson());
 
         // Version increment on mutation
         policy.setPolicyVersion(policy.getPolicyVersion() + 1);
@@ -242,11 +254,68 @@ public class AutomationPolicyService {
                 .toList();
     }
 
+    private void validatePolicyDefinition(String conditionsJson, String actionsJson) {
+        if (conditionsJson != null && !conditionsJson.isBlank() && !"[]".equals(conditionsJson.trim())) {
+            try {
+                List<AutomationCondition> conditions = objectMapper.readValue(conditionsJson, new TypeReference<List<AutomationCondition>>() {});
+                for (AutomationCondition condition : conditions) {
+                    validateConditionNode(condition);
+                }
+            } catch (ApiException e) {
+                throw e;
+            } catch (Exception e) {
+                throw ApiException.badRequest("Malformed conditions JSON in policy definition: " + e.getMessage());
+            }
+        }
+
+        if (actionsJson != null && !actionsJson.isBlank() && !"[]".equals(actionsJson.trim())) {
+            try {
+                List<AutomationAction> actions = objectMapper.readValue(actionsJson, new TypeReference<List<AutomationAction>>() {});
+                for (AutomationAction action : actions) {
+                    if (action.getType() == null) {
+                        throw ApiException.badRequest("Action type cannot be null in policy definition");
+                    }
+                }
+            } catch (ApiException e) {
+                throw e;
+            } catch (Exception e) {
+                throw ApiException.badRequest("Malformed actions JSON in policy definition: " + e.getMessage());
+            }
+        }
+    }
+
+    private void validateConditionNode(AutomationCondition condition) {
+        if (condition == null) return;
+        ConditionOperator op = condition.operator() != null ? condition.operator() : ConditionOperator.EQUALS;
+        if (op == ConditionOperator.AND || op == ConditionOperator.OR) {
+            if (condition.nested() == null || condition.nested().isEmpty()) {
+                throw ApiException.badRequest("Logical operator " + op + " must contain non-empty nested conditions");
+            }
+            for (AutomationCondition nested : condition.nested()) {
+                validateConditionNode(nested);
+            }
+        } else if (op == ConditionOperator.NOT) {
+            if (condition.nested() == null || condition.nested().isEmpty()) {
+                throw ApiException.badRequest("Logical operator NOT must contain at least one nested condition");
+            }
+            for (AutomationCondition nested : condition.nested()) {
+                validateConditionNode(nested);
+            }
+        } else {
+            if (condition.field() == null || condition.field().isBlank()) {
+                throw ApiException.badRequest("Condition field must be specified for leaf operator " + op);
+            }
+        }
+    }
+
     private void verifyManageAccess(UUID workspaceId, UUID actorId) {
         if (actorId == null) return;
         var decision = effectiveAccessService.evaluateAccess(workspaceId, null, null, null, AccessPermission.AUTOMATION_MANAGE, actorId);
         if (!decision.allowed()) {
-            throw ApiException.forbidden("Access denied: missing WORKSPACE_SETTINGS_MANAGE permission");
+            if (decision.deniedReason() != null && decision.deniedReason().toLowerCase().contains("not found")) {
+                throw ApiException.notFound(decision.deniedReason());
+            }
+            throw ApiException.forbidden(decision.deniedReason() != null ? "Access denied: " + decision.deniedReason() : "Access denied: missing AUTOMATION_MANAGE permission");
         }
     }
 
@@ -254,7 +323,10 @@ public class AutomationPolicyService {
         if (actorId == null) return;
         var decision = effectiveAccessService.evaluateAccess(workspaceId, null, null, null, AccessPermission.AUTOMATION_VIEW, actorId);
         if (!decision.allowed()) {
-            throw ApiException.forbidden("Access denied: missing WORKSPACE_SETTINGS_READ permission");
+            if (decision.deniedReason() != null && decision.deniedReason().toLowerCase().contains("not found")) {
+                throw ApiException.notFound(decision.deniedReason());
+            }
+            throw ApiException.forbidden(decision.deniedReason() != null ? "Access denied: " + decision.deniedReason() : "Access denied: missing AUTOMATION_VIEW permission");
         }
     }
 }

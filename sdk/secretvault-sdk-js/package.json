@@ -1,0 +1,26 @@
+{
+  "name": "@secretvault/sdk",
+  "version": "1.0.0",
+  "description": "Official SecretVault JavaScript/TypeScript SDK for secure runtime secret retrieval, in-memory caching, and dynamic key rotation.",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "types": "src/types.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "secretvault",
+    "secrets-manager",
+    "kms",
+    "security",
+    "devsecops",
+    "rotation",
+    "zero-trust"
+  ],
+  "author": "SecretVault Engineering",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

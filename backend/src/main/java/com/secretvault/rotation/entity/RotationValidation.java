@@ -1,6 +1,8 @@
 package com.secretvault.rotation.entity;
 
 import com.secretvault.rotation.model.ValidationType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,6 +48,7 @@ public class RotationValidation {
     @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "details", columnDefinition = "jsonb")
     private String details;
 

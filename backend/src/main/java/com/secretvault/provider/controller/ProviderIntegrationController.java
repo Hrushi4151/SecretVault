@@ -118,6 +118,17 @@ public class ProviderIntegrationController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping("/{integrationId}/disconnect")
+    @Operation(summary = "Disconnect an integration without deleting its associated resource mappings")
+    public ResponseEntity<ApiResponse<ProviderIntegrationResponse>> disconnectIntegration(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID integrationId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        ProviderIntegrationResponse response = integrationService.disconnectIntegration(workspaceId, integrationId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @DeleteMapping("/{integrationId}")
     @Operation(summary = "Delete a provider integration and all mapped resources")
     public ResponseEntity<ApiResponse<Void>> deleteIntegration(

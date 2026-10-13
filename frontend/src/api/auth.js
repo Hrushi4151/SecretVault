@@ -1,6 +1,54 @@
 import { apiClient } from './client';
 
 export const authApi = {
+  getOtpPreview: async ({ email, type }) => {
+    return apiClient.request(`/auth/otp-preview?email=${encodeURIComponent(email)}&type=${encodeURIComponent(type || 'reg')}`, {
+      method: 'GET',
+    });
+  },
+
+  sendRegistrationOtp: async (payload) => {
+    return apiClient.request('/auth/register/send-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  verifyRegistrationOtp: async (payload) => {
+    return apiClient.request('/auth/register/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  requestPasswordReset: async (payload) => {
+    return apiClient.request('/auth/forgot-password/request', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  verifyPasswordResetOtp: async (payload) => {
+    return apiClient.request('/auth/forgot-password/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  verifyPasswordResetMfa: async (payload) => {
+    return apiClient.request('/auth/forgot-password/verify-mfa', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  resetPassword: async (payload) => {
+    return apiClient.request('/auth/forgot-password/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   register: async (payload) => {
     return apiClient.request('/auth/register', {
       method: 'POST',

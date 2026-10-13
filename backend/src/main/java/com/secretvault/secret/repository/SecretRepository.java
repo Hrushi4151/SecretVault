@@ -36,4 +36,7 @@ public interface SecretRepository extends JpaRepository<Secret, UUID> {
     List<Secret> findByEnvironmentIdAndStatus(UUID environmentId, SecretStatus status);
 
     List<Secret> findByEnvironmentIdAndStatusNot(UUID environmentId, SecretStatus status);
+
+    @Query("SELECT s FROM Secret s, com.secretvault.environment.entity.Environment e, com.secretvault.project.entity.Project p WHERE s.environmentId = e.id AND e.projectId = p.id AND p.workspaceId = :workspaceId")
+    List<Secret> findByWorkspaceId(@Param("workspaceId") UUID workspaceId);
 }

@@ -25,6 +25,9 @@ public class WebhookSigner {
     }
 
     public String computeSignature(String signingSecret, long timestampSeconds, String rawPayload) {
+        if (signingSecret == null || signingSecret.isBlank()) {
+            throw new IllegalArgumentException("Webhook signing secret cannot be null or blank (fail closed)");
+        }
         try {
             String dataToSign = timestampSeconds + "." + (rawPayload != null ? rawPayload : "");
             Mac mac = Mac.getInstance(HMAC_SHA256);
@@ -32,6 +35,8 @@ public class WebhookSigner {
             mac.init(keySpec);
             byte[] rawHmac = mac.doFinal(dataToSign.getBytes(StandardCharsets.UTF_8));
             return "t=" + timestampSeconds + ",v1=" + HexFormat.of().formatHex(rawHmac);
+        } catch (IllegalArgumentException iae) {
+            throw iae;
         } catch (Exception ex) {
             log.error("Failed to compute webhook signature: {}", ex.getMessage(), ex);
             throw new RuntimeException("Webhook signing error", ex);
@@ -39,6 +44,9 @@ public class WebhookSigner {
     }
 
     public boolean verifySignature(String signingSecret, String headerSignature, String rawPayload, long toleranceSeconds) {
+        if (signingSecret == null || signingSecret.isBlank()) {
+            return false;
+        }
         if (headerSignature == null || !headerSignature.contains("t=") || !headerSignature.contains("v1=")) {
             return false;
         }
@@ -74,5 +82,32 @@ public class WebhookSigner {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Verifies signature against primary secret, with graceful fallback to previous secret if rotated within grace period.
+     */
+    public boolean verifySignatureWithDualSecret(
+            String primarySecret,
+            String previousSecret,
+            java.time.Instant secretRotatedAt,
+            String headerSignature,
+            String rawPayload,
+            long toleranceSeconds,
+            long gracePeriodSeconds
+    ) {
+        if (verifySignature(primarySecret, headerSignature, rawPayload, toleranceSeconds)) {
+            return true;
+        }
+
+        if (previousSecret != null && !previousSecret.isBlank() && secretRotatedAt != null) {
+            long secondsSinceRotation = java.time.Duration.between(secretRotatedAt, java.time.Instant.now()).abs().toSeconds();
+            if (secondsSinceRotation <= gracePeriodSeconds) {
+                log.info("Verifying webhook signature against previous secret within grace period ({}s elapsed)", secondsSinceRotation);
+                return verifySignature(previousSecret, headerSignature, rawPayload, toleranceSeconds);
+            }
+        }
+
+        return false;
     }
 }

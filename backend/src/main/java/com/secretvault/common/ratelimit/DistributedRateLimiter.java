@@ -18,6 +18,10 @@ public interface DistributedRateLimiter {
      */
     RateLimitResult checkRateLimit(String key, int maxRequests, Duration window);
 
+    default RateLimitResult checkRateLimit(String key, int maxRequests, Duration window, boolean failClosed) {
+        return checkRateLimit(key, maxRequests, window);
+    }
+
     /**
      * Checks rate limit and throws {@link RateLimitExceededException} if limit is exceeded.
      *
@@ -28,6 +32,10 @@ public interface DistributedRateLimiter {
      * @throws RateLimitExceededException if limit exceeded
      */
     void checkRateLimitOrThrow(String key, int maxRequests, Duration window, String message);
+
+    default void checkRateLimitOrThrow(String key, int maxRequests, Duration window, String message, boolean failClosed) {
+        checkRateLimitOrThrow(key, maxRequests, window, message);
+    }
 
     /**
      * Resets/clears the rate limit counter for a specific key (e.g. on successful login reset).

@@ -61,6 +61,10 @@ public class SecurityIncident {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     public SecurityIncident() {}
 
     @PrePersist
@@ -106,4 +110,6 @@ public class SecurityIncident {
     public void setResolutionSummary(String resolutionSummary) { this.resolutionSummary = resolutionSummary; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 }

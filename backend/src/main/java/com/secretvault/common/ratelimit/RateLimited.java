@@ -38,4 +38,10 @@ public @interface RateLimited {
      * Custom message returned in standard API error response when exceeded.
      */
     String message() default "Too many requests. Please try again later.";
+
+    /**
+     * If true, fails closed (rejects requests) if Redis is unavailable or times out.
+     * Crucial for security-critical operations like login, OTP verification, and secret reveal.
+     */
+    boolean failClosed() default false;
 }

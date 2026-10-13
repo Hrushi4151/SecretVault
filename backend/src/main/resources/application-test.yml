@@ -47,3 +47,13 @@ secretvault:
       period-seconds: 30
       allowed-drift-steps: 1
       issuer: SecretVaultTest
+  sync:
+    lock:
+      allow-local-fallback: true
+      lease-duration-ms: 60000
+      renewal-interval-ms: 10000
+  incident:
+    worker:
+      enabled: true
+      poll-interval-ms: 500
+      stale-threshold-minutes: 5

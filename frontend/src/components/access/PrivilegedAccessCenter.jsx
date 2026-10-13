@@ -69,6 +69,16 @@ export const PrivilegedAccessCenter = () => {
     }
   }, [activeWorkspace?.id, activeTab, statusFilter]);
 
+  const normalizeList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val.content)) return val.content;
+    if (Array.isArray(val.data)) return val.data;
+    if (Array.isArray(val.data?.data)) return val.data.data;
+    if (Array.isArray(val.data?.content)) return val.data.content;
+    return [];
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -77,19 +87,19 @@ export const PrivilegedAccessCenter = () => {
       if (activeTab === 'REQUESTS') {
         const statusParam = statusFilter !== 'ALL' ? statusFilter : null;
         const res = await privilegedAccessApi.listRequests(activeWorkspace.id, { status: statusParam });
-        setRequests(res.data?.data || res.data || []);
+        setRequests(normalizeList(res));
       } else if (activeTab === 'AWAITING_APPROVAL') {
         const res = await privilegedAccessApi.listRequests(activeWorkspace.id, { awaitingMyApprovalOnly: true });
-        setRequests(res.data?.data || res.data || []);
+        setRequests(normalizeList(res));
       } else if (activeTab === 'ELEVATIONS') {
         const res = await privilegedAccessApi.listElevations(activeWorkspace.id, { activeOnly: false });
-        setElevations(res.data?.data || res.data || []);
+        setElevations(normalizeList(res));
       } else if (activeTab === 'POLICIES') {
         const res = await privilegedAccessApi.listPolicies(activeWorkspace.id);
-        setPolicies(res.data?.data || res.data || []);
+        setPolicies(normalizeList(res));
       }
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to load privileged access records');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load privileged access records');
     } finally {
       setIsLoading(false);
     }

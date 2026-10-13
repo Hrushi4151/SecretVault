@@ -33,6 +33,13 @@ public class SyncController {
     }
 
     @PostMapping("/sync/dry-run")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "provider_sync_dryrun",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many sync simulation requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Execute workspace-scoped dry-run drift simulation and sync planning")
     public ResponseEntity<ApiResponse<DryRunResponse>> executeWorkspaceDryRun(
             @PathVariable UUID workspaceId,
@@ -49,6 +56,13 @@ public class SyncController {
     }
 
     @PostMapping("/sync")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "provider_sync_live",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many live synchronization requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Execute workspace-scoped live synchronization to external providers")
     public ResponseEntity<ApiResponse<SyncExecutionResponse>> executeWorkspaceSync(
             @PathVariable UUID workspaceId,
@@ -59,8 +73,9 @@ public class SyncController {
         UUID scopeId = request != null ? request.scopeResourceId() : null;
         ReconciliationPolicy policy = request != null && request.reconciliationPolicy() != null ?
                 request.reconciliationPolicy() : ReconciliationPolicy.SAFE_RECONCILIATION;
+        UUID planJobId = request != null ? request.planJobId() : null;
 
-        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, scope, scopeId, policy, principal.getId());
+        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, scope, scopeId, policy, planJobId, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -89,8 +104,9 @@ public class SyncController {
     ) {
         ReconciliationPolicy policy = request != null && request.reconciliationPolicy() != null ?
                 request.reconciliationPolicy() : ReconciliationPolicy.SAFE_RECONCILIATION;
+        UUID planJobId = request != null ? request.planJobId() : null;
 
-        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, SyncScope.PROJECT, projectId, policy, principal.getId());
+        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, SyncScope.PROJECT, projectId, policy, planJobId, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -119,8 +135,9 @@ public class SyncController {
     ) {
         ReconciliationPolicy policy = request != null && request.reconciliationPolicy() != null ?
                 request.reconciliationPolicy() : ReconciliationPolicy.SAFE_RECONCILIATION;
+        UUID planJobId = request != null ? request.planJobId() : null;
 
-        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, SyncScope.ENVIRONMENT, environmentId, policy, principal.getId());
+        SyncExecutionResponse response = syncJobService.triggerSync(workspaceId, SyncScope.ENVIRONMENT, environmentId, policy, planJobId, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -157,6 +174,28 @@ public class SyncController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         Page<SyncOperationResponse> response = syncJobService.getSyncJobOperations(workspaceId, jobId, pageable, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/sync/jobs/{jobId}/retry")
+    @Operation(summary = "Retry failed operations of a partially failed or failed synchronization job")
+    public ResponseEntity<ApiResponse<SyncExecutionResponse>> retrySyncJob(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID jobId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        SyncExecutionResponse response = syncJobService.retryFailedJob(workspaceId, jobId, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/sync/jobs/{jobId}/cancel")
+    @Operation(summary = "Cancel an executing or queued synchronization job")
+    public ResponseEntity<ApiResponse<SyncJobResponse>> cancelSyncJob(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID jobId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        SyncJobResponse response = syncJobService.cancelSyncJob(workspaceId, jobId, principal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

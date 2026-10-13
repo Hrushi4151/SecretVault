@@ -83,6 +83,7 @@ public class SecretLeaseController {
     }
 
     @DeleteMapping("/api/v1/workspaces/{workspaceId}/leases/{leaseId}")
+    @PostMapping("/api/v1/workspaces/{workspaceId}/leases/{leaseId}/revoke")
     @Operation(summary = "Revoke a secret lease")
     public ResponseEntity<ApiResponse<Void>> revokeLease(
             @PathVariable UUID workspaceId,

@@ -42,7 +42,7 @@ public class AutomationPolicySimulator {
                     c.field() != null ? c.field() : c.operator().name(),
                     c.operator(),
                     c.value(),
-                    c.field() != null ? extractFieldValue(c.field(), mockEvent) : "NESTED",
+                    c.field() != null ? astEvaluator.extractFieldValue(c.field(), mockEvent) : "NESTED",
                     condMatched
             ));
         }
@@ -73,20 +73,6 @@ public class AutomationPolicySimulator {
                 blastRadius,
                 Map.of("dryRunConfigured", policy.isDryRun(), "priority", policy.getPriority())
         );
-    }
-
-    private Object extractFieldValue(String field, DomainEvent event) {
-        if (field == null || event == null) return null;
-        if (field.equalsIgnoreCase("eventType")) return event.getEventType().name();
-        if (field.equalsIgnoreCase("severity")) return event.getSeverity().name();
-        if (field.equalsIgnoreCase("workspaceId")) return event.getWorkspaceId();
-        if (field.equalsIgnoreCase("projectId")) return event.getProjectId();
-        if (field.equalsIgnoreCase("environmentId")) return event.getEnvironmentId();
-        if (field.equalsIgnoreCase("secretId")) return event.getSecretId();
-        if (event.getMetadata() != null && event.getMetadata().containsKey(field)) {
-            return event.getMetadata().get(field);
-        }
-        return null;
     }
 
     private String getRequiredPermissionForAction(com.secretvault.automation.model.AutomationActionType type) {

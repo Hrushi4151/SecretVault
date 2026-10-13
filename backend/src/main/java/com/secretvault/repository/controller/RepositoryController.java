@@ -45,7 +45,80 @@ public class RepositoryController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    @GetMapping("/{repositoryId}")
+    @GetMapping("/remote/discover")
+    @Operation(summary = "Discover remote repositories from connected SCM provider (e.g. GitHub)")
+    public ResponseEntity<ApiResponse<java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto>>> discoverRemoteRepositories(
+            @PathVariable UUID workspaceId,
+            @RequestParam(required = false, defaultValue = "GITHUB") com.secretvault.repository.model.RepositoryProvider provider,
+            @RequestParam(required = false) String token,
+            @RequestParam(required = false) String username,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        java.util.List<com.secretvault.repository.provider.RepositoryProviderAdapter.RemoteRepositoryDto> repos = repositoryService.discoverRemoteRepositories(
+                workspaceId, provider, token, username, actorId);
+        return ResponseEntity.ok(ApiResponse.success(repos));
+    }
+
+    @GetMapping("/github/status")
+    @Operation(summary = "Get GitHub account integration status for the workspace")
+    public ResponseEntity<ApiResponse<com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse>> getGitHubStatus(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse status = repositoryService.getGitHubIntegrationStatus(workspaceId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(status));
+    }
+
+    @PostMapping("/github/connect")
+    @Operation(summary = "Connect or update GitHub account integration for the workspace")
+    public ResponseEntity<ApiResponse<com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse>> connectGitHub(
+            @PathVariable UUID workspaceId,
+            @Valid @RequestBody com.secretvault.repository.dto.RepositoryDtos.ConnectGitHubIntegrationRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse status = repositoryService.connectGitHubIntegration(workspaceId, request.token(), actorId);
+        return ResponseEntity.ok(ApiResponse.success(status, "GitHub account connected successfully"));
+    }
+
+    @PostMapping("/github/refresh")
+    @Operation(summary = "Refresh GitHub account access and validate scopes")
+    public ResponseEntity<ApiResponse<com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse>> refreshGitHub(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        com.secretvault.repository.dto.RepositoryDtos.GitHubIntegrationStatusResponse status = repositoryService.refreshGitHubIntegration(workspaceId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(status, "GitHub account connection refreshed"));
+    }
+
+    @DeleteMapping("/github")
+    @Operation(summary = "Disconnect GitHub account integration safely")
+    public ResponseEntity<ApiResponse<Void>> disconnectGitHub(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        repositoryService.disconnectGitHubIntegration(workspaceId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(null, "GitHub integration disconnected successfully"));
+    }
+
+    @PatchMapping("/{repositoryId:[0-9a-fA-F\\-]+}/monitoring")
+    @Operation(summary = "Enable or disable automatic monitoring for a repository")
+    public ResponseEntity<ApiResponse<RepositorySummaryDto>> toggleMonitoring(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID repositoryId,
+            @RequestBody com.secretvault.repository.dto.RepositoryDtos.ToggleMonitoringRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        RepositorySummaryDto result = repositoryService.setRepositoryMonitoringEnabled(workspaceId, repositoryId, request.enabled(), actorId);
+        return ResponseEntity.ok(ApiResponse.success(result, request.enabled() ? "Repository monitoring enabled" : "Repository monitoring paused"));
+    }
+
+    @GetMapping("/{repositoryId:[0-9a-fA-F\\-]+}")
     @Operation(summary = "Get single repository metadata and leak detection status")
     public ResponseEntity<ApiResponse<RepositorySummaryDto>> getRepository(
             @PathVariable UUID workspaceId,

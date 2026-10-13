@@ -77,8 +77,8 @@ public class AuditLog {
         this.actorId = actorId;
         this.actorType = actorType != null ? actorType : "USER";
         this.action = action;
-        this.resourceType = resourceType;
-        this.resourceId = resourceId;
+        this.resourceType = resourceType != null ? resourceType : "GENERAL";
+        this.resourceId = resourceId != null ? resourceId : (workspaceId != null ? workspaceId : UUID.randomUUID());
         this.requestId = requestId;
         this.ipAddress = ipAddress;
         if (outcome != null) {

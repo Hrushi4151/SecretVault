@@ -86,12 +86,29 @@ public class EventDispatcher {
 
     @Transactional
     public boolean claimAndDispatch(OutboxEvent outbox) {
-        // Lock event
-        outbox.setStatus(OutboxStatus.PROCESSING);
-        outbox.setLockedAt(Instant.now());
-        outbox.setLockedBy(WORKER_ID);
-        outbox.setAttemptCount(outbox.getAttemptCount() + 1);
-        outboxRepository.saveAndFlush(outbox);
+        return claimAndDispatch(outbox, WORKER_ID, UUID.randomUUID().toString());
+    }
+
+    @Transactional
+    public boolean claimAndDispatch(OutboxEvent outbox, String workerId, String claimToken) {
+        Instant now = Instant.now();
+        Instant staleCutoff = now.minus(STALE_LOCK_THRESHOLD);
+        int claimed = outboxRepository.claimEventAtomic(
+                outbox.getId(),
+                OutboxStatus.PROCESSING,
+                OutboxStatus.PENDING,
+                OutboxStatus.FAILED,
+                OutboxStatus.PROCESSING,
+                staleCutoff,
+                workerId,
+                claimToken,
+                now
+        );
+
+        if (claimed == 0) {
+            log.debug("Event [{}] was already claimed by another worker; skipping", outbox.getEventId());
+            return false;
+        }
 
         try {
             BaseDomainEvent domainEvent = objectMapper.readValue(outbox.getPayload(), BaseDomainEvent.class);
@@ -122,8 +139,9 @@ public class EventDispatcher {
                             domainEvent.getCorrelationId()
                     ));
                 } catch (Exception handlerEx) {
+                    String sanitizedHandlerError = sanitizeErrorMessage(handlerEx.getMessage());
                     log.error("Consumer [{}] failed on event [{}]: {}",
-                            consumerName, domainEvent.getEventId(), handlerEx.getMessage(), handlerEx);
+                            consumerName, domainEvent.getEventId(), sanitizedHandlerError);
                     EventProcessingLog errorLog = new EventProcessingLog(
                             domainEvent.getEventId(),
                             consumerName,
@@ -131,57 +149,72 @@ public class EventDispatcher {
                             "FAILED",
                             domainEvent.getCorrelationId()
                     );
-                    errorLog.setError(handlerEx.getMessage());
+                    errorLog.setError(sanitizedHandlerError);
                     processingLogRepository.save(errorLog);
                     throw handlerEx;
                 }
             }
 
-            outbox.setStatus(OutboxStatus.PROCESSED);
-            outbox.setProcessedAt(Instant.now());
-            outbox.setLastError(null);
-            outbox.setLockedAt(null);
-            outbox.setLockedBy(null);
-            outboxRepository.save(outbox);
+            // Guarded completion: Ensure lock was not lost/stolen before marking PROCESSED
+            int completed = outboxRepository.completeEventGuarded(
+                    outbox.getId(),
+                    OutboxStatus.PROCESSED,
+                    workerId,
+                    claimToken,
+                    Instant.now()
+            );
+            if (completed == 0) {
+                log.warn("Stale worker [{}] failed to complete event [{}] - lock was stolen or expired",
+                        workerId, outbox.getEventId());
+                return false;
+            }
             return true;
 
         } catch (Exception ex) {
-            log.warn("Failed dispatching outbox event [{}]: {}", outbox.getEventId(), ex.getMessage());
-            outbox.setLastError(ex.getMessage());
-            outbox.setLockedAt(null);
-            outbox.setLockedBy(null);
+            String sanitizedError = sanitizeErrorMessage(ex.getMessage());
+            log.warn("Failed dispatching outbox event [{}]: {}", outbox.getEventId(), sanitizedError);
 
-            if (outbox.getAttemptCount() >= outbox.getMaxAttempts()) {
-                outbox.setStatus(OutboxStatus.DEAD_LETTER);
+            int nextAttempt = outbox.getAttemptCount() + 1;
+            if (nextAttempt >= outbox.getMaxAttempts()) {
+                outboxRepository.failEventGuarded(
+                        outbox.getId(),
+                        OutboxStatus.DEAD_LETTER,
+                        Instant.now(),
+                        sanitizedError,
+                        workerId,
+                        claimToken
+                );
                 log.error("Outbox event [{}] reached max attempts ({}), marked DEAD_LETTER",
                         outbox.getEventId(), outbox.getMaxAttempts());
             } else {
-                outbox.setStatus(OutboxStatus.FAILED);
-                long delaySeconds = calculateExponentialBackoff(outbox.getAttemptCount());
-                outbox.setAvailableAt(Instant.now().plusSeconds(delaySeconds));
+                long delaySeconds = calculateExponentialBackoff(nextAttempt);
+                outboxRepository.failEventGuarded(
+                        outbox.getId(),
+                        OutboxStatus.FAILED,
+                        Instant.now().plusSeconds(delaySeconds),
+                        sanitizedError,
+                        workerId,
+                        claimToken
+                );
             }
-            outboxRepository.save(outbox);
             return false;
         }
     }
 
     /**
-     * Recovers abandoned PROCESSING events where the worker lock timed out.
+     * Atomically recovers abandoned PROCESSING events where the worker lock timed out.
+     * Guaranteed not to reset or overwrite newer claims.
      */
     @Transactional
     public void recoverStaleLocks() {
         Instant cutoff = Instant.now().minus(STALE_LOCK_THRESHOLD);
-        List<OutboxEvent> stale = outboxRepository.findStaleLockedEvents(
-                OutboxStatus.PROCESSING, cutoff, PageRequest.of(0, 50)
+        int recovered = outboxRepository.recoverStaleLockedEventsAtomic(
+                OutboxStatus.PENDING,
+                OutboxStatus.PROCESSING,
+                cutoff
         );
-
-        for (OutboxEvent event : stale) {
-            log.warn("Recovering stale locked event [{}] locked by [{}] at [{}]",
-                    event.getEventId(), event.getLockedBy(), event.getLockedAt());
-            event.setStatus(OutboxStatus.PENDING);
-            event.setLockedAt(null);
-            event.setLockedBy(null);
-            outboxRepository.save(event);
+        if (recovered > 0) {
+            log.warn("Safely recovered {} stale locked outbox events back to PENDING", recovered);
         }
     }
 
@@ -205,10 +238,82 @@ public class EventDispatcher {
         }
     }
 
+    /**
+     * Resets a DEAD_LETTER or FAILED outbox event back to PENDING for immediate redelivery.
+     */
+    @Transactional
+    public boolean retryDeadLetterEvent(UUID workspaceId, UUID eventId) {
+        OutboxEvent event = outboxRepository.findByWorkspaceIdAndEventId(workspaceId, eventId)
+                .orElseThrow(() -> com.secretvault.common.exception.ApiException.notFound("Event not found in outbox"));
+
+        if (event.getStatus() != OutboxStatus.DEAD_LETTER && event.getStatus() != OutboxStatus.FAILED) {
+            throw com.secretvault.common.exception.ApiException.badRequest("Event is not in DEAD_LETTER or FAILED status: " + event.getStatus());
+        }
+
+        event.setStatus(OutboxStatus.PENDING);
+        event.setAvailableAt(Instant.now());
+        event.setAttemptCount(0);
+        event.setLastError(null);
+        event.setLockedAt(null);
+        event.setLockedBy(null);
+        outboxRepository.save(event);
+
+        log.info("Dead-letter event [{}] in workspace [{}] reset to PENDING for redelivery", eventId, workspaceId);
+        return true;
+    }
+
+    /**
+     * Gathers operational backlog and health metrics for the outbox.
+     */
+    @Transactional(readOnly = true)
+    public com.secretvault.events.dto.OutboxStatsDto getOutboxStats(UUID workspaceId) {
+        long pending = outboxRepository.countByWorkspaceIdAndStatus(workspaceId, OutboxStatus.PENDING);
+        long processing = outboxRepository.countByWorkspaceIdAndStatus(workspaceId, OutboxStatus.PROCESSING);
+        long failed = outboxRepository.countByWorkspaceIdAndStatus(workspaceId, OutboxStatus.FAILED);
+        long deadLetter = outboxRepository.countByWorkspaceIdAndStatus(workspaceId, OutboxStatus.DEAD_LETTER);
+        long processed = outboxRepository.countByWorkspaceIdAndStatus(workspaceId, OutboxStatus.PROCESSED);
+
+        List<OutboxEvent> oldestPending = outboxRepository.findByStatusAndAvailableAtLessThanEqualOrderByAvailableAtAsc(
+                OutboxStatus.PENDING, Instant.now().plus(Duration.ofDays(1)), PageRequest.of(0, 1)
+        );
+        Long oldestPendingAgeSeconds = null;
+        if (!oldestPending.isEmpty()) {
+            oldestPendingAgeSeconds = Duration.between(oldestPending.get(0).getCreatedAt(), Instant.now()).toSeconds();
+        }
+
+        return new com.secretvault.events.dto.OutboxStatsDto(
+                pending, processing, failed, deadLetter, processed, oldestPendingAgeSeconds
+        );
+    }
+
     private long calculateExponentialBackoff(int attempt) {
         long base = (long) Math.pow(2, Math.min(attempt, 6)); // 2, 4, 8, 16, 32, 64s
         long jitter = ThreadLocalRandom.current().nextLong(1, 4);
         return base + jitter;
+    }
+
+    public static String sanitizeErrorMessage(String error) {
+        if (error == null) return null;
+        String sanitized = error;
+        // 1. Canary tokens (sec_canary..., secret_canary...)
+        sanitized = sanitized.replaceAll("(?i)(sec[a-z]*[_-]?canary[a-zA-Z0-9_\\-]*)", "[REDACTED_CANARY]");
+        // 2. Known token prefixes (GitHub, AWS, Slack, GitLab, Stripe, Google)
+        sanitized = sanitized.replaceAll("(?i)(gh[pours]_[a-zA-Z0-9]{20,})", "[REDACTED_TOKEN]");
+        sanitized = sanitized.replaceAll("(?i)(A[SK]IA[0-9A-Z]{16})", "[REDACTED_TOKEN]");
+        sanitized = sanitized.replaceAll("(?i)(xox[baprs]-[a-zA-Z0-9\\-]{10,})", "[REDACTED_TOKEN]");
+        sanitized = sanitized.replaceAll("(?i)(glpat-[a-zA-Z0-9\\-_]{20,})", "[REDACTED_TOKEN]");
+        sanitized = sanitized.replaceAll("(?i)([rs]k_live_[a-zA-Z0-9]{24,})", "[REDACTED_TOKEN]");
+        sanitized = sanitized.replaceAll("(?i)(AIza[0-9A-Za-z\\-_]{35})", "[REDACTED_TOKEN]");
+        // 3. PEM Private Keys (multiline matching)
+        sanitized = sanitized.replaceAll("-----BEGIN[ A-Z_-]+KEY-----[\\s\\S]*?-----END[ A-Z_-]+KEY-----", "[REDACTED_KEY]");
+        // 4. Authorization / Bearer tokens: strip token value without swallowing whole line
+        sanitized = sanitized.replaceAll("(?i)(bearer\\s+)[a-zA-Z0-9_\\-\\.~+/]+=*", "$1[REDACTED]");
+        sanitized = sanitized.replaceAll("(?i)(authorization:\\s*(?:bearer\\s+)?)[^\\s,;]+", "$1[REDACTED]");
+        sanitized = sanitized.replaceAll("(?i)(api[_-]?key\\s*[=:]\\s*)[^\\s,;]+", "$1[REDACTED]");
+        sanitized = sanitized.replaceAll("(?i)(password\\s*[=:]\\s*)[^\\s,;]+", "$1[REDACTED]");
+        // 5. High-entropy hex tokens (32+ hex chars with entropy >= 3.0)
+        sanitized = com.secretvault.events.model.BaseDomainEvent.sanitizeHexTokensInText(sanitized);
+        return sanitized;
     }
 }
 

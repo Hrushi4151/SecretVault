@@ -34,6 +34,9 @@ import com.secretvault.workspace.repository.WorkspaceMembershipRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
 import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.service.EffectiveAccessService;
+import com.secretvault.events.model.BaseDomainEvent;
+import com.secretvault.events.model.EventType;
+import com.secretvault.events.publisher.EventPublisher;
 import com.secretvault.machine.repository.MachineIdentityRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +77,7 @@ public class SecretService {
     private final MachineIdentityRepository machineIdentityRepository;
     private final com.secretvault.auth.stepup.service.StepUpPolicyService stepUpPolicyService;
     private final com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService;
+    private final EventPublisher eventPublisher;
 
     public SecretService(
             SecretRepository secretRepository,
@@ -89,7 +93,7 @@ public class SecretService {
     ) {
         this(secretRepository, secretVersionRepository, encryptionService, auditService,
              environmentRepository, projectRepository, workspaceRepository, membershipRepository,
-             projectAccessRepository, environmentAccessRepository, null, null, null, null, null);
+             projectAccessRepository, environmentAccessRepository, null, null, null, null, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -108,7 +112,8 @@ public class SecretService {
             @org.springframework.beans.factory.annotation.Autowired(required = false) EffectiveAccessService effectiveAccessService,
             @org.springframework.beans.factory.annotation.Autowired(required = false) MachineIdentityRepository machineIdentityRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.auth.stepup.service.StepUpPolicyService stepUpPolicyService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.auth.stepup.service.StepUpAuthenticationService stepUpAuthenticationService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) EventPublisher eventPublisher
     ) {
         this.secretRepository = secretRepository;
         this.secretVersionRepository = secretVersionRepository;
@@ -125,6 +130,7 @@ public class SecretService {
         this.machineIdentityRepository = machineIdentityRepository;
         this.stepUpPolicyService = stepUpPolicyService;
         this.stepUpAuthenticationService = stepUpAuthenticationService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -147,6 +153,53 @@ public class SecretService {
             secrets = secretRepository.findByEnvironmentIdAndStatus(environmentId, statusFilter);
         } else {
             secrets = secretRepository.findByEnvironmentIdAndStatusNot(environmentId, SecretStatus.DELETED);
+        }
+
+        if (StringUtils.hasText(search)) {
+            String query = search.trim().toLowerCase(Locale.ROOT);
+            secrets = secrets.stream()
+                    .filter(s -> s.getName().toLowerCase(Locale.ROOT).contains(query))
+                    .toList();
+        }
+
+        return secrets.stream()
+                .map(SecretMetadataResponse::fromEntity)
+                .toList();
+    }
+
+    /**
+     * Lists all secret metadata in a workspace across projects and environments.
+     * Never returns plaintext secrets.
+     */
+    @Transactional(readOnly = true)
+    public List<SecretMetadataResponse> getSecretsByWorkspace(
+            UUID workspaceId,
+            String search,
+            SecretStatus statusFilter,
+            UUID userId
+    ) {
+        workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> ApiException.notFound("Workspace not found"));
+
+        if (userId != null) {
+            Optional<WorkspaceMembership> membershipOpt = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            if (membershipOpt.isEmpty()) {
+                boolean isMachine = machineIdentityRepository != null && machineIdentityRepository.existsByIdAndWorkspaceIdAndDeletedAtIsNull(userId, workspaceId);
+                if (!isMachine && effectiveAccessService == null) {
+                    throw ApiException.forbidden("You are not a member of this workspace");
+                }
+            }
+        }
+
+        List<Secret> secrets = secretRepository.findByWorkspaceId(workspaceId);
+        if (statusFilter != null) {
+            secrets = secrets.stream()
+                    .filter(s -> s.getStatus() == statusFilter)
+                    .toList();
+        } else {
+            secrets = secrets.stream()
+                    .filter(s -> s.getStatus() != SecretStatus.DELETED)
+                    .toList();
         }
 
         if (StringUtils.hasText(search)) {
@@ -265,6 +318,25 @@ public class SecretService {
                 ipAddress,
                 "SUCCESS"
         );
+
+        // 5. Emit Domain Event to Transactional Outbox
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    BaseDomainEvent.builder()
+                            .eventType(EventType.SECRET_CREATED)
+                            .workspaceId(workspaceId)
+                            .projectId(projectId)
+                            .environmentId(environmentId)
+                            .secretId(secret.getId())
+                            .actorType(context.membership() != null ? "USER" : "MACHINE")
+                            .actorId(userId != null ? userId.toString() : null)
+                            .requestId(requestId)
+                            .aggregateType("SECRET")
+                            .aggregateId(secret.getId().toString())
+                            .addMetadata("version", 1)
+                            .build()
+            );
+        }
 
         log.info("Created secret [{}] (version 1) in environment [{}] by user [{}]",
                 secret.getId(), environmentId, userId);
@@ -435,6 +507,43 @@ public class SecretService {
             );
         }
 
+        // 4. Emit Domain Events to Transactional Outbox
+        if (eventPublisher != null) {
+            if (valueUpdated) {
+                eventPublisher.publish(
+                        BaseDomainEvent.builder()
+                                .eventType(EventType.SECRET_VERSION_CREATED)
+                                .workspaceId(workspaceId)
+                                .projectId(projectId)
+                                .environmentId(environmentId)
+                                .secretId(secret.getId())
+                                .actorType("USER")
+                                .actorId(userId != null ? userId.toString() : null)
+                                .requestId(requestId)
+                                .aggregateType("SECRET")
+                                .aggregateId(secret.getId().toString())
+                                .addMetadata("version", secret.getCurrentVersionNumber())
+                                .build()
+                );
+            }
+            eventPublisher.publish(
+                    BaseDomainEvent.builder()
+                            .eventType(EventType.SECRET_UPDATED)
+                            .workspaceId(workspaceId)
+                            .projectId(projectId)
+                            .environmentId(environmentId)
+                            .secretId(secret.getId())
+                            .actorType("USER")
+                            .actorId(userId != null ? userId.toString() : null)
+                            .requestId(requestId)
+                            .aggregateType("SECRET")
+                            .aggregateId(secret.getId().toString())
+                            .addMetadata("version", secret.getCurrentVersionNumber())
+                            .addMetadata("status", secret.getStatus().name())
+                            .build()
+            );
+        }
+
         log.info("Updated secret [{}] (currentVersion: {}) in environment [{}] by user [{}]",
                 secret.getId(), secret.getCurrentVersionNumber(), environmentId, userId);
 
@@ -598,6 +707,23 @@ public class SecretService {
                 ipAddress,
                 "SUCCESS"
         );
+
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    BaseDomainEvent.builder()
+                            .eventType(EventType.SECRET_DELETED)
+                            .workspaceId(workspaceId)
+                            .projectId(projectId)
+                            .environmentId(environmentId)
+                            .secretId(secret.getId())
+                            .actorType("USER")
+                            .actorId(userId != null ? userId.toString() : null)
+                            .requestId(requestId)
+                            .aggregateType("SECRET")
+                            .aggregateId(secret.getId().toString())
+                            .build()
+            );
+        }
 
         log.info("Soft deleted secret [{}] in environment [{}] by user [{}]",
                 secret.getId(), environmentId, userId);

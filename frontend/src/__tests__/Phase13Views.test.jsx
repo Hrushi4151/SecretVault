@@ -18,14 +18,26 @@ vi.mock('../context/AuthContext', () => ({
 vi.mock('../api/events', () => ({
   eventsApi: {
     listEvents: vi.fn().mockResolvedValue({ items: [] }),
-    replayEvents: vi.fn().mockResolvedValue({ message: 'Success' })
+    replayEvents: vi.fn().mockResolvedValue({ message: 'Success' }),
+    getOutboxStats: vi.fn().mockResolvedValue({ totalEvents: 0, pending: 0, published: 0, deadLetter: 0 })
   }
 }));
 
 vi.mock('../api/automation', () => ({
   automationApi: {
     listPolicies: vi.fn().mockResolvedValue({ items: [] }),
-    listApprovals: vi.fn().mockResolvedValue({ items: [] }),
+    listApprovals: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: 'appr-1',
+          actionType: 'TRIGGER_ROTATION',
+          status: 'PENDING',
+          requestedBy: 'operator-1'
+        }
+      ]
+    }),
+    decideApproval: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
+    cancelApproval: vi.fn().mockResolvedValue({ status: 'REJECTED' }),
     listExecutions: vi.fn().mockResolvedValue({ items: [] }),
     simulate: vi.fn().mockResolvedValue({ status: 'OK' })
   }
@@ -56,7 +68,23 @@ describe('Phase 13: Frontend Operations Views', () => {
     render(<AutomationCenterView />);
     expect(screen.getByText(/Security Automation & Policy Engine/i)).toBeInTheDocument();
     expect(screen.getByText(/Active Policies/i)).toBeInTheDocument();
+    expect(screen.getByText(/Approvals Queue/i)).toBeInTheDocument();
     expect(screen.getByText(/Policy Simulator/i)).toBeInTheDocument();
+  });
+
+  it('renders Approvals Queue and handles decision actions', async () => {
+    const { fireEvent, waitFor } = await import('@testing-library/react');
+    render(<AutomationCenterView />);
+    
+    // Switch to Approvals Queue
+    fireEvent.click(screen.getByText(/Approvals Queue/i));
+    await waitFor(() => {
+      expect(screen.getByText(/TRIGGER_ROTATION/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Approve/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reject/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/i)).toBeInTheDocument();
   });
 
   it('renders WebhookCenterView with SSRF notice and new endpoint trigger', () => {

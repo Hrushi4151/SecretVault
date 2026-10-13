@@ -2,6 +2,8 @@ package com.secretvault.incident.controller;
 
 import com.secretvault.auth.security.UserPrincipal;
 import com.secretvault.common.dto.ApiResponse;
+import com.secretvault.incident.dto.IncidentDtos.IncidentRemediationRequest;
+import com.secretvault.incident.dto.IncidentDtos.IncidentRemediationResult;
 import com.secretvault.incident.entity.IncidentSeverity;
 import com.secretvault.incident.entity.IncidentStatus;
 import com.secretvault.incident.entity.SecurityIncident;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -43,7 +46,7 @@ public class SecurityIncidentController {
     ) {}
 
     public record UpdateIncidentStatusRequest(
-            @NotBlank IncidentStatus status,
+            @NotNull IncidentStatus status,
             String resolutionSummary
     ) {}
 
@@ -112,6 +115,28 @@ public class SecurityIncidentController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Incident status updated"));
     }
 
+    @PostMapping("/{incidentId}/remediate")
+    @Operation(summary = "Execute remediation playbook or preview dry-run for an incident")
+    public ResponseEntity<ApiResponse<IncidentRemediationResult>> remediateIncident(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @Valid @RequestBody IncidentRemediationRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        IncidentRemediationResult result = incidentService.remediateIncident(
+                workspaceId,
+                incidentId,
+                request,
+                actorId
+        );
+        if ("QUEUED".equals(result.status())) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(ApiResponse.success(result, "Incident remediation queued for asynchronous processing"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(result, "Incident remediation processed"));
+    }
+
     @GetMapping("/{incidentId}/events")
     @Operation(summary = "Get correlated domain events for an incident")
     public ResponseEntity<ApiResponse<List<SecurityIncidentEvent>>> getIncidentEvents(
@@ -122,5 +147,105 @@ public class SecurityIncidentController {
         UUID actorId = principal != null ? principal.getId() : null;
         List<SecurityIncidentEvent> events = incidentService.getIncidentEvents(workspaceId, incidentId, actorId);
         return ResponseEntity.ok(ApiResponse.success(events));
+    }
+
+    @GetMapping("/{incidentId}/approvals")
+    @Operation(summary = "List remediation approval requests for an incident")
+    public ResponseEntity<ApiResponse<List<com.secretvault.incident.dto.IncidentDtos.IncidentApprovalResponse>>> listApprovals(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var approvals = incidentService.listIncidentApprovals(workspaceId, incidentId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(approvals));
+    }
+
+    @GetMapping("/{incidentId}/approvals/{approvalId}")
+    @Operation(summary = "Get remediation approval request details")
+    public ResponseEntity<ApiResponse<com.secretvault.incident.dto.IncidentDtos.IncidentApprovalResponse>> getApproval(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @PathVariable UUID approvalId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var approval = incidentService.getIncidentApproval(workspaceId, incidentId, approvalId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(approval));
+    }
+
+    @PostMapping("/{incidentId}/approvals/{approvalId}/decide")
+    @Operation(summary = "Decide remediation approval request (two-person rule)")
+    public ResponseEntity<ApiResponse<com.secretvault.incident.dto.IncidentDtos.IncidentApprovalResponse>> decideApproval(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @PathVariable UUID approvalId,
+            @Valid @RequestBody com.secretvault.incident.dto.IncidentDtos.IncidentApprovalDecisionRequest req,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var approval = incidentService.decideRemediationApproval(
+                workspaceId,
+                incidentId,
+                approvalId,
+                req.approve(),
+                req.reason(),
+                actorId
+        );
+        return ResponseEntity.ok(ApiResponse.success(
+                com.secretvault.incident.dto.IncidentDtos.IncidentApprovalResponse.fromEntity(approval),
+                "Approval decision recorded"
+        ));
+    }
+
+    @GetMapping("/{incidentId}/remediations")
+    @Operation(summary = "List asynchronous remediation executions for an incident")
+    public ResponseEntity<ApiResponse<List<com.secretvault.incident.dto.IncidentDtos.IncidentRemediationExecutionResponse>>> listRemediations(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var remediations = incidentService.listIncidentRemediations(workspaceId, incidentId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(remediations));
+    }
+
+    @GetMapping("/{incidentId}/remediations/{executionId}")
+    @Operation(summary = "Get asynchronous remediation execution details")
+    public ResponseEntity<ApiResponse<com.secretvault.incident.dto.IncidentDtos.IncidentRemediationExecutionResponse>> getRemediation(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @PathVariable UUID executionId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var remediation = incidentService.getIncidentRemediation(workspaceId, incidentId, executionId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(remediation));
+    }
+
+    @PostMapping("/{incidentId}/remediations/{executionId}/execute")
+    @Operation(summary = "Trigger execution of a queued remediation task (worker simulation)")
+    public ResponseEntity<ApiResponse<com.secretvault.incident.dto.IncidentDtos.IncidentRemediationExecutionResponse>> executeRemediationTask(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @PathVariable UUID executionId,
+            @RequestParam(required = false, defaultValue = "worker-default") String workerId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        var response = incidentService.executeRemediationTask(executionId, workerId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Remediation execution processed"));
+    }
+
+    @PostMapping("/{incidentId}/remediations/{executionId}/retry")
+    @Operation(summary = "Reset and retry a failed remediation task")
+    public ResponseEntity<ApiResponse<com.secretvault.incident.dto.IncidentDtos.IncidentRemediationExecutionResponse>> retryRemediation(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID incidentId,
+            @PathVariable UUID executionId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        var response = incidentService.retryRemediation(workspaceId, incidentId, executionId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Remediation execution reset for retry"));
     }
 }

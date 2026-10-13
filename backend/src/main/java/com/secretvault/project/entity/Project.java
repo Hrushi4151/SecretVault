@@ -61,6 +61,10 @@ public class Project {
     public Project() {
     }
 
+    public Project(UUID workspaceId, String name, String slug, String description) {
+        this(workspaceId, name, slug, description, null);
+    }
+
     public Project(UUID workspaceId, String name, String slug, String description, UUID createdBy) {
         this.workspaceId = workspaceId;
         this.name = name;

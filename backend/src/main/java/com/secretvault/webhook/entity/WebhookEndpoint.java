@@ -1,5 +1,6 @@
 package com.secretvault.webhook.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,11 +30,19 @@ public class WebhookEndpoint {
     @Column(name = "subscribed_events_json", nullable = false, columnDefinition = "TEXT")
     private String subscribedEventsJson = "[\"*\"]";
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "signing_secret_encrypted", nullable = false, columnDefinition = "TEXT")
     private String signingSecretEncrypted;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "previous_signing_secret_encrypted", columnDefinition = "TEXT")
+    private String previousSigningSecretEncrypted;
+
     @Column(name = "secret_prefix", nullable = false, length = 16)
     private String secretPrefix;
+
+    @Column(name = "secret_rotated_at")
+    private Instant secretRotatedAt;
 
     @Column(name = "created_by")
     private UUID createdBy;
@@ -86,6 +95,10 @@ public class WebhookEndpoint {
     public void setLastSuccessAt(Instant lastSuccessAt) { this.lastSuccessAt = lastSuccessAt; }
     public Instant getLastFailureAt() { return lastFailureAt; }
     public void setLastFailureAt(Instant lastFailureAt) { this.lastFailureAt = lastFailureAt; }
+    public String getPreviousSigningSecretEncrypted() { return previousSigningSecretEncrypted; }
+    public void setPreviousSigningSecretEncrypted(String previousSigningSecretEncrypted) { this.previousSigningSecretEncrypted = previousSigningSecretEncrypted; }
+    public Instant getSecretRotatedAt() { return secretRotatedAt; }
+    public void setSecretRotatedAt(Instant secretRotatedAt) { this.secretRotatedAt = secretRotatedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

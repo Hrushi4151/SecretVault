@@ -77,6 +77,18 @@ class AuthServiceTest {
     @Mock
     private SessionService sessionService;
 
+    @Mock
+    private com.secretvault.audit.service.AuditService auditService;
+
+    @Mock
+    private com.secretvault.common.email.EmailService emailService;
+
+    @Mock
+    private com.secretvault.auth.repository.RegistrationVerificationRepository registrationVerificationRepository;
+
+    @Mock
+    private com.secretvault.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+
     @InjectMocks
     private AuthService authService;
 

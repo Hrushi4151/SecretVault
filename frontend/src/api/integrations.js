@@ -40,6 +40,12 @@ export const integrationsApi = {
     });
   },
 
+  disconnect: async (workspaceId, integrationId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/integrations/${integrationId}/disconnect`, {
+      method: 'POST',
+    });
+  },
+
   validate: async (workspaceId, integrationId) => {
     return apiClient.request(`/workspaces/${workspaceId}/integrations/${integrationId}/validate`, {
       method: 'POST',

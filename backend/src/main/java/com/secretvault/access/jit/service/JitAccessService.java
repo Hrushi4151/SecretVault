@@ -11,6 +11,8 @@ import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.service.EffectiveAccessService;
 import com.secretvault.audit.entity.AuditAction;
 import com.secretvault.audit.service.AuditService;
+import com.secretvault.events.model.EventSeverity;
+import com.secretvault.events.model.EventType;
 import com.secretvault.auth.entity.User;
 import com.secretvault.auth.repository.UserRepository;
 import com.secretvault.common.dto.PageResponse;
@@ -62,6 +64,13 @@ public class JitAccessService {
     private final AuditService auditService;
     private final EffectiveAccessService effectiveAccessService;
     private final Clock clock;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.secretvault.events.publisher.EventPublisher eventPublisher;
+
+    public void setEventPublisher(com.secretvault.events.publisher.EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     public JitAccessService(
             JitAccessRequestRepository jitRepository,
@@ -155,6 +164,22 @@ public class JitAccessService {
         log.info("User [{}] requested JIT access [{}] on env [{}] for permission [{}] in workspace [{}]",
                 actorUserId, saved.getId(), request.environmentId(), request.requestedPermission(), workspaceId);
 
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.JIT_REQUESTED,
+                    workspaceId,
+                    "JIT_REQUEST",
+                    saved.getId().toString(),
+                    EventSeverity.INFO,
+                    Map.of(
+                            "requestId", saved.getId().toString(),
+                            "role", request.requestedPermission().getCode(),
+                            "requestedDurationMinutes", request.durationMinutes(),
+                            "reason", request.reason()
+                    )
+            );
+        }
+
         return mapToResponse(saved);
     }
 
@@ -205,6 +230,21 @@ public class JitAccessService {
         log.info("JIT access request [{}] approved by [{}] for user [{}], expiring at [{}]",
                 requestId, approverUserId, request.getUserId(), expiresAt);
 
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.JIT_APPROVED,
+                    workspaceId,
+                    "JIT_REQUEST",
+                    saved.getId().toString(),
+                    EventSeverity.INFO,
+                    Map.of(
+                            "requestId", saved.getId().toString(),
+                            "role", request.getRequestedPermission().getCode(),
+                            "approverId", approverUserId.toString()
+                    )
+            );
+        }
+
         return mapToResponse(saved);
     }
 
@@ -245,6 +285,21 @@ public class JitAccessService {
         log.info("JIT access request [{}] rejected by [{}] for user [{}]",
                 requestId, reviewerUserId, request.getUserId());
 
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.JIT_REJECTED,
+                    workspaceId,
+                    "JIT_REQUEST",
+                    saved.getId().toString(),
+                    EventSeverity.INFO,
+                    Map.of(
+                            "requestId", saved.getId().toString(),
+                            "approverId", reviewerUserId.toString(),
+                            "rejectionReason", notes
+                    )
+            );
+        }
+
         return mapToResponse(saved);
     }
 
@@ -281,6 +336,20 @@ public class JitAccessService {
         );
 
         log.info("JIT access grant [{}] revoked by [{}]", requestId, actorUserId);
+
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.JIT_REVOKED,
+                    workspaceId,
+                    "JIT_REQUEST",
+                    request.getId().toString(),
+                    EventSeverity.MEDIUM,
+                    Map.of(
+                            "requestId", request.getId().toString(),
+                            "revocationReason", "Revoked by operator"
+                    )
+            );
+        }
     }
 
     @Transactional

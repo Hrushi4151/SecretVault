@@ -1,0 +1,4 @@
+# Documentation sample and placeholder tokens
+API_KEY=YOUR_API_KEY_HERE
+SECRET=REPLACE_ME_WITH_REAL_SECRET
+PASSWORD=dummy-password-sample

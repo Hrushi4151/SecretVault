@@ -3,6 +3,7 @@ package com.secretvault.repository.controller;
 import com.secretvault.auth.security.UserPrincipal;
 import com.secretvault.common.dto.ApiResponse;
 import com.secretvault.repository.dto.RepositoryDtos.RemediateFindingRequest;
+import com.secretvault.repository.dto.RepositoryDtos.RemediationTargetInfo;
 import com.secretvault.repository.entity.FindingRemediationJob;
 import com.secretvault.repository.service.FindingRemediationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,18 @@ public class RepositoryRemediationController {
         this.remediationService = remediationService;
     }
 
+    @GetMapping("/{findingId}/target-info")
+    @Operation(summary = "Inspect remediation target, SecretVault ownership, and manual playbook before execution")
+    public ResponseEntity<ApiResponse<RemediationTargetInfo>> getRemediationTargetInfo(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID findingId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        RemediationTargetInfo targetInfo = remediationService.getRemediationTargetInfo(workspaceId, findingId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(targetInfo));
+    }
+
     @PostMapping("/{findingId}")
     @Operation(summary = "Execute remediation action (ROTATE_SECRET, REVOKE_SECRET, MARK_FALSE_POSITIVE, IGNORE)")
     public ResponseEntity<ApiResponse<FindingRemediationJob>> remediateFinding(
@@ -37,7 +50,7 @@ public class RepositoryRemediationController {
     ) {
         UUID actorId = principal != null ? principal.getId() : null;
         FindingRemediationJob job = remediationService.remediateFinding(
-                workspaceId, findingId, request.action(), request.notes(), actorId);
-        return ResponseEntity.ok(ApiResponse.success(job, "Remediation action " + request.action() + " executed"));
+                workspaceId, findingId, request, actorId);
+        return ResponseEntity.ok(ApiResponse.success(job, "Remediation action " + request.action() + " processed"));
     }
 }

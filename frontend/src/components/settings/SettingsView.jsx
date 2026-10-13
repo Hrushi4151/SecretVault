@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { WorkspaceSettingsView } from './WorkspaceSettingsView';
 import { ProjectSettingsView } from './ProjectSettingsView';
 import { AccountSecurityView } from './AccountSecurityView';
+import { GitHubSettingsView } from './GitHubSettingsView';
 import {
   Building2,
   FolderGit2,
@@ -11,10 +12,11 @@ import {
   Key,
   Lock,
   Sparkles,
+  GitBranch,
 } from 'lucide-react';
 
 export const SettingsView = ({
-  initialSection = 'workspace', // 'workspace' | 'project' | 'profile'
+  initialSection = 'workspace', // 'workspace' | 'project' | 'profile' | 'github'
   initialProjectId = null,
   onNavigateToSecrets,
   onNavigateToAccess,
@@ -36,6 +38,12 @@ export const SettingsView = ({
       label: 'Project Settings',
       description: 'Environments, scoped RBAC & protection tiers',
       icon: <FolderGit2 className="w-4 h-4" />,
+    },
+    {
+      id: 'github',
+      label: 'GitHub Integration',
+      description: 'Account authorization, scopes & discovery',
+      icon: <GitBranch className="w-4 h-4" />,
     },
     {
       id: 'profile',
@@ -113,6 +121,8 @@ export const SettingsView = ({
           onNavigateToSecrets={onNavigateToSecrets}
           onNavigateToAccess={onNavigateToAccess}
         />
+      ) : activeSection === 'github' ? (
+        <GitHubSettingsView />
       ) : (
         <AccountSecurityView />
       )}

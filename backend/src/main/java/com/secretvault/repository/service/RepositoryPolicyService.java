@@ -19,14 +19,17 @@ import java.util.*;
 public class RepositoryPolicyService {
 
     private final RepositorySecurityPolicyRepository policyRepository;
+    private final com.secretvault.repository.repository.RepositoryEntityRepository repoRepository;
     private final EffectiveAccessService accessService;
     private final AuditService auditService;
 
     public RepositoryPolicyService(
             RepositorySecurityPolicyRepository policyRepository,
+            com.secretvault.repository.repository.RepositoryEntityRepository repoRepository,
             EffectiveAccessService accessService,
             AuditService auditService) {
         this.policyRepository = policyRepository;
+        this.repoRepository = repoRepository;
         this.accessService = accessService;
         this.auditService = auditService;
     }
@@ -47,8 +50,14 @@ public class RepositoryPolicyService {
     ) {}
 
     @Transactional(readOnly = true)
-    public RepositorySecurityPolicy getEffectivePolicy(UUID workspaceId, UUID repositoryId) {
+    public RepositorySecurityPolicy getEffectivePolicy(UUID workspaceId, UUID repositoryId, UUID actorId) {
+        if (actorId != null) {
+            accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_VIEW);
+        }
         if (repositoryId != null) {
+            repoRepository.findByIdAndWorkspaceId(repositoryId, workspaceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
+
             Optional<RepositorySecurityPolicy> repoPolicy = policyRepository.findByWorkspaceIdAndRepositoryId(workspaceId, repositoryId);
             if (repoPolicy.isPresent()) {
                 return repoPolicy.get();
@@ -76,6 +85,11 @@ public class RepositoryPolicyService {
         return defaultPolicy;
     }
 
+    @Transactional(readOnly = true)
+    public RepositorySecurityPolicy getEffectivePolicy(UUID workspaceId, UUID repositoryId) {
+        return getEffectivePolicy(workspaceId, repositoryId, null);
+    }
+
     @Transactional
     public RepositorySecurityPolicy savePolicy(
             UUID workspaceId,
@@ -84,6 +98,11 @@ public class RepositoryPolicyService {
             UUID actorId) {
 
         accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_MANAGE);
+
+        if (repositoryId != null) {
+            repoRepository.findByIdAndWorkspaceId(repositoryId, workspaceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + repositoryId));
+        }
 
         Optional<RepositorySecurityPolicy> existingOpt = repositoryId != null
                 ? policyRepository.findByWorkspaceIdAndRepositoryId(workspaceId, repositoryId)

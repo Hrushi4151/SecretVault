@@ -1,6 +1,10 @@
 package com.secretvault.webhook.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.secretvault.access.model.AccessPermission;
+import com.secretvault.access.service.EffectiveAccessService;
+import com.secretvault.audit.entity.AuditAction;
+import com.secretvault.audit.service.AuditService;
 import com.secretvault.common.exception.ApiException;
 import com.secretvault.encryption.model.EncryptedPayload;
 import com.secretvault.encryption.service.EncryptionService;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +33,8 @@ public class WebhookService {
     private final SsrfProtectionValidator ssrfValidator;
     private final WebhookSigner webhookSigner;
     private final EncryptionService encryptionService;
+    private final EffectiveAccessService effectiveAccessService;
+    private final AuditService auditService;
     private final ObjectMapper objectMapper;
 
     public WebhookService(
@@ -35,12 +42,16 @@ public class WebhookService {
             SsrfProtectionValidator ssrfValidator,
             WebhookSigner webhookSigner,
             EncryptionService encryptionService,
+            EffectiveAccessService effectiveAccessService,
+            AuditService auditService,
             ObjectMapper objectMapper
     ) {
         this.endpointRepository = endpointRepository;
         this.ssrfValidator = ssrfValidator;
         this.webhookSigner = webhookSigner;
         this.encryptionService = encryptionService;
+        this.effectiveAccessService = effectiveAccessService;
+        this.auditService = auditService;
         this.objectMapper = objectMapper;
     }
 
@@ -56,7 +67,9 @@ public class WebhookService {
         if (name == null || name.isBlank()) throw ApiException.badRequest("Webhook name is required");
         if (destinationUrl == null || destinationUrl.isBlank()) throw ApiException.badRequest("Destination URL is required");
 
-        // Validate SSRF rules
+        effectiveAccessService.requireWorkspacePermission(creatorId, workspaceId, AccessPermission.WEBHOOK_MANAGE);
+
+        // Validate SSRF rules and DNS resolution
         ssrfValidator.validateDestinationUrl(destinationUrl);
 
         if (endpointRepository.findByWorkspaceIdAndName(workspaceId, name.trim()).isPresent()) {
@@ -91,18 +104,44 @@ public class WebhookService {
 
         WebhookEndpoint saved = endpointRepository.save(endpoint);
         log.info("Created webhook endpoint [{}] for workspace [{}] -> [{}]", saved.getId(), workspaceId, destinationUrl);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                creatorId,
+                "USER",
+                AuditAction.WEBHOOK_ENDPOINT_CREATED,
+                "WEBHOOK_ENDPOINT",
+                saved.getId(),
+                null,
+                null,
+                "SUCCESS"
+        );
+
         return saved;
     }
 
     @Transactional(readOnly = true)
-    public Page<WebhookEndpoint> getEndpoints(UUID workspaceId, Pageable pageable) {
+    public Page<WebhookEndpoint> getEndpoints(UUID workspaceId, UUID actorId, Pageable pageable) {
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_VIEW);
         return endpointRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public WebhookEndpoint getEndpoint(UUID workspaceId, UUID endpointId) {
+    public Page<WebhookEndpoint> getEndpoints(UUID workspaceId, Pageable pageable) {
+        return getEndpoints(workspaceId, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public WebhookEndpoint getEndpoint(UUID workspaceId, UUID endpointId, UUID actorId) {
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_VIEW);
         return endpointRepository.findByWorkspaceIdAndId(workspaceId, endpointId)
-                .orElseThrow(() -> ApiException.notFound("Webhook endpoint not found"));
+                .orElseThrow(() -> ApiException.notFound("Webhook endpoint not found: " + endpointId));
+    }
+
+    @Transactional(readOnly = true)
+    public WebhookEndpoint getEndpoint(UUID workspaceId, UUID endpointId) {
+        return getEndpoint(workspaceId, endpointId, null);
     }
 
     @Transactional
@@ -112,9 +151,12 @@ public class WebhookService {
             String name,
             String destinationUrl,
             Boolean enabled,
-            List<String> subscribedEvents
+            List<String> subscribedEvents,
+            UUID actorId
     ) {
-        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId);
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_MANAGE);
+
+        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId, actorId);
 
         if (destinationUrl != null && !destinationUrl.isBlank() && !destinationUrl.equals(endpoint.getDestinationUrl())) {
             ssrfValidator.validateDestinationUrl(destinationUrl);
@@ -122,7 +164,8 @@ public class WebhookService {
         }
 
         if (name != null && !name.isBlank() && !name.equals(endpoint.getName())) {
-            if (endpointRepository.findByWorkspaceIdAndName(workspaceId, name.trim()).isPresent()) {
+            var existing = endpointRepository.findByWorkspaceIdAndName(workspaceId, name.trim());
+            if (existing.isPresent() && !existing.get().getId().equals(endpointId)) {
                 throw ApiException.conflict("Webhook endpoint with name '" + name + "' already exists");
             }
             endpoint.setName(name.trim());
@@ -136,23 +179,151 @@ public class WebhookService {
             endpoint.setSubscribedEventsJson(String.join(",", subscribedEvents));
         }
 
-        return endpointRepository.save(endpoint);
+        WebhookEndpoint saved = endpointRepository.save(endpoint);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                actorId,
+                "USER",
+                AuditAction.WEBHOOK_ENDPOINT_UPDATED,
+                "WEBHOOK_ENDPOINT",
+                saved.getId(),
+                null,
+                null,
+                "SUCCESS"
+        );
+
+        return saved;
+    }
+
+    @Transactional
+    public WebhookEndpoint updateEndpoint(
+            UUID workspaceId,
+            UUID endpointId,
+            String name,
+            String destinationUrl,
+            Boolean enabled,
+            List<String> subscribedEvents
+    ) {
+        return updateEndpoint(workspaceId, endpointId, name, destinationUrl, enabled, subscribedEvents, null);
+    }
+
+    @Transactional
+    public void deleteEndpoint(UUID workspaceId, UUID endpointId, UUID actorId) {
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_MANAGE);
+
+        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId, actorId);
+        endpointRepository.delete(endpoint);
+        log.info("Deleted webhook endpoint [{}] for workspace [{}]", endpointId, workspaceId);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                actorId,
+                "USER",
+                AuditAction.WEBHOOK_ENDPOINT_DELETED,
+                "WEBHOOK_ENDPOINT",
+                endpointId,
+                null,
+                null,
+                "SUCCESS"
+        );
     }
 
     @Transactional
     public void deleteEndpoint(UUID workspaceId, UUID endpointId) {
-        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId);
-        endpointRepository.delete(endpoint);
-        log.info("Deleted webhook endpoint [{}] for workspace [{}]", endpointId, workspaceId);
+        deleteEndpoint(workspaceId, endpointId, null);
     }
 
     public String revealSigningSecret(WebhookEndpoint endpoint) {
+        if (endpoint == null || endpoint.getSigningSecretEncrypted() == null || endpoint.getSigningSecretEncrypted().isBlank()) {
+            throw new IllegalStateException("Webhook endpoint missing signing secret (fail closed)");
+        }
         try {
             EncryptedPayload payload = objectMapper.readValue(endpoint.getSigningSecretEncrypted(), EncryptedPayload.class);
             return new String(encryptionService.decrypt(payload, "system-webhook"), StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.error("Failed to decrypt webhook signing secret: {}", e.getMessage());
-            return "";
+            throw new IllegalStateException("Failed to decrypt webhook signing secret: " + e.getMessage(), e);
         }
+    }
+
+    public String revealPreviousSigningSecret(WebhookEndpoint endpoint) {
+        if (endpoint == null || endpoint.getPreviousSigningSecretEncrypted() == null || endpoint.getPreviousSigningSecretEncrypted().isBlank()) {
+            return null;
+        }
+        try {
+            EncryptedPayload payload = objectMapper.readValue(endpoint.getPreviousSigningSecretEncrypted(), EncryptedPayload.class);
+            return new String(encryptionService.decrypt(payload, "system-webhook"), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("Failed to decrypt previous webhook signing secret: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public String revealSigningSecretForOperator(UUID workspaceId, UUID endpointId, UUID actorId) {
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_MANAGE);
+        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId, actorId);
+        String secret = revealSigningSecret(endpoint);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                actorId,
+                "USER",
+                AuditAction.WEBHOOK_SECRET_REVEALED,
+                "WEBHOOK_ENDPOINT",
+                endpointId,
+                null,
+                null,
+                "SUCCESS"
+        );
+
+        return secret;
+    }
+
+    @Transactional
+    public String rotateSigningSecret(UUID workspaceId, UUID endpointId, UUID actorId) {
+        effectiveAccessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.WEBHOOK_MANAGE);
+        WebhookEndpoint endpoint = getEndpoint(workspaceId, endpointId, actorId);
+
+        // Transition: current secret becomes previous secret
+        endpoint.setPreviousSigningSecretEncrypted(endpoint.getSigningSecretEncrypted());
+        endpoint.setSecretRotatedAt(Instant.now());
+
+        // Generate and encrypt new secret
+        String newRawSecret = webhookSigner.generateSigningSecret();
+        String secretPrefix = newRawSecret.substring(0, Math.min(12, newRawSecret.length())) + "...";
+
+        EncryptedPayload payload = encryptionService.encrypt(newRawSecret.getBytes(StandardCharsets.UTF_8), "system-webhook");
+        String encryptedSecret;
+        try {
+            encryptedSecret = objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize rotated webhook signing secret", e);
+        }
+
+        endpoint.setSigningSecretEncrypted(encryptedSecret);
+        endpoint.setSecretPrefix(secretPrefix);
+        endpointRepository.save(endpoint);
+
+        log.info("Rotated signing secret for webhook endpoint [{}] in workspace [{}]", endpointId, workspaceId);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                actorId,
+                "USER",
+                AuditAction.WEBHOOK_SECRET_ROTATED,
+                "WEBHOOK_ENDPOINT",
+                endpointId,
+                null,
+                null,
+                "SUCCESS"
+        );
+
+        return newRawSecret;
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -76,7 +77,8 @@ public class WebhookController {
             Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Page<WebhookEndpoint> endpoints = webhookService.getEndpoints(workspaceId, pageable);
+        UUID actorId = principal != null ? principal.getId() : null;
+        Page<WebhookEndpoint> endpoints = webhookService.getEndpoints(workspaceId, actorId, pageable);
         return ResponseEntity.ok(ApiResponse.success(endpoints));
     }
 
@@ -87,7 +89,8 @@ public class WebhookController {
             @PathVariable UUID webhookId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        WebhookEndpoint endpoint = webhookService.getEndpoint(workspaceId, webhookId);
+        UUID actorId = principal != null ? principal.getId() : null;
+        WebhookEndpoint endpoint = webhookService.getEndpoint(workspaceId, webhookId, actorId);
         return ResponseEntity.ok(ApiResponse.success(endpoint));
     }
 
@@ -99,13 +102,15 @@ public class WebhookController {
             @RequestBody UpdateWebhookRequest req,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
+        UUID actorId = principal != null ? principal.getId() : null;
         WebhookEndpoint endpoint = webhookService.updateEndpoint(
                 workspaceId,
                 webhookId,
                 req.name(),
                 req.destinationUrl(),
                 req.enabled(),
-                req.subscribedEvents()
+                req.subscribedEvents(),
+                actorId
         );
         return ResponseEntity.ok(ApiResponse.success(endpoint, "Webhook endpoint updated successfully"));
     }
@@ -117,30 +122,79 @@ public class WebhookController {
             @PathVariable UUID webhookId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        webhookService.deleteEndpoint(workspaceId, webhookId);
+        UUID actorId = principal != null ? principal.getId() : null;
+        webhookService.deleteEndpoint(workspaceId, webhookId, actorId);
         return ResponseEntity.ok(ApiResponse.success(null, "Webhook endpoint deleted successfully"));
     }
 
-    @GetMapping("/webhook-deliveries")
+    @GetMapping("/webhooks/{webhookId}/signing-secret")
+    @Operation(summary = "Reveal webhook signing secret")
+    public ResponseEntity<ApiResponse<Map<String, String>>> revealSigningSecret(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID webhookId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        String secret = webhookService.revealSigningSecretForOperator(workspaceId, webhookId, actorId);
+        WebhookEndpoint endpoint = webhookService.getEndpoint(workspaceId, webhookId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of("signingSecret", secret, "secretPrefix", endpoint.getSecretPrefix()),
+                "Signing secret revealed successfully"
+        ));
+    }
+
+    @PostMapping("/webhooks/{webhookId}/rotate-secret")
+    @Operation(summary = "Rotate webhook signing secret with transition grace period")
+    public ResponseEntity<ApiResponse<Map<String, String>>> rotateSigningSecret(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID webhookId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        String newSecret = webhookService.rotateSigningSecret(workspaceId, webhookId, actorId);
+        WebhookEndpoint endpoint = webhookService.getEndpoint(workspaceId, webhookId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of("signingSecret", newSecret, "secretPrefix", endpoint.getSecretPrefix()),
+                "Signing secret rotated successfully"
+        ));
+    }
+
+    @PostMapping("/webhooks/{webhookId}/test")
+    @Operation(summary = "Dispatch a test webhook ping to the endpoint")
+    public ResponseEntity<ApiResponse<WebhookDelivery>> testWebhookEndpoint(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID webhookId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        WebhookDelivery delivery = deliveryService.testEndpoint(workspaceId, webhookId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(delivery, "Test webhook ping dispatched"));
+    }
+
+    @GetMapping({"/webhook-deliveries", "/webhooks/{webhookId}/deliveries"})
     @Operation(summary = "List webhook delivery attempts and logs")
     public ResponseEntity<ApiResponse<Page<WebhookDelivery>>> listDeliveries(
             @PathVariable UUID workspaceId,
-            @RequestParam(required = false) UUID webhookId,
+            @PathVariable(required = false) UUID webhookId,
+            @RequestParam(required = false) UUID queryWebhookId,
             Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Page<WebhookDelivery> deliveries = deliveryService.getDeliveries(workspaceId, webhookId, pageable);
+        UUID targetWebhookId = webhookId != null ? webhookId : queryWebhookId;
+        UUID actorId = principal != null ? principal.getId() : null;
+        Page<WebhookDelivery> deliveries = deliveryService.getDeliveries(workspaceId, targetWebhookId, actorId, pageable);
         return ResponseEntity.ok(ApiResponse.success(deliveries));
     }
 
-    @PostMapping("/webhook-deliveries/{deliveryId}/replay")
+    @PostMapping({"/webhook-deliveries/{deliveryId}/replay", "/webhooks/deliveries/{deliveryId}/retry"})
     @Operation(summary = "Replay failed webhook delivery")
     public ResponseEntity<ApiResponse<WebhookDelivery>> replayDelivery(
             @PathVariable UUID workspaceId,
             @PathVariable UUID deliveryId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        WebhookDelivery delivery = deliveryService.replayDelivery(workspaceId, deliveryId);
+        UUID actorId = principal != null ? principal.getId() : null;
+        WebhookDelivery delivery = deliveryService.replayDelivery(workspaceId, deliveryId, actorId);
         return ResponseEntity.ok(ApiResponse.success(delivery, "Webhook delivery replayed"));
     }
 }

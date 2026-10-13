@@ -137,6 +137,7 @@ export const SyncCenterView = () => {
       setActionLoadingId(driftId);
       await syncApi.updateDriftStatus(activeWorkspace.id, driftId, {
         status: newStatus,
+        resolutionReason: `Status changed to ${newStatus} from UI console.`,
         resolutionNotes: `Status changed to ${newStatus} from UI console.`,
       });
       showFeedback('success', `Drift record triage updated to ${newStatus}.`);
@@ -195,9 +196,10 @@ export const SyncCenterView = () => {
           reconciliationPolicy: simPolicy,
         });
       }
+      const successOps = res?.successfulOperations ?? res?.succeededOperations ?? 0;
       showFeedback(
         'success',
-        `Sync Job #${res?.jobId?.slice(0, 8) || ''} finished with status: ${res?.status || 'SUCCESS'} (${res?.succeededOperations || 0} succeeded).`
+        `Sync Job #${res?.jobId?.slice(0, 8) || ''} finished with status: ${res?.status || 'COMPLETED'} (${successOps} succeeded).`
       );
       loadData();
       setActiveTab('HISTORY');
@@ -222,7 +224,9 @@ export const SyncCenterView = () => {
     }
   };
 
-  const activeDriftCount = driftRecords.filter((d) => d.status === 'DRIFT_DETECTED').length;
+  const activeDriftCount = driftRecords.filter(
+    (d) => d.status === 'OPEN' || d.status === 'DRIFT_DETECTED' || d.status === 'ACKNOWLEDGED' || d.status === 'SYNC_PENDING'
+  ).length;
   const resolvedDriftCount = driftRecords.filter((d) => d.status === 'RESOLVED').length;
 
   return (
@@ -402,10 +406,12 @@ export const SyncCenterView = () => {
                 className="px-2.5 py-1.5 rounded-lg bg-[#1E000A] border border-[#FFB4C8]/20 text-white text-xs"
               >
                 <option value="">All Statuses</option>
-                <option value="DRIFT_DETECTED">DRIFT_DETECTED</option>
+                <option value="OPEN">OPEN</option>
                 <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+                <option value="SYNC_PENDING">SYNC_PENDING</option>
                 <option value="RESOLVED">RESOLVED</option>
                 <option value="IGNORED">IGNORED</option>
+                <option value="ERROR">ERROR</option>
               </select>
 
               <select
@@ -427,10 +433,15 @@ export const SyncCenterView = () => {
                 className="px-2.5 py-1.5 rounded-lg bg-[#1E000A] border border-[#FFB4C8]/20 text-white text-xs"
               >
                 <option value="">All Drift Types</option>
-                <option value="MISSING_ON_PROVIDER">MISSING_ON_PROVIDER</option>
-                <option value="EXTRA_ON_PROVIDER">EXTRA_ON_PROVIDER</option>
+                <option value="MISSING_FROM_PROVIDER">MISSING_FROM_PROVIDER</option>
+                <option value="EXTRA_IN_PROVIDER">EXTRA_IN_PROVIDER</option>
                 <option value="VALUE_MISMATCH">VALUE_MISMATCH</option>
-                <option value="METADATA_MISMATCH">METADATA_MISMATCH</option>
+                <option value="NAME_MISMATCH">NAME_MISMATCH</option>
+                <option value="ENVIRONMENT_MISMATCH">ENVIRONMENT_MISMATCH</option>
+                <option value="RESOURCE_MAPPING_MISMATCH">RESOURCE_MAPPING_MISMATCH</option>
+                <option value="PROVIDER_UNAVAILABLE">PROVIDER_UNAVAILABLE</option>
+                <option value="PERMISSION_DENIED">PERMISSION_DENIED</option>
+                <option value="UNSUPPORTED">UNSUPPORTED</option>
               </select>
             </div>
 
@@ -472,16 +483,16 @@ export const SyncCenterView = () => {
                   </thead>
                   <tbody className="divide-y divide-[#FFB4C8]/10 text-white font-body">
                     {driftRecords.map((d) => {
-                      const isPending = d.status === 'DRIFT_DETECTED';
+                      const isPending = d.status === 'OPEN' || d.status === 'DRIFT_DETECTED';
                       const isActionLoading = actionLoadingId === d.id;
 
                       return (
                         <tr key={d.id} className="hover:bg-[#3F0016]/50 transition-colors">
                           <td className="py-3 px-4">
                             <div className="flex flex-col">
-                              <span className="font-mono font-bold text-white text-xs">{d.secretKey}</span>
+                              <span className="font-mono font-bold text-white text-xs">{d.secretName || d.secretKey || 'UNKNOWN'}</span>
                               <span className="text-[10px] font-mono text-[#A26377]">
-                                ID: {d.id.slice(0, 8)}...
+                                ID: {d.id?.slice(0, 8)}...
                               </span>
                             </div>
                           </td>
@@ -489,9 +500,9 @@ export const SyncCenterView = () => {
                           <td className="py-3 px-4">
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                                d.driftType === 'MISSING_ON_PROVIDER'
+                                d.driftType === 'MISSING_FROM_PROVIDER' || d.driftType === 'MISSING_ON_PROVIDER'
                                   ? 'bg-[#F87171]/20 text-[#F87171] border border-[#F87171]/30'
-                                  : d.driftType === 'EXTRA_ON_PROVIDER'
+                                  : d.driftType === 'EXTRA_IN_PROVIDER' || d.driftType === 'EXTRA_ON_PROVIDER'
                                   ? 'bg-[#FBBF24]/20 text-[#FBBF24] border border-[#FBBF24]/30'
                                   : 'bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30'
                               }`}
@@ -536,7 +547,7 @@ export const SyncCenterView = () => {
                           </td>
 
                           <td className="py-3 px-4 font-mono text-[10px] text-[#A26377]">
-                            {new Date(d.detectedAt || d.createdAt).toLocaleString()}
+                            {new Date(d.lastDetectedAt || d.firstDetectedAt || d.detectedAt || d.createdAt).toLocaleString()}
                           </td>
 
                           <td className="py-3 px-4 text-right">
@@ -668,9 +679,10 @@ export const SyncCenterView = () => {
                   onChange={(e) => setSimPolicy(e.target.value)}
                   className="px-3 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
                 >
-                  <option value="SAFE_RECONCILIATION">SAFE_RECONCILIATION (Non-destructive, create &amp; update)</option>
-                  <option value="FORCE_OVERWRITE">FORCE_OVERWRITE (Overwrite provider unconditionally)</option>
-                  <option value="MIRROR_EXACT">MIRROR_EXACT (Strict mirror: prune/delete extra keys)</option>
+                  <option value="SAFE_RECONCILIATION">SAFE_RECONCILIATION (Non-destructive: create missing &amp; update changed)</option>
+                  <option value="PUSH_SECRETVAULT_TO_PROVIDER">PUSH_SECRETVAULT_TO_PROVIDER (Push SecretVault desired state)</option>
+                  <option value="MIRROR_EXACT">MIRROR_EXACT (Strict mirror: prune unmanaged remote variables)</option>
+                  <option value="DETECT_ONLY">DETECT_ONLY (Dry-run only: inspect drift without mutating)</option>
                 </select>
               </div>
             </div>
@@ -759,7 +771,7 @@ export const SyncCenterView = () => {
                               {op.operationType}
                             </span>
                           </td>
-                          <td className="py-2.5 px-4 font-mono font-bold text-white">{op.secretKey}</td>
+                          <td className="py-2.5 px-4 font-mono font-bold text-white">{op.secretName || op.secretKey}</td>
                           <td className="py-2.5 px-4 text-[#F4B5C8]">{op.providerResourceType || 'PROVIDER'}</td>
                           <td className="py-2.5 px-4 text-[#A26377] text-[11px]">{op.reason || 'State divergence'}</td>
                         </tr>
@@ -803,8 +815,9 @@ export const SyncCenterView = () => {
                     </tr>
                   ) : (
                     syncJobs.map((job) => {
-                      const isSuccess = job.status === 'SUCCESS';
+                      const isSuccess = job.status === 'COMPLETED' || job.status === 'SUCCESS';
                       const isFailed = job.status === 'FAILED';
+                      const isPartial = job.status === 'PARTIAL';
 
                       return (
                         <tr key={job.id} className="hover:bg-[#3F0016]/50 transition-colors">
@@ -838,7 +851,9 @@ export const SyncCenterView = () => {
                                   ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30'
                                   : isFailed
                                   ? 'bg-[#F87171]/15 text-[#F87171] border border-[#F87171]/30'
-                                  : 'bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30'
+                                  : isPartial
+                                  ? 'bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30'
+                                  : 'bg-[#818CF8]/15 text-[#818CF8] border border-[#818CF8]/30'
                               }`}
                             >
                               {job.status}
@@ -846,7 +861,7 @@ export const SyncCenterView = () => {
                           </td>
 
                           <td className="py-3 px-4 font-mono text-xs">
-                            <span className="text-[#34D399]">{job.succeededOperations || 0}</span>
+                            <span className="text-[#34D399]">{job.successfulOperations ?? job.succeededOperations ?? 0}</span>
                             <span className="text-[#A26377]"> / </span>
                             <span className="text-[#F87171]">{job.failedOperations || 0}</span>
                             <span className="text-[#A26377]"> / </span>
@@ -945,7 +960,7 @@ export const SyncCenterView = () => {
                           {op.operationType}
                         </span>
                         <div className="flex flex-col">
-                          <span className="font-mono font-bold text-white">{op.secretKey}</span>
+                          <span className="font-mono font-bold text-white">{op.secretName || op.secretKey}</span>
                           <span className="text-[10px] text-[#A26377]">
                             Target: {op.providerResourceId || 'External Provider'}
                           </span>

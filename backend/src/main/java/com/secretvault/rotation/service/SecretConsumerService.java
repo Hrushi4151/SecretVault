@@ -17,6 +17,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import com.secretvault.project.repository.ProjectRepository;
+import com.secretvault.environment.repository.EnvironmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -36,32 +42,78 @@ public class SecretConsumerService {
     private final SecretConsumerRepository consumerRepository;
     private final EffectiveAccessService effectiveAccessService;
     private final AuditService auditService;
+    private final ProjectRepository projectRepository;
+    private final EnvironmentRepository environmentRepository;
 
     public SecretConsumerService(
             SecretConsumerRepository consumerRepository,
             EffectiveAccessService effectiveAccessService,
             AuditService auditService) {
+        this(consumerRepository, effectiveAccessService, auditService, null, null);
+    }
+
+    @Autowired
+    public SecretConsumerService(
+            SecretConsumerRepository consumerRepository,
+            EffectiveAccessService effectiveAccessService,
+            AuditService auditService,
+            ProjectRepository projectRepository,
+            EnvironmentRepository environmentRepository) {
         this.consumerRepository = consumerRepository;
         this.effectiveAccessService = effectiveAccessService;
         this.auditService = auditService;
+        this.projectRepository = projectRepository;
+        this.environmentRepository = environmentRepository;
+    }
+
+    @Transactional
+    public SecretConsumerResponse registerConsumer(
+            UUID workspaceId, RegisterSecretConsumerRequest req, UUID actorId) {
+        return registerConsumer(workspaceId, null, null, req, actorId);
     }
 
     @Transactional
     public SecretConsumerResponse registerConsumer(
             UUID workspaceId, UUID projectId, UUID environmentId, RegisterSecretConsumerRequest req, UUID actorId) {
 
-        verifyAccess(workspaceId, projectId, environmentId, null, actorId, AccessPermission.CONSUMER_MANAGE);
+        UUID resolvedProjectId = projectId;
+        UUID resolvedEnvironmentId = environmentId;
 
+        if (resolvedProjectId == null && projectRepository != null) {
+            var projects = projectRepository.findByWorkspaceId(workspaceId);
+            if (!projects.isEmpty()) {
+                resolvedProjectId = projects.get(0).getId();
+            }
+        }
+
+        if (resolvedEnvironmentId == null && resolvedProjectId != null && environmentRepository != null) {
+            var environments = environmentRepository.findByProjectId(resolvedProjectId);
+            if (!environments.isEmpty()) {
+                resolvedEnvironmentId = environments.get(0).getId();
+            }
+        }
+
+        verifyAccess(workspaceId, resolvedProjectId, resolvedEnvironmentId, null, actorId, AccessPermission.CONSUMER_MANAGE);
+
+        final UUID fProjectId = resolvedProjectId;
+        final UUID fEnvironmentId = resolvedEnvironmentId;
         SecretConsumer consumer = consumerRepository.findByWorkspaceIdAndName(workspaceId, req.name())
                 .orElseGet(() -> {
                     SecretConsumer c = new SecretConsumer();
                     c.setId(UUID.randomUUID());
                     c.setWorkspaceId(workspaceId);
-                    c.setProjectId(projectId);
-                    c.setEnvironmentId(environmentId);
+                    c.setProjectId(fProjectId);
+                    c.setEnvironmentId(fEnvironmentId);
                     c.setName(req.name());
                     return c;
                 });
+
+        if (consumer.getProjectId() == null && fProjectId != null) {
+            consumer.setProjectId(fProjectId);
+        }
+        if (consumer.getEnvironmentId() == null && fEnvironmentId != null) {
+            consumer.setEnvironmentId(fEnvironmentId);
+        }
 
         consumer.setConsumerType(req.consumerType() != null ? req.consumerType() : ConsumerType.APPLICATION);
         consumer.setMachineIdentityId(req.machineIdentityId());

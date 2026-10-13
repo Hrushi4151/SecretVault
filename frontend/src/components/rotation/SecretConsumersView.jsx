@@ -11,6 +11,7 @@ import {
   Sparkles,
   Bot,
   Activity,
+  Plus,
 } from 'lucide-react';
 
 export const SecretConsumersView = ({ workspaceId }) => {
@@ -18,6 +19,17 @@ export const SecretConsumersView = ({ workspaceId }) => {
   const [error, setError] = useState(null);
   const [consumers, setConsumers] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [regForm, setRegForm] = useState({
+    name: '',
+    consumerType: 'APPLICATION',
+    supportsDynamicRefresh: true,
+    requiresRestart: false,
+    hostname: 'k8s-pod-worker-01',
+    sdkVersion: '1.2.0',
+    runtimeFramework: 'Spring Boot 3.3 / Java 21',
+  });
 
   const loadConsumers = useCallback(async () => {
     if (!workspaceId) return;
@@ -50,6 +62,31 @@ export const SecretConsumersView = ({ workspaceId }) => {
       setError(err.message || 'Failed to disable consumer');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleRegisterConsumer = async (e) => {
+    e.preventDefault();
+    if (!workspaceId || !regForm.name) return;
+    setRegistering(true);
+    setError(null);
+    try {
+      await rotationApi.registerConsumer(workspaceId, regForm);
+      setIsRegisterModalOpen(false);
+      setRegForm({
+        name: '',
+        consumerType: 'APPLICATION',
+        supportsDynamicRefresh: true,
+        requiresRestart: false,
+        hostname: 'k8s-pod-worker-01',
+        sdkVersion: '1.2.0',
+        runtimeFramework: 'Spring Boot 3.3 / Java 21',
+      });
+      loadConsumers();
+    } catch (err) {
+      setError(err.message || 'Failed to register consumer');
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -104,6 +141,13 @@ export const SecretConsumersView = ({ workspaceId }) => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsRegisterModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-[#818CF8] to-[#6366F1] text-white text-xs font-semibold shadow-md cursor-pointer hover:opacity-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Register Workload</span>
+          </button>
           <button
             onClick={loadConsumers}
             className="p-2 rounded-xl bg-[#1E000A] hover:bg-[#30000F] border border-[#FFB4C8]/15 text-[#F4B5C8] hover:text-white transition-all cursor-pointer"
@@ -200,6 +244,105 @@ export const SecretConsumersView = ({ workspaceId }) => {
           </table>
         </div>
       </div>
+
+      {/* Register Workload Modal */}
+      {isRegisterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-2xl bg-[#1E000A] border border-[#818CF8]/30 shadow-2xl p-6 text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-[#FFB4C8]/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-[#818CF8]/20 text-[#818CF8]">
+                  <Cpu className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-headline font-bold">Register Workload Consumer</h3>
+              </div>
+              <button
+                onClick={() => setIsRegisterModalOpen(false)}
+                className="text-[#F4B5C8]/50 hover:text-white text-xs font-mono cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterConsumer} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-mono text-[#F4B5C8]/70 mb-1">
+                  Workload Name
+                </label>
+                <input
+                  type="text"
+                  value={regForm.name}
+                  onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
+                  placeholder="e.g. auth-service-cluster-node-1"
+                  className="w-full px-3 py-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 text-white font-mono focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-[#F4B5C8]/70 mb-1">
+                    Consumer Type
+                  </label>
+                  <select
+                    value={regForm.consumerType}
+                    onChange={(e) => setRegForm({ ...regForm, consumerType: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 text-white font-mono focus:outline-none"
+                  >
+                    <option value="APPLICATION">APPLICATION</option>
+                    <option value="SERVICE">SERVICE</option>
+                    <option value="WORKER">WORKER</option>
+                    <option value="CONTAINER">CONTAINER</option>
+                    <option value="CI_PIPELINE">CI_PIPELINE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-[#F4B5C8]/70 mb-1">
+                    Hostname / Node
+                  </label>
+                  <input
+                    type="text"
+                    value={regForm.hostname}
+                    onChange={(e) => setRegForm({ ...regForm, hostname: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 text-white font-mono focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#26000B] border border-[#FFB4C8]/10">
+                <input
+                  type="checkbox"
+                  id="dynamicRefresh"
+                  checked={regForm.supportsDynamicRefresh}
+                  onChange={(e) => setRegForm({ ...regForm, supportsDynamicRefresh: e.target.checked, requiresRestart: !e.target.checked })}
+                  className="rounded border-[#FFB4C8]/30 text-[#818CF8]"
+                />
+                <label htmlFor="dynamicRefresh" className="text-[11px] text-[#F4B5C8]/80 cursor-pointer">
+                  Supports Dynamic In-Memory Hot-Reload (Zero Downtime)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#FFB4C8]/10">
+                <button
+                  type="button"
+                  onClick={() => setIsRegisterModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-[#26000B] hover:bg-[#30000F] text-[#F4B5C8] text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={registering}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#818CF8] to-[#6366F1] text-white text-xs font-semibold shadow-md cursor-pointer hover:opacity-95"
+                >
+                  {registering ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5" />}
+                  <span>Register Workload</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

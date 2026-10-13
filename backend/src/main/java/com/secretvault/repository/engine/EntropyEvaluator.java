@@ -14,6 +14,7 @@ public class EntropyEvaluator {
 
     private static final double BASE64_HIGH_ENTROPY_THRESHOLD = 4.5;
     private static final double HEX_HIGH_ENTROPY_THRESHOLD = 3.0;
+    private static final double GENERIC_SECRET_ENTROPY_THRESHOLD = 2.5;
 
     /**
      * Calculates Shannon entropy: H = -sum(p * log2(p))
@@ -53,5 +54,25 @@ public class EntropyEvaluator {
         }
 
         return entropy >= BASE64_HIGH_ENTROPY_THRESHOLD;
+    }
+
+    public boolean isSufficientEntropy(String candidate) {
+        if (candidate == null || candidate.length() < 6) {
+            return false;
+        }
+        return calculateEntropy(candidate) >= GENERIC_SECRET_ENTROPY_THRESHOLD;
+    }
+
+    public boolean isTrivialString(String candidate) {
+        if (candidate == null || candidate.length() < 3) return true;
+        char first = candidate.charAt(0);
+        boolean allSame = true;
+        for (int i = 1; i < candidate.length(); i++) {
+            if (candidate.charAt(i) != first) {
+                allSame = false;
+                break;
+            }
+        }
+        return allSame;
     }
 }

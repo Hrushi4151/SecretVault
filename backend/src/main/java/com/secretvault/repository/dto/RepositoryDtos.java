@@ -39,8 +39,15 @@ public class RepositoryDtos {
 
     public record RemediateFindingRequest(
             RemediationAction action,
-            String notes
-    ) {}
+            String notes,
+            String filePattern,
+            Instant expiresAt,
+            UUID targetSecretId
+    ) {
+        public RemediateFindingRequest(RemediationAction action, String notes) {
+            this(action, notes, null, null, null);
+        }
+    }
 
     public record AllowlistFindingRequest(
             UUID repositoryId,
@@ -49,5 +56,65 @@ public class RepositoryDtos {
             String path,
             String reason,
             Instant expiresAt
+    ) {}
+
+    public record RemediationTargetInfo(
+            UUID findingId,
+            String secretType,
+            String severity,
+            String maskedEvidence,
+            String filePath,
+            Integer lineNumber,
+            String commitSha,
+            String branch,
+            boolean isManagedInSecretVault,
+            UUID matchedSecretId,
+            String matchedSecretName,
+            String matchedEnvironmentName,
+            String matchedProjectName,
+            Integer currentVersionNumber,
+            String providerName,
+            boolean rotationSupported,
+            boolean revocationSupported,
+            String rotationStrategy,
+            String impactWarning,
+            java.util.List<String> manualInstructions
+    ) {}
+
+    public record FindingAllowlistDto(
+            UUID id,
+            UUID workspaceId,
+            UUID repositoryId,
+            String repositoryName,
+            String fingerprint,
+            String detectorType,
+            String filePattern,
+            String reason,
+            UUID createdBy,
+            Instant expiresAt,
+            boolean active,
+            Instant createdAt
+    ) {}
+
+    public record GitHubIntegrationStatusResponse(
+            boolean connected,
+            String username,
+            String name,
+            String avatarUrl,
+            java.util.List<String> scopes,
+            String status,
+            long monitoredRepoCount,
+            Instant connectedAt,
+            Instant lastValidatedAt
+    ) {}
+
+    public record ConnectGitHubIntegrationRequest(
+            String token,
+            String code,
+            String redirectUri
+    ) {}
+
+    public record ToggleMonitoringRequest(
+            boolean enabled
     ) {}
 }

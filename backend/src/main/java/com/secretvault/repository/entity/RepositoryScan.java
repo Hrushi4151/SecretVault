@@ -68,6 +68,18 @@ public class RepositoryScan {
     @Column(name = "idempotency_key", length = 128)
     private String idempotencyKey;
 
+    @Column(name = "claim_token", length = 128)
+    private String claimToken;
+
+    @Column(name = "locked_by", length = 128)
+    private String lockedBy;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount = 0;
+
     @Column(name = "started_at")
     private Instant startedAt;
 
@@ -262,5 +274,37 @@ public class RepositoryScan {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getClaimToken() {
+        return claimToken;
+    }
+
+    public void setClaimToken(String claimToken) {
+        this.claimToken = claimToken;
+    }
+
+    public String getLockedBy() {
+        return lockedBy;
+    }
+
+    public void setLockedBy(String lockedBy) {
+        this.lockedBy = lockedBy;
+    }
+
+    public Instant getLockedAt() {
+        return lockedAt;
+    }
+
+    public void setLockedAt(Instant lockedAt) {
+        this.lockedAt = lockedAt;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
     }
 }

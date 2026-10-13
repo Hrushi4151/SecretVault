@@ -52,21 +52,23 @@ export const RotationPoliciesView = ({
     setLoading(true);
     setError(null);
     try {
-      // In this environment, we load secrets and check policies
-      // We can query secret metadata and fetch their rotation policies
-      const secretsRes = await secretApi.list(workspaceId, 'all', 'all', {}).catch(() => ({ data: { content: [] } }));
-      const list = secretsRes?.data?.content || secretsRes?.content || secretsRes?.data || [];
+      const [secretsRes, policiesRes] = await Promise.all([
+        secretApi.list(workspaceId, 'all', 'all', {}).catch(() => ({ data: [] })),
+        rotationApi.listPolicies(workspaceId).catch(() => ({ data: [] })),
+      ]);
+
+      const list = Array.isArray(secretsRes) ? secretsRes : (secretsRes?.data?.content || secretsRes?.content || secretsRes?.data || []);
       setSecrets(Array.isArray(list) ? list : []);
 
+      const polList = Array.isArray(policiesRes)
+        ? policiesRes
+        : Array.isArray(policiesRes?.data)
+        ? policiesRes.data
+        : (policiesRes?.data?.content || []);
       const policyMap = {};
-      await Promise.all(
-        list.slice(0, 30).map(async (sec) => {
-          try {
-            const pol = await rotationApi.getPolicy(workspaceId, sec.id);
-            if (pol?.data) policyMap[sec.id] = pol.data;
-          } catch (ignored) {}
-        })
-      );
+      polList.forEach((p) => {
+        if (p.secretId) policyMap[p.secretId] = p;
+      });
       setPolicies(policyMap);
     } catch (err) {
       setError(err.message || 'Failed to load secrets and policies');
@@ -84,18 +86,18 @@ export const RotationPoliciesView = ({
     if (currentPolicy) {
       setFormData({
         enabled: currentPolicy.enabled ?? true,
-        rotationIntervalDays: currentPolicy.rotationIntervalDays || 30,
-        minIntervalDays: currentPolicy.minIntervalDays || 1,
-        maxSecretAgeDays: currentPolicy.maxSecretAgeDays || 90,
-        rotationWindowHours: currentPolicy.rotationWindowHours || 24,
+        rotationIntervalDays: currentPolicy.intervalSeconds ? Math.round(currentPolicy.intervalSeconds / 86400) : (currentPolicy.rotationIntervalDays || 30),
+        minIntervalDays: currentPolicy.minIntervalSeconds ? Math.round(currentPolicy.minIntervalSeconds / 86400) : (currentPolicy.minIntervalDays || 1),
+        maxSecretAgeDays: currentPolicy.maxSecretAgeSeconds ? Math.round(currentPolicy.maxSecretAgeSeconds / 86400) : (currentPolicy.maxSecretAgeDays || 90),
+        rotationWindowHours: currentPolicy.rotationWindowSeconds ? Math.round(currentPolicy.rotationWindowSeconds / 3600) : (currentPolicy.rotationWindowHours || 24),
         rotationWindowStartTime: currentPolicy.rotationWindowStartTime || '02:00',
-        rotationWindowTimezone: currentPolicy.rotationWindowTimezone || 'UTC',
+        rotationWindowTimezone: currentPolicy.timezone || currentPolicy.rotationWindowTimezone || 'UTC',
         strategy: currentPolicy.strategy || 'SCHEDULED',
         rolloutStrategy: currentPolicy.rolloutStrategy || 'DUAL_CREDENTIAL_GRACE_PERIOD',
         validationType: currentPolicy.validationType || 'CONNECTIVITY',
-        gracePeriodMinutes: currentPolicy.gracePeriodMinutes || 60,
+        gracePeriodMinutes: currentPolicy.gracePeriodSeconds ? Math.round(currentPolicy.gracePeriodSeconds / 60) : (currentPolicy.gracePeriodMinutes || 60),
         maxRetries: currentPolicy.maxRetries || 3,
-        autoRevokeOldVersion: currentPolicy.autoRevokeOldVersion ?? true,
+        autoRevokeOldVersion: currentPolicy.autoRevokePrevious ?? currentPolicy.autoRevokeOldVersion ?? true,
         autoRollbackOnFailure: currentPolicy.autoRollbackOnFailure ?? true,
         notifyOnSuccess: currentPolicy.notifyOnSuccess ?? true,
       });
@@ -127,17 +129,28 @@ export const RotationPoliciesView = ({
     setSaving(true);
     setError(null);
     try {
+      const payload = {
+        enabled: formData.enabled,
+        strategy: formData.strategy,
+        secretType: 'PASSWORD',
+        intervalSeconds: (Number(formData.rotationIntervalDays) || 30) * 86400,
+        minIntervalSeconds: (Number(formData.minIntervalDays) || 1) * 86400,
+        maxSecretAgeSeconds: (Number(formData.maxSecretAgeDays) || 90) * 86400,
+        rotationWindowSeconds: (Number(formData.rotationWindowHours) || 24) * 3600,
+        timezone: formData.rotationWindowTimezone || 'UTC',
+        maxRetries: Number(formData.maxRetries) || 3,
+        validationType: formData.validationType || 'CONNECTIVITY',
+        rolloutStrategy: formData.rolloutStrategy === 'DUAL_CREDENTIAL_GRACE_PERIOD' ? 'STAGED' : (formData.rolloutStrategy || 'STAGED'),
+        gracePeriodSeconds: (Number(formData.gracePeriodMinutes) || 60) * 60,
+        autoRevokePrevious: formData.autoRevokeOldVersion ?? true,
+        autoRollbackOnFailure: formData.autoRollbackOnFailure ?? true,
+      };
+
       const existing = policies[selectedSecret.id];
       if (existing) {
-        await rotationApi.updatePolicy(workspaceId, selectedSecret.id, formData);
+        await rotationApi.updatePolicy(workspaceId, selectedSecret.id, payload);
       } else {
-        await rotationApi.createPolicy(
-          workspaceId,
-          selectedSecret.projectId || selectedSecret.project_id || '00000000-0000-0000-0000-000000000000',
-          selectedSecret.environmentId || selectedSecret.environment_id || '00000000-0000-0000-0000-000000000000',
-          selectedSecret.id,
-          formData
-        );
+        await rotationApi.createPolicyDirect(workspaceId, selectedSecret.id, payload);
       }
       setIsModalOpen(false);
       loadData();

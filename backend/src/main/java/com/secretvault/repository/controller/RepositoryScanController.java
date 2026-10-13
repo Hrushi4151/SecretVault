@@ -37,6 +37,13 @@ public class RepositoryScanController {
     }
 
     @PostMapping("/api/v1/workspaces/{workspaceId}/repositories/{repositoryId}/scans")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "repo_scan",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many repository scan requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Trigger a repository scan (full, incremental, git-history, or PR)")
     public ResponseEntity<ApiResponse<RepositoryScan>> triggerScan(
             @PathVariable UUID workspaceId,
@@ -45,7 +52,7 @@ public class RepositoryScanController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         UUID actorId = principal != null ? principal.getId() : null;
-        ScanType scanType = request != null && request.scanType() != null ? request.scanType() : ScanType.INCREMENTAL;
+        ScanType scanType = request != null && request.scanType() != null ? request.scanType() : ScanType.FULL;
         String branch = request != null ? request.branch() : null;
 
         RepositoryScan scan = scanService.triggerRepositoryScan(workspaceId, repositoryId, scanType, branch, actorId);
@@ -54,6 +61,13 @@ public class RepositoryScanController {
     }
 
     @PostMapping("/api/v1/workspaces/{workspaceId}/repository-scans/local")
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "repo_scan_local",
+            limit = 10,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many local directory scan requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Trigger a local workspace directory scan")
     public ResponseEntity<ApiResponse<RepositoryScan>> scanLocalDirectory(
             @PathVariable UUID workspaceId,
@@ -68,6 +82,13 @@ public class RepositoryScanController {
     }
 
     @PostMapping(value = "/api/v1/workspaces/{workspaceId}/repository-scans/archive", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @com.secretvault.common.ratelimit.RateLimited(
+            category = "repo_scan_archive",
+            limit = 5,
+            windowSeconds = 60,
+            type = com.secretvault.common.ratelimit.RateLimitIdentifierType.WORKSPACE_ID,
+            message = "Too many archive upload scan requests for this workspace. Please try again later."
+    )
     @Operation(summary = "Upload and scan a source code archive (.zip) safely")
     public ResponseEntity<ApiResponse<RepositoryScan>> scanArchive(
             @PathVariable UUID workspaceId,

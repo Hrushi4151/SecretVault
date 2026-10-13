@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { projectApi } from '../../api/projects';
+import { integrationsApi } from '../../api/integrations';
+import { getProviderMeta } from '../../utils/providerRegistry';
 import { CreateProjectModal } from './CreateProjectModal';
 import {
   FolderGit2,
@@ -20,11 +22,19 @@ import {
   Key,
   ArrowRight,
   Settings,
+  Network,
+  Cloud,
+  Zap,
 } from 'lucide-react';
 
-export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings }) => {
+export const ProjectsView = ({
+  onNavigateToSecrets,
+  onNavigateToProjectSettings,
+  onNavigateToIntegrations,
+}) => {
   const { activeWorkspace } = useAuth();
   const [projects, setProjects] = useState([]);
+  const [projectMappingsMap, setProjectMappingsMap] = useState({}); // projectId -> mapping[]
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -38,7 +48,40 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
     setError(null);
     try {
       const data = await projectApi.list(activeWorkspace.id);
-      setProjects(data || []);
+      const projList = data || [];
+      setProjects(projList);
+
+      // Load integrations and mappings to show external platforms under each project
+      try {
+        const intRes = await integrationsApi.list(activeWorkspace.id);
+        const rawInts = intRes?.items || intRes?.content || (Array.isArray(intRes) ? intRes : []);
+        const validInts = rawInts.filter(
+          (i) => i.providerType !== 'GITHUB' && i.providerType !== 'GITLAB'
+        );
+
+        const mapsByProj = {};
+        for (const intItem of validInts) {
+          try {
+            const mRes = await integrationsApi.listMappings(activeWorkspace.id, intItem.id);
+            const mList = Array.isArray(mRes) ? mRes : (mRes?.items || mRes?.content || []);
+            mList.forEach((m) => {
+              if (!mapsByProj[m.projectId]) {
+                mapsByProj[m.projectId] = [];
+              }
+              mapsByProj[m.projectId].push({
+                ...m,
+                providerType: intItem.providerType,
+                integrationName: intItem.displayName,
+              });
+            });
+          } catch (mErr) {
+            // ignore individual mapping lookup failures
+          }
+        }
+        setProjectMappingsMap(mapsByProj);
+      } catch (intErr) {
+        console.warn('Failed to load project integration mappings:', intErr);
+      }
     } catch (err) {
       setError(err.message || 'Failed to load projects for this workspace.');
     } finally {
@@ -105,6 +148,15 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
   const protectedEnvironments = projects.reduce(
     (acc, p) =>
       acc + (p.environments?.filter((e) => e.isProtected)?.length || 0),
+    0
+  );
+
+  const allMappingsCount = Object.values(projectMappingsMap).reduce(
+    (acc, list) => acc + list.length,
+    0
+  );
+  const activeSyncRoutesCount = Object.values(projectMappingsMap).reduce(
+    (acc, list) => acc + list.filter((m) => m.syncEnabled).length,
     0
   );
 
@@ -211,21 +263,23 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
           </div>
         </div>
 
-        {/* Metric 4: RBAC Governance */}
+        {/* Metric 4: External Integrations & Cloud Sync */}
         <div className="p-5 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 shadow-sm flex flex-col justify-between hover:border-[#FFB4C8]/30 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-[#A26377]">
-              Zero-Trust Policy
+              External Platform Sync
             </span>
-            <div className="w-8 h-8 rounded-xl bg-[#3F0016] border border-[#4ADE80]/30 flex items-center justify-center text-[#4ADE80]">
-              <Lock className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-[#3F0016] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D]">
+              <Network className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-lg font-headline font-bold text-[#4ADE80]">
-              ENFORCED
+            <span className="text-3xl font-headline font-bold text-white">
+              {allMappingsCount}
             </span>
-            <span className="text-[10px] font-mono text-[#A26377]">Hierarchical</span>
+            <span className="text-[10px] font-mono text-[#34D399]">
+              {activeSyncRoutesCount} Active Routes
+            </span>
           </div>
         </div>
       </section>
@@ -388,18 +442,92 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
                   </div>
                 </div>
 
+                {/* External Platform Integrations Section */}
+                {(() => {
+                  const pMappings = projectMappingsMap[project.id] || [];
+                  const uniqueProviderTypes = [...new Set(pMappings.map((m) => m.providerType))];
+                  const activeSyncCount = pMappings.filter((m) => m.syncEnabled).length;
+
+                  return (
+                    <div className="flex flex-col gap-2 pt-2 border-t border-[#FFB4C8]/10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#A26377] flex items-center gap-1.5">
+                          <Network className="w-3 h-3 text-[#FF2D6D]" />
+                          <span>External Platforms ({uniqueProviderTypes.length})</span>
+                        </span>
+                        {pMappings.length > 0 && (
+                          <span className="text-[10px] font-mono text-[#34D399]">
+                            ● {activeSyncCount} route{activeSyncCount !== 1 ? 's' : ''} active
+                          </span>
+                        )}
+                      </div>
+
+                      {pMappings.length === 0 ? (
+                        <div className="flex items-center justify-between py-1 text-[11px] text-[#A26377]">
+                          <span className="italic text-[10px] text-[#F4B5C8]/60">No external platforms mapped</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onNavigateToIntegrations) onNavigateToIntegrations(project.id);
+                            }}
+                            className="text-[10px] font-mono font-bold text-[#FF2D6D] hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
+                            <span>+ Connect Platform</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {uniqueProviderTypes.map((pType) => {
+                            const meta = getProviderMeta(pType);
+                            const countForProvider = pMappings.filter((m) => m.providerType === pType).length;
+                            return (
+                              <div
+                                key={pType}
+                                title={`${meta.displayName} (${countForProvider} mapped resource${countForProvider > 1 ? 's' : ''})`}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1.5 border shadow-sm ${meta.badgeBg} ${meta.badgeBorder} ${meta.badgeText}`}
+                              >
+                                <span>{meta.iconSymbol}</span>
+                                <span>{meta.shortName}</span>
+                                <span className="opacity-75 text-[9px]">({countForProvider})</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Card Footer Actions */}
                 <div className="flex items-center justify-between pt-3 border-t border-[#FFB4C8]/10 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleProjectClick(project.id, firstEnvId)}
-                    className="px-3 py-1.5 rounded-xl bg-[#3F0016] hover:bg-[#FF2D6D] text-[#FFB4C8] hover:text-white text-[11px] font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Key className="w-3.5 h-3.5 text-[#FF2D6D] group-hover:text-white" />
-                    <span>Open Secrets Vault</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleProjectClick(project.id, firstEnvId)}
+                      className="px-2.5 py-1.5 rounded-xl bg-[#3F0016] hover:bg-[#FF2D6D] text-[#FFB4C8] hover:text-white text-[11px] font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Key className="w-3.5 h-3.5 text-[#FF2D6D] group-hover:text-white" />
+                      <span>Vault</span>
+                    </button>
 
-                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onNavigateToIntegrations) {
+                          onNavigateToIntegrations(project.id);
+                        }
+                      }}
+                      title="Manage External Platform Mappings for this Project"
+                      className="px-2.5 py-1.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white text-[11px] font-mono font-medium transition-all flex items-center gap-1 border border-[#FFB4C8]/15 hover:border-[#FF2D6D]/40 cursor-pointer shadow-sm"
+                    >
+                      <Network className="w-3.5 h-3.5 text-[#FF2D6D]" />
+                      <span>Integrations ({(projectMappingsMap[project.id] || []).length})</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
                     {onNavigateToProjectSettings && (
                       <button
                         type="button"
@@ -408,7 +536,7 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
                           onNavigateToProjectSettings(project.id);
                         }}
                         title="Project Settings"
-                        className="p-1.5 rounded-lg text-[#F4B5C8] hover:text-[#FF2D6D] hover:bg-[#3F0016] transition-colors border border-transparent hover:border-[#FF2D6D]/30"
+                        className="p-1.5 rounded-lg text-[#F4B5C8] hover:text-[#FF2D6D] hover:bg-[#3F0016] transition-colors border border-transparent hover:border-[#FF2D6D]/30 cursor-pointer"
                       >
                         <Settings className="w-4 h-4" />
                       </button>
@@ -417,7 +545,7 @@ export const ProjectsView = ({ onNavigateToSecrets, onNavigateToProjectSettings 
                       onClick={(e) => handleDeleteProject(project.id, e)}
                       disabled={deletingProjectId === project.id}
                       title="Delete Project"
-                      className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors"
+                      className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

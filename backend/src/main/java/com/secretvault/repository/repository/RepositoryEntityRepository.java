@@ -24,7 +24,17 @@ public interface RepositoryEntityRepository extends JpaRepository<RepositoryEnti
 
     List<RepositoryEntity> findByWorkspaceIdAndStatus(UUID workspaceId, RepositoryStatus status);
 
+    List<RepositoryEntity> findByStatus(RepositoryStatus status);
+
+    List<RepositoryEntity> findByOwnerIgnoreCaseAndNameIgnoreCase(String owner, String name);
+
+    List<RepositoryEntity> findByCloneUrl(String cloneUrl);
+
+    Optional<RepositoryEntity> findByWorkspaceIdAndOwnerAndName(UUID workspaceId, String owner, String name);
+
     long countByWorkspaceId(UUID workspaceId);
 
     long countByWorkspaceIdAndStatus(UUID workspaceId, RepositoryStatus status);
+
+    long countByWorkspaceIdAndProvider(UUID workspaceId, com.secretvault.repository.model.RepositoryProvider provider);
 }

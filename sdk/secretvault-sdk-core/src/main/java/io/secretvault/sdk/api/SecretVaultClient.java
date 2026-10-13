@@ -27,6 +27,7 @@ public class SecretVaultClient implements AutoCloseable {
     private final ScheduledExecutorService scheduler;
     private final SecretsApi secretsApi;
     private final RepositorySecurityApi repositorySecurityApi;
+    private final AiDiagnosticsApi aiDiagnosticsApi;
     private final io.secretvault.sdk.consumer.ConsumerHeartbeatDaemon heartbeatDaemon;
 
     private SecretVaultClient(SdkConfig config) {
@@ -43,6 +44,7 @@ public class SecretVaultClient implements AutoCloseable {
         });
         this.secretsApi = new DefaultSecretsApi(config, httpClient, cache, coalescer, metrics, scheduler);
         this.repositorySecurityApi = new DefaultRepositorySecurityApi(config, httpClient);
+        this.aiDiagnosticsApi = new DefaultAiDiagnosticsApi(config, httpClient);
 
         if (config.getHeartbeatConfig() != null && config.getHeartbeatConfig().isEnabled()) {
             this.heartbeatDaemon = new io.secretvault.sdk.consumer.ConsumerHeartbeatDaemon(
@@ -69,6 +71,10 @@ public class SecretVaultClient implements AutoCloseable {
 
     public RepositorySecurityApi repositorySecurity() {
         return repositorySecurityApi;
+    }
+
+    public AiDiagnosticsApi ai() {
+        return aiDiagnosticsApi;
     }
 
     public boolean ping() {

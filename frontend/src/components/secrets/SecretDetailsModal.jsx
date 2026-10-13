@@ -26,7 +26,8 @@ import {
   RotateCcw,
   Plus,
   FileText,
-  Ban
+  Ban,
+  Settings
 } from 'lucide-react';
 
 export const SecretDetailsModal = ({
@@ -60,6 +61,13 @@ export const SecretDetailsModal = ({
   const [clipboardTimeoutSeconds, setClipboardTimeoutSeconds] = useState(15);
   const [policyLevel, setPolicyLevel] = useState('DEFAULT');
 
+  // Inline version reveal state
+  const [revealedVersionValues, setRevealedVersionValues] = useState({}); // { [versionNumber]: string }
+  const [versionAutoMaskMap, setVersionAutoMaskMap] = useState({}); // { [versionNumber]: number }
+  const [revealingVersionNum, setRevealingVersionNum] = useState(null);
+  const [copiedVersionNum, setCopiedVersionNum] = useState(null);
+  const [versionRevealErrors, setVersionRevealErrors] = useState({}); // { [versionNumber]: string }
+
   // Step-Up & Justification State
   const [isStepUpOpen, setIsStepUpOpen] = useState(false);
   const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
@@ -70,9 +78,15 @@ export const SecretDetailsModal = ({
 
   // Rotate state
   const [newValue, setNewValue] = useState('');
-  const [newDescription, setNewDescription] = useState('');
+  const [rotationReason, setRotationReason] = useState('');
   const [isRotating, setIsRotating] = useState(false);
   const [rotateError, setRotateError] = useState(null);
+
+  // Metadata & Lifecycle state
+  const [newDescription, setNewDescription] = useState('');
+  const [newStatus, setNewStatus] = useState('ACTIVE');
+  const [isUpdatingMetadata, setIsUpdatingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState(null);
 
   // Tagging state
   const [newTagName, setNewTagName] = useState('');
@@ -93,8 +107,17 @@ export const SecretDetailsModal = ({
       setRevealedVersion(null);
       setAutoMaskSeconds(0);
       setRevealError(null);
+      setRevealedVersionValues({});
+      setVersionAutoMaskMap({});
+      setRevealingVersionNum(null);
+      setCopiedVersionNum(null);
+      setVersionRevealErrors({});
       setNewValue('');
+      setRotationReason('');
       setNewDescription(secret.description || '');
+      setNewStatus(secret.status || 'ACTIVE');
+      setMetadataError(null);
+      setRotateError(null);
       setDiffParams(null);
       setRollbackTargetVersion(null);
       setIsReasonModalOpen(false);
@@ -107,7 +130,14 @@ export const SecretDetailsModal = ({
     }
   }, [isOpen, secret?.id]);
 
-  // Auto-mask countdown timer
+  // Re-fetch versions when user navigates to the versions tab
+  useEffect(() => {
+    if (activeTab === 'versions' && isOpen && secret?.id) {
+      fetchVersions();
+    }
+  }, [activeTab]);
+
+  // Auto-mask countdown timer for overview tab
   useEffect(() => {
     let timer;
     if (autoMaskSeconds > 0) {
@@ -125,14 +155,45 @@ export const SecretDetailsModal = ({
     return () => clearInterval(timer);
   }, [autoMaskSeconds]);
 
+  // Auto-mask countdown timer for inline version reveals
+  useEffect(() => {
+    const hasActiveTimers = Object.values(versionAutoMaskMap).some((s) => s > 0);
+    if (!hasActiveTimers) return;
+
+    const timer = setInterval(() => {
+      setVersionAutoMaskMap((prevMap) => {
+        let changed = false;
+        const nextMap = { ...prevMap };
+        Object.entries(nextMap).forEach(([vNum, seconds]) => {
+          if (seconds > 1) {
+            nextMap[vNum] = seconds - 1;
+            changed = true;
+          } else if (seconds <= 1) {
+            delete nextMap[vNum];
+            changed = true;
+            setRevealedVersionValues((prevVals) => {
+              const nextVals = { ...prevVals };
+              delete nextVals[vNum];
+              return nextVals;
+            });
+          }
+        });
+        return changed ? nextMap : prevMap;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [versionAutoMaskMap]);
+
   if (!isOpen || !secret) return null;
 
   const fetchVersions = async () => {
     setIsLoadingVersions(true);
     try {
       const response = await versionsApi.getVersions(workspaceId, projectId, environmentId, secret.id, 0, 50);
-      const data = response?.data?.content || response?.data || response;
-      setVersions(Array.isArray(data) ? data : []);
+      const data = response?.content || response?.data?.content || response?.data || response;
+      const versionList = Array.isArray(data) ? data : (Array.isArray(response?.content) ? response.content : []);
+      setVersions(versionList);
     } catch (err) {
       console.error('Failed to fetch versions:', err);
     } finally {
@@ -175,7 +236,13 @@ export const SecretDetailsModal = ({
     }
 
     setIsRevealing(true);
+    setRevealingVersionNum(targetVer);
     setRevealError(null);
+    setVersionRevealErrors((prev) => {
+      const next = { ...prev };
+      delete next[targetVer];
+      return next;
+    });
 
     try {
       // Phase 1: Request Single-Use Reveal Intent Token
@@ -218,12 +285,25 @@ export const SecretDetailsModal = ({
       );
 
       const data = revealRes?.data || revealRes;
+      const duration = data.maxDisplayDurationSeconds || intentData.maxDisplayDurationSeconds || 30;
+
+      // Update overview tab state
       setRevealedValue(data.value);
       setRevealedVersion(data.versionNumber || targetVer);
       setPolicyLevel(data.policyLevel || intentData.policyLevel || 'DEFAULT');
       setCopyAllowed(data.copyAllowed !== false && intentData.copyAllowed !== false);
       setClipboardTimeoutSeconds(data.clipboardTimeoutSeconds || intentData.clipboardTimeoutSeconds || 15);
-      setAutoMaskSeconds(data.maxDisplayDurationSeconds || intentData.maxDisplayDurationSeconds || 30);
+      setAutoMaskSeconds(duration);
+
+      // Update inline versions tab state
+      setRevealedVersionValues((prev) => ({
+        ...prev,
+        [targetVer]: data.value,
+      }));
+      setVersionAutoMaskMap((prev) => ({
+        ...prev,
+        [targetVer]: duration,
+      }));
 
       setIsReasonModalOpen(false);
       setJustificationReason('');
@@ -246,11 +326,65 @@ export const SecretDetailsModal = ({
         setReasonError(errMsg || 'A valid justification reason (min 10 chars) is required.');
         setIsReasonModalOpen(true);
       } else {
-        setRevealError(errMsg || 'Failed to reveal secret. Check your permissions or security policy.');
+        const fallbackMsg = errMsg || 'Failed to reveal secret. Check your permissions or security policy.';
+        setRevealError(fallbackMsg);
+        setVersionRevealErrors((prev) => ({
+          ...prev,
+          [targetVer]: fallbackMsg,
+        }));
       }
     } finally {
       setIsRevealing(false);
+      setRevealingVersionNum(null);
     }
+  };
+
+  const handleHideVersion = (versionNumber) => {
+    setRevealedVersionValues((prev) => {
+      const next = { ...prev };
+      delete next[versionNumber];
+      return next;
+    });
+    setVersionAutoMaskMap((prev) => {
+      const next = { ...prev };
+      delete next[versionNumber];
+      return next;
+    });
+  };
+
+  const handleCopyVersion = (versionNumber, val) => {
+    if (!val || !copyAllowed) return;
+    navigator.clipboard.writeText(val);
+    setCopiedVersionNum(versionNumber);
+    setTimeout(() => {
+      setCopiedVersionNum((prev) => (prev === versionNumber ? null : prev));
+    }, 2000);
+
+    const timeoutMs = (clipboardTimeoutSeconds || 15) * 1000;
+    setTimeout(() => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then((clipText) => {
+            if (clipText === val) {
+              navigator.clipboard.writeText('');
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    }, timeoutMs);
+  };
+
+  const handleOpenDiff = (versionNumber) => {
+    const curVer = secret.currentVersionNumber || (versions.length > 0 ? versions[0].versionNumber : 1);
+    let fromVer = versionNumber;
+    let toVer = curVer;
+
+    if (versionNumber === curVer) {
+      // If clicking diff on current version, compare against its predecessor
+      fromVer = curVer > 1 ? curVer - 1 : curVer;
+      toVer = curVer;
+    }
+    setDiffParams({ from: fromVer, to: toVer });
   };
 
   const submitJustification = (e) => {
@@ -289,8 +423,8 @@ export const SecretDetailsModal = ({
 
   const handleRotate = async (e) => {
     e.preventDefault();
-    if (!newValue && !newDescription) {
-      setRotateError('Please enter a new value or description to update.');
+    if (!newValue || !newValue.trim()) {
+      setRotateError('Please enter a new secret value to rotate.');
       return;
     }
 
@@ -298,9 +432,10 @@ export const SecretDetailsModal = ({
     setRotateError(null);
 
     try {
-      const payload = {};
-      if (newValue) payload.value = newValue;
-      if (newDescription !== secret.description) payload.description = newDescription;
+      const payload = { value: newValue.trim() };
+      if (rotationReason && rotationReason.trim()) {
+        payload.reason = rotationReason.trim();
+      }
 
       const response = await secretApi.update(
         workspaceId,
@@ -314,12 +449,52 @@ export const SecretDetailsModal = ({
         onSecretUpdated(updated);
       }
       setNewValue('');
+      setRotationReason('');
       await fetchVersions();
-      setActiveTab('overview');
+      setActiveTab('versions');
     } catch (err) {
       setRotateError(err.response?.data?.message || err.message || 'Failed to rotate secret.');
     } finally {
       setIsRotating(false);
+    }
+  };
+
+  const handleUpdateMetadata = async (e) => {
+    e.preventDefault();
+    setIsUpdatingMetadata(true);
+    setMetadataError(null);
+
+    try {
+      const payload = {};
+      if (newDescription !== (secret.description || '')) {
+        payload.description = newDescription.trim();
+      }
+      if (newStatus !== (secret.status || 'ACTIVE')) {
+        payload.status = newStatus;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        setMetadataError('No metadata or status changes detected.');
+        setIsUpdatingMetadata(false);
+        return;
+      }
+
+      const response = await secretApi.update(
+        workspaceId,
+        projectId,
+        environmentId,
+        secret.id,
+        payload
+      );
+      const updated = response?.data || response;
+      if (onSecretUpdated) {
+        onSecretUpdated(updated);
+      }
+      setActiveTab('overview');
+    } catch (err) {
+      setMetadataError(err.response?.data?.message || err.message || 'Failed to update metadata.');
+    } finally {
+      setIsUpdatingMetadata(false);
     }
   };
 
@@ -381,7 +556,11 @@ export const SecretDetailsModal = ({
                   <h2 className="text-lg md:text-xl font-headline font-bold text-white tracking-tight">
                     {secret.name}
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full bg-[#3F0016] text-[10px] font-mono text-[#4ADE80] border border-[#4ADE80]/30 font-semibold">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                    (secret.status || 'ACTIVE') === 'ACTIVE'
+                      ? 'bg-[#3F0016] text-[#4ADE80] border border-[#4ADE80]/30'
+                      : 'bg-[#3A2000] text-[#FBBF24] border border-[#FBBF24]/30'
+                  }`}>
                     {secret.status || 'ACTIVE'}
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-[#30000F] text-[10px] font-mono text-[#FFB4C8] border border-[#FFB4C8]/20">
@@ -418,10 +597,10 @@ export const SecretDetailsModal = ({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-2 p-1 rounded-2xl bg-[#140007] border border-[#FFB4C8]/15 text-xs">
+          <div className="flex items-center gap-2 p-1 rounded-2xl bg-[#140007] border border-[#FFB4C8]/15 text-xs overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'bg-[#30000F] text-white border border-[#FF2D6D]/40 shadow-sm'
                   : 'text-[#A26377] hover:text-white'
@@ -433,32 +612,50 @@ export const SecretDetailsModal = ({
 
             <button
               onClick={() => setActiveTab('versions')}
-              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
                 activeTab === 'versions'
                   ? 'bg-[#30000F] text-white border border-[#FF2D6D]/40 shadow-sm'
                   : 'text-[#A26377] hover:text-white'
               }`}
             >
               <History className="w-4 h-4 text-[#FF2D6D]" />
-              <span>Versions &amp; Lineage ({versions.length || secret.currentVersionNumber || 1})</span>
+              <span>Versions &amp; Lineage ({versions.length > 0 ? versions.length : (secret.currentVersionNumber || 1)})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('rotate')}
-              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
                 activeTab === 'rotate'
                   ? 'bg-[#30000F] text-white border border-[#FF2D6D]/40 shadow-sm'
                   : 'text-[#A26377] hover:text-white'
               }`}
             >
               <RefreshCw className="w-4 h-4 text-[#FF2D6D]" />
-              <span>Rotate / Edit</span>
+              <span>Rotate Secret</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 py-2 px-3 rounded-xl font-mono font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
+                activeTab === 'settings'
+                  ? 'bg-[#30000F] text-white border border-[#FF2D6D]/40 shadow-sm'
+                  : 'text-[#A26377] hover:text-white'
+              }`}
+            >
+              <Settings className="w-4 h-4 text-[#FF2D6D]" />
+              <span>Edit &amp; Status</span>
             </button>
           </div>
 
           {/* Tab 1: OVERVIEW & REVEAL */}
           {activeTab === 'overview' && (
             <div className="flex flex-col gap-5">
+              {secret.status === 'DISABLED' && (
+                <div className="p-3.5 rounded-2xl bg-[#3A2000]/60 border border-[#FBBF24]/40 text-xs text-[#FDE68A] flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-[#FBBF24] shrink-0" />
+                  <span>This secret is currently <strong>DISABLED</strong>. Decryption and reveal operations are restricted until re-enabled in the Edit &amp; Status tab.</span>
+                </div>
+              )}
               <div className="p-4 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex flex-col gap-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#A26377]">
                   Description
@@ -558,9 +755,10 @@ export const SecretDetailsModal = ({
                   ) : (
                     <button
                       onClick={() => handleReveal(null)}
-                      disabled={isRevealing}
+                      disabled={isRevealing || secret.status === 'DISABLED'}
                       data-testid="reveal-secret-button"
-                      className="px-4 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 text-white text-xs font-mono font-bold tracking-wider uppercase shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                      className="px-4 py-2 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-mono font-bold tracking-wider uppercase shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                      title={secret.status === 'DISABLED' ? 'Secret is disabled. Re-enable in Edit & Status tab to reveal.' : 'Reveal Secret Value'}
                     >
                       {isRevealing ? (
                         <>
@@ -688,18 +886,43 @@ export const SecretDetailsModal = ({
 
                           {/* Action Buttons for this Version */}
                           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-                            <button
-                              onClick={() => handleReveal(ver.versionNumber)}
-                              className="px-2.5 py-1 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1"
-                            >
-                              <Unlock className="w-3 h-3 text-[#FF2D6D]" />
-                              <span>Reveal</span>
-                            </button>
+                            {revealedVersionValues[ver.versionNumber] ? (
+                              <button
+                                onClick={() => handleHideVersion(ver.versionNumber)}
+                                data-testid={`hide-version-${ver.versionNumber}-button`}
+                                className="px-2.5 py-1 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                                title="Hide Decrypted Payload"
+                              >
+                                <EyeOff className="w-3 h-3 text-[#A26377]" />
+                                <span>Hide</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReveal(ver.versionNumber)}
+                                disabled={revealingVersionNum === ver.versionNumber || secret.status === 'DISABLED'}
+                                data-testid={`reveal-version-${ver.versionNumber}-button`}
+                                className="px-2.5 py-1 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                                title={secret.status === 'DISABLED' ? 'Secret is disabled' : 'Decrypt and view this version'}
+                              >
+                                {revealingVersionNum === ver.versionNumber ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin text-[#FF2D6D]" />
+                                    <span>Decrypting...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Unlock className="w-3 h-3 text-[#FF2D6D]" />
+                                    <span>Reveal</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
 
                             <button
-                              onClick={() => setDiffParams({ from: ver.versionNumber, to: secret.currentVersionNumber })}
-                              className="px-2.5 py-1 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1"
-                              title="Compare with current"
+                              onClick={() => handleOpenDiff(ver.versionNumber)}
+                              data-testid={`diff-version-${ver.versionNumber}-button`}
+                              className="px-2.5 py-1 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 text-xs font-mono font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                              title={isCurrent ? 'Compare with previous version' : 'Compare with current version'}
                             >
                               <ArrowRightLeft className="w-3 h-3 text-[#FFB4C8]" />
                               <span>Diff</span>
@@ -708,7 +931,8 @@ export const SecretDetailsModal = ({
                             {!isCurrent && (
                               <button
                                 onClick={() => setRollbackTargetVersion(ver)}
-                                className="px-2.5 py-1 rounded-lg bg-[#3F0016] hover:bg-[#FF2D6D] text-[#FFB4C8] hover:text-white border border-[#FF2D6D]/30 text-xs font-mono font-semibold transition-all flex items-center gap-1"
+                                data-testid={`rollback-version-${ver.versionNumber}-button`}
+                                className="px-2.5 py-1 rounded-lg bg-[#3F0016] hover:bg-[#FF2D6D] text-[#FFB4C8] hover:text-white border border-[#FF2D6D]/30 text-xs font-mono font-semibold transition-all flex items-center gap-1 cursor-pointer"
                                 title="Rollback to this version"
                               >
                                 <RotateCcw className="w-3 h-3" />
@@ -717,6 +941,77 @@ export const SecretDetailsModal = ({
                             )}
                           </div>
                         </div>
+
+                        {/* Error Alert for this version if reveal failed */}
+                        {versionRevealErrors[ver.versionNumber] && (
+                          <div className="p-2.5 rounded-xl bg-[#93000A]/30 border border-[#FFB4AB]/30 text-xs text-[#FFDAD6] flex items-center gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 text-[#FFB4AB] shrink-0" />
+                            <span className="font-mono text-[11px]">{versionRevealErrors[ver.versionNumber]}</span>
+                          </div>
+                        )}
+
+                        {/* Inline Decrypted Secret Box for this Version */}
+                        {revealedVersionValues[ver.versionNumber] && (
+                          <div className="p-3.5 rounded-xl bg-[#140007] border border-[#FF2D6D]/30 flex flex-col gap-2.5 animate-fade-in font-mono text-xs">
+                            <div className="flex items-center justify-between flex-wrap gap-2 text-[10px]">
+                              <div className="flex items-center gap-1.5 text-white font-bold">
+                                <Lock className="w-3.5 h-3.5 text-[#FF2D6D]" />
+                                <span>Decrypted Payload (v{ver.versionNumber})</span>
+                              </div>
+                              {versionAutoMaskMap[ver.versionNumber] && (
+                                <div className="flex items-center gap-1 text-[#F87171] bg-[#3F0016] px-2 py-0.5 rounded-full border border-[#F87171]/40">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Auto-mask in {versionAutoMaskMap[ver.versionNumber]}s</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="p-2.5 rounded-lg bg-[#1E000A] border border-[#FFB4C8]/20 flex items-center justify-between gap-3">
+                              <span
+                                className="text-[#4ADE80] font-semibold break-all select-all flex-1"
+                                data-testid={`version-revealed-value-${ver.versionNumber}`}
+                              >
+                                {revealedVersionValues[ver.versionNumber]}
+                              </span>
+
+                              {copyAllowed ? (
+                                <button
+                                  onClick={() => handleCopyVersion(ver.versionNumber, revealedVersionValues[ver.versionNumber])}
+                                  data-testid={`copy-version-${ver.versionNumber}-button`}
+                                  className="p-1.5 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#FFB4C8] hover:text-white border border-[#FFB4C8]/15 transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title={`Copy version payload (clears in ${clipboardTimeoutSeconds}s)`}
+                                >
+                                  {copiedVersionNum === ver.versionNumber ? (
+                                    <>
+                                      <Check className="w-3 h-3 text-[#4ADE80]" />
+                                      <span className="text-[10px] text-[#4ADE80]">Copied</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3 h-3" />
+                                      <span className="text-[10px]">Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                              ) : (
+                                <div className="px-2 py-1 rounded bg-[#30000F] text-[10px] text-[#A26377] flex items-center gap-1">
+                                  <Ban className="w-3 h-3 text-[#F87171]" />
+                                  <span>No Copy</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-[#A26377]">
+                              <span>In-memory decrypted via ephemeral intent token.</span>
+                              <button
+                                onClick={() => handleHideVersion(ver.versionNumber)}
+                                className="text-[#FFB4C8] hover:text-white underline cursor-pointer"
+                              >
+                                Hide
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Version Tags Row */}
                         <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-[#FFB4C8]/10 text-xs font-mono">
@@ -777,13 +1072,13 @@ export const SecretDetailsModal = ({
             </div>
           )}
 
-          {/* Tab 3: ROTATE / UPDATE */}
+          {/* Tab 3: ROTATE VALUE */}
           {activeTab === 'rotate' && (
             <form onSubmit={handleRotate} className="flex flex-col gap-5">
               <div className="p-3.5 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex items-start gap-3">
                 <Sparkles className="w-4 h-4 text-[#FF2D6D] shrink-0 mt-0.5" />
                 <p className="text-xs text-[#F4B5C8] leading-relaxed">
-                  Rotating this secret will generate a new ephemeral DEK, encrypt the new payload under AES-256-GCM, and create <span className="font-mono text-white font-bold">Version {(secret.currentVersionNumber || 1) + 1}</span>. Historical versions remain accessible for rollbacks.
+                  Rotating this secret will generate a fresh ephemeral DEK, encrypt the new secret payload under AES-256-GCM, and create <span className="font-mono text-white font-bold">Version {(secret.currentVersionNumber || 1) + 1}</span>. Historical versions remain immutable in the lineage ledger for rollback.
                 </p>
               </div>
 
@@ -802,20 +1097,21 @@ export const SecretDetailsModal = ({
                   rows={3}
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
-                  placeholder="Enter new rotated secret value..."
+                  placeholder="Enter new rotated secret payload..."
+                  required
                   className="w-full px-4 py-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 focus:border-[#FF2D6D] focus:ring-1 focus:ring-[#FF2D6D] text-xs font-mono text-white placeholder-[#A26377] outline-none transition-all resize-none"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-mono font-bold tracking-wider text-[#A26377] uppercase">
-                  Updated Description / Reason
+                  Rotation Reason / Context
                 </label>
                 <input
                   type="text"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Updated context or reason for secret rotation..."
+                  value={rotationReason}
+                  onChange={(e) => setRotationReason(e.target.value)}
+                  placeholder="e.g. Quarterly key rotation, compromised credential remediation..."
                   className="w-full px-4 py-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 focus:border-[#FF2D6D] focus:ring-1 focus:ring-[#FF2D6D] text-xs text-white placeholder-[#A26377] outline-none transition-all"
                 />
               </div>
@@ -830,7 +1126,7 @@ export const SecretDetailsModal = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isRotating || (!newValue && !newDescription)}
+                  disabled={isRotating || !newValue.trim()}
                   className="px-5 py-2.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-50 text-xs font-mono font-bold tracking-wider uppercase text-white shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                 >
                   {isRotating ? (
@@ -841,7 +1137,115 @@ export const SecretDetailsModal = ({
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4" />
-                      <span>Rotate Secret</span>
+                      <span>Rotate to Version {(secret.currentVersionNumber || 1) + 1}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Tab 4: METADATA & STATUS */}
+          {activeTab === 'settings' && (
+            <form onSubmit={handleUpdateMetadata} className="flex flex-col gap-5">
+              <div className="p-3.5 rounded-2xl bg-[#30000F] border border-[#FFB4C8]/15 flex items-start gap-3">
+                <Settings className="w-4 h-4 text-[#FF2D6D] shrink-0 mt-0.5" />
+                <p className="text-xs text-[#F4B5C8] leading-relaxed">
+                  Update secret description and toggle lifecycle status. Modifying metadata does not increment the secret version or re-encrypt the stored secret payload.
+                </p>
+              </div>
+
+              {metadataError && (
+                <div className="p-3 rounded-2xl bg-[#93000A]/30 border border-[#FFB4AB]/40 text-xs text-[#FFDAD6] flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{metadataError}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-mono font-bold tracking-wider text-[#A26377] uppercase">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Describe the usage or purpose of this secret..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 focus:border-[#FF2D6D] focus:ring-1 focus:ring-[#FF2D6D] text-xs text-white placeholder-[#A26377] outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-mono font-bold tracking-wider text-[#A26377] uppercase">
+                  Lifecycle Status
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewStatus('ACTIVE')}
+                    className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                      newStatus === 'ACTIVE'
+                        ? 'bg-[#30000F] border-[#4ADE80]/50 shadow-sm ring-1 ring-[#4ADE80]/30'
+                        : 'bg-[#140007] border-[#FFB4C8]/15 hover:border-[#FFB4C8]/30 text-[#A26377]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#4ADE80]"></span>
+                        ACTIVE
+                      </span>
+                      {newStatus === 'ACTIVE' && <Check className="w-4 h-4 text-[#4ADE80]" />}
+                    </div>
+                    <p className="text-[11px] text-[#A26377] mt-0.5">
+                      Secret is accessible for API consumption and authorized decryptions.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewStatus('DISABLED')}
+                    className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                      newStatus === 'DISABLED'
+                        ? 'bg-[#30000F] border-[#FBBF24]/50 shadow-sm ring-1 ring-[#FBBF24]/30'
+                        : 'bg-[#140007] border-[#FFB4C8]/15 hover:border-[#FFB4C8]/30 text-[#A26377]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#FBBF24]"></span>
+                        DISABLED
+                      </span>
+                      {newStatus === 'DISABLED' && <Check className="w-4 h-4 text-[#FBBF24]" />}
+                    </div>
+                    <p className="text-[11px] text-[#A26377] mt-0.5">
+                      Restricts all decryption and reveals. Protects inactive credentials.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#FFB4C8]/15 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('overview')}
+                  className="px-4 py-2.5 rounded-xl bg-[#30000F] hover:bg-[#3F0016] text-xs font-mono font-semibold text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingMetadata || (newDescription === (secret.description || '') && newStatus === (secret.status || 'ACTIVE'))}
+                  className="px-5 py-2.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF2D6D]/90 disabled:opacity-50 text-xs font-mono font-bold tracking-wider uppercase text-white shadow-lg shadow-[#FF2D6D]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  {isUpdatingMetadata ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save Changes</span>
                     </>
                   )}
                 </button>
@@ -934,6 +1338,7 @@ export const SecretDetailsModal = ({
           secret={secret}
           fromVersion={diffParams.from}
           toVersion={diffParams.to}
+          versions={versions}
           workspaceId={workspaceId}
           projectId={projectId}
           environmentId={environmentId}

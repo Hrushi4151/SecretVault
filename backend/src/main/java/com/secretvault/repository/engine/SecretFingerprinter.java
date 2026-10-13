@@ -57,6 +57,16 @@ public class SecretFingerprinter {
             return trimmed.substring(0, 8) + "************" + (trimmed.length() > 12 ? trimmed.substring(trimmed.length() - 4) : "");
         }
 
+        // Database connection strings: mask password component between user: and @
+        if (trimmed.contains("://") && trimmed.contains("@")) {
+            int schemeIdx = trimmed.indexOf("://");
+            int atIdx = trimmed.indexOf('@', schemeIdx);
+            int colonIdx = trimmed.indexOf(':', schemeIdx + 3);
+            if (colonIdx > schemeIdx && colonIdx < atIdx) {
+                return trimmed.substring(0, colonIdx + 1) + "************" + trimmed.substring(atIdx);
+            }
+        }
+
         // General masking: show at most first 2 and last 2 characters, mask middle with 12 asterisks
         if (trimmed.length() <= 6) {
             return "********";

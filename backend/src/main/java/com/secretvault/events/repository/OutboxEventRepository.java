@@ -52,6 +52,59 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
 
     long countByWorkspaceIdAndStatus(UUID workspaceId, OutboxStatus status);
 
+    Page<OutboxEvent> findByWorkspaceIdAndStatusOrderByCreatedAtDesc(UUID workspaceId, OutboxStatus status, Pageable pageable);
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE OutboxEvent e SET e.status = :newStatus, e.lockedAt = :now, e.lockedBy = :workerId, e.claimToken = :claimToken, e.attemptCount = e.attemptCount + 1 " +
+            "WHERE e.id = :id AND (e.status = :pendingStatus OR (e.status = :failedStatus AND e.availableAt <= :now) OR (e.status = :processingStatus AND e.lockedAt < :staleCutoff))")
+    int claimEventAtomic(
+            @Param("id") UUID id,
+            @Param("newStatus") OutboxStatus newStatus,
+            @Param("pendingStatus") OutboxStatus pendingStatus,
+            @Param("failedStatus") OutboxStatus failedStatus,
+            @Param("processingStatus") OutboxStatus processingStatus,
+            @Param("staleCutoff") Instant staleCutoff,
+            @Param("workerId") String workerId,
+            @Param("claimToken") String claimToken,
+            @Param("now") Instant now
+    );
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE OutboxEvent e SET e.status = :newStatus, e.processedAt = :now, e.lastError = NULL, e.lockedAt = NULL, e.lockedBy = NULL, e.claimToken = NULL " +
+            "WHERE e.id = :id AND e.lockedBy = :workerId AND e.claimToken = :claimToken")
+    int completeEventGuarded(
+            @Param("id") UUID id,
+            @Param("newStatus") OutboxStatus newStatus,
+            @Param("workerId") String workerId,
+            @Param("claimToken") String claimToken,
+            @Param("now") Instant now
+    );
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE OutboxEvent e SET e.status = :newStatus, e.availableAt = :availableAt, e.lastError = :error, e.lockedAt = NULL, e.lockedBy = NULL, e.claimToken = NULL " +
+            "WHERE e.id = :id AND e.lockedBy = :workerId AND e.claimToken = :claimToken")
+    int failEventGuarded(
+            @Param("id") UUID id,
+            @Param("newStatus") OutboxStatus newStatus,
+            @Param("availableAt") Instant availableAt,
+            @Param("error") String error,
+            @Param("workerId") String workerId,
+            @Param("claimToken") String claimToken
+    );
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE OutboxEvent e SET e.status = :newStatus, e.lockedAt = NULL, e.lockedBy = NULL, e.claimToken = NULL " +
+            "WHERE e.status = :processingStatus AND e.lockedAt < :cutoff")
+    int recoverStaleLockedEventsAtomic(
+            @Param("newStatus") OutboxStatus newStatus,
+            @Param("processingStatus") OutboxStatus processingStatus,
+            @Param("cutoff") Instant cutoff
+    );
+
     Page<OutboxEvent> findByWorkspaceIdOrderByCreatedAtDesc(UUID workspaceId, Pageable pageable);
 
     Page<OutboxEvent> findByWorkspaceIdAndEventTypeOrderByCreatedAtDesc(UUID workspaceId, String eventType, Pageable pageable);

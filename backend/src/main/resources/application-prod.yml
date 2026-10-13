@@ -127,3 +127,12 @@ secretvault:
     user-verification: REQUIRED
     allow-origin-port: false
     clone-detection-action: BLOCK
+  sync:
+    scheduler:
+      enabled: ${SYNC_SCHEDULER_ENABLED:true}
+      interval-ms: ${SYNC_SCHEDULER_INTERVAL_MS:300000}
+      batch-size: ${SYNC_SCHEDULER_BATCH_SIZE:50}
+    lock:
+      allow-local-fallback: false
+      lease-duration-ms: ${SYNC_LOCK_LEASE_DURATION_MS:60000}
+      renewal-interval-ms: ${SYNC_LOCK_RENEWAL_INTERVAL_MS:10000}

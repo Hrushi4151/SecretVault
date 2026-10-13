@@ -69,7 +69,10 @@ public class OidcTrustPolicyController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @PutMapping("/trust-policies/{id}")
+    @RequestMapping(
+            value = {"/trust-policies/{id}", "/machine-identities/{machineId}/trust-policies/{id}", "/machines/{machineId}/trust-policies/{id}"},
+            method = {org.springframework.web.bind.annotation.RequestMethod.PUT, org.springframework.web.bind.annotation.RequestMethod.PATCH}
+    )
     public ResponseEntity<ApiResponse<OidcDtos.OidcTrustPolicyResponse>> updateTrustPolicy(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,
@@ -81,7 +84,7 @@ public class OidcTrustPolicyController {
         return ResponseEntity.ok(ApiResponse.success(response, "Trust policy updated successfully"));
     }
 
-    @DeleteMapping("/trust-policies/{id}")
+    @DeleteMapping({"/trust-policies/{id}", "/machine-identities/{machineId}/trust-policies/{id}", "/machines/{machineId}/trust-policies/{id}"})
     public ResponseEntity<ApiResponse<Void>> deleteTrustPolicy(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,

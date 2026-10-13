@@ -22,7 +22,7 @@ export const machineApi = {
 
   update(workspaceId, machineId, data) {
     return apiClient.request(`/workspaces/${workspaceId}/machine-identities/${machineId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   },
@@ -77,14 +77,29 @@ export const machineApi = {
   },
 
   revokeSession(workspaceId, machineId, sessionId) {
-    return apiClient.request(`/workspaces/${workspaceId}/machine-identities/${machineId}/sessions/${sessionId}`, {
-      method: 'DELETE',
+    return apiClient.request(`/workspaces/${workspaceId}/machine-identities/${machineId}/sessions/${sessionId}/revoke`, {
+      method: 'POST',
     });
   },
 
   revokeAllSessions(workspaceId, machineId) {
     return apiClient.request(`/workspaces/${workspaceId}/machine-identities/${machineId}/sessions/revoke-all`, {
       method: 'POST',
+    });
+  },
+
+  whyAccess(workspaceId, machineId, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const endpoint = `/workspaces/${workspaceId}/machine-identities/${machineId}/why-access${query ? `?${query}` : ''}`;
+    return apiClient.request(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  generateToken(workspaceId, machineId, data = {}) {
+    return apiClient.request(`/workspaces/${workspaceId}/machine-identities/${machineId}/tokens`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

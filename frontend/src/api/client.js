@@ -107,11 +107,18 @@ class ApiClient {
       ...(options.headers || {}),
     };
 
-    if (this.accessToken) {
+    const isPublicAuthEndpoint =
+      endpoint.startsWith('/auth/login') ||
+      endpoint.startsWith('/auth/register') ||
+      endpoint.startsWith('/auth/forgot-password') ||
+      endpoint.startsWith('/auth/refresh') ||
+      endpoint.startsWith('/auth/mfa/verify');
+
+    if (this.accessToken && !isPublicAuthEndpoint) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    if (this.activeWorkspaceId) {
+    if (this.activeWorkspaceId && !isPublicAuthEndpoint) {
       headers['X-Workspace-ID'] = this.activeWorkspaceId;
     }
 
@@ -162,6 +169,38 @@ class ApiClient {
     }
 
     return body;
+  }
+
+  async get(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'GET' });
+  }
+
+  async post(endpoint, data, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'POST',
+      body: data !== undefined ? (typeof data === 'string' ? data : JSON.stringify(data)) : undefined,
+    });
+  }
+
+  async put(endpoint, data, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: data !== undefined ? (typeof data === 'string' ? data : JSON.stringify(data)) : undefined,
+    });
+  }
+
+  async patch(endpoint, data, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data !== undefined ? (typeof data === 'string' ? data : JSON.stringify(data)) : undefined,
+    });
+  }
+
+  async delete(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'DELETE' });
   }
 }
 

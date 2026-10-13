@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { rotationApi } from '../../api/rotation';
+import { secretApi } from '../../api/secrets';
 import {
   Key,
   Clock,
@@ -11,24 +12,38 @@ import {
   Search,
   Timer,
   ShieldAlert,
+  Plus,
 } from 'lucide-react';
 
 export const SecretLeasesView = ({ workspaceId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leases, setLeases] = useState([]);
+  const [secrets, setSecrets] = useState([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [newLeaseSecretId, setNewLeaseSecretId] = useState('');
+  const [newLeaseTtl, setNewLeaseTtl] = useState(3600);
+  const [issuing, setIssuing] = useState(false);
 
   const loadLeases = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await rotationApi.listLeases(workspaceId, { page: 0, size: 100 });
-      const list = res?.data?.content || res?.content || res?.data || [];
+      const [leasesRes, secretsRes] = await Promise.all([
+        rotationApi.listLeases(workspaceId, { page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
+        secretApi.list(workspaceId, 'all', 'all', {}).catch(() => ({ data: [] })),
+      ]);
+      const list = Array.isArray(leasesRes) ? leasesRes : (leasesRes?.data?.content || leasesRes?.content || leasesRes?.data || []);
       setLeases(Array.isArray(list) ? list : []);
+      const sList = Array.isArray(secretsRes) ? secretsRes : (secretsRes?.data?.content || secretsRes?.content || secretsRes?.data || []);
+      setSecrets(Array.isArray(sList) ? sList : []);
+      if (!newLeaseSecretId && sList.length > 0) {
+        setNewLeaseSecretId(sList[0].id);
+      }
     } catch (err) {
       setError(err.message || 'Failed to load secret leases');
     } finally {
@@ -45,12 +60,33 @@ export const SecretLeasesView = ({ workspaceId }) => {
   const handleRenewLease = async (leaseId) => {
     setActionLoading(true);
     try {
-      await rotationApi.renewLease(workspaceId, leaseId, { ttlSeconds: 3600 });
+      await rotationApi.renewLease(workspaceId, leaseId, { extendSeconds: 3600, ttlSeconds: 3600 });
       loadLeases();
     } catch (err) {
       setError(err.message || 'Failed to renew lease');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleIssueLease = async (e) => {
+    e.preventDefault();
+    if (!workspaceId || !newLeaseSecretId) return;
+    setIssuing(true);
+    setError(null);
+    try {
+      await rotationApi.createLease(workspaceId, {
+        secretId: newLeaseSecretId,
+        ttlSeconds: Number(newLeaseTtl) || 3600,
+        maxLifetimeSeconds: 86400,
+        userAgent: 'SecretVault Web Console',
+      });
+      setIsIssueModalOpen(false);
+      loadLeases();
+    } catch (err) {
+      setError(err.message || 'Failed to issue runtime secret lease');
+    } finally {
+      setIssuing(false);
     }
   };
 
@@ -106,6 +142,13 @@ export const SecretLeasesView = ({ workspaceId }) => {
             <option value="EXPIRED">Expired</option>
             <option value="REVOKED">Revoked</option>
           </select>
+          <button
+            onClick={() => setIsIssueModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-[#FF2D6D] to-[#E11D48] text-white text-xs font-semibold shadow-md cursor-pointer hover:opacity-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Issue Lease</span>
+          </button>
           <button
             onClick={loadLeases}
             className="p-2 rounded-xl bg-[#1E000A] hover:bg-[#30000F] border border-[#FFB4C8]/15 text-[#F4B5C8] hover:text-white transition-all cursor-pointer"
@@ -222,6 +265,87 @@ export const SecretLeasesView = ({ workspaceId }) => {
           </table>
         </div>
       </div>
+
+      {/* Issue Runtime Lease Modal */}
+      {isIssueModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-2xl bg-[#1E000A] border border-[#FF2D6D]/30 shadow-2xl p-6 text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-[#FFB4C8]/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-[#FF2D6D]/20 text-[#FF2D6D]">
+                  <Key className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-headline font-bold">Issue Dynamic Secret Lease</h3>
+              </div>
+              <button
+                onClick={() => setIsIssueModalOpen(false)}
+                className="text-[#F4B5C8]/50 hover:text-white text-xs font-mono cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleIssueLease} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-mono text-[#F4B5C8]/70 mb-1">
+                  Target Secret
+                </label>
+                <select
+                  value={newLeaseSecretId}
+                  onChange={(e) => setNewLeaseSecretId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 text-white font-mono focus:outline-none"
+                  required
+                >
+                  {secrets.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.name} ({sec.id?.substring(0, 8)}...)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono text-[#F4B5C8]/70 mb-1">
+                  Lease TTL (Seconds)
+                </label>
+                <select
+                  value={newLeaseTtl}
+                  onChange={(e) => setNewLeaseTtl(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 text-white font-mono focus:outline-none"
+                >
+                  <option value={300}>5 Minutes (300s - Demo)</option>
+                  <option value={1800}>30 Minutes (1800s)</option>
+                  <option value={3600}>1 Hour (3600s - Default)</option>
+                  <option value={14400}>4 Hours (14400s)</option>
+                  <option value={86400}>24 Hours (86400s)</option>
+                </select>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#26000B] border border-[#FFB4C8]/10 text-[11px] text-[#F4B5C8]/70 leading-relaxed">
+                Leases grant ephemeral read access to the current active secret version with automatic expiry enforcement and cryptographic auditing.
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#FFB4C8]/10">
+                <button
+                  type="button"
+                  onClick={() => setIsIssueModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-[#26000B] hover:bg-[#30000F] text-[#F4B5C8] text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={issuing}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF2D6D] to-[#E11D48] text-white text-xs font-semibold shadow-md cursor-pointer hover:opacity-95"
+                >
+                  {issuing ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
+                  <span>Issue Lease</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

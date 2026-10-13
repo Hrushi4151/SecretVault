@@ -30,15 +30,23 @@ export const AccessReviewsView = ({ onSelectCampaign }) => {
     }
   }, [activeWorkspace?.id]);
 
+  const normalizeList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val.content)) return val.content;
+    if (Array.isArray(val.data)) return val.data;
+    if (Array.isArray(val.data?.content)) return val.data.content;
+    return [];
+  };
+
   const loadCampaigns = async () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
       const res = await reviewsApi.listCampaigns(activeWorkspace.id);
-      const list = res.data?.data || res.data || [];
-      setCampaigns(list);
+      setCampaigns(normalizeList(res));
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to load access review campaigns');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load access review campaigns');
     } finally {
       setIsLoading(false);
     }

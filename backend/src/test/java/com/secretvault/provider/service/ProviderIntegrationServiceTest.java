@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -200,5 +201,97 @@ class ProviderIntegrationServiceTest {
 
         verify(mappingRepository).deleteByIntegrationId(intId);
         verify(integrationRepository).delete(existing);
+    }
+
+    @Test
+    @DisplayName("Disconnect Integration: Revokes integration status and preserves mappings")
+    void testDisconnectIntegration() {
+        UUID intId = UUID.randomUUID();
+        ProviderIntegration existing = new ProviderIntegration();
+        existing.setId(intId);
+        existing.setWorkspaceId(workspaceId);
+        existing.setProviderType(ProviderType.VERCEL);
+        existing.setDisplayName("To Disconnect");
+        existing.setStatus(IntegrationStatus.ACTIVE);
+
+        when(integrationRepository.findByIdAndWorkspaceId(intId, workspaceId)).thenReturn(Optional.of(existing));
+        when(integrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ProviderIntegrationResponse res = integrationService.disconnectIntegration(workspaceId, intId, callerUserId);
+
+        assertThat(res.status()).isEqualTo(IntegrationStatus.REVOKED);
+        assertThat(existing.getStatus()).isEqualTo(IntegrationStatus.REVOKED);
+        assertThat(existing.getLastErrorMessage()).contains("disconnected");
+
+        // Verify mappings are NOT deleted on disconnect
+        verify(mappingRepository, never()).deleteByIntegrationId(any());
+        verify(integrationRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Security: Delete Integration rejects GitHub repository integrations to protect Settings")
+    void testDeleteIntegrationRejectsGitHubRepositoryIntegration() {
+        UUID intId = UUID.randomUUID();
+        ProviderIntegration existing = new ProviderIntegration();
+        existing.setId(intId);
+        existing.setWorkspaceId(workspaceId);
+        existing.setProviderType(ProviderType.GITHUB);
+        existing.setDisplayName("GitHub (hrushi)");
+
+        when(integrationRepository.findByIdAndWorkspaceId(intId, workspaceId)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> integrationService.deleteIntegration(workspaceId, intId, callerUserId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("Code repository integrations cannot be deleted from Provider Integrations");
+
+        verify(integrationRepository, never()).delete(any());
+        verify(mappingRepository, never()).deleteByIntegrationId(any());
+    }
+
+    @Test
+    @DisplayName("Security: Disconnect Integration rejects GitHub repository integrations")
+    void testDisconnectIntegrationRejectsGitHubRepositoryIntegration() {
+        UUID intId = UUID.randomUUID();
+        ProviderIntegration existing = new ProviderIntegration();
+        existing.setId(intId);
+        existing.setWorkspaceId(workspaceId);
+        existing.setProviderType(ProviderType.GITHUB);
+        existing.setDisplayName("GitHub (hrushi)");
+
+        when(integrationRepository.findByIdAndWorkspaceId(intId, workspaceId)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> integrationService.disconnectIntegration(workspaceId, intId, callerUserId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("Code repository integrations cannot be disconnected from Provider Integrations");
+
+        verify(integrationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Security: Validate Integration rejects GitHub repository integrations")
+    void testValidateIntegrationRejectsGitHubRepositoryIntegration() {
+        UUID intId = UUID.randomUUID();
+        ProviderIntegration existing = new ProviderIntegration();
+        existing.setId(intId);
+        existing.setWorkspaceId(workspaceId);
+        existing.setProviderType(ProviderType.GITHUB);
+        existing.setDisplayName("GitHub (hrushi)");
+
+        when(integrationRepository.findByIdAndWorkspaceId(intId, workspaceId)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> integrationService.validateIntegration(workspaceId, intId, callerUserId))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("Code repository integrations cannot be validated from Provider Integrations");
+    }
+
+    @Test
+    @DisplayName("Security: List Integrations returns empty page when querying repository providers")
+    void testListIntegrationsExcludesGitHubRepositoryProvider() {
+        var page = integrationService.listIntegrations(
+                workspaceId, ProviderType.GITHUB, null, null, 0, 20, "createdAt,desc", callerUserId
+        );
+
+        assertThat(page.getContent()).isEmpty();
+        verify(integrationRepository, never()).searchIntegrations(any(), any(), any(), any(), any());
     }
 }

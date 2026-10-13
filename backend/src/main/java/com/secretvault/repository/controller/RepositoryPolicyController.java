@@ -29,9 +29,11 @@ public class RepositoryPolicyController {
     @Operation(summary = "Get effective scanning policy for repository or workspace default")
     public ResponseEntity<ApiResponse<RepositorySecurityPolicy>> getPolicy(
             @PathVariable UUID workspaceId,
-            @RequestParam(required = false) UUID repositoryId
+            @RequestParam(required = false) UUID repositoryId,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        RepositorySecurityPolicy policy = policyService.getEffectivePolicy(workspaceId, repositoryId);
+        UUID actorId = principal != null ? principal.getId() : null;
+        RepositorySecurityPolicy policy = policyService.getEffectivePolicy(workspaceId, repositoryId, actorId);
         return ResponseEntity.ok(ApiResponse.success(policy));
     }
 

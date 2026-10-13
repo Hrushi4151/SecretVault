@@ -9,11 +9,21 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:vault_secure_password_dev_only}}
     driver-class-name: org.postgresql.Driver
 
+  data:
+    redis:
+      timeout: 200ms
+      connect-timeout: 200ms
+
 secretvault:
   security:
     master-key: ${VAULT_MASTER_KEY:dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2Rldl8wMDE=}
     jwt:
       secret: ${JWT_SECRET:super_secret_jwt_signing_key_for_local_development_only_minimum_256_bits_length}
+  sync:
+    lock:
+      allow-local-fallback: true
+      lease-duration-ms: 60000
+      renewal-interval-ms: 10000
 
 logging:
   level:

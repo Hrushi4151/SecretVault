@@ -8,6 +8,8 @@ import io.secretvault.sdk.exception.ConfigurationException;
 import io.secretvault.sdk.exception.ErrorCode;
 import io.secretvault.sdk.exception.SecretNotFoundException;
 import io.secretvault.sdk.exception.SecretVaultException;
+import io.secretvault.sdk.model.PromotionPreviewResult;
+import io.secretvault.sdk.model.PromotionResult;
 import io.secretvault.sdk.model.SecretBatchResult;
 import io.secretvault.sdk.model.SecretChangeEvent;
 import io.secretvault.sdk.model.SecretMetadata;
@@ -15,6 +17,7 @@ import io.secretvault.sdk.model.SecretRefreshListener;
 import io.secretvault.sdk.model.SecretScope;
 import io.secretvault.sdk.model.SecretStatus;
 import io.secretvault.sdk.model.SecretValue;
+import io.secretvault.sdk.model.SecretVersion;
 import io.secretvault.sdk.observability.SdkMetrics;
 import io.secretvault.sdk.resilience.RequestCoalescer;
 import io.secretvault.sdk.resilience.ResiliencePolicy;
@@ -267,6 +270,217 @@ public class DefaultSecretsApi implements SecretsApi {
     @Override
     public CompletableFuture<SecretValue> getAsync(SecretScope scope, String secretName) {
         return CompletableFuture.supplyAsync(() -> get(scope, secretName));
+    }
+
+    @Override
+    public SecretMetadata create(String secretName, String value) {
+        return create(resolveDefaultScope(), secretName, value, null);
+    }
+
+    @Override
+    public SecretMetadata create(String secretName, String value, String description) {
+        return create(resolveDefaultScope(), secretName, value, description);
+    }
+
+    @Override
+    public SecretMetadata create(SecretScope scope, String secretName, String value, String description) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+        Objects.requireNonNull(value, "Secret value cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+
+        SecretMetadata meta = httpClient.createSecret(wsId, projId, envId, secretName, value, description);
+        if (config.isCacheEnabled()) {
+            cache.evict(CacheKey.ofLatest(scope.workspace(), scope.project(), scope.environment(), secretName));
+        }
+        return meta;
+    }
+
+    @Override
+    public SecretMetadata update(String secretName, String value) {
+        return update(resolveDefaultScope(), secretName, value, null, null);
+    }
+
+    @Override
+    public SecretMetadata update(String secretName, String value, String description, String reason) {
+        return update(resolveDefaultScope(), secretName, value, description, reason);
+    }
+
+    @Override
+    public SecretMetadata update(SecretScope scope, String secretName, String value, String description, String reason) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        SecretMetadata meta = httpClient.updateSecret(wsId, projId, envId, secretId, value, description, reason);
+        if (config.isCacheEnabled()) {
+            cache.evict(CacheKey.ofLatest(scope.workspace(), scope.project(), scope.environment(), secretName));
+        }
+        return meta;
+    }
+
+    @Override
+    public void delete(String secretName) {
+        delete(resolveDefaultScope(), secretName);
+    }
+
+    @Override
+    public void delete(SecretScope scope, String secretName) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        httpClient.deleteSecret(wsId, projId, envId, secretId);
+        if (config.isCacheEnabled()) {
+            cache.evict(CacheKey.ofLatest(scope.workspace(), scope.project(), scope.environment(), secretName));
+        }
+    }
+
+    @Override
+    public List<SecretVersion> listVersions(String secretName) {
+        return listVersions(resolveDefaultScope(), secretName);
+    }
+
+    @Override
+    public List<SecretVersion> listVersions(SecretScope scope, String secretName) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        return httpClient.listVersions(wsId, projId, envId, secretId);
+    }
+
+    @Override
+    public SecretVersion rollback(String secretName, int targetVersion, String reason) {
+        return rollback(resolveDefaultScope(), secretName, targetVersion, reason);
+    }
+
+    @Override
+    public SecretVersion rollback(SecretScope scope, String secretName, int targetVersion, String reason) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        SecretVersion rolledBack = httpClient.rollbackSecret(wsId, projId, envId, secretId, targetVersion, reason);
+        if (config.isCacheEnabled()) {
+            cache.evict(CacheKey.ofLatest(scope.workspace(), scope.project(), scope.environment(), secretName));
+        }
+        return rolledBack;
+    }
+
+    @Override
+    public List<String> listTags(String secretName, int versionNumber) {
+        return listTags(resolveDefaultScope(), secretName, versionNumber);
+    }
+
+    @Override
+    public List<String> listTags(SecretScope scope, String secretName, int versionNumber) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        return httpClient.listTags(wsId, projId, envId, secretId, versionNumber);
+    }
+
+    @Override
+    public void addTag(String secretName, int versionNumber, String tag) {
+        addTag(resolveDefaultScope(), secretName, versionNumber, tag);
+    }
+
+    @Override
+    public void addTag(SecretScope scope, String secretName, int versionNumber, String tag) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+        Objects.requireNonNull(tag, "Tag cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        httpClient.addTag(wsId, projId, envId, secretId, versionNumber, tag);
+    }
+
+    @Override
+    public void removeTag(String secretName, int versionNumber, String tag) {
+        removeTag(resolveDefaultScope(), secretName, versionNumber, tag);
+    }
+
+    @Override
+    public void removeTag(SecretScope scope, String secretName, int versionNumber, String tag) {
+        Objects.requireNonNull(scope, "SecretScope cannot be null");
+        Objects.requireNonNull(secretName, "Secret name cannot be null");
+        Objects.requireNonNull(tag, "Tag cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(scope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, scope.project());
+        UUID envId = httpClient.resolveEnvironmentId(wsId, projId, scope.environment());
+        UUID secretId = httpClient.resolveSecretId(wsId, projId, envId, secretName);
+
+        httpClient.removeTag(wsId, projId, envId, secretId, versionNumber, tag);
+    }
+
+    @Override
+    public PromotionPreviewResult previewPromotion(String targetEnvironment, List<String> secretNames) {
+        return previewPromotion(resolveDefaultScope(), targetEnvironment, secretNames);
+    }
+
+    @Override
+    public PromotionPreviewResult previewPromotion(SecretScope sourceScope, String targetEnvironment, List<String> secretNames) {
+        Objects.requireNonNull(sourceScope, "Source SecretScope cannot be null");
+        Objects.requireNonNull(targetEnvironment, "Target environment cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(sourceScope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, sourceScope.project());
+        UUID sourceEnvId = httpClient.resolveEnvironmentId(wsId, projId, sourceScope.environment());
+        UUID targetEnvId = httpClient.resolveEnvironmentId(wsId, projId, targetEnvironment);
+
+        return httpClient.previewPromotion(wsId, projId, sourceEnvId, targetEnvId, secretNames);
+    }
+
+    @Override
+    public PromotionResult executePromotion(String targetEnvironment, List<String> secretNames, String reason) {
+        return executePromotion(resolveDefaultScope(), targetEnvironment, secretNames, reason);
+    }
+
+    @Override
+    public PromotionResult executePromotion(SecretScope sourceScope, String targetEnvironment, List<String> secretNames, String reason) {
+        Objects.requireNonNull(sourceScope, "Source SecretScope cannot be null");
+        Objects.requireNonNull(targetEnvironment, "Target environment cannot be null");
+
+        UUID wsId = httpClient.resolveWorkspaceId(sourceScope.workspace());
+        UUID projId = httpClient.resolveProjectId(wsId, sourceScope.project());
+        UUID sourceEnvId = httpClient.resolveEnvironmentId(wsId, projId, sourceScope.environment());
+        UUID targetEnvId = httpClient.resolveEnvironmentId(wsId, projId, targetEnvironment);
+
+        PromotionResult res = httpClient.executePromotion(wsId, projId, sourceEnvId, targetEnvId, secretNames, reason);
+        if (config.isCacheEnabled()) {
+            cache.clear();
+        }
+        return res;
     }
 
     private void notifyWatchers(SecretScope scope, String secretName, SecretValue newValue) {

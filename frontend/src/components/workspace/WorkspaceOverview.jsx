@@ -108,14 +108,28 @@ export const WorkspaceOverview = ({
         });
       });
 
-      // Fetch environments and secrets across projects
-      for (const project of projectList) {
-        try {
-          const envs = await environmentApi.list(activeWorkspace.id, project.id);
-          if (Array.isArray(envs)) {
-            envMap[project.id] = envs;
+      // Fast parallel resolution: Use environments already attached to projects, or fallback to API
+      const envFetchTasks = projectList.map(async (project) => {
+        let envs = project.environments;
+        if (!envs || !Array.isArray(envs) || envs.length === 0) {
+          try {
+            envs = await environmentApi.list(activeWorkspace.id, project.id);
+          } catch {
+            envs = [];
+          }
+        }
+        envMap[project.id] = envs || [];
+        return { project, envs: envs || [] };
+      });
 
-            for (const env of envs) {
+      const resolvedProjects = await Promise.all(envFetchTasks);
+
+      // Concurrent secret fetches across all environments
+      const secretFetchTasks = [];
+      for (const { project, envs } of resolvedProjects) {
+        for (const env of envs) {
+          secretFetchTasks.push(
+            (async () => {
               try {
                 const secrets = await secretApi.list(activeWorkspace.id, project.id, env.id);
                 if (Array.isArray(secrets)) {
@@ -135,12 +149,11 @@ export const WorkspaceOverview = ({
               } catch {
                 // Ignore individual env secret fetch errors if unpermitted
               }
-            }
-          }
-        } catch {
-          // Ignore individual env fetch errors
+            })()
+          );
         }
       }
+      await Promise.allSettled(secretFetchTasks);
 
       // Add JIT request activities
       jitList.forEach((jit) => {

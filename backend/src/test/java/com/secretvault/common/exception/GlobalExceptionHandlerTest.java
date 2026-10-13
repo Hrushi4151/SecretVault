@@ -61,6 +61,36 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleOptimisticLockingConflict_shouldReturn409AndConcurrentUpdateCode() {
+        org.springframework.dao.OptimisticLockingFailureException ex =
+                new org.springframework.dao.OptimisticLockingFailureException("Row updated or deleted by another transaction");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleOptimisticLockingConflict(ex);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("CONCURRENT_UPDATE_CONFLICT", response.getBody().code());
+        assertTrue(response.getBody().message().contains("concurrently"));
+        assertEquals("test-req-12345", response.getBody().requestId());
+    }
+
+    @Test
+    void handleOptimisticLockException_shouldReturn409AndConcurrentUpdateCode() {
+        jakarta.persistence.OptimisticLockException ex =
+                new jakarta.persistence.OptimisticLockException("Entity version mismatch");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleOptimisticLockingConflict(ex);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("CONCURRENT_UPDATE_CONFLICT", response.getBody().code());
+        assertTrue(response.getBody().message().contains("concurrently"));
+        assertEquals("test-req-12345", response.getBody().requestId());
+    }
+
+    @Test
     void handleGeneralException_shouldReturn500AndSanitizedMessage() {
         RuntimeException ex = new RuntimeException("Database connection timeout at 10.0.0.1:5432");
 
