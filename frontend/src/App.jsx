@@ -5,27 +5,36 @@ import { RegisterScreen } from './components/auth/RegisterScreen';
 import { MfaChallengeScreen } from './components/auth/MfaChallengeScreen';
 import { AppShell } from './components/layout/AppShell';
 import { WorkspaceOverview } from './components/workspace/WorkspaceOverview';
-import { ProjectsView } from './components/project/ProjectsView';
-import { SecretsView } from './components/secrets/SecretsView';
-import { AccessControlCenterView } from './components/access/AccessControlCenterView';
-import { MachineIdentitiesView } from './components/machine/MachineIdentitiesView';
-import { IntegrationsView } from './components/integrations/IntegrationsView';
-import { SyncCenterView } from './components/sync/SyncCenterView';
-import { RotationCenterView } from './components/rotation/RotationCenterView';
-import { EventCenterView } from './components/events/EventCenterView';
-import { AutomationCenterView } from './components/automation/AutomationCenterView';
-import { WebhookCenterView } from './components/webhook/WebhookCenterView';
-import { SecurityOperationsView } from './components/incident/SecurityOperationsView';
-import { RepositorySecurityView } from './components/repository/RepositorySecurityView';
-import { SecurityOverviewView } from './components/security/SecurityOverviewView';
-import { RiskCenterView } from './components/risk/RiskCenterView';
-import { AuditLogsView } from './components/audit/AuditLogsView';
-import { SettingsView } from './components/settings/SettingsView';
-import { AiCopilotView } from './components/ai/AiCopilotView';
-import { AiRemediationWorkbenchView } from './components/ai/AiRemediationWorkbenchView';
 import { MfaSuggestionModal } from './components/auth/MfaSuggestionModal';
 import { MfaEnrollmentModal } from './components/settings/mfa/MfaEnrollmentModal';
 import { Shield, Loader2 } from 'lucide-react';
+
+// Route-level code-splitting for non-critical views
+const ProjectsView = React.lazy(() => import('./components/project/ProjectsView').then(m => ({ default: m.ProjectsView })));
+const SecretsView = React.lazy(() => import('./components/secrets/SecretsView').then(m => ({ default: m.SecretsView })));
+const AccessControlCenterView = React.lazy(() => import('./components/access/AccessControlCenterView').then(m => ({ default: m.AccessControlCenterView })));
+const MachineIdentitiesView = React.lazy(() => import('./components/machine/MachineIdentitiesView').then(m => ({ default: m.MachineIdentitiesView })));
+const IntegrationsView = React.lazy(() => import('./components/integrations/IntegrationsView').then(m => ({ default: m.IntegrationsView })));
+const SyncCenterView = React.lazy(() => import('./components/sync/SyncCenterView').then(m => ({ default: m.SyncCenterView })));
+const RotationCenterView = React.lazy(() => import('./components/rotation/RotationCenterView').then(m => ({ default: m.RotationCenterView })));
+const EventCenterView = React.lazy(() => import('./components/events/EventCenterView').then(m => ({ default: m.EventCenterView })));
+const AutomationCenterView = React.lazy(() => import('./components/automation/AutomationCenterView').then(m => ({ default: m.AutomationCenterView })));
+const WebhookCenterView = React.lazy(() => import('./components/webhook/WebhookCenterView').then(m => ({ default: m.WebhookCenterView })));
+const SecurityOperationsView = React.lazy(() => import('./components/incident/SecurityOperationsView').then(m => ({ default: m.SecurityOperationsView })));
+const RepositorySecurityView = React.lazy(() => import('./components/repository/RepositorySecurityView').then(m => ({ default: m.RepositorySecurityView })));
+const SecurityOverviewView = React.lazy(() => import('./components/security/SecurityOverviewView').then(m => ({ default: m.SecurityOverviewView })));
+const RiskCenterView = React.lazy(() => import('./components/risk/RiskCenterView').then(m => ({ default: m.RiskCenterView })));
+const AuditLogsView = React.lazy(() => import('./components/audit/AuditLogsView').then(m => ({ default: m.AuditLogsView })));
+const SettingsView = React.lazy(() => import('./components/settings/SettingsView').then(m => ({ default: m.SettingsView })));
+const AiCopilotView = React.lazy(() => import('./components/ai/AiCopilotView').then(m => ({ default: m.AiCopilotView })));
+const AiRemediationWorkbenchView = React.lazy(() => import('./components/ai/AiRemediationWorkbenchView').then(m => ({ default: m.AiRemediationWorkbenchView })));
+
+const ViewLoader = () => (
+  <div className="w-full h-96 flex flex-col items-center justify-center gap-3">
+    <Loader2 className="w-6 h-6 animate-spin text-brand-primary" />
+    <span className="text-xs font-mono text-text-secondary">Loading module...</span>
+  </div>
+);
 
 const MainRouter = () => {
   const { isAuthenticated, isLoading, user, justRegistered, setJustRegistered } = useAuth();
@@ -114,71 +123,73 @@ const MainRouter = () => {
   return (
     <>
       <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
-        {currentTab === 'projects' ? (
-          <ProjectsView
-            onNavigateToSecrets={handleNavigateToSecrets}
-            onNavigateToProjectSettings={handleNavigateToProjectSettings}
-            onNavigateToIntegrations={handleNavigateToIntegrations}
-          />
-        ) : currentTab === 'secrets' ? (
-          <SecretsView
-            initialProjectId={targetProjectId}
-            initialEnvironmentId={targetEnvironmentId}
-          />
-        ) : currentTab === 'rotation' ? (
-          <RotationCenterView />
-        ) : currentTab === 'access' ? (
-          <AccessControlCenterView />
-        ) : currentTab === 'machine-identities' ? (
-          <MachineIdentitiesView />
-        ) : currentTab === 'integrations' ? (
-          <IntegrationsView initialProjectId={targetProjectId} />
-        ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
-          <SyncCenterView />
-        ) : currentTab === 'events' ? (
-          <EventCenterView />
-        ) : currentTab === 'automation' ? (
-          <AutomationCenterView />
-        ) : currentTab === 'webhooks' ? (
-          <WebhookCenterView />
-        ) : currentTab === 'incidents' ? (
-          <SecurityOperationsView />
-        ) : currentTab === 'repo-security' ? (
-          <RepositorySecurityView />
-        ) : currentTab === 'security-overview' ? (
-          <SecurityOverviewView />
-        ) : currentTab === 'risk-center' ? (
-          <RiskCenterView
-            onNavigateToAudit={() => setCurrentTab('audit-logs')}
-            onNavigateToSecurityOverview={() => setCurrentTab('security-overview')}
-          />
-        ) : currentTab === 'audit-logs' ? (
-          <AuditLogsView onNavigateToRiskCenter={() => setCurrentTab('risk-center')} />
-        ) : currentTab === 'ai-assistant' ? (
-          <AiCopilotView
-            onNavigateToWorkbench={() => setCurrentTab('ai-workbench')}
-            onNavigateToTab={(tab) => setCurrentTab(tab)}
-            onNavigateToSecrets={handleNavigateToSecrets}
-            onNavigateToProjects={() => setCurrentTab('projects')}
-          />
-        ) : currentTab === 'ai-workbench' ? (
-          <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
-        ) : currentTab === 'settings' ? (
-          <SettingsView
-            initialSection={settingsSection}
-            initialProjectId={targetProjectId}
-            onNavigateToSecrets={handleNavigateToSecrets}
-            onNavigateToAccess={() => setCurrentTab('access')}
-            onNavigateToProjects={() => setCurrentTab('projects')}
-          />
-        ) : (
-          <WorkspaceOverview
-            onNavigateToProjects={() => setCurrentTab('projects')}
-            onNavigateToSecrets={handleNavigateToSecrets}
-            onNavigateToAccess={() => setCurrentTab('access')}
-            onNavigateToWorkspaceSettings={handleNavigateToWorkspaceSettings}
-          />
-        )}
+        <React.Suspense fallback={<ViewLoader />}>
+          {currentTab === 'projects' ? (
+            <ProjectsView
+              onNavigateToSecrets={handleNavigateToSecrets}
+              onNavigateToProjectSettings={handleNavigateToProjectSettings}
+              onNavigateToIntegrations={handleNavigateToIntegrations}
+            />
+          ) : currentTab === 'secrets' ? (
+            <SecretsView
+              initialProjectId={targetProjectId}
+              initialEnvironmentId={targetEnvironmentId}
+            />
+          ) : currentTab === 'rotation' ? (
+            <RotationCenterView />
+          ) : currentTab === 'access' ? (
+            <AccessControlCenterView />
+          ) : currentTab === 'machine-identities' ? (
+            <MachineIdentitiesView />
+          ) : currentTab === 'integrations' ? (
+            <IntegrationsView initialProjectId={targetProjectId} />
+          ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
+            <SyncCenterView />
+          ) : currentTab === 'events' ? (
+            <EventCenterView />
+          ) : currentTab === 'automation' ? (
+            <AutomationCenterView />
+          ) : currentTab === 'webhooks' ? (
+            <WebhookCenterView />
+          ) : currentTab === 'incidents' ? (
+            <SecurityOperationsView />
+          ) : currentTab === 'repo-security' ? (
+            <RepositorySecurityView />
+          ) : currentTab === 'security-overview' ? (
+            <SecurityOverviewView />
+          ) : currentTab === 'risk-center' ? (
+            <RiskCenterView
+              onNavigateToAudit={() => setCurrentTab('audit-logs')}
+              onNavigateToSecurityOverview={() => setCurrentTab('security-overview')}
+            />
+          ) : currentTab === 'audit-logs' ? (
+            <AuditLogsView onNavigateToRiskCenter={() => setCurrentTab('risk-center')} />
+          ) : currentTab === 'ai-assistant' ? (
+            <AiCopilotView
+              onNavigateToWorkbench={() => setCurrentTab('ai-workbench')}
+              onNavigateToTab={(tab) => setCurrentTab(tab)}
+              onNavigateToSecrets={handleNavigateToSecrets}
+              onNavigateToProjects={() => setCurrentTab('projects')}
+            />
+          ) : currentTab === 'ai-workbench' ? (
+            <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
+          ) : currentTab === 'settings' ? (
+            <SettingsView
+              initialSection={settingsSection}
+              initialProjectId={targetProjectId}
+              onNavigateToSecrets={handleNavigateToSecrets}
+              onNavigateToAccess={() => setCurrentTab('access')}
+              onNavigateToProjects={() => setCurrentTab('projects')}
+            />
+          ) : (
+            <WorkspaceOverview
+              onNavigateToProjects={() => setCurrentTab('projects')}
+              onNavigateToSecrets={handleNavigateToSecrets}
+              onNavigateToAccess={() => setCurrentTab('access')}
+              onNavigateToWorkspaceSettings={handleNavigateToWorkspaceSettings}
+            />
+          )}
+        </React.Suspense>
       </AppShell>
 
       <MfaSuggestionModal
