@@ -79,17 +79,7 @@ export const RiskCenterView = ({ onNavigateToAudit, onNavigateToSecurityOverview
     try {
       setError(null);
 
-      // Fetch risk assessment breakdown
-      const riskRes = await securityApi.getRiskBreakdown(workspaceId);
-      if (riskRes) {
-        setRiskData({
-          score: riskRes.score ?? 0,
-          level: riskRes.level || 'LOW',
-          factors: Array.isArray(riskRes.factors) ? riskRes.factors : []
-        });
-      }
-
-      // Fetch paginated findings with current filters
+      // Fetch risk breakdown, paginated findings, all findings summary, and metadata in parallel
       const findingsParams = {
         page: currentPage,
         size: 10,
@@ -100,8 +90,25 @@ export const RiskCenterView = ({ onNavigateToAudit, onNavigateToSecurityOverview
       if (selectedCategory !== 'ALL') findingsParams.category = selectedCategory;
       if (searchQuery.trim()) findingsParams.search = searchQuery.trim();
 
-      const findingsRes = await securityApi.getFindings(workspaceId, findingsParams);
-      if (findingsRes) {
+      const [riskResult, findingsResult, allFindingsResult, projResult, repoResult] = await Promise.allSettled([
+        securityApi.getRiskBreakdown(workspaceId),
+        securityApi.getFindings(workspaceId, findingsParams),
+        securityApi.getFindings(workspaceId, { size: 100 }),
+        (projectsApi?.getProjects ? projectsApi.getProjects(workspaceId) : Promise.resolve([])).catch(() => []),
+        (repositoriesApi?.getRepositories ? repositoriesApi.getRepositories(workspaceId) : Promise.resolve([])).catch(() => [])
+      ]);
+
+      if (riskResult.status === 'fulfilled' && riskResult.value) {
+        const riskRes = riskResult.value;
+        setRiskData({
+          score: riskRes.score ?? 0,
+          level: riskRes.level || 'LOW',
+          factors: Array.isArray(riskRes.factors) ? riskRes.factors : []
+        });
+      }
+
+      if (findingsResult.status === 'fulfilled' && findingsResult.value) {
+        const findingsRes = findingsResult.value;
         setFindingsPage({
           content: Array.isArray(findingsRes.content) ? findingsRes.content : (Array.isArray(findingsRes) ? findingsRes : []),
           totalPages: findingsRes.totalPages || 1,
@@ -110,22 +117,18 @@ export const RiskCenterView = ({ onNavigateToAudit, onNavigateToSecurityOverview
         });
       }
 
-      // Fetch all findings once for comprehensive distribution metrics
-      const allFindingsRes = await securityApi.getFindings(workspaceId, { size: 100 });
-      if (allFindingsRes && allFindingsRes.content) {
-        setAllFindingsSummary(allFindingsRes.content);
+      if (allFindingsResult.status === 'fulfilled' && allFindingsResult.value?.content) {
+        setAllFindingsSummary(allFindingsResult.value.content);
       }
 
-      // Metadata context (projects & repos)
-      try {
-        const [projList, repoList] = await Promise.all([
-          (projectsApi?.getProjects ? projectsApi.getProjects(workspaceId) : Promise.resolve([])).catch(() => []),
-          (repositoriesApi?.getRepositories ? repositoriesApi.getRepositories(workspaceId) : Promise.resolve([])).catch(() => [])
-        ]);
+      if (projResult.status === 'fulfilled' && projResult.value) {
+        const projList = projResult.value;
         setProjects(Array.isArray(projList) ? projList : (projList?.data || []));
+      }
+
+      if (repoResult.status === 'fulfilled' && repoResult.value) {
+        const repoList = repoResult.value;
         setRepositories(Array.isArray(repoList) ? repoList : (repoList?.data || []));
-      } catch (err) {
-        console.warn('Metadata hydration warning:', err);
       }
 
     } catch (err) {
