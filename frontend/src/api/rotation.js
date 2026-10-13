@@ -2,6 +2,19 @@ import { apiClient } from './client';
 
 export const rotationApi = {
   // Policies
+  listPolicies: async (workspaceId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/rotation-policies`, {
+      method: 'GET',
+    });
+  },
+
+  createPolicyDirect: async (workspaceId, secretId, payload) => {
+    return apiClient.request(`/workspaces/${workspaceId}/secrets/${secretId}/rotation-policy`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   createPolicy: async (workspaceId, projectId, environmentId, secretId, payload) => {
     return apiClient.request(
       `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets/${secretId}/rotation-policy`,
@@ -138,12 +151,18 @@ export const rotationApi = {
   },
 
   // Consumers & Workloads
-  registerConsumer: async (workspaceId, projectId, environmentId, payload) => {
+  registerConsumer: async (workspaceId, arg1, arg2, arg3) => {
+    if (typeof arg1 === 'object' && arg1 !== null && !arg2) {
+      return apiClient.request(`/workspaces/${workspaceId}/consumers/register`, {
+        method: 'POST',
+        body: JSON.stringify(arg1),
+      });
+    }
     return apiClient.request(
-      `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/consumers/register`,
+      `/workspaces/${workspaceId}/projects/${arg1}/environments/${arg2}/consumers/register`,
       {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(arg3),
       }
     );
   },

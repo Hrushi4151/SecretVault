@@ -92,7 +92,7 @@ export const RotationJobsView = ({
     setActionLoading(true);
     try {
       await rotationApi.rollbackJob(workspaceId, selectedJob.secretId, {
-        targetVersionNumber: selectedJob.oldVersionNumber,
+        targetVersionNumber: selectedJob.previousVersionNumber ?? selectedJob.oldVersionNumber,
         reason: rollbackReason || 'Rollback triggered via UI',
       });
       setIsRollbackModalOpen(false);
@@ -198,9 +198,9 @@ export const RotationJobsView = ({
                     <td className="py-3.5 px-4 font-mono text-white/80">
                       {job.secretId ? `${job.secretId.substring(0, 8)}...` : '—'}
                     </td>
-                    <td className="py-3.5 px-4 text-white font-medium">{job.strategy || 'MANUAL'}</td>
+                    <td className="py-3.5 px-4 text-white font-medium">{job.triggerType || job.strategy || 'MANUAL'}</td>
                     <td className="py-3.5 px-4 font-mono text-xs">
-                      <span className="text-[#F4B5C8]/60">v{job.oldVersionNumber || '?'}</span>
+                      <span className="text-[#F4B5C8]/60">v{job.previousVersionNumber ?? job.oldVersionNumber ?? '?'}</span>
                       <span className="mx-1 text-[#FF2D6D]">➔</span>
                       <span className="text-[#38BDF8] font-bold">
                         {job.targetVersionNumber ? `v${job.targetVersionNumber}` : 'In Gen'}
@@ -258,7 +258,7 @@ export const RotationJobsView = ({
                             <Ban className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {job.status === 'COMPLETED' && (
+                        {['COMPLETED', 'GRACE_PERIOD'].includes(job.status) && (
                           <button
                             onClick={() => {
                               setSelectedJob(job);
@@ -329,11 +329,11 @@ export const RotationJobsView = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#26000B] border border-[#FFB4C8]/10 text-xs">
               <div>
                 <span className="text-[#F4B5C8]/50 font-mono text-[10px] block">Strategy</span>
-                <span className="font-semibold text-white">{selectedJob.strategy}</span>
+                <span className="font-semibold text-white">{selectedJob.triggerType || selectedJob.strategy || 'MANUAL'}</span>
               </div>
               <div>
                 <span className="text-[#F4B5C8]/50 font-mono text-[10px] block">Rollout Mode</span>
-                <span className="font-semibold text-white">{selectedJob.rolloutStrategy}</span>
+                <span className="font-semibold text-white">{selectedJob.rolloutStrategy || 'DUAL_CREDENTIAL_GRACE_PERIOD'}</span>
               </div>
               <div>
                 <span className="text-[#F4B5C8]/50 font-mono text-[10px] block">Target Version</span>

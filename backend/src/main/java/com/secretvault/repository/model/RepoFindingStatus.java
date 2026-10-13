@@ -13,5 +13,6 @@ public enum RepoFindingStatus {
     RESOLVED,
     REOPENED,
     IGNORED,
-    EXPIRED
+    EXPIRED,
+    COMPROMISED
 }

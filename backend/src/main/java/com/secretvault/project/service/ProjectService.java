@@ -115,17 +115,30 @@ public class ProjectService {
         WorkspaceMembership membership = verifyWorkspaceAccess(workspaceId, userId);
 
         List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
-        List<ProjectResponse> responses = new ArrayList<>();
+        List<Project> authorizedProjects = new ArrayList<>();
 
         for (Project project : projects) {
-            if (!isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
-                continue;
+            if (isUserAuthorizedForProject(workspaceId, project, membership, userId)) {
+                authorizedProjects.add(project);
             }
+        }
 
-            List<EnvironmentSummaryResponse> envs = environmentRepository.findByProjectId(project.getId())
-                    .stream()
-                    .map(EnvironmentSummaryResponse::fromEntity)
-                    .toList();
+        if (authorizedProjects.isEmpty()) {
+            return List.of();
+        }
+
+        // Batch fetch all environments in a single query instead of N+1 database calls
+        List<UUID> projectIds = authorizedProjects.stream().map(Project::getId).toList();
+        java.util.Map<UUID, List<EnvironmentSummaryResponse>> envsByProject = environmentRepository.findByProjectIdIn(projectIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        Environment::getProjectId,
+                        Collectors.mapping(EnvironmentSummaryResponse::fromEntity, Collectors.toList())
+                ));
+
+        List<ProjectResponse> responses = new ArrayList<>(authorizedProjects.size());
+        for (Project project : authorizedProjects) {
+            List<EnvironmentSummaryResponse> envs = envsByProject.getOrDefault(project.getId(), List.of());
             responses.add(ProjectResponse.fromEntity(project, envs));
         }
 

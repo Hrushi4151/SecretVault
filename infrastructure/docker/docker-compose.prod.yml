@@ -80,6 +80,7 @@ services:
       KMS_PROVIDER: ${KMS_PROVIDER:-local} # LocalDev or AWS in cloud
       VAULT_MASTER_KEY: ${VAULT_MASTER_KEY:?Master KEK is required}
       JWT_SECRET: ${JWT_SECRET:?JWT Secret is required}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
       SERVER_PORT: 8080
     networks:
       - secretvault-db-net

@@ -134,7 +134,43 @@ public class SyncJobService {
             ReconciliationPolicy policy,
             UUID callerUserId
     ) {
-        return syncExecutionEngine.executeSync(workspaceId, scope, scopeResourceId, policy, callerUserId);
+        return triggerSync(workspaceId, scope, scopeResourceId, policy, null, callerUserId);
+    }
+
+    /**
+     * Initiates live synchronization execution bound to an approved dry-run plan.
+     */
+    public SyncExecutionResponse triggerSync(
+            UUID workspaceId,
+            SyncScope scope,
+            UUID scopeResourceId,
+            ReconciliationPolicy policy,
+            UUID planJobId,
+            UUID callerUserId
+    ) {
+        return syncExecutionEngine.executeSync(workspaceId, scope, scopeResourceId, policy, planJobId, callerUserId);
+    }
+
+    /**
+     * Retries failed operations of a partially failed or failed sync job.
+     */
+    public SyncExecutionResponse retryFailedJob(
+            UUID workspaceId,
+            UUID jobId,
+            UUID callerUserId
+    ) {
+        return syncExecutionEngine.retryFailedOperations(workspaceId, jobId, callerUserId);
+    }
+
+    /**
+     * Cancels an executing or queued sync job.
+     */
+    public SyncJobResponse cancelSyncJob(
+            UUID workspaceId,
+            UUID jobId,
+            UUID callerUserId
+    ) {
+        return syncExecutionEngine.cancelSyncJob(workspaceId, jobId, callerUserId);
     }
 
     private Pageable sanitizeJobPageable(Pageable pageable) {

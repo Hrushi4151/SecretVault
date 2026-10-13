@@ -42,11 +42,11 @@ public class ConditionAstEvaluator {
                 return condition.nested().stream().allMatch(c -> evaluateSingle(c, event));
 
             case OR:
-                if (condition.nested() == null || condition.nested().isEmpty()) return true;
+                if (condition.nested() == null || condition.nested().isEmpty()) return false;
                 return condition.nested().stream().anyMatch(c -> evaluateSingle(c, event));
 
             case NOT:
-                if (condition.nested() == null || condition.nested().isEmpty()) return true;
+                if (condition.nested() == null || condition.nested().isEmpty()) return false;
                 return !evaluateSingle(condition.nested().get(0), event);
 
             default:
@@ -55,7 +55,7 @@ public class ConditionAstEvaluator {
         }
     }
 
-    private Object extractFieldValue(String field, DomainEvent event) {
+    public Object extractFieldValue(String field, DomainEvent event) {
         if (field == null || event == null) return null;
 
         String f = field.trim();
@@ -111,6 +111,9 @@ public class ConditionAstEvaluator {
             return op == ConditionOperator.EQUALS;
         }
         if (actual == null) {
+            return op == ConditionOperator.NOT_EQUALS || op == ConditionOperator.NOT_IN;
+        }
+        if (expected == null) {
             return op == ConditionOperator.NOT_EQUALS || op == ConditionOperator.NOT_IN;
         }
 

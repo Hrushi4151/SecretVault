@@ -145,6 +145,54 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
+    @ExceptionHandler({
+            org.springframework.dao.OptimisticLockingFailureException.class,
+            jakarta.persistence.OptimisticLockException.class
+    })
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingConflict(Exception ex) {
+        String requestId = getOrCreateRequestId();
+        log.warn("Optimistic locking conflict on request [{}]: {}", requestId, ex.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "CONCURRENT_UPDATE_CONFLICT",
+                "The resource was modified concurrently by another transaction. Please refresh and retry.",
+                requestId
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler({
+            org.springframework.web.servlet.resource.NoResourceFoundException.class,
+            org.springframework.web.servlet.NoHandlerFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNotFoundException(Exception ex) {
+        String requestId = getOrCreateRequestId();
+        log.warn("Resource not found on request [{}]: {}", requestId, ex.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "RESOURCE_NOT_FOUND",
+                ex.getMessage(),
+                requestId
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        String requestId = getOrCreateRequestId();
+        log.warn("Method not supported on request [{}]: {}", requestId, ex.getMessage());
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "METHOD_NOT_ALLOWED",
+                ex.getMessage(),
+                requestId
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
         String requestId = getOrCreateRequestId();

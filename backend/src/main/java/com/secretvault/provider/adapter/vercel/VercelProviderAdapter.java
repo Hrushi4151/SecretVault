@@ -26,6 +26,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -98,7 +100,7 @@ public class VercelProviderAdapter implements ProviderAdapter {
     public ProviderValidationResult validateConnection(Map<String, Object> configuration, String credential) {
         try {
             String teamId = extractTeamId(configuration);
-            String uri = teamId != null ? "/v2/teams/" + teamId : "/v2/user";
+            String uri = teamId != null ? "/v2/teams/" + URLEncoder.encode(teamId, StandardCharsets.UTF_8) : "/v2/user";
 
             String responseBody = executeGet(uri, credential, teamId);
             JsonNode root = objectMapper.readTree(responseBody);
@@ -134,7 +136,7 @@ public class VercelProviderAdapter implements ProviderAdapter {
             String teamId = extractTeamId(configuration);
             String uri = "/v9/projects?limit=100";
             if (teamId != null) {
-                uri += "&teamId=" + teamId;
+                uri += "&teamId=" + URLEncoder.encode(teamId, StandardCharsets.UTF_8);
             }
 
             String responseBody = executeGet(uri, credential, teamId);
@@ -181,9 +183,9 @@ public class VercelProviderAdapter implements ProviderAdapter {
             String projectId = mapping.getProviderResourceId();
             String targetEnv = mapping.getProviderEnvironment().toLowerCase();
 
-            String uri = "/v10/projects/" + projectId + "/env";
+            String uri = "/v10/projects/" + URLEncoder.encode(projectId, StandardCharsets.UTF_8) + "/env";
             if (teamId != null) {
-                uri += "?teamId=" + teamId;
+                uri += "?teamId=" + URLEncoder.encode(teamId, StandardCharsets.UTF_8);
             }
 
             String responseBody = executeGet(uri, credential, teamId);
@@ -233,6 +235,7 @@ public class VercelProviderAdapter implements ProviderAdapter {
             String teamId = extractTeamId(configuration);
             String projectId = mapping.getProviderResourceId();
             String targetEnv = mapping.getProviderEnvironment().toLowerCase();
+            String encodedProjectId = URLEncoder.encode(projectId, StandardCharsets.UTF_8);
 
             // 1. Check if variable already exists
             List<ProviderSecretMetadata> existing = listSecrets(configuration, credential, mapping);
@@ -244,9 +247,9 @@ public class VercelProviderAdapter implements ProviderAdapter {
 
             if (existingEnvId != null) {
                 // Update existing env var
-                String updateUri = "/v10/projects/" + projectId + "/env/" + existingEnvId;
+                String updateUri = "/v10/projects/" + encodedProjectId + "/env/" + URLEncoder.encode(existingEnvId, StandardCharsets.UTF_8);
                 if (teamId != null) {
-                    updateUri += "?teamId=" + teamId;
+                    updateUri += "?teamId=" + URLEncoder.encode(teamId, StandardCharsets.UTF_8);
                 }
 
                 Map<String, Object> updatePayload = Map.of(
@@ -259,9 +262,9 @@ public class VercelProviderAdapter implements ProviderAdapter {
                 return ProviderSecretOperationResult.success("UPDATE", secretName, existingEnvId);
             } else {
                 // Create new env var
-                String createUri = "/v10/projects/" + projectId + "/env";
+                String createUri = "/v10/projects/" + encodedProjectId + "/env";
                 if (teamId != null) {
-                    createUri += "?teamId=" + teamId;
+                    createUri += "?teamId=" + URLEncoder.encode(teamId, StandardCharsets.UTF_8);
                 }
 
                 Map<String, Object> createPayload = Map.of(
@@ -273,7 +276,20 @@ public class VercelProviderAdapter implements ProviderAdapter {
 
                 String responseBody = executeRequest(HttpMethod.POST, createUri, credential, teamId, createPayload);
                 JsonNode root = objectMapper.readTree(responseBody);
-                String newId = root.path("id").asText(root.path("created").path("id").asText(secretName));
+                String newId = null;
+                if (root.has("id") && !root.path("id").asText().isBlank()) {
+                    newId = root.path("id").asText();
+                } else if (root.has("created")) {
+                    JsonNode createdNode = root.get("created");
+                    if (createdNode.isArray() && !createdNode.isEmpty()) {
+                        newId = createdNode.get(0).path("id").asText(secretName);
+                    } else if (createdNode.isObject() && createdNode.has("id")) {
+                        newId = createdNode.path("id").asText(secretName);
+                    }
+                }
+                if (newId == null || newId.isBlank()) {
+                    newId = secretName;
+                }
 
                 return ProviderSecretOperationResult.success("CREATE", secretName, newId);
             }
@@ -311,13 +327,22 @@ public class VercelProviderAdapter implements ProviderAdapter {
                 return ProviderSecretOperationResult.success("DELETE", secretName, "not_found");
             }
 
-            String deleteUri = "/v10/projects/" + projectId + "/env/" + existingEnvId;
+            String deleteUri = "/v10/projects/" + URLEncoder.encode(projectId, StandardCharsets.UTF_8)
+                    + "/env/" + URLEncoder.encode(existingEnvId, StandardCharsets.UTF_8);
             if (teamId != null) {
-                deleteUri += "?teamId=" + teamId;
+                deleteUri += "?teamId=" + URLEncoder.encode(teamId, StandardCharsets.UTF_8);
             }
 
             executeRequest(HttpMethod.DELETE, deleteUri, credential, teamId, null);
             return ProviderSecretOperationResult.success("DELETE", secretName, existingEnvId);
+        } catch (HttpClientErrorException.NotFound e) {
+            return ProviderSecretOperationResult.success("DELETE", secretName, "not_found");
+        } catch (HttpClientErrorException.Unauthorized e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_AUTHENTICATION_FAILED, "Vercel authorization token expired");
+        } catch (HttpClientErrorException.Forbidden e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_AUTHORIZATION_FAILED, "Insufficient permissions to delete Vercel project environment variables");
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_RATE_LIMITED, "Vercel API rate limit exceeded");
         } catch (Exception e) {
             log.warn("Failed to delete secret [{}] from Vercel: {}", secretName, e.getMessage());
             return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_UNAVAILABLE, "Vercel API error: " + e.getMessage());

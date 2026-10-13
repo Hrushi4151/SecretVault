@@ -30,6 +30,18 @@ public class SecretConsumerController {
         this.consumerService = consumerService;
     }
 
+    @PostMapping("/api/v1/workspaces/{workspaceId}/consumers/register")
+    @Operation(summary = "Register runtime workload / SDK consumer in workspace")
+    public ResponseEntity<ApiResponse<SecretConsumerResponse>> registerConsumerWorkspace(
+            @PathVariable UUID workspaceId,
+            @Valid @RequestBody RegisterSecretConsumerRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        SecretConsumerResponse response = consumerService.registerConsumer(workspaceId, request, actorId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Consumer registered successfully"));
+    }
+
     @PostMapping("/api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}/consumers/register")
     @Operation(summary = "Register runtime workload / SDK consumer")
     public ResponseEntity<ApiResponse<SecretConsumerResponse>> registerConsumer(
@@ -59,7 +71,7 @@ public class SecretConsumerController {
     @Operation(summary = "List registered secret consumers in workspace")
     public ResponseEntity<ApiResponse<Page<SecretConsumerResponse>>> listConsumers(
             @PathVariable UUID workspaceId,
-            @PageableDefault(size = 20, sort = "registeredAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         UUID actorId = principal != null ? principal.getId() : null;

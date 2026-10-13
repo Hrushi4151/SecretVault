@@ -5,8 +5,7 @@ import com.secretvault.repository.model.RepoFindingSeverity;
 import com.secretvault.repository.model.SecretType;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,25 +36,31 @@ public class RegexSecretDetector implements SecretDetector {
         final Pattern pattern;
         final int secretGroup;
         final boolean requiresHighEntropy;
+        final boolean requiresSufficientEntropy;
 
-        PatternDefinition(String detectorName, SecretType secretType, RepoFindingSeverity severity, String regex, int secretGroup, boolean requiresHighEntropy) {
+        PatternDefinition(String detectorName, SecretType secretType, RepoFindingSeverity severity, String regex, int secretGroup, boolean requiresHighEntropy, boolean requiresSufficientEntropy) {
             this.detectorName = detectorName;
             this.secretType = secretType;
             this.severity = severity;
             this.pattern = Pattern.compile(regex);
             this.secretGroup = secretGroup;
             this.requiresHighEntropy = requiresHighEntropy;
+            this.requiresSufficientEntropy = requiresSufficientEntropy;
+        }
+
+        PatternDefinition(String detectorName, SecretType secretType, RepoFindingSeverity severity, String regex, int secretGroup, boolean requiresHighEntropy) {
+            this(detectorName, secretType, severity, regex, secretGroup, requiresHighEntropy, false);
         }
     }
 
     private final List<PatternDefinition> patterns = List.of(
             // AWS Access Key ID
             new PatternDefinition("AWS Access Key", SecretType.AWS_ACCESS_KEY, RepoFindingSeverity.HIGH,
-                    "\\b(AKIA[0-9A-Z]{16})\\b", 1, false),
+                    "\\b((?:AKIA|ASIA)[0-9A-Z]{16})\\b", 1, false),
 
             // AWS Secret Key
             new PatternDefinition("AWS Secret Key", SecretType.AWS_SECRET_KEY, RepoFindingSeverity.CRITICAL,
-                    "(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\\s*[=:]\\s*['\"]?([A-Za-z0-9/+=]{40})['\"]?", 1, true),
+                    "(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\\s*[:=]\\s*['\"`]?([A-Za-z0-9/+=]{40})['\"`]?", 1, true),
 
             // GitHub Classic PAT / Fine-Grained Token
             new PatternDefinition("GitHub Token", SecretType.GITHUB_TOKEN, RepoFindingSeverity.CRITICAL,
@@ -89,21 +94,33 @@ public class RegexSecretDetector implements SecretDetector {
             new PatternDefinition("SSH/Private Key", SecretType.SSH_PRIVATE_KEY, RepoFindingSeverity.CRITICAL,
                     "(-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP)? PRIVATE KEY-----[\\s\\S]*?-----END (?:RSA|OPENSSH|DSA|EC|PGP)? PRIVATE KEY-----)", 1, false),
 
-            // Database Connection String with Credentials
+            // Database Connection String with embedded credentials
             new PatternDefinition("Database Connection String", SecretType.DATABASE_CONNECTION_STRING, RepoFindingSeverity.CRITICAL,
-                    "\\b(?:postgres|postgresql|mysql|mongodb(?:\\+srv)?|redis)://([^:]+):([^@\\s'\"]+)@([^/\\s'\"]+)/[^\\s'\"]+", 0, false),
+                    "\\b(?:postgres|postgresql|mysql|mongodb(?:\\+srv)?|redis|mariadb|sqlserver)://([^:]+):([^@\\s'\"`]+)@([^/\\s'\"`]+)/[^\\s'\"`]+", 0, false),
 
             // JWT Token (3 base64url segments separated by dots)
             new PatternDefinition("JWT Token", SecretType.JWT, RepoFindingSeverity.MEDIUM,
                     "\\b(eyJ[A-Za-z0-9-_]{10,}\\.eyJ[A-Za-z0-9-_]{10,}\\.[A-Za-z0-9-_]{10,})\\b", 1, true),
 
-            // Generic Password assignment
-            new PatternDefinition("Hardcoded Password", SecretType.GENERIC_PASSWORD, RepoFindingSeverity.HIGH,
-                    "(?i)(?:password|passwd|pwd|db_pass|database_password)\\s*[=:]\\s*['\"]([^'\"\\r\\n\\t\\f\\v]{8,64})['\"]", 1, false),
-
-            // Generic API Key assignment
+            // Generic API Key / Secret assignment (e.g. AI_GEMINI_API_KEY, API_SECRET, CLIENT_SECRET, SECRET_KEY, OPENAI_API_KEY)
             new PatternDefinition("Hardcoded API Key", SecretType.GENERIC_API_KEY, RepoFindingSeverity.HIGH,
-                    "(?i)(?:api_key|apikey|secret_key|client_secret)\\s*[=:]\\s*['\"]([^'\"\\r\\n\\t\\f\\v]{12,128})['\"]", 1, true)
+                    "(?i)(?:const|let|var|export\\s+const|export\\s+let|export\\s+var)?\\s*(?:[a-zA-Z0-9_]*_)?(?:api_key|apikey|gemini_api_key|ai_gemini_api_key|openai_api_key|api_secret|client_secret|secret_key|secret_token|auth_key|app_secret)(?:_[a-zA-Z0-9_]+)?\\s*[:=]\\s*['\"`]([^'\"`\\r\\n\\t\\f\\v]{10,256})['\"`]", 1, false, true),
+
+            // Generic Password assignment (e.g. DB_PASSWORD, DATABASE_PASSWORD, ADMIN_PASSWORD, PASSWORD, PASSWD, PWD)
+            new PatternDefinition("Hardcoded Password", SecretType.DATABASE_PASSWORD, RepoFindingSeverity.HIGH,
+                    "(?i)(?:const|let|var|export\\s+const|export\\s+let|export\\s+var)?\\s*(?:[a-zA-Z0-9_]*_)?(?:password|passwd|pwd|db_pass|database_password|db_password|admin_password|root_password|master_password|secret_password)(?:_[a-zA-Z0-9_]+)?\\s*[:=]\\s*['\"`]([^'\"`\\r\\n\\t\\f\\v]{6,128})['\"`]", 1, false, true),
+
+            // Generic Access / Auth / Bearer Token assignment (e.g. ACCESS_TOKEN, AUTH_TOKEN, BEARER_TOKEN, REFRESH_TOKEN)
+            new PatternDefinition("Hardcoded Access Token", SecretType.GENERIC_TOKEN, RepoFindingSeverity.HIGH,
+                    "(?i)(?:const|let|var|export\\s+const|export\\s+let|export\\s+var)?\\s*(?:[a-zA-Z0-9_]*_)?(?:access_token|auth_token|bearer_token|session_token|refresh_token|api_token|private_token|oauth_token|webhook_secret|signing_secret|jwt_secret)(?:_[a-zA-Z0-9_]+)?\\s*[:=]\\s*['\"`]([^'\"`\\r\\n\\t\\f\\v]{10,256})['\"`]", 1, false, true),
+
+            // Database URL / Connection String assignment (e.g. DATABASE_URL = "postgres://...")
+            new PatternDefinition("Database URL Assignment", SecretType.DATABASE_CONNECTION_STRING, RepoFindingSeverity.CRITICAL,
+                    "(?i)(?:const|let|var|export\\s+const|export\\s+let|export\\s+var)?\\s*(?:[a-zA-Z0-9_]*_)?(?:database_url|db_url|db_uri|database_uri|connection_string|db_connection|mongo_uri|mongodb_uri|redis_url|postgres_url)(?:_[a-zA-Z0-9_]+)?\\s*[:=]\\s*['\"`]?([^'\"`\\s\\r\\n]{10,512})['\"`]?", 1, false, false),
+
+            // Unquoted Configuration Assignment (.env / yaml / properties) for API keys, secrets, passwords, and tokens
+            new PatternDefinition("Configuration Credential Assignment", SecretType.GENERIC_API_KEY, RepoFindingSeverity.HIGH,
+                    "(?i)^(?:export\\s+)?([A-Z0-9_]*(?:API_KEY|API_SECRET|CLIENT_SECRET|SECRET_KEY|DB_PASSWORD|DATABASE_PASSWORD|ACCESS_TOKEN|AUTH_TOKEN|DATABASE_URL)[A-Z0-9_]*)\\s*=\\s*['\"`]?([^'\"`\\s\\r\\n#]{8,256})['\"`]?$", 2, false, true)
     );
 
     @Override
@@ -119,11 +136,12 @@ public class RegexSecretDetector implements SecretDetector {
             return List.of();
         }
 
-        List<SecretDetectionResult> results = new ArrayList<>();
-        boolean isTestPath = contextAnalyzer.isTestFilePath(filePath);
+        String normalizedPath = filePath != null ? filePath.replace('\\', '/') : "unknown";
+        boolean isTestPath = contextAnalyzer.isTestFilePath(normalizedPath);
 
         // Precompute line offsets for accurate line and column tracking
         String[] lines = content.split("\r\n|\r|\n", -1);
+        Map<String, SecretDetectionResult> deduplicatedResults = new LinkedHashMap<>();
 
         for (PatternDefinition def : patterns) {
             Matcher matcher = def.pattern.matcher(content);
@@ -133,9 +151,27 @@ public class RegexSecretDetector implements SecretDetector {
                     continue;
                 }
 
+                String trimmedSecret = rawSecret.trim();
+
+                // Skip code references / env interpolations
+                if (trimmedSecret.startsWith("${") || trimmedSecret.startsWith("<") ||
+                        trimmedSecret.startsWith("process.env.") || trimmedSecret.startsWith("System.getenv")) {
+                    continue;
+                }
+
+                // Filter explicit placeholder strings
+                if (contextAnalyzer.isPlaceholderValue(trimmedSecret)) {
+                    continue;
+                }
+
                 // If detector requires high entropy, verify entropy before reporting
-                double entropy = entropyEvaluator.calculateEntropy(rawSecret);
-                if (def.requiresHighEntropy && !entropyEvaluator.isHighEntropy(rawSecret)) {
+                double entropy = entropyEvaluator.calculateEntropy(trimmedSecret);
+                if (def.requiresHighEntropy && !entropyEvaluator.isHighEntropy(trimmedSecret)) {
+                    continue;
+                }
+
+                // If detector requires sufficient entropy, filter out trivial repeated strings
+                if (def.requiresSufficientEntropy && (!entropyEvaluator.isSufficientEntropy(trimmedSecret) || entropyEvaluator.isTrivialString(trimmedSecret))) {
                     continue;
                 }
 
@@ -145,29 +181,43 @@ public class RegexSecretDetector implements SecretDetector {
                 int columnNumber = lineAndCol[1];
 
                 String lineContent = (lineNumber <= lines.length) ? lines[lineNumber - 1] : "";
-                boolean isSample = contextAnalyzer.isTestOrSampleContext(filePath, lineContent, rawSecret);
+                boolean isSample = contextAnalyzer.isTestOrSampleContext(normalizedPath, lineContent, trimmedSecret);
                 boolean hasKeyword = contextAnalyzer.hasHighRiskKeywordContext(lineContent);
 
                 RepoFindingConfidence confidence = contextAnalyzer.evaluateConfidence(
-                        true, entropyEvaluator.isHighEntropy(rawSecret), hasKeyword, isTestPath, isSample);
+                        true, entropyEvaluator.isHighEntropy(trimmedSecret), hasKeyword, isTestPath, isSample);
 
-                String fingerprint = fingerprinter.computeFingerprint(rawSecret);
-                String maskedValue = fingerprinter.computeMaskedPreview(rawSecret, def.secretType.name());
+                String fingerprint = fingerprinter.computeFingerprint(trimmedSecret);
+                String maskedValue = fingerprinter.computeMaskedPreview(trimmedSecret, def.secretType.name());
+
+                // Resolve refined secret type based on identifier match context
+                SecretType resolvedType = def.secretType;
+                String lowerLine = lineContent.toLowerCase(Locale.ROOT);
+                if (def.detectorName.equals("Hardcoded Password") && !lowerLine.contains("db") && !lowerLine.contains("database")) {
+                    resolvedType = SecretType.GENERIC_PASSWORD;
+                } else if (def.detectorName.equals("Configuration Credential Assignment")) {
+                    if (lowerLine.contains("password") || lowerLine.contains("passwd")) {
+                        resolvedType = SecretType.DATABASE_PASSWORD;
+                    } else if (lowerLine.contains("token")) {
+                        resolvedType = SecretType.GENERIC_TOKEN;
+                    } else if (lowerLine.contains("database_url") || lowerLine.contains("db_url")) {
+                        resolvedType = SecretType.DATABASE_CONNECTION_STRING;
+                    } else {
+                        resolvedType = SecretType.GENERIC_API_KEY;
+                    }
+                }
 
                 String summary = String.format("Detected %s via %s (entropy: %.2f)",
-                        def.secretType.name(), def.detectorName, entropy);
+                        resolvedType.name(), def.detectorName, entropy);
 
-                // If marked sample in test path, reduce severity to LOW
-                RepoFindingSeverity severity = (isSample || isTestPath) && def.severity == RepoFindingSeverity.CRITICAL
-                        ? RepoFindingSeverity.MEDIUM
-                        : def.severity;
+                RepoFindingSeverity severity = def.severity;
 
-                results.add(new SecretDetectionResult(
-                        def.secretType,
+                SecretDetectionResult findingResult = new SecretDetectionResult(
+                        resolvedType,
                         def.detectorName,
                         fingerprint,
                         maskedValue,
-                        filePath,
+                        normalizedPath,
                         lineNumber,
                         columnNumber,
                         severity,
@@ -178,11 +228,17 @@ public class RegexSecretDetector implements SecretDetector {
                         author,
                         summary,
                         null
-                ));
+                );
+
+                String dedupKey = normalizedPath + ":" + lineNumber + ":" + fingerprint;
+                if (!deduplicatedResults.containsKey(dedupKey) ||
+                        (severity == RepoFindingSeverity.CRITICAL && deduplicatedResults.get(dedupKey).severity() != RepoFindingSeverity.CRITICAL)) {
+                    deduplicatedResults.put(dedupKey, findingResult);
+                }
             }
         }
 
-        return results;
+        return new ArrayList<>(deduplicatedResults.values());
     }
 
     private int[] findLineAndColumn(String[] lines, int charOffset) {

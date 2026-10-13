@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "secretvault"
+version = "1.0.0"
+description = "Official SecretVault Python SDK for secure secret retrieval, caching, and dynamic rotation."
+readme = "README.md"
+authors = [{ name = "SecretVault Engineering" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["secretvault", "secrets-manager", "kms", "security", "devsecops"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/secretvault/secretvault"

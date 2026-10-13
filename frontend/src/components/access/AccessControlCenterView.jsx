@@ -56,6 +56,28 @@ export const AccessControlCenterView = () => {
     }
   }, [activeWorkspace?.id, activeSubTab]);
 
+  const normalizeList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val.content)) return val.content;
+    if (Array.isArray(val.data)) return val.data;
+    if (Array.isArray(val.data?.data)) return val.data.data;
+    if (Array.isArray(val.data?.content)) return val.data.content;
+    return [];
+  };
+
+  const extractTotal = (val) => {
+    if (!val) return 0;
+    if (Array.isArray(val)) return val.length;
+    if (typeof val.totalElements === 'number') return val.totalElements;
+    if (Array.isArray(val.content)) return val.content.length;
+    if (Array.isArray(val.data)) return val.data.length;
+    if (Array.isArray(val.data?.data)) return val.data.data.length;
+    if (typeof val.data?.totalElements === 'number') return val.data.totalElements;
+    if (typeof val.data?.data?.totalElements === 'number') return val.data.data.totalElements;
+    return 0;
+  };
+
   const loadMetrics = async () => {
     try {
       setIsLoadingMetrics(true);
@@ -66,16 +88,16 @@ export const AccessControlCenterView = () => {
         reviewsApi.listCampaigns(activeWorkspace.id),
       ]);
 
-      const grantsList = grantsRes.status === 'fulfilled' ? (grantsRes.value.data?.data || grantsRes.value.data || []) : [];
-      const activeJitList = activeJitRes.status === 'fulfilled' ? (activeJitRes.value.data?.data || activeJitRes.value.data || []) : [];
-      const pendingJitList = pendingJitRes.status === 'fulfilled' ? (pendingJitRes.value.data?.data || pendingJitRes.value.data || []) : [];
-      const campaignsList = campaignsRes.status === 'fulfilled' ? (campaignsRes.value.data?.data || campaignsRes.value.data || []) : [];
+      const grantsVal = grantsRes.status === 'fulfilled' ? grantsRes.value : null;
+      const activeJitVal = activeJitRes.status === 'fulfilled' ? activeJitRes.value : null;
+      const pendingJitVal = pendingJitRes.status === 'fulfilled' ? pendingJitRes.value : null;
+      const campaignsVal = campaignsRes.status === 'fulfilled' ? campaignsRes.value : null;
 
       setMetrics({
-        grantsCount: Array.isArray(grantsList) ? grantsList.length : (grantsList.totalElements || 0),
-        activeJitCount: Array.isArray(activeJitList) ? activeJitList.length : 0,
-        pendingJitCount: Array.isArray(pendingJitList) ? pendingJitList.length : 0,
-        campaignsCount: Array.isArray(campaignsList) ? campaignsList.length : (campaignsList.totalElements || 0),
+        grantsCount: extractTotal(grantsVal),
+        activeJitCount: extractTotal(activeJitVal),
+        pendingJitCount: extractTotal(pendingJitVal),
+        campaignsCount: extractTotal(campaignsVal),
       });
     } catch (err) {
       console.error('Failed to load governance metrics', err);
@@ -89,10 +111,9 @@ export const AccessControlCenterView = () => {
       setIsLoadingGrants(true);
       setErrorMessage(null);
       const res = await accessApi.listGrants(activeWorkspace.id);
-      const data = res.data?.data || res.data || [];
-      setGrants(Array.isArray(data) ? data : (data.content || []));
+      setGrants(normalizeList(res));
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to load granular access grants');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load granular access grants');
     } finally {
       setIsLoadingGrants(false);
     }

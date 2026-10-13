@@ -13,7 +13,13 @@ import {
   Activity,
   Flame,
   Check,
-  UserCheck
+  UserCheck,
+  Play,
+  Eye,
+  FileText,
+  Lock,
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 export const SecurityOperationsView = () => {
@@ -38,6 +44,16 @@ export const SecurityOperationsView = () => {
   const [severity, setSeverity] = useState('HIGH');
   const [category, setCategory] = useState('CREDENTIAL_LEAK');
 
+  // Playbook Remediation modal
+  const [isPlaybookOpen, setIsPlaybookOpen] = useState(false);
+  const [playbookAction, setPlaybookAction] = useState('CONTAIN_INCIDENT');
+  const [targetSecretId, setTargetSecretId] = useState('');
+  const [targetMachineId, setTargetMachineId] = useState('');
+  const [playbookNotes, setPlaybookNotes] = useState('');
+  const [isDryRun, setIsDryRun] = useState(false);
+  const [playbookSubmitting, setPlaybookSubmitting] = useState(false);
+  const [remediationFeedback, setRemediationFeedback] = useState(null);
+
   const fetchIncidents = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
@@ -48,6 +64,9 @@ export const SecurityOperationsView = () => {
       setIncidents(items);
       if (items.length > 0 && !selectedIncident) {
         setSelectedIncident(items[0]);
+      } else if (selectedIncident) {
+        const refreshed = items.find((i) => i.id === selectedIncident.id);
+        if (refreshed) setSelectedIncident(refreshed);
       }
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to fetch security incidents');
@@ -112,6 +131,32 @@ export const SecurityOperationsView = () => {
     }
   };
 
+  const handleExecutePlaybook = async (e) => {
+    e.preventDefault();
+    if (!workspaceId || !selectedIncident) return;
+    setPlaybookSubmitting(true);
+    setRemediationFeedback(null);
+    try {
+      const payload = {
+        action: playbookAction,
+        targetSecretId: targetSecretId.trim() ? targetSecretId.trim() : null,
+        targetMachineIdentityId: targetMachineId.trim() ? targetMachineId.trim() : null,
+        notes: playbookNotes.trim() ? playbookNotes.trim() : null,
+        dryRun: isDryRun
+      };
+      const res = await incidentsApi.remediateIncident(workspaceId, selectedIncident.id, payload);
+      setRemediationFeedback(res);
+      if (!isDryRun) {
+        fetchIncidents();
+        fetchIncidentEvents();
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to execute incident remediation playbook');
+    } finally {
+      setPlaybookSubmitting(false);
+    }
+  };
+
   const getSeverityBadge = (sev) => {
     const s = String(sev || 'MEDIUM').toUpperCase();
     if (s === 'CRITICAL') return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
@@ -124,7 +169,16 @@ export const SecurityOperationsView = () => {
     const s = String(st || 'OPEN').toUpperCase();
     if (s === 'RESOLVED' || s === 'CLOSED') return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
     if (s === 'INVESTIGATING' || s === 'REMEDIATION') return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
+    if (s === 'CONTAINED') return 'bg-purple-500/20 text-purple-400 border-purple-500/40';
     return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
+  };
+
+  const getRelationshipBadge = (rel) => {
+    const r = String(rel || 'CORRELATED').toUpperCase();
+    if (r === 'REMEDIATION') return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
+    if (r === 'ROOT_CAUSE') return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
+    if (r === 'SIDE_EFFECT') return 'bg-purple-500/20 text-purple-400 border-purple-500/40';
+    return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
   };
 
   return (
@@ -145,7 +199,7 @@ export const SecurityOperationsView = () => {
               </span>
             </div>
             <p className="text-xs text-[#94A3B8] mt-0.5">
-              Multi-signal event correlation, incident triage, and automated compromise response playbooks.
+              Multi-signal event correlation, incident triage state machine, and automated compromise response playbooks.
             </p>
           </div>
         </div>
@@ -220,16 +274,31 @@ export const SecurityOperationsView = () => {
                     <span className={`px-2 py-0.5 rounded-md border text-[10px] font-mono ${getStatusBadge(selectedIncident.status)}`}>
                       {selectedIncident.status}
                     </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono border ${getSeverityBadge(selectedIncident.severity)}`}>
+                      {selectedIncident.severity}
+                    </span>
                   </div>
                   <h3 className="font-headline font-bold text-white text-base mt-1">{selectedIncident.title}</h3>
                 </div>
 
-                <button
-                  onClick={() => setIsUpdateModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-white border border-outline-variant text-xs font-semibold transition"
-                >
-                  Update Status
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setRemediationFeedback(null);
+                      setIsPlaybookOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white text-xs font-semibold shadow-md shadow-red-500/20 transition"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Run Playbook</span>
+                  </button>
+                  <button
+                    onClick={() => setIsUpdateModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-white border border-outline-variant text-xs font-semibold transition"
+                  >
+                    Update Status
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -250,7 +319,7 @@ export const SecurityOperationsView = () => {
 
               {/* Correlated Event Stream */}
               <div className="space-y-3">
-                <span className="font-headline font-bold text-white text-xs block">Correlated Domain Events</span>
+                <span className="font-headline font-bold text-white text-xs block">Correlated Domain Events & Remediation Trace</span>
                 {incidentEvents.length === 0 ? (
                   <div className="p-6 text-center text-xs text-[#94A3B8] border border-outline-variant/40 rounded-xl">
                     No linked domain events recorded for this incident yet.
@@ -262,15 +331,21 @@ export const SecurityOperationsView = () => {
                         <tr>
                           <th className="py-2.5 px-3">Event ID</th>
                           <th className="py-2.5 px-3">Relationship</th>
+                          <th className="py-2.5 px-3">Notes / Action Details</th>
                           <th className="py-2.5 px-3">Linked At</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/30">
                         {incidentEvents.map((evt) => (
                           <tr key={evt.id} className="hover:bg-surface-container-high/40 transition">
-                            <td className="py-2.5 px-3 font-mono text-white">{evt.eventId}</td>
-                            <td className="py-2.5 px-3 font-mono text-amber-400">{evt.relationshipType || 'CORRELATED'}</td>
-                            <td className="py-2.5 px-3 font-mono text-[#94A3B8]">{new Date(evt.createdAt).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 font-mono text-white text-[11px]">{evt.eventId}</td>
+                            <td className="py-2.5 px-3 font-mono">
+                              <span className={`px-2 py-0.5 rounded border text-[10px] ${getRelationshipBadge(evt.relationshipType)}`}>
+                                {evt.relationshipType || 'CORRELATED'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-[#CBD5E1] text-[11px]">{evt.notes || '-'}</td>
+                            <td className="py-2.5 px-3 font-mono text-[#94A3B8] text-[11px]">{new Date(evt.createdAt).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -281,11 +356,144 @@ export const SecurityOperationsView = () => {
             </div>
           ) : (
             <div className="bg-surface-container-low/80 p-8 rounded-2xl border border-outline-variant text-center text-xs text-[#94A3B8]">
-              Select an incident to view investigation details and correlated root-cause events.
+              Select an incident to view investigation details, correlated root-cause events, and response playbooks.
             </div>
           )}
         </div>
       </div>
+
+      {/* Playbook Remediation Modal */}
+      {isPlaybookOpen && selectedIncident && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <form
+            onSubmit={handleExecutePlaybook}
+            className="bg-surface-container-high border border-outline-variant rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Play className="w-4 h-4 text-rose-500" />
+                <span className="font-headline font-bold text-white text-base">Execute Remediation Playbook</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPlaybookOpen(false)}
+                className="text-[#94A3B8] hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs text-[#94A3B8]">
+              Target: <span className="font-mono text-white font-bold">{selectedIncident.incidentNumber}</span> — {selectedIncident.title}
+            </div>
+
+            {remediationFeedback && (
+              <div className={`p-3 rounded-xl border text-xs space-y-1 ${
+                remediationFeedback.dryRun
+                  ? 'bg-blue-950/30 border-blue-500/30 text-blue-200'
+                  : 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
+              }`}>
+                <div className="font-bold flex items-center gap-1.5">
+                  {remediationFeedback.dryRun ? <Eye className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>{remediationFeedback.status}: {remediationFeedback.action}</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">{remediationFeedback.details}</p>
+                {remediationFeedback.updatedIncidentStatus && (
+                  <div className="text-[10px] font-mono text-[#94A3B8]">
+                    New Incident Status: <span className="text-white font-bold">{remediationFeedback.updatedIncidentStatus}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[#94A3B8] mb-1 font-mono">Select Playbook Action:</label>
+                <select
+                  value={playbookAction}
+                  onChange={(e) => setPlaybookAction(e.target.value)}
+                  className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant focus:outline-none focus:border-[#EF4444]"
+                >
+                  <option value="CONTAIN_INCIDENT">CONTAIN_INCIDENT — Immediately isolate and mark blast radius contained</option>
+                  <option value="ROTATE_SECRET">ROTATE_SECRET — Trigger emergency secret rotation</option>
+                  <option value="REVOKE_SECRET_LEASES">REVOKE_SECRET_LEASES — Force-revoke all active dynamic leases on secret</option>
+                  <option value="DISABLE_MACHINE_IDENTITY">DISABLE_MACHINE_IDENTITY — Suspend compromised machine identity / OIDC workload</option>
+                  <option value="NOTIFY_RESPONDERS">NOTIFY_RESPONDERS — Broadcast high-priority alert to workspace incident responders</option>
+                </select>
+              </div>
+
+              {(playbookAction === 'ROTATE_SECRET' || playbookAction === 'REVOKE_SECRET_LEASES') && (
+                <div>
+                  <label className="block text-[#94A3B8] mb-1 font-mono">Target Secret ID (UUID):</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    value={targetSecretId}
+                    onChange={(e) => setTargetSecretId(e.target.value)}
+                    className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant font-mono focus:outline-none focus:border-[#EF4444]"
+                  />
+                </div>
+              )}
+
+              {playbookAction === 'DISABLE_MACHINE_IDENTITY' && (
+                <div>
+                  <label className="block text-[#94A3B8] mb-1 font-mono">Target Machine Identity ID (UUID):</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    value={targetMachineId}
+                    onChange={(e) => setTargetMachineId(e.target.value)}
+                    className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant font-mono focus:outline-none focus:border-[#EF4444]"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[#94A3B8] mb-1 font-mono">Investigation / Action Notes:</label>
+                <textarea
+                  rows={2}
+                  placeholder="Rationale, scope of action, authorization ticket..."
+                  value={playbookNotes}
+                  onChange={(e) => setPlaybookNotes(e.target.value)}
+                  className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant focus:outline-none focus:border-[#EF4444]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="dryRunCheckbox"
+                  checked={isDryRun}
+                  onChange={(e) => setIsDryRun(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-500 focus:ring-0 bg-surface-container-lowest border-outline-variant"
+                />
+                <label htmlFor="dryRunCheckbox" className="text-white text-xs font-semibold cursor-pointer">
+                  Dry-Run Preview Only (simulate and validate without mutations)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-outline-variant/40">
+              <button
+                type="button"
+                onClick={() => setIsPlaybookOpen(false)}
+                className="px-4 py-2 rounded-xl bg-surface-container text-white text-xs font-semibold hover:bg-surface-container-highest transition"
+              >
+                Close
+              </button>
+              <button
+                type="submit"
+                disabled={playbookSubmitting}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white text-xs font-semibold shadow-lg shadow-red-500/20 transition disabled:opacity-50"
+              >
+                {playbookSubmitting ? 'Processing...' : isDryRun ? 'Preview Dry Run' : 'Execute Remediation'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Update Status Modal */}
       {isUpdateModalOpen && (
@@ -299,34 +507,36 @@ export const SecurityOperationsView = () => {
               <button
                 type="button"
                 onClick={() => setIsUpdateModalOpen(false)}
-                className="text-[#94A3B8] hover:text-white transition"
+                className="text-[#94A3B8] hover:text-white"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[#94A3B8] mb-1 font-mono">New Status:</label>
+                <label className="block text-[#94A3B8] mb-1 font-mono">Status Transition:</label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant focus:outline-none focus:border-[#EF4444]"
                 >
-                  <option value="OPEN">OPEN</option>
-                  <option value="INVESTIGATING">INVESTIGATING</option>
-                  <option value="CONTAINED">CONTAINED</option>
-                  <option value="REMEDIATION">REMEDIATION</option>
-                  <option value="RESOLVED">RESOLVED</option>
-                  <option value="CLOSED">CLOSED</option>
+                  <option value="INVESTIGATING">INVESTIGATING — Active triage & root cause analysis</option>
+                  <option value="CONTAINED">CONTAINED — Blast radius mitigated / tokens revoked</option>
+                  <option value="REMEDIATION">REMEDIATION — Permanent credential rotation in progress</option>
+                  <option value="RESOLVED">RESOLVED — Verification completed & verified healthy</option>
+                  <option value="CLOSED">CLOSED — Post-mortem recorded & archived</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[#94A3B8] mb-1 font-mono">Resolution / Progress Summary:</label>
+                <label className="block text-[#94A3B8] mb-1 font-mono">
+                  Resolution Summary {newStatus === 'RESOLVED' || newStatus === 'CLOSED' ? '(Required)' : '(Optional)'}:
+                </label>
                 <textarea
                   rows={3}
-                  placeholder="Details of actions taken (e.g. revoked leases, rotated secret to v3)..."
+                  required={newStatus === 'RESOLVED' || newStatus === 'CLOSED'}
+                  placeholder="Summary of actions taken, root cause, confirmation of recovery..."
                   value={resolutionSummary}
                   onChange={(e) => setResolutionSummary(e.target.value)}
                   className="w-full bg-surface-container-lowest text-white text-xs rounded-xl px-3 py-2 border border-outline-variant focus:outline-none focus:border-[#EF4444]"
@@ -346,14 +556,14 @@ export const SecurityOperationsView = () => {
                 type="submit"
                 className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#EF4444]/80 text-white text-xs font-semibold shadow-lg shadow-[#EF4444]/20 transition"
               >
-                Save Status
+                Save Transition
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Create Incident Modal */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <form
@@ -365,15 +575,15 @@ export const SecurityOperationsView = () => {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="text-[#94A3B8] hover:text-white transition"
+                className="text-[#94A3B8] hover:text-white"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[#94A3B8] mb-1 font-mono">Incident Title:</label>
+                <label className="block text-[#94A3B8] mb-1 font-mono">Title:</label>
                 <input
                   type="text"
                   required

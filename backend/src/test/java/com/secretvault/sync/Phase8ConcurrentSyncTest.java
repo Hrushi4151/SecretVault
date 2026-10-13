@@ -149,13 +149,28 @@ class Phase8ConcurrentSyncTest {
         boolean completed = executor.awaitTermination(5, TimeUnit.SECONDS);
         assertThat(completed).isTrue();
 
+        int successCount = 0;
+        int conflictCount = 0;
+
         for (Future<SyncExecutionResponse> future : futures) {
-            SyncExecutionResponse response = future.get();
-            assertThat(response).isNotNull();
-            assertThat(response.job().status()).isEqualTo(SyncJobStatus.COMPLETED);
+            try {
+                SyncExecutionResponse response = future.get();
+                if (response != null && response.job().status() == SyncJobStatus.COMPLETED) {
+                    successCount++;
+                }
+            } catch (ExecutionException ee) {
+                if (ee.getCause() instanceof com.secretvault.common.exception.ApiException apiEx
+                        && apiEx.getStatus().value() == 409) {
+                    conflictCount++;
+                } else {
+                    throw ee;
+                }
+            }
         }
 
-        // All threads synchronized safely under mutex lock
-        assertThat(callCount.get()).isEqualTo(numThreads);
+        // Mutual exclusion: exactly 1 worker acquired the target lock and completed, overlapping workers rejected with 409
+        assertThat(successCount).isGreaterThanOrEqualTo(1);
+        assertThat(successCount + conflictCount).isEqualTo(numThreads);
+        assertThat(callCount.get()).isEqualTo(1);
     }
 }

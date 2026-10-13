@@ -71,10 +71,10 @@ vi.mock('../api/ai', () => ({
 describe('Phase 15: Frontend AI Intelligence Views', () => {
   it('renders AiCopilotView with active provider badge and quick prompts', async () => {
     render(<AiCopilotView />);
-    expect(screen.getByText(/AI Security Intelligence Copilot/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ollama · qwen3:8b/i)).toBeInTheDocument();
-    expect(screen.getByText(/Why did deployment fail\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Forecast posture decay/i)).toBeInTheDocument();
+    expect(screen.getByText(/SecretVault AI Copilot/i)).toBeInTheDocument();
+    await screen.findByText(/Ollama · qwen3:8b/i);
+    expect(screen.getByText(/Do I have new invitations\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/What changed today\?/i)).toBeInTheDocument();
   });
 
   it('renders AiRemediationWorkbenchView with blast radius summary and plan controls', async () => {

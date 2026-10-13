@@ -32,6 +32,15 @@ export const AccessReviewDetailsView = ({ workspaceId, campaignId, onBack }) => 
     }
   }, [workspaceId, campaignId]);
 
+  const normalizeList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val.content)) return val.content;
+    if (Array.isArray(val.data)) return val.data;
+    if (Array.isArray(val.data?.content)) return val.data.content;
+    return [];
+  };
+
   const loadDetails = async () => {
     try {
       setIsLoading(true);
@@ -40,10 +49,10 @@ export const AccessReviewDetailsView = ({ workspaceId, campaignId, onBack }) => 
         reviewsApi.getCampaign(workspaceId, campaignId),
         reviewsApi.listCampaignItems(workspaceId, campaignId)
       ]);
-      setCampaign(campRes.data?.data || campRes.data);
-      setItems(itemsRes.data?.data || itemsRes.data || []);
+      setCampaign(campRes?.data?.data || campRes?.data || campRes);
+      setItems(normalizeList(itemsRes));
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to load campaign details');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load campaign details');
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +86,7 @@ export const AccessReviewDetailsView = ({ workspaceId, campaignId, onBack }) => 
 
     try {
       const res = await reviewsApi.completeCampaign(workspaceId, campaignId);
-      setAttestationReport(res.data?.data || res.data);
+      setAttestationReport(res?.data?.data || res?.data || res);
       await loadDetails();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to finalize campaign');
@@ -87,7 +96,7 @@ export const AccessReviewDetailsView = ({ workspaceId, campaignId, onBack }) => 
   const loadAttestation = async () => {
     try {
       const res = await reviewsApi.getAttestation(workspaceId, campaignId);
-      setAttestationReport(res.data?.data || res.data);
+      setAttestationReport(res?.data?.data || res?.data || res);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to fetch attestation report');
     }

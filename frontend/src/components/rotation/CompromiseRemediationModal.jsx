@@ -26,7 +26,7 @@ export const CompromiseRemediationModal = ({
     secretApi
       .list(workspaceId, 'all', 'all', {})
       .then((res) => {
-        const list = res?.data?.content || res?.content || res?.data || [];
+        const list = Array.isArray(res) ? res : (res?.data?.content || res?.content || res?.data || []);
         setSecrets(Array.isArray(list) ? list : []);
         if (list.length > 0) setSelectedSecretId(list[0].id);
       })

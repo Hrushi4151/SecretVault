@@ -58,4 +58,12 @@ export const projectApi = {
       method: 'DELETE',
     });
   },
+
+  getProjects: async (workspaceId) => {
+    return apiClient.request(`/workspaces/${workspaceId}/projects`, {
+      method: 'GET',
+    });
+  },
 };
+
+export const projectsApi = projectApi;

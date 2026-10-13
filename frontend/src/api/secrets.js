@@ -6,11 +6,29 @@ export const secretApi = {
     if (params.search) queryParams.append('search', params.search);
     if (params.status) queryParams.append('status', params.status);
     const queryString = queryParams.toString();
+
+    // If projectId is 'all' or omitted, use the workspace-level secret aggregation endpoint
+    if (!projectId || projectId === 'all') {
+      return apiClient.request(`/workspaces/${workspaceId}/secrets${queryString ? `?${queryString}` : ''}`, {
+        method: 'GET',
+      });
+    }
+
     const endpoint = `/workspaces/${workspaceId}/projects/${projectId}/environments/${environmentId}/secrets${
       queryString ? `?${queryString}` : ''
     }`;
 
     return apiClient.request(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  listByWorkspace: async (workspaceId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.search) queryParams.append('search', params.search);
+    if (params.status) queryParams.append('status', params.status);
+    const queryString = queryParams.toString();
+    return apiClient.request(`/workspaces/${workspaceId}/secrets${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
     });
   },

@@ -65,11 +65,21 @@ public class WorkspaceService {
     @Transactional(readOnly = true)
     public List<WorkspaceResponse> getWorkspacesForUser(UUID userId) {
         List<WorkspaceMembership> memberships = membershipRepository.findByUserId(userId);
-        List<WorkspaceResponse> responses = new ArrayList<>();
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
 
+        List<UUID> workspaceIds = memberships.stream().map(WorkspaceMembership::getWorkspaceId).toList();
+        java.util.Map<UUID, Workspace> workspaceMap = workspaceRepository.findAllById(workspaceIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Workspace::getId, java.util.function.Function.identity()));
+
+        List<WorkspaceResponse> responses = new ArrayList<>(memberships.size());
         for (WorkspaceMembership membership : memberships) {
-            workspaceRepository.findById(membership.getWorkspaceId())
-                    .ifPresent(w -> responses.add(WorkspaceResponse.fromEntity(w, membership.getRole())));
+            Workspace w = workspaceMap.get(membership.getWorkspaceId());
+            if (w != null) {
+                responses.add(WorkspaceResponse.fromEntity(w, membership.getRole()));
+            }
         }
 
         return responses;

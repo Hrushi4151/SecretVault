@@ -2,6 +2,8 @@ package io.secretvault.sdk.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.secretvault.sdk.auth.CredentialsProvider;
 import io.secretvault.sdk.exception.AuthenticationException;
@@ -13,9 +15,12 @@ import io.secretvault.sdk.exception.SecretVaultException;
 import io.secretvault.sdk.exception.SecretVaultUnavailableException;
 import io.secretvault.sdk.exception.SecretVersionNotFoundException;
 import io.secretvault.sdk.exception.TimeoutException;
+import io.secretvault.sdk.model.PromotionPreviewResult;
+import io.secretvault.sdk.model.PromotionResult;
 import io.secretvault.sdk.model.SecretMetadata;
 import io.secretvault.sdk.model.SecretStatus;
 import io.secretvault.sdk.model.SecretValue;
+import io.secretvault.sdk.model.SecretVersion;
 import io.secretvault.sdk.observability.RedactionUtil;
 import io.secretvault.sdk.observability.SdkMetrics;
 import io.secretvault.sdk.resilience.CircuitBreaker;
@@ -133,6 +138,169 @@ public class SecretVaultHttpClient {
         );
     }
 
+    public SecretMetadata createSecret(UUID workspaceId, UUID projectId, UUID envId, String name, String value, String description) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets",
+                workspaceId, projectId, envId);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("name", name);
+        body.put("value", value);
+        if (description != null) {
+            body.put("description", description);
+        }
+        JsonNode node = executeWithRetry("POST", path, body.toString(), workspaceId, false);
+        return parseSecretMetadata(node, envId);
+    }
+
+    public SecretMetadata updateSecret(UUID workspaceId, UUID projectId, UUID envId, UUID secretId, String value, String description, String reason) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s",
+                workspaceId, projectId, envId, secretId);
+        ObjectNode body = objectMapper.createObjectNode();
+        if (value != null) {
+            body.put("value", value);
+        }
+        if (description != null) {
+            body.put("description", description);
+        }
+        if (reason != null) {
+            body.put("reason", reason);
+        }
+        JsonNode node = executeWithRetry("PATCH", path, body.toString(), workspaceId, false);
+        return parseSecretMetadata(node, envId);
+    }
+
+    public void deleteSecret(UUID workspaceId, UUID projectId, UUID envId, UUID secretId) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s",
+                workspaceId, projectId, envId, secretId);
+        executeWithRetry("DELETE", path, null, workspaceId, false);
+    }
+
+    public List<SecretVersion> listVersions(UUID workspaceId, UUID projectId, UUID envId, UUID secretId) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/versions",
+                workspaceId, projectId, envId, secretId);
+        JsonNode data = executeWithRetry("GET", path, null, workspaceId, false);
+        List<SecretVersion> versions = new ArrayList<>();
+        JsonNode array = data.has("content") ? data.path("content") : data;
+        if (array.isArray()) {
+            for (JsonNode n : array) {
+                versions.add(parseSecretVersion(n));
+            }
+        }
+        return versions;
+    }
+
+    public SecretVersion rollbackSecret(UUID workspaceId, UUID projectId, UUID envId, UUID secretId, int targetVersion, String reason) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/rollback",
+                workspaceId, projectId, envId, secretId);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("targetVersion", targetVersion);
+        if (reason != null) {
+            body.put("reason", reason);
+        }
+        JsonNode node = executeWithRetry("POST", path, body.toString(), workspaceId, false);
+        return parseSecretVersion(node);
+    }
+
+    public List<String> listTags(UUID workspaceId, UUID projectId, UUID envId, UUID secretId, int versionNumber) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/versions/%d/tags",
+                workspaceId, projectId, envId, secretId, versionNumber);
+        JsonNode data = executeWithRetry("GET", path, null, workspaceId, false);
+        List<String> tags = new ArrayList<>();
+        if (data.isArray()) {
+            for (JsonNode n : data) {
+                tags.add(n.path("name").asText());
+            }
+        }
+        return tags;
+    }
+
+    public void addTag(UUID workspaceId, UUID projectId, UUID envId, UUID secretId, int versionNumber, String tag) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/versions/%d/tags",
+                workspaceId, projectId, envId, secretId, versionNumber);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("name", tag);
+        executeWithRetry("POST", path, body.toString(), workspaceId, false);
+    }
+
+    public void removeTag(UUID workspaceId, UUID projectId, UUID envId, UUID secretId, int versionNumber, String tag) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/secrets/%s/versions/%d/tags/%s",
+                workspaceId, projectId, envId, secretId, versionNumber, tag);
+        executeWithRetry("DELETE", path, null, workspaceId, false);
+    }
+
+    public PromotionPreviewResult previewPromotion(UUID workspaceId, UUID projectId, UUID sourceEnvId, UUID targetEnvId, List<String> secretNames) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/promote/preview",
+                workspaceId, projectId, sourceEnvId);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("destinationEnvironmentId", targetEnvId.toString());
+        if (secretNames != null && !secretNames.isEmpty()) {
+            ArrayNode arr = body.putArray("secretNames");
+            for (String s : secretNames) arr.add(s);
+        }
+        JsonNode node = executeWithRetry("POST", path, body.toString(), workspaceId, false);
+        List<PromotionPreviewResult.CandidateItem> items = new ArrayList<>();
+        if (node.path("items").isArray()) {
+            for (JsonNode itemNode : node.path("items")) {
+                items.add(new PromotionPreviewResult.CandidateItem(
+                        itemNode.path("secretName").asText(),
+                        itemNode.path("status").asText(),
+                        itemNode.hasNonNull("sourceVersion") ? itemNode.path("sourceVersion").asInt() : null,
+                        itemNode.hasNonNull("destinationVersion") ? itemNode.path("destinationVersion").asInt() : null,
+                        itemNode.path("message").asText(null)
+                ));
+            }
+        }
+        return new PromotionPreviewResult(
+                UUID.fromString(node.path("sourceEnvironmentId").asText(sourceEnvId.toString())),
+                node.path("sourceEnvironmentName").asText(null),
+                UUID.fromString(node.path("destinationEnvironmentId").asText(targetEnvId.toString())),
+                node.path("destinationEnvironmentName").asText(null),
+                node.path("isDestinationProtected").asBoolean(false),
+                node.path("totalCandidates").asInt(),
+                node.path("addedCount").asInt(),
+                node.path("modifiedCount").asInt(),
+                node.path("unchangedCount").asInt(),
+                node.path("conflictCount").asInt(),
+                items
+        );
+    }
+
+    public PromotionResult executePromotion(UUID workspaceId, UUID projectId, UUID sourceEnvId, UUID targetEnvId, List<String> secretNames, String reason) {
+        String path = String.format("/api/v1/workspaces/%s/projects/%s/environments/%s/promote",
+                workspaceId, projectId, sourceEnvId);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("destinationEnvironmentId", targetEnvId.toString());
+        if (secretNames != null && !secretNames.isEmpty()) {
+            ArrayNode arr = body.putArray("secretNames");
+            for (String s : secretNames) arr.add(s);
+        }
+        if (reason != null) {
+            body.put("reason", reason);
+        }
+        JsonNode node = executeWithRetry("POST", path, body.toString(), workspaceId, false);
+        List<PromotionResult.PromotedItem> items = new ArrayList<>();
+        if (node.path("promotedSecrets").isArray()) {
+            for (JsonNode itemNode : node.path("promotedSecrets")) {
+                items.add(new PromotionResult.PromotedItem(
+                        itemNode.path("secretName").asText(),
+                        itemNode.hasNonNull("destinationSecretId") ? UUID.fromString(itemNode.path("destinationSecretId").asText()) : null,
+                        itemNode.hasNonNull("newVersionNumber") ? itemNode.path("newVersionNumber").asInt() : null,
+                        itemNode.path("action").asText(),
+                        itemNode.path("status").asText()
+                ));
+            }
+        }
+        return new PromotionResult(
+                UUID.fromString(node.path("sourceEnvironmentId").asText(sourceEnvId.toString())),
+                UUID.fromString(node.path("destinationEnvironmentId").asText(targetEnvId.toString())),
+                node.path("totalRequested").asInt(),
+                node.path("promotedCount").asInt(),
+                node.path("skippedUnchangedCount").asInt(),
+                node.path("failedCount").asInt(),
+                items,
+                parseInstant(node.path("completedAt"))
+        );
+    }
+
     public boolean ping() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -220,7 +388,8 @@ public class SecretVaultHttpClient {
             circuitBreaker.checkPermission();
         }
 
-        int maxAttempts = isReveal ? 2 : retryPolicy.getMaxAttempts();
+        boolean isIdempotent = "GET".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method);
+        int maxAttempts = isReveal ? 2 : (isIdempotent ? retryPolicy.getMaxAttempts() : 1);
         CredentialsProvider creds = config.getCredentialsProvider();
         boolean refreshedAuth = false;
 
@@ -247,8 +416,18 @@ public class SecretVaultHttpClient {
                 if ("POST".equalsIgnoreCase(method)) {
                     reqBuilder.header("Content-Type", "application/json");
                     reqBuilder.POST(bodyJson != null ? HttpRequest.BodyPublishers.ofString(bodyJson) : HttpRequest.BodyPublishers.noBody());
+                } else if ("PUT".equalsIgnoreCase(method)) {
+                    reqBuilder.header("Content-Type", "application/json");
+                    reqBuilder.PUT(bodyJson != null ? HttpRequest.BodyPublishers.ofString(bodyJson) : HttpRequest.BodyPublishers.noBody());
+                } else if ("PATCH".equalsIgnoreCase(method)) {
+                    reqBuilder.header("Content-Type", "application/json");
+                    reqBuilder.method("PATCH", bodyJson != null ? HttpRequest.BodyPublishers.ofString(bodyJson) : HttpRequest.BodyPublishers.noBody());
+                } else if ("DELETE".equalsIgnoreCase(method)) {
+                    reqBuilder.DELETE();
                 } else if ("GET".equalsIgnoreCase(method)) {
                     reqBuilder.GET();
+                } else {
+                    reqBuilder.method(method.toUpperCase(), bodyJson != null ? HttpRequest.BodyPublishers.ofString(bodyJson) : HttpRequest.BodyPublishers.noBody());
                 }
 
                 HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
@@ -258,8 +437,11 @@ public class SecretVaultHttpClient {
                 if (status >= 200 && status < 300) {
                     circuitBreaker.recordSuccess();
                     metrics.recordRequest(method + " " + path, true, duration);
+                    if (response.body() == null || response.body().trim().isEmpty()) {
+                        return objectMapper.createObjectNode();
+                    }
                     JsonNode root = objectMapper.readTree(response.body());
-                    return root.path("data");
+                    return root.has("data") ? root.path("data") : root;
                 }
 
                 // Handle 401 with one-time re-authentication
@@ -283,6 +465,13 @@ public class SecretVaultHttpClient {
                     throw new RateLimitException("Rate limit exceeded from SecretVault API", retryAfter, requestId);
                 }
 
+                // 400 Bad Request / Validation failure
+                if (status == 400) {
+                    metrics.recordRequest(method + " " + path, false, duration);
+                    String errorMsg = extractErrorMessage(response.body(), "Invalid request parameters or payload validation failure");
+                    throw new SecretVaultException(errorMsg, ErrorCode.SV_INVALID_REQUEST, 400, requestId);
+                }
+
                 // 403 Forbidden
                 if (status == 403) {
                     metrics.recordRequest(method + " " + path, false, duration);
@@ -295,14 +484,21 @@ public class SecretVaultHttpClient {
                     throw new SecretNotFoundException(path, requestId);
                 }
 
+                // 409 Conflict
+                if (status == 409) {
+                    metrics.recordRequest(method + " " + path, false, duration);
+                    String errorMsg = extractErrorMessage(response.body(), "Resource conflict or concurrent modification");
+                    throw new SecretVaultException(errorMsg, ErrorCode.SV_CONFLICT, 409, requestId);
+                }
+
                 // 401 Invalid Auth
                 if (status == 401) {
                     metrics.recordRequest(method + " " + path, false, duration);
                     throw new AuthenticationException("Authentication token invalid or revoked", ErrorCode.SV_AUTH_INVALID, 401, requestId);
                 }
 
-                // 5xx Server Errors -> retryable
-                if (status >= 500 && attempt < maxAttempts) {
+                // 5xx Server Errors -> retryable ONLY if idempotent
+                if (status >= 500 && attempt < maxAttempts && isIdempotent) {
                     log.warn("Server error HTTP {} from {}. Retrying attempt {}/{}", status, path, attempt, maxAttempts);
                     Thread.sleep(retryPolicy.computeBackoff(attempt, null).toMillis());
                     continue;
@@ -317,7 +513,7 @@ public class SecretVaultHttpClient {
             } catch (HttpTimeoutException e) {
                 circuitBreaker.recordFailure();
                 metrics.recordRequest(method + " " + path, false, System.currentTimeMillis() - startTime);
-                if (attempt < maxAttempts) {
+                if (attempt < maxAttempts && isIdempotent) {
                     try { Thread.sleep(retryPolicy.computeBackoff(attempt, null).toMillis()); } catch (InterruptedException ignored) {}
                     continue;
                 }
@@ -328,7 +524,7 @@ public class SecretVaultHttpClient {
             } catch (IOException e) {
                 circuitBreaker.recordFailure();
                 metrics.recordRequest(method + " " + path, false, System.currentTimeMillis() - startTime);
-                if (attempt < maxAttempts) {
+                if (attempt < maxAttempts && isIdempotent) {
                     try { Thread.sleep(retryPolicy.computeBackoff(attempt, null).toMillis()); } catch (InterruptedException ignored) {}
                     continue;
                 }
@@ -337,6 +533,64 @@ public class SecretVaultHttpClient {
         }
 
         throw new SecretVaultUnavailableException("SecretVault unavailable after " + maxAttempts + " attempts");
+    }
+
+    private SecretMetadata parseSecretMetadata(JsonNode node, UUID envId) {
+        return new SecretMetadata(
+                UUID.fromString(node.path("id").asText()),
+                node.path("name").asText(),
+                node.path("currentVersion").asInt(1),
+                SecretStatus.valueOf(node.path("status").asText(SecretStatus.ACTIVE.name())),
+                node.hasNonNull("description") ? node.path("description").asText() : null,
+                UUID.fromString(node.path("environmentId").asText(envId != null ? envId.toString() : UUID.randomUUID().toString())),
+                parseInstant(node.path("createdAt")),
+                parseInstant(node.path("updatedAt")),
+                parseInstant(node.path("expiresAt"))
+        );
+    }
+
+    private SecretVersion parseSecretVersion(JsonNode node) {
+        List<String> tags = new ArrayList<>();
+        if (node.path("tags").isArray()) {
+            for (JsonNode t : node.path("tags")) {
+                tags.add(t.asText());
+            }
+        }
+        return new SecretVersion(
+                UUID.fromString(node.path("id").asText()),
+                UUID.fromString(node.path("secretId").asText()),
+                node.path("versionNumber").asInt(1),
+                SecretStatus.ACTIVE,
+                parseInstant(node.path("createdAt")),
+                parseInstant(node.path("createdAt")),
+                null,
+                node.hasNonNull("reason") ? node.path("reason").asText() : null,
+                tags
+        );
+    }
+
+    private Instant parseInstant(JsonNode node) {
+        if (node == null || node.isNull() || node.asText().isEmpty()) return null;
+        try {
+            return Instant.parse(node.asText());
+        } catch (Exception e) {
+            return Instant.now();
+        }
+    }
+
+    private String extractErrorMessage(String responseBody, String defaultMsg) {
+        if (responseBody != null && !responseBody.trim().isEmpty()) {
+            try {
+                JsonNode root = objectMapper.readTree(responseBody);
+                if (root.has("message") && !root.get("message").asText().isEmpty()) {
+                    return root.get("message").asText();
+                }
+                if (root.has("error") && !root.get("error").asText().isEmpty()) {
+                    return root.get("error").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        return defaultMsg;
     }
 
     private String getUserAgent() {

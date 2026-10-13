@@ -108,9 +108,9 @@ export const RotationImpactModal = ({
               <h4 className="text-xs font-headline font-semibold text-white">Dependent Consumers</h4>
               {impact.consumers && impact.consumers.length > 0 ? (
                 <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                  {impact.consumers.map((c) => (
+                  {impact.consumers.map((c, idx) => (
                     <div
-                      key={c.consumerId}
+                      key={c.consumerId || c.id || idx}
                       className="p-3 rounded-xl bg-[#26000B] border border-[#FFB4C8]/10 flex items-center justify-between font-mono text-xs"
                     >
                       <div className="flex items-center gap-2.5">

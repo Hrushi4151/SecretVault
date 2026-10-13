@@ -109,4 +109,66 @@ class ConditionAstEvaluatorTest {
 
         assertThat(evaluator.evaluateSingle(notCond, testEvent)).isTrue();
     }
+
+    @Test
+    @DisplayName("Empty or malformed OR condition evaluates to false (boolean identity)")
+    void testEmptyOrReturnsFalse() {
+        AutomationCondition emptyOr = new AutomationCondition(null, ConditionOperator.OR, null, List.of());
+        assertThat(evaluator.evaluateSingle(emptyOr, testEvent)).isFalse();
+
+        AutomationCondition nullOr = new AutomationCondition(null, ConditionOperator.OR, null, null);
+        assertThat(evaluator.evaluateSingle(nullOr, testEvent)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Empty or malformed NOT condition evaluates to false")
+    void testEmptyNotReturnsFalse() {
+        AutomationCondition emptyNot = new AutomationCondition(null, ConditionOperator.NOT, null, List.of());
+        assertThat(evaluator.evaluateSingle(emptyNot, testEvent)).isFalse();
+
+        AutomationCondition nullNot = new AutomationCondition(null, ConditionOperator.NOT, null, null);
+        assertThat(evaluator.evaluateSingle(nullNot, testEvent)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Null handling is strictly symmetric and safe")
+    void testNullHandlingSymmetry() {
+        // Event has no 'environmentId' so actual value is null
+        AutomationCondition nullMatchesNull = new AutomationCondition("environmentId", ConditionOperator.EQUALS, null, null);
+        assertThat(evaluator.evaluateSingle(nullMatchesNull, testEvent)).isTrue();
+
+        AutomationCondition nullNotEqualsNonNull = new AutomationCondition("environmentId", ConditionOperator.NOT_EQUALS, "staging", null);
+        assertThat(evaluator.evaluateSingle(nullNotEqualsNonNull, testEvent)).isTrue();
+
+        AutomationCondition nullEqualsNonNull = new AutomationCondition("environmentId", ConditionOperator.EQUALS, "production", null);
+        assertThat(evaluator.evaluateSingle(nullEqualsNonNull, testEvent)).isFalse();
+
+        // Non-null actual ('source' is 'security-monitor') compared with null expected
+        AutomationCondition nonNullEqualsNull = new AutomationCondition("source", ConditionOperator.EQUALS, null, null);
+        assertThat(evaluator.evaluateSingle(nonNullEqualsNull, testEvent)).isFalse();
+
+        AutomationCondition nonNullNotEqualsNull = new AutomationCondition("source", ConditionOperator.NOT_EQUALS, null, null);
+        assertThat(evaluator.evaluateSingle(nonNullNotEqualsNull, testEvent)).isTrue();
+    }
+
+    @Test
+    @DisplayName("Non-numeric metadata gracefully returns false without exception")
+    void testMalformedNumericGracefulFallback() {
+        AutomationCondition cond = new AutomationCondition("metadata.environment", ConditionOperator.GREATER_THAN, 100, null);
+        assertThat(evaluator.evaluateSingle(cond, testEvent)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Identical inputs deterministically evaluate to identical decisions across multiple runs")
+    void testDeterministicEvaluationAcrossIdenticalRuns() {
+        AutomationCondition cond = AutomationCondition.and(List.of(
+                new AutomationCondition("eventType", ConditionOperator.EQUALS, "SECRET_COMPROMISED", null),
+                new AutomationCondition("metadata.rotationAgeDays", ConditionOperator.GREATER_THAN_OR_EQUAL, 90, null)
+        ));
+
+        boolean first = evaluator.evaluateSingle(cond, testEvent);
+        for (int i = 0; i < 50; i++) {
+            assertThat(evaluator.evaluateSingle(cond, testEvent)).isEqualTo(first);
+        }
+    }
 }

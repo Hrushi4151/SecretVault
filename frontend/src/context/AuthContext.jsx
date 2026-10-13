@@ -155,6 +155,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const [justRegistered, setJustRegistered] = useState(false);
+
+  const verifyRegistrationOtp = async (data) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.verifyRegistrationOtp(data);
+      apiClient.setSession({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        activeWorkspaceId: response.activeWorkspace?.id,
+      });
+
+      setUser(response.user);
+      if (response.activeWorkspace) {
+        setActiveWorkspace(response.activeWorkspace);
+      }
+
+      setJustRegistered(true);
+      await refreshWorkspaces();
+      return response;
+    } catch (err) {
+      const errMsg = err.payload?.message || err.message || 'OTP verification failed. Please check the code.';
+      setError(errMsg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async (data) => {
     setIsLoading(true);
     setError(null);
@@ -171,6 +201,7 @@ export const AuthProvider = ({ children }) => {
         setActiveWorkspace(response.activeWorkspace);
       }
 
+      setJustRegistered(true);
       await refreshWorkspaces();
     } catch (err) {
       const errMsg = err.payload?.message || err.message || 'Registration failed. Please review the inputs.';
@@ -228,10 +259,13 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         error,
+        justRegistered,
+        setJustRegistered,
         login,
         completeMfaTotpLogin,
         completeMfaRecoveryLogin,
         register,
+        verifyRegistrationOtp,
         logout,
         switchWorkspace,
         createWorkspace,

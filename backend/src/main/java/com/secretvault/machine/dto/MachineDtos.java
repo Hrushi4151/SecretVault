@@ -125,4 +125,17 @@ public class MachineDtos {
             String userAgent,
             boolean active
     ) {}
+
+    public record GenerateMachineTokenRequest(
+            Long ttlSeconds,
+            String description
+    ) {}
+
+    public record GenerateMachineTokenResponse(
+            String token,
+            String tokenPrefix,
+            Instant expiresAt,
+            long expiresInSeconds,
+            MachineIdentityResponse machine
+    ) {}
 }

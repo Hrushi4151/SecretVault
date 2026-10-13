@@ -17,19 +17,33 @@ import { AutomationCenterView } from './components/automation/AutomationCenterVi
 import { WebhookCenterView } from './components/webhook/WebhookCenterView';
 import { SecurityOperationsView } from './components/incident/SecurityOperationsView';
 import { RepositorySecurityView } from './components/repository/RepositorySecurityView';
+import { SecurityOverviewView } from './components/security/SecurityOverviewView';
+import { RiskCenterView } from './components/risk/RiskCenterView';
+import { AuditLogsView } from './components/audit/AuditLogsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AiCopilotView } from './components/ai/AiCopilotView';
 import { AiRemediationWorkbenchView } from './components/ai/AiRemediationWorkbenchView';
+import { MfaSuggestionModal } from './components/auth/MfaSuggestionModal';
+import { MfaEnrollmentModal } from './components/settings/mfa/MfaEnrollmentModal';
 import { Shield, Loader2 } from 'lucide-react';
 
 const MainRouter = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user, justRegistered, setJustRegistered } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'mfa'
   const [mfaChallengeId, setMfaChallengeId] = useState(null);
   const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'secrets' | 'rotation' | 'access' | 'integrations' | 'sync-center' | 'settings'
   const [targetProjectId, setTargetProjectId] = useState(null);
   const [targetEnvironmentId, setTargetEnvironmentId] = useState(null);
   const [settingsSection, setSettingsSection] = useState('workspace'); // 'workspace' | 'project' | 'profile'
+  const [showMfaSuggestion, setShowMfaSuggestion] = useState(false);
+  const [showMfaEnrollment, setShowMfaEnrollment] = useState(false);
+
+  React.useEffect(() => {
+    if (justRegistered) {
+      setShowMfaSuggestion(true);
+      setJustRegistered(false);
+    }
+  }, [justRegistered, setJustRegistered]);
 
   const handleNavigateToSecrets = (projectId, environmentId = null) => {
     setTargetProjectId(projectId);
@@ -41,6 +55,11 @@ const MainRouter = () => {
     setTargetProjectId(projectId);
     setSettingsSection('project');
     setCurrentTab('settings');
+  };
+
+  const handleNavigateToIntegrations = (projectId = null) => {
+    setTargetProjectId(projectId);
+    setCurrentTab('integrations');
   };
 
   const handleNavigateToWorkspaceSettings = () => {
@@ -93,63 +112,91 @@ const MainRouter = () => {
   }
 
   return (
-    <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
-      {currentTab === 'projects' ? (
-        <ProjectsView
-          onNavigateToSecrets={handleNavigateToSecrets}
-          onNavigateToProjectSettings={handleNavigateToProjectSettings}
-        />
-      ) : currentTab === 'secrets' ? (
-        <SecretsView
-          initialProjectId={targetProjectId}
-          initialEnvironmentId={targetEnvironmentId}
-        />
-      ) : currentTab === 'rotation' ? (
-        <RotationCenterView />
-      ) : currentTab === 'access' ? (
-        <AccessControlCenterView />
-      ) : currentTab === 'machine-identities' ? (
-        <MachineIdentitiesView />
-      ) : currentTab === 'integrations' ? (
-        <IntegrationsView />
-      ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
-        <SyncCenterView />
-      ) : currentTab === 'events' ? (
-        <EventCenterView />
-      ) : currentTab === 'automation' ? (
-        <AutomationCenterView />
-      ) : currentTab === 'webhooks' ? (
-        <WebhookCenterView />
-      ) : currentTab === 'incidents' ? (
-        <SecurityOperationsView />
-      ) : currentTab === 'repo-security' ? (
-        <RepositorySecurityView />
-      ) : currentTab === 'ai-assistant' ? (
-        <AiCopilotView
-          onNavigateToWorkbench={() => setCurrentTab('ai-workbench')}
-          onNavigateToTab={(tab) => setCurrentTab(tab)}
-          onNavigateToSecrets={handleNavigateToSecrets}
-          onNavigateToProjects={() => setCurrentTab('projects')}
-        />
-      ) : currentTab === 'ai-workbench' ? (
-        <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
-      ) : currentTab === 'settings' ? (
-        <SettingsView
-          initialSection={settingsSection}
-          initialProjectId={targetProjectId}
-          onNavigateToSecrets={handleNavigateToSecrets}
-          onNavigateToAccess={() => setCurrentTab('access')}
-          onNavigateToProjects={() => setCurrentTab('projects')}
-        />
-      ) : (
-        <WorkspaceOverview
-          onNavigateToProjects={() => setCurrentTab('projects')}
-          onNavigateToSecrets={handleNavigateToSecrets}
-          onNavigateToAccess={() => setCurrentTab('access')}
-          onNavigateToWorkspaceSettings={handleNavigateToWorkspaceSettings}
-        />
-      )}
-    </AppShell>
+    <>
+      <AppShell activeTab={currentTab} onSelectTab={setCurrentTab}>
+        {currentTab === 'projects' ? (
+          <ProjectsView
+            onNavigateToSecrets={handleNavigateToSecrets}
+            onNavigateToProjectSettings={handleNavigateToProjectSettings}
+            onNavigateToIntegrations={handleNavigateToIntegrations}
+          />
+        ) : currentTab === 'secrets' ? (
+          <SecretsView
+            initialProjectId={targetProjectId}
+            initialEnvironmentId={targetEnvironmentId}
+          />
+        ) : currentTab === 'rotation' ? (
+          <RotationCenterView />
+        ) : currentTab === 'access' ? (
+          <AccessControlCenterView />
+        ) : currentTab === 'machine-identities' ? (
+          <MachineIdentitiesView />
+        ) : currentTab === 'integrations' ? (
+          <IntegrationsView initialProjectId={targetProjectId} />
+        ) : currentTab === 'sync-center' || currentTab === 'drift' ? (
+          <SyncCenterView />
+        ) : currentTab === 'events' ? (
+          <EventCenterView />
+        ) : currentTab === 'automation' ? (
+          <AutomationCenterView />
+        ) : currentTab === 'webhooks' ? (
+          <WebhookCenterView />
+        ) : currentTab === 'incidents' ? (
+          <SecurityOperationsView />
+        ) : currentTab === 'repo-security' ? (
+          <RepositorySecurityView />
+        ) : currentTab === 'security-overview' ? (
+          <SecurityOverviewView />
+        ) : currentTab === 'risk-center' ? (
+          <RiskCenterView
+            onNavigateToAudit={() => setCurrentTab('audit-logs')}
+            onNavigateToSecurityOverview={() => setCurrentTab('security-overview')}
+          />
+        ) : currentTab === 'audit-logs' ? (
+          <AuditLogsView onNavigateToRiskCenter={() => setCurrentTab('risk-center')} />
+        ) : currentTab === 'ai-assistant' ? (
+          <AiCopilotView
+            onNavigateToWorkbench={() => setCurrentTab('ai-workbench')}
+            onNavigateToTab={(tab) => setCurrentTab(tab)}
+            onNavigateToSecrets={handleNavigateToSecrets}
+            onNavigateToProjects={() => setCurrentTab('projects')}
+          />
+        ) : currentTab === 'ai-workbench' ? (
+          <AiRemediationWorkbenchView onNavigateToCopilot={() => setCurrentTab('ai-assistant')} />
+        ) : currentTab === 'settings' ? (
+          <SettingsView
+            initialSection={settingsSection}
+            initialProjectId={targetProjectId}
+            onNavigateToSecrets={handleNavigateToSecrets}
+            onNavigateToAccess={() => setCurrentTab('access')}
+            onNavigateToProjects={() => setCurrentTab('projects')}
+          />
+        ) : (
+          <WorkspaceOverview
+            onNavigateToProjects={() => setCurrentTab('projects')}
+            onNavigateToSecrets={handleNavigateToSecrets}
+            onNavigateToAccess={() => setCurrentTab('access')}
+            onNavigateToWorkspaceSettings={handleNavigateToWorkspaceSettings}
+          />
+        )}
+      </AppShell>
+
+      <MfaSuggestionModal
+        isOpen={showMfaSuggestion}
+        onEnableMfa={() => {
+          setShowMfaSuggestion(false);
+          setShowMfaEnrollment(true);
+        }}
+        onDismiss={() => setShowMfaSuggestion(false)}
+      />
+
+      <MfaEnrollmentModal
+        isOpen={showMfaEnrollment}
+        userEmail={user?.email}
+        onClose={() => setShowMfaEnrollment(false)}
+        onSuccess={() => setShowMfaEnrollment(false)}
+      />
+    </>
   );
 };
 

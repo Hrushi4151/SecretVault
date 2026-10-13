@@ -132,9 +132,29 @@ public class AutomationEngine {
         }
 
         long start = System.currentTimeMillis();
+        int depth = extractExecutionDepth(event);
 
-        // 3. Evaluate AST Conditions
-        List<AutomationCondition> conditions = parseConditions(policy.getConditionsJson());
+        // Anti-loop tripwire: check recursion depth limit and per-policy frequency budget
+        if (loopDetector.isLoopOrExceededBudget(policy, event, depth)) {
+            log.warn("CRITICAL TRIPWIRE: Policy [{}] exceeded recursion depth or rate budget for event [{}]. Aborting execution.",
+                    policy.getId(), event.eventId());
+            recordExecution(policy, event, AutomationExecutionStatus.LOOP_ABORTED, policy.isDryRun(),
+                    "Execution aborted by anti-loop tripwire (depth or rate limit exceeded)",
+                    Collections.emptyList(), "Loop or rate limit budget exceeded", System.currentTimeMillis() - start, depth);
+            return;
+        }
+
+        // 3. Evaluate AST Conditions (fail-closed if malformed JSON)
+        List<AutomationCondition> conditions;
+        try {
+            conditions = parseConditions(policy.getConditionsJson());
+        } catch (Exception e) {
+            log.error("Failed to parse conditions for policy {}: {}", policy.getId(), e.getMessage());
+            recordExecution(policy, event, AutomationExecutionStatus.FAILED, policy.isDryRun(),
+                    "Malformed policy conditions JSON", Collections.emptyList(), e.getMessage(), System.currentTimeMillis() - start, depth);
+            return;
+        }
+
         boolean matched = true;
         for (AutomationCondition cond : conditions) {
             if (!conditionEvaluator.evaluate(cond, event)) {
@@ -151,14 +171,14 @@ public class AutomationEngine {
 
         // 4. Handle Dry Run
         if (policy.isDryRun()) {
-            recordExecution(policy, event, AutomationExecutionStatus.COMPLETED, true, "Dry-run evaluated true for " + actions.size() + " actions", actions, null, System.currentTimeMillis() - start);
+            recordExecution(policy, event, AutomationExecutionStatus.COMPLETED, true, "Dry-run evaluated true for " + actions.size() + " actions", actions, null, System.currentTimeMillis() - start, depth);
             return;
         }
 
         // 5. Handle Four-Eyes Approval Workflow if required
         if (policy.isApprovalRequired() && hasSensitiveActions(actions)) {
-            AutomationExecution exec = recordExecution(policy, event, AutomationExecutionStatus.AWAITING_APPROVAL, false, "Awaiting approval for sensitive actions", actions, null, System.currentTimeMillis() - start);
-            createApprovals(policy, exec, actions);
+            AutomationExecution exec = recordExecution(policy, event, AutomationExecutionStatus.AWAITING_APPROVAL, false, "Awaiting approval for sensitive actions", actions, null, System.currentTimeMillis() - start, depth);
+            createApprovals(policy, exec, actions, event);
             return;
         }
 
@@ -171,7 +191,7 @@ public class AutomationEngine {
             }
 
             long duration = System.currentTimeMillis() - start;
-            recordExecution(policy, event, AutomationExecutionStatus.COMPLETED, false, "Successfully executed actions: " + executed, actions, null, duration);
+            recordExecution(policy, event, AutomationExecutionStatus.COMPLETED, false, "Successfully executed actions: " + executed, actions, null, duration, depth);
 
             auditService.recordAudit(
                     null,
@@ -188,7 +208,7 @@ public class AutomationEngine {
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
-            recordExecution(policy, event, AutomationExecutionStatus.FAILED, false, "Execution failed: " + e.getMessage(), actions, e.getMessage(), duration);
+            recordExecution(policy, event, AutomationExecutionStatus.FAILED, false, "Execution failed: " + e.getMessage(), actions, e.getMessage(), duration, depth);
         }
     }
 
@@ -327,7 +347,24 @@ public class AutomationEngine {
         return false;
     }
 
-    private void createApprovals(AutomationPolicy policy, AutomationExecution exec, List<AutomationAction> actions) {
+    private int extractExecutionDepth(DomainEvent event) {
+        if (event == null || event.metadata() == null) return 0;
+        Object depthObj = event.metadata().get("executionDepth");
+        if (depthObj == null) {
+            depthObj = event.metadata().get("depth");
+        }
+        if (depthObj == null) return 0;
+        try {
+            return Integer.parseInt(String.valueOf(depthObj));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private void createApprovals(AutomationPolicy policy, AutomationExecution exec, List<AutomationAction> actions, DomainEvent event) {
+        String requester = policy.getCreatedBy() != null ? policy.getCreatedBy().toString()
+                : (event != null && event.actorId() != null ? event.actorId() : "SYSTEM_AUTOMATION");
+
         for (AutomationAction action : actions) {
             AutomationApproval appr = new AutomationApproval();
             appr.setWorkspaceId(policy.getWorkspaceId());
@@ -340,7 +377,7 @@ public class AutomationEngine {
                 appr.setActionPayloadJson("{}");
             }
             appr.setStatus(AutomationApprovalStatus.PENDING);
-            appr.setRequestedBy("SYSTEM_AUTOMATION");
+            appr.setRequestedBy(requester);
             appr.setExpiresAt(Instant.now().plus(Duration.ofHours(24)));
             approvalRepository.save(appr);
         }
@@ -354,7 +391,8 @@ public class AutomationEngine {
             String evalResult,
             List<AutomationAction> actions,
             String error,
-            long durationMs
+            long durationMs,
+            int depth
     ) {
         AutomationExecution exec = new AutomationExecution();
         exec.setWorkspaceId(policy.getWorkspaceId());
@@ -371,6 +409,7 @@ public class AutomationEngine {
             exec.setActionsExecutedJson("[]");
         }
         exec.setErrorMessage(error);
+        exec.setExecutionDepth(depth);
         exec.setDurationMs(durationMs);
         exec.setCausationId(event.causationId());
         exec.setCorrelationId(event.correlationId());
@@ -378,6 +417,7 @@ public class AutomationEngine {
     }
 
     private void recordLoopAborted(DomainEvent event) {
+        int depth = extractExecutionDepth(event);
         AutomationExecution exec = new AutomationExecution();
         exec.setWorkspaceId(event.workspaceId());
         exec.setPolicyId(null);
@@ -386,6 +426,7 @@ public class AutomationEngine {
         exec.setTriggerEventType(event.eventType().name());
         exec.setStatus(AutomationExecutionStatus.LOOP_ABORTED);
         exec.setErrorMessage("Automation loop detected; execution stopped safely.");
+        exec.setExecutionDepth(depth);
         exec.setCausationId(event.causationId());
         exec.setCorrelationId(event.correlationId());
         executionRepository.save(exec);
@@ -407,7 +448,7 @@ public class AutomationEngine {
             return objectMapper.readValue(json, new TypeReference<List<AutomationCondition>>() {});
         } catch (Exception e) {
             log.error("Failed to parse conditions JSON: {}", json, e);
-            return Collections.emptyList();
+            throw new IllegalArgumentException("Malformed conditions JSON: " + e.getMessage(), e);
         }
     }
 

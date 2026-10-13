@@ -35,30 +35,135 @@ public class GitHubRepositoryWebhookController {
     private final RepositoryScanService scanService;
     private final RepositoryCommitSyncService syncService;
     private final ObjectMapper objectMapper;
+    private org.springframework.core.env.Environment env;
+
+    // Delivery ID deduplication cache (bounded to 5,000 entries - in-memory optimization only)
+    private final Set<String> processedDeliveries = Collections.synchronizedSet(
+            Collections.newSetFromMap(new LinkedHashMap<>() {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+                    return size() > 5000;
+                }
+            })
+    );
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public GitHubRepositoryWebhookController(
+            RepositoryEntityRepository repositoryRepo,
+            RepositoryScanService scanService,
+            RepositoryCommitSyncService syncService,
+            ObjectMapper objectMapper,
+            org.springframework.core.env.Environment env) {
+        this.repositoryRepo = repositoryRepo;
+        this.scanService = scanService;
+        this.syncService = syncService;
+        this.objectMapper = objectMapper;
+        this.env = env;
+    }
 
     public GitHubRepositoryWebhookController(
             RepositoryEntityRepository repositoryRepo,
             RepositoryScanService scanService,
             RepositoryCommitSyncService syncService,
             ObjectMapper objectMapper) {
-        this.repositoryRepo = repositoryRepo;
-        this.scanService = scanService;
-        this.syncService = syncService;
-        this.objectMapper = objectMapper;
+        this(repositoryRepo, scanService, syncService, objectMapper, null);
+    }
+
+    public void setEnvironment(org.springframework.core.env.Environment env) {
+        this.env = env;
+    }
+
+    private boolean isProductionEnvironment() {
+        if (env != null && (env.acceptsProfiles(org.springframework.core.env.Profiles.of("prod", "production")))) {
+            return true;
+        }
+        String appEnv = System.getenv("APP_ENV");
+        if (appEnv != null && (appEnv.equalsIgnoreCase("prod") || appEnv.equalsIgnoreCase("production"))) {
+            return true;
+        }
+        String springProfiles = System.getenv("SPRING_PROFILES_ACTIVE");
+        return springProfiles != null && (springProfiles.contains("prod") || springProfiles.contains("production"));
+    }
+
+    public ResponseEntity<Map<String, Object>> handleGitHubWebhook(
+            String gitHubEvent,
+            String signature,
+            String payload
+    ) {
+        return handleGitHubWebhook(gitHubEvent, null, signature, payload);
     }
 
     /**
      * Primary GitHub Webhook Receiver:
-     * Receives push/commit events from GitHub and triggers an immediate scan on the matched repository.
+     * Receives push/commit events from GitHub, validates signature and delivery, and triggers an asynchronous scan.
      */
     @PostMapping(value = "/api/v1/repositories/webhooks/github", consumes = "application/json")
     @Operation(summary = "Receive GitHub push and commit webhooks to trigger immediate scans")
     public ResponseEntity<Map<String, Object>> handleGitHubWebhook(
             @RequestHeader(value = "X-GitHub-Event", defaultValue = "push") String gitHubEvent,
+            @RequestHeader(value = "X-GitHub-Delivery", required = false) String deliveryId,
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody String payload
     ) {
-        log.info("Received GitHub webhook event: {}", gitHubEvent);
+        log.info("Received GitHub webhook event: {}, delivery: {}", gitHubEvent, deliveryId);
+
+        // Deduplicate repeated webhook deliveries (fast in-memory optimization only)
+        if (deliveryId != null && !deliveryId.isBlank()) {
+            if (processedDeliveries.contains(deliveryId)) {
+                log.info("Duplicate GitHub webhook delivery ignored (in-memory cache): {}", deliveryId);
+                return ResponseEntity.ok(Map.of(
+                        "status", "DUPLICATE",
+                        "deliveryId", deliveryId,
+                        "message", "Webhook delivery already processed"
+                ));
+            }
+        }
+
+        // HMAC-SHA256 signature verification
+        String webhookSecret = System.getenv("GITHUB_WEBHOOK_SECRET");
+        boolean isProd = isProductionEnvironment();
+
+        if (isProd) {
+            // Production MUST fail closed if secret is missing or signature is invalid
+            if (webhookSecret == null || webhookSecret.isBlank()) {
+                log.error("Production security alert: GITHUB_WEBHOOK_SECRET is not configured. Failing closed.");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                        "status", "CONFIGURATION_ERROR",
+                        "error", "Webhook signature verification misconfigured in production"
+                ));
+            }
+            if (signature == null || signature.isBlank()) {
+                log.warn("Missing required X-Hub-Signature-256 header in production request for delivery {}", deliveryId);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", "UNAUTHORIZED",
+                        "error", "Missing required X-Hub-Signature-256 header"
+                ));
+            }
+            if (!isValidHmacSignature(payload, signature, webhookSecret)) {
+                log.warn("Invalid GitHub webhook HMAC-SHA256 signature in production for delivery {}", deliveryId);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", "UNAUTHORIZED",
+                        "error", "Invalid webhook HMAC signature"
+                ));
+            }
+        } else {
+            // Non-production (dev/test): Validate if secret or signature is configured
+            if (webhookSecret != null && !webhookSecret.isBlank() && signature != null && !signature.isBlank()) {
+                if (!isValidHmacSignature(payload, signature, webhookSecret)) {
+                    log.warn("Invalid GitHub webhook HMAC-SHA256 signature for delivery {}", deliveryId);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                            "status", "UNAUTHORIZED",
+                            "error", "Invalid webhook HMAC signature"
+                    ));
+                }
+            } else if (webhookSecret != null && !webhookSecret.isBlank() && (signature == null || signature.isBlank())) {
+                log.warn("Missing required X-Hub-Signature-256 header for delivery {}", deliveryId);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", "UNAUTHORIZED",
+                        "error", "Missing required X-Hub-Signature-256 header"
+                ));
+            }
+        }
 
         if ("ping".equalsIgnoreCase(gitHubEvent)) {
             return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "SecretVault Webhook Active (Pong)"));
@@ -107,38 +212,101 @@ public class GitHubRepositoryWebhookController {
             }
 
             int triggeredCount = 0;
+            boolean allDuplicates = true;
+            boolean anyActiveRepo = false;
+
             for (RepositoryEntity repo : matchingRepos) {
+                // Check if monitoring is paused or disabled
+                if (repo.getStatus() == com.secretvault.repository.model.RepositoryStatus.DISABLED) {
+                    log.info("Skipping scan for repository {}/{}: monitoring is DISABLED", repo.getOwner(), repo.getName());
+                    continue;
+                }
+
+                anyActiveRepo = true;
+
+                // Authoritative database-level deduplication check
+                if (deliveryId != null && !deliveryId.isBlank() && scanService.isDeliveryAlreadyEnqueued(repo.getId(), deliveryId)) {
+                    log.info("Duplicate delivery {} for repository {}/{} detected in database. Skipping duplicate enqueue.",
+                            deliveryId, repo.getOwner(), repo.getName());
+                    continue;
+                }
+
+                allDuplicates = false;
+
                 if (!commitSha.isBlank()) {
                     repo.setLastCommitSha(commitSha);
                     repositoryRepo.save(repo);
                 }
 
-                log.info("GitHub commit detected for {}/{} (branch: {}, commit: {}). Triggering immediate FULL scan.",
+                log.info("GitHub commit detected for {}/{} (branch: {}, commit: {}). Durably enqueuing FULL scan.",
                         repo.getOwner(), repo.getName(), branch, commitSha);
 
-                scanService.triggerRepositoryScan(
+                final String scanBranch = branch.isBlank() ? repo.getDefaultBranch() : branch;
+                scanService.enqueueRepositoryScan(
                         repo.getWorkspaceId(),
                         repo.getId(),
                         ScanType.FULL,
-                        branch.isBlank() ? repo.getDefaultBranch() : branch,
+                        scanBranch,
+                        deliveryId,
                         null
                 );
+
                 triggeredCount++;
+            }
+
+            if (anyActiveRepo && allDuplicates && deliveryId != null && !deliveryId.isBlank()) {
+                processedDeliveries.add(deliveryId);
+                return ResponseEntity.ok(Map.of(
+                        "status", "DUPLICATE",
+                        "deliveryId", deliveryId,
+                        "message", "Webhook delivery already processed"
+                ));
+            }
+
+            if (deliveryId != null && !deliveryId.isBlank()) {
+                processedDeliveries.add(deliveryId);
             }
 
             return ResponseEntity.ok(Map.of(
                     "status", "SUCCESS",
                     "event", gitHubEvent,
+                    "scansEnqueued", triggeredCount,
                     "scansTriggered", triggeredCount,
+                    "deliveryId", deliveryId != null ? deliveryId : "",
                     "commitSha", commitSha,
-                    "message", "Scan triggered immediately for commit " + commitSha
+                    "message", "Scan durably queued for commit " + commitSha
             ));
         } catch (Exception e) {
-            log.error("Failed to process GitHub webhook: {}", e.getMessage(), e);
+            if (deliveryId != null) {
+                processedDeliveries.remove(deliveryId);
+            }
+            String sanitizedError = com.secretvault.events.dispatcher.EventDispatcher.sanitizeErrorMessage(e.getMessage());
+            log.error("Failed to process GitHub webhook delivery {}: {}", deliveryId, sanitizedError);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", "ERROR",
-                    "error", e.getMessage()
+                    "deliveryId", deliveryId != null ? deliveryId : "",
+                    "error", sanitizedError != null ? sanitizedError : "Webhook processing error"
             ));
+        }
+    }
+
+    private boolean isValidHmacSignature(String payload, String signature, String secret) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hash = mac.doFinal(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder("sha256=");
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            String expected = sb.toString();
+            return java.security.MessageDigest.isEqual(
+                    expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    signature.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            );
+        } catch (Exception e) {
+            log.error("Error computing HMAC signature: {}", e.getMessage());
+            return false;
         }
     }
 
@@ -152,6 +320,7 @@ public class GitHubRepositoryWebhookController {
             @PathVariable UUID workspaceId,
             @PathVariable UUID repositoryId,
             @RequestHeader(value = "X-GitHub-Event", defaultValue = "push") String gitHubEvent,
+            @RequestHeader(value = "X-GitHub-Delivery", required = false) String deliveryId,
             @RequestBody(required = false) String payload
     ) {
         RepositoryEntity repo = repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId)
@@ -176,23 +345,36 @@ public class GitHubRepositoryWebhookController {
             repositoryRepo.save(repo);
         }
 
-        log.info("Immediate scan triggered via dedicated webhook for repository {}/{} on branch {}",
+        if (deliveryId != null && !deliveryId.isBlank() && scanService.isDeliveryAlreadyEnqueued(repositoryId, deliveryId)) {
+            log.info("Duplicate delivery {} for repository {} detected via dedicated webhook", deliveryId, repositoryId);
+            return ResponseEntity.ok(Map.of(
+                    "status", "DUPLICATE",
+                    "repositoryId", repositoryId.toString(),
+                    "deliveryId", deliveryId,
+                    "message", "Webhook delivery already processed"
+            ));
+        }
+
+        log.info("Durable scan enqueued via dedicated webhook for repository {}/{} on branch {}",
                 repo.getOwner(), repo.getName(), branch);
 
-        scanService.triggerRepositoryScan(
+        scanService.enqueueRepositoryScan(
                 workspaceId,
                 repositoryId,
                 ScanType.FULL,
                 branch,
+                deliveryId,
                 null
         );
 
         return ResponseEntity.ok(Map.of(
                 "status", "SUCCESS",
                 "repositoryId", repositoryId.toString(),
+                "scanQueued", true,
                 "scanTriggered", true,
+                "deliveryId", deliveryId != null ? deliveryId : "",
                 "commitSha", commitSha,
-                "message", "Scan triggered immediately"
+                "message", "Scan durably queued"
         ));
     }
 

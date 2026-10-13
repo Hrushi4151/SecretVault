@@ -62,12 +62,28 @@ public class ApiException extends RuntimeException {
         );
     }
 
+    public static ApiException serviceUnavailable(String message) {
+        return new ApiException(message, HttpStatus.SERVICE_UNAVAILABLE, "COORDINATION_UNAVAILABLE");
+    }
+
+    public static ApiException serviceUnavailable(String code, String message) {
+        return new ApiException(message, HttpStatus.SERVICE_UNAVAILABLE, code);
+    }
+
     public static ApiException internal(String code, String message) {
         return new ApiException(message, HttpStatus.INTERNAL_SERVER_ERROR, code);
     }
 
     public static ApiException internal(String code, String message, Throwable cause) {
         return new ApiException(message, cause, HttpStatus.INTERNAL_SERVER_ERROR, code);
+    }
+
+    public static ApiException internalServerError(String message) {
+        return new ApiException(message, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR");
+    }
+
+    public static ApiException internalServerError(String code, String message) {
+        return new ApiException(message, HttpStatus.INTERNAL_SERVER_ERROR, code);
     }
 
     public HttpStatus getStatus() {

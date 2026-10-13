@@ -205,12 +205,12 @@ describe('RotationCenterView: Rotation Center & Runtime Lifecycle', () => {
   it('switches to Rotation Wizard tab and displays guided rollover configuration', async () => {
     render(<RotationCenterView />);
 
-    const wizardTab = screen.getByText('Rotation Wizard');
+    const wizardTab = screen.getByRole('button', { name: /^Rotation Wizard$/i });
     fireEvent.click(wizardTab);
 
     await waitFor(() => {
-      expect(screen.getByText(/Zero-Downtime Rotation Wizard/i)).toBeInTheDocument();
-      expect(screen.getByText(/Exit Wizard/i)).toBeInTheDocument();
+      expect(screen.getByText('Exit Wizard')).toBeInTheDocument();
+      expect(screen.getByText(/Choose Rotation Strategy/i)).toBeInTheDocument();
     });
   });
 

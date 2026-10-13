@@ -236,23 +236,35 @@ public class SecretFindingService {
 
         accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_FINDING_MANAGE);
 
+        if (reason == null || reason.trim().length() < 10) {
+            throw com.secretvault.common.exception.ApiException.badRequest(
+                    "A meaningful reason (at least 10 characters) is required to allowlist a finding.");
+        }
+        String normalizedReason = reason.trim().toLowerCase(Locale.ROOT);
+        if (normalizedReason.equals("false positive") || normalizedReason.equals("not a secret") || normalizedReason.equals("test test test")) {
+            throw com.secretvault.common.exception.ApiException.badRequest(
+                    "Please provide a specific rationale explaining why this finding is safe.");
+        }
+
         FindingAllowlist allowlist = new FindingAllowlist();
         allowlist.setWorkspaceId(workspaceId);
         allowlist.setRepositoryId(repositoryId);
         allowlist.setFingerprint(fingerprint);
         allowlist.setDetectorType(detector);
-        allowlist.setFilePattern(path);
-        allowlist.setReason(reason);
+        allowlist.setFilePattern(path != null && !path.isBlank() ? path.trim() : null);
+        allowlist.setReason(reason.trim());
         allowlist.setCreatedBy(actorId);
         allowlist.setExpiresAt(expiresAt);
         allowlist.setActive(true);
 
         FindingAllowlist saved = allowlistRepository.save(allowlist);
 
-        // Update any existing findings with this fingerprint
+        // Update existing findings matching this fingerprint in the workspace to FALSE_POSITIVE / IGNORED
         List<SecretFinding> matches = findingRepository.findByWorkspaceIdAndFingerprint(workspaceId, fingerprint);
         for (SecretFinding f : matches) {
-            f.setStatus(RepoFindingStatus.IGNORED);
+            f.setStatus(RepoFindingStatus.FALSE_POSITIVE);
+            f.setRemediationStatus(RemediationStatus.RESOLVED);
+            f.setUpdatedAt(Instant.now());
             findingRepository.save(f);
         }
 
@@ -262,7 +274,94 @@ public class SecretFindingService {
                 AuditAction.ALLOWLIST_CREATED,
                 "FINDING_ALLOWLIST",
                 saved.getId().toString(),
-                Map.of("fingerprint", fingerprint, "reason", reason != null ? reason : "")
+                Map.of("fingerprint", fingerprint, "reason", reason.trim(), "scopePath", path != null ? path : "*")
+        );
+
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<com.secretvault.repository.dto.RepositoryDtos.FindingAllowlistDto> listAllowlists(
+            UUID workspaceId,
+            UUID repositoryId,
+            Boolean activeOnly,
+            UUID actorId,
+            Pageable pageable) {
+
+        accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_VIEW);
+
+        Specification<FindingAllowlist> spec = (root, query, cb) -> {
+            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
+            predicates.add(cb.equal(root.get("workspaceId"), workspaceId));
+
+            if (repositoryId != null) {
+                predicates.add(cb.equal(root.get("repositoryId"), repositoryId));
+            }
+            if (activeOnly != null && activeOnly) {
+                predicates.add(cb.isTrue(root.get("active")));
+                predicates.add(cb.or(
+                        cb.isNull(root.get("expiresAt")),
+                        cb.greaterThan(root.get("expiresAt"), Instant.now())
+                ));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Map<UUID, String> repoNames = new HashMap<>();
+        return allowlistRepository.findAll(spec, pageable).map(al -> {
+            String repoName = "Workspace Wide";
+            if (al.getRepositoryId() != null) {
+                repoName = repoNames.computeIfAbsent(al.getRepositoryId(), id ->
+                        repoRepository.findByIdAndWorkspaceId(id, workspaceId)
+                                .map(r -> r.getOwner() + "/" + r.getName())
+                                .orElse("Unknown Repo")
+                );
+            }
+            return new com.secretvault.repository.dto.RepositoryDtos.FindingAllowlistDto(
+                    al.getId(),
+                    al.getWorkspaceId(),
+                    al.getRepositoryId(),
+                    repoName,
+                    al.getFingerprint(),
+                    al.getDetectorType(),
+                    al.getFilePattern(),
+                    al.getReason(),
+                    al.getCreatedBy(),
+                    al.getExpiresAt(),
+                    al.isActive(),
+                    al.getCreatedAt()
+            );
+        });
+    }
+
+    @Transactional
+    public FindingAllowlist revokeAllowlist(UUID workspaceId, UUID allowlistId, String reason, UUID actorId) {
+        accessService.requireWorkspacePermission(actorId, workspaceId, AccessPermission.REPOSITORY_FINDING_MANAGE);
+
+        FindingAllowlist allowlist = allowlistRepository.findByIdAndWorkspaceId(allowlistId, workspaceId)
+                .orElseThrow(() -> com.secretvault.common.exception.ApiException.notFound("Allowlist rule not found: " + allowlistId));
+
+        allowlist.setActive(false);
+        FindingAllowlist saved = allowlistRepository.save(allowlist);
+
+        // Reopen suppressed findings that match this fingerprint
+        List<SecretFinding> matches = findingRepository.findByWorkspaceIdAndFingerprint(workspaceId, allowlist.getFingerprint());
+        for (SecretFinding f : matches) {
+            if (f.getStatus() == RepoFindingStatus.FALSE_POSITIVE || f.getStatus() == RepoFindingStatus.IGNORED) {
+                f.setStatus(RepoFindingStatus.REOPENED);
+                f.setRemediationStatus(RemediationStatus.PENDING);
+                f.setUpdatedAt(Instant.now());
+                findingRepository.save(f);
+            }
+        }
+
+        auditService.record(
+                workspaceId,
+                actorId,
+                AuditAction.ALLOWLIST_REVOKED,
+                "FINDING_ALLOWLIST",
+                saved.getId().toString(),
+                Map.of("fingerprint", allowlist.getFingerprint(), "reason", reason != null ? reason : "Revoked by user")
         );
 
         return saved;

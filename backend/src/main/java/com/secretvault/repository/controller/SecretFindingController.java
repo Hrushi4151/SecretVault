@@ -138,4 +138,32 @@ public class SecretFindingController {
         );
         return ResponseEntity.ok(ApiResponse.success(allowlist, "Allowlist entry created successfully"));
     }
+
+    @GetMapping("/allowlists")
+    @Operation(summary = "List active allowlist rules and suppression exceptions for this workspace")
+    public ResponseEntity<ApiResponse<Page<com.secretvault.repository.dto.RepositoryDtos.FindingAllowlistDto>>> listAllowlists(
+            @PathVariable UUID workspaceId,
+            @RequestParam(required = false) UUID repositoryId,
+            @RequestParam(required = false, defaultValue = "true") Boolean activeOnly,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        Page<com.secretvault.repository.dto.RepositoryDtos.FindingAllowlistDto> page = findingService.listAllowlists(
+                workspaceId, repositoryId, activeOnly, actorId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(page));
+    }
+
+    @DeleteMapping("/allowlists/{allowlistId}")
+    @Operation(summary = "Revoke / deactivate an allowlist entry and re-enable secret leak detection for suppressed findings")
+    public ResponseEntity<ApiResponse<FindingAllowlist>> revokeAllowlist(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID allowlistId,
+            @RequestParam(required = false, defaultValue = "Revoked by user") String reason,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        FindingAllowlist revoked = findingService.revokeAllowlist(workspaceId, allowlistId, reason, actorId);
+        return ResponseEntity.ok(ApiResponse.success(revoked, "Allowlist entry revoked successfully"));
+    }
 }

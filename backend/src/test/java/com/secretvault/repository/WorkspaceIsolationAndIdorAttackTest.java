@@ -1,5 +1,6 @@
 package com.secretvault.repository;
 
+import com.secretvault.common.exception.ApiException;
 import com.secretvault.access.model.AccessPermission;
 import com.secretvault.access.service.EffectiveAccessService;
 import com.secretvault.audit.service.AuditService;
@@ -144,7 +145,7 @@ class WorkspaceIsolationAndIdorAttackTest {
     void testCrossWorkspaceRemediationBlocked() {
         when(findingRepo.findByIdAndWorkspaceId(findingIdA, workspaceB)).thenReturn(Optional.empty());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        ApiException ex = assertThrows(ApiException.class, () ->
                 remediationService.remediateFinding(
                         workspaceB, findingIdA, RemediationAction.MARK_FALSE_POSITIVE, "Attack", userInWorkspaceB)
         );

@@ -195,4 +195,76 @@ class VercelProviderAdapterTest {
         assertThat(result.operation()).isEqualTo("DELETE");
         assertThat(result.providerSecretId()).isEqualTo("env_target_456");
     }
+
+    @Test
+    @DisplayName("Push Secret: Correctly extracts ID when Vercel returns created array")
+    void testPushSecretNewVariableWithCreatedArrayResponse() {
+        ProviderResourceMapping mapping = new ProviderResourceMapping();
+        mapping.setProviderResourceId("prj_web1");
+        mapping.setProviderEnvironment("production");
+
+        // 1. listSecrets call (returns empty)
+        mockServer.expect(requestTo(BASE_URL + "/v10/projects/prj_web1/env"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"envs\":[]}", MediaType.APPLICATION_JSON));
+
+        // 2. create env var call returning created array
+        mockServer.expect(requestTo(BASE_URL + "/v10/projects/prj_web1/env"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("""
+                        {
+                            "created": [
+                                {
+                                    "id": "env_arr_created_789",
+                                    "key": "ARRAY_SECRET",
+                                    "target": ["production"]
+                                }
+                            ]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        ProviderSecretOperationResult result = adapter.pushSecret(
+                Map.of(), "token", mapping, "ARRAY_SECRET", "super_secret_val"
+        );
+        mockServer.verify();
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.operation()).isEqualTo("CREATE");
+        assertThat(result.providerSecretId()).isEqualTo("env_arr_created_789");
+    }
+
+    @Test
+    @DisplayName("Delete Secret: Idempotent success when Vercel returns 404 Not Found")
+    void testDeleteSecret404NotFoundIsIdempotentSuccess() {
+        ProviderResourceMapping mapping = new ProviderResourceMapping();
+        mapping.setProviderResourceId("prj_web1");
+        mapping.setProviderEnvironment("production");
+
+        // 1. listSecrets call
+        mockServer.expect(requestTo(BASE_URL + "/v10/projects/prj_web1/env"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {
+                            "envs": [
+                                {
+                                    "id": "env_target_999",
+                                    "key": "OLD_SECRET",
+                                    "target": ["production"]
+                                }
+                            ]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        // 2. delete call returns 404
+        mockServer.expect(requestTo(BASE_URL + "/v10/projects/prj_web1/env/env_target_999"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        ProviderSecretOperationResult result = adapter.deleteSecret(Map.of(), "token", mapping, "OLD_SECRET");
+        mockServer.verify();
+
+        assertThat(result.success()).isTrue();
+        assertThat(result.operation()).isEqualTo("DELETE");
+        assertThat(result.providerSecretId()).isEqualTo("not_found");
+    }
 }

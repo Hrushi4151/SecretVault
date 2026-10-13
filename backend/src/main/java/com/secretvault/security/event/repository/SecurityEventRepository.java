@@ -16,35 +16,53 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface SecurityEventRepository extends JpaRepository<SecurityEvent, UUID> {
+public interface SecurityEventRepository extends JpaRepository<SecurityEvent, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<SecurityEvent> {
 
     Page<SecurityEvent> findByWorkspaceId(UUID workspaceId, Pageable pageable);
 
-    @Query("""
-        SELECT e FROM SecurityEvent e
-        WHERE e.workspaceId = :workspaceId
-          AND (:projectId IS NULL OR e.projectId = :projectId)
-          AND (:environmentId IS NULL OR e.environmentId = :environmentId)
-          AND (:actorUserId IS NULL OR e.actorUserId = :actorUserId)
-          AND (:eventType IS NULL OR e.eventType = :eventType)
-          AND (:severity IS NULL OR e.severity = :severity)
-          AND (:outcome IS NULL OR e.outcome = :outcome)
-          AND (:fromTime IS NULL OR e.timestamp >= :fromTime)
-          AND (:toTime IS NULL OR e.timestamp <= :toTime)
-        ORDER BY e.timestamp DESC
-    """)
-    Page<SecurityEvent> searchEvents(
-            @Param("workspaceId") UUID workspaceId,
-            @Param("projectId") UUID projectId,
-            @Param("environmentId") UUID environmentId,
-            @Param("actorUserId") UUID actorUserId,
-            @Param("eventType") SecurityEventType eventType,
-            @Param("severity") SecurityEventSeverity severity,
-            @Param("outcome") SecurityEventOutcome outcome,
-            @Param("fromTime") Instant fromTime,
-            @Param("toTime") Instant toTime,
+    default Page<SecurityEvent> searchEvents(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            UUID actorUserId,
+            SecurityEventType eventType,
+            SecurityEventSeverity severity,
+            SecurityEventOutcome outcome,
+            Instant fromTime,
+            Instant toTime,
             Pageable pageable
-    );
+    ) {
+        org.springframework.data.jpa.domain.Specification<SecurityEvent> spec = (root, query, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            predicates.add(cb.equal(root.get("workspaceId"), workspaceId));
+            if (projectId != null) {
+                predicates.add(cb.equal(root.get("projectId"), projectId));
+            }
+            if (environmentId != null) {
+                predicates.add(cb.equal(root.get("environmentId"), environmentId));
+            }
+            if (actorUserId != null) {
+                predicates.add(cb.equal(root.get("actorUserId"), actorUserId));
+            }
+            if (eventType != null) {
+                predicates.add(cb.equal(root.get("eventType"), eventType));
+            }
+            if (severity != null) {
+                predicates.add(cb.equal(root.get("severity"), severity));
+            }
+            if (outcome != null) {
+                predicates.add(cb.equal(root.get("outcome"), outcome));
+            }
+            if (fromTime != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("timestamp"), fromTime));
+            }
+            if (toTime != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("timestamp"), toTime));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        return findAll(spec, pageable);
+    }
 
     @Query("""
         SELECT COUNT(e) FROM SecurityEvent e

@@ -703,10 +703,20 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
                           )}
 
                           <button
-                            onClick={() => handleQuickReveal(s.id)}
+                            onClick={() => {
+                              if (s.status === 'DISABLED') {
+                                alert('This secret is DISABLED. Re-enable it in Secret Details to decrypt and reveal.');
+                                return;
+                              }
+                              handleQuickReveal(s.id);
+                            }}
                             disabled={isRevealing}
-                            className="p-1.5 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 transition-all"
-                            title={revealed ? 'Hide' : 'Quick Reveal'}
+                            className={`p-1.5 rounded-lg border transition-all ${
+                              s.status === 'DISABLED'
+                                ? 'bg-[#30000F]/50 text-[#A26377]/60 border-[#FFB4C8]/10 cursor-not-allowed'
+                                : 'bg-[#30000F] hover:bg-[#3F0016] text-[#F4B5C8] hover:text-white border-[#FFB4C8]/15'
+                            }`}
+                            title={s.status === 'DISABLED' ? 'Secret is disabled' : (revealed ? 'Hide' : 'Quick Reveal')}
                           >
                             {revealed ? (
                               <Unlock className="w-3 h-3 text-[#4ADE80]" />
@@ -726,7 +736,11 @@ export const SecretsView = ({ initialProjectId = null, initialEnvironmentId = nu
 
                       {/* Status */}
                       <td className="py-4 px-6 font-mono">
-                        <span className="px-2 py-0.5 rounded-full bg-[#3F0016] text-[10px] text-[#4ADE80] border border-[#4ADE80]/30 font-semibold">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          (s.status || 'ACTIVE') === 'ACTIVE'
+                            ? 'bg-[#3F0016] text-[#4ADE80] border border-[#4ADE80]/30'
+                            : 'bg-[#3A2000] text-[#FBBF24] border border-[#FBBF24]/30'
+                        }`}>
                           {s.status || 'ACTIVE'}
                         </span>
                       </td>

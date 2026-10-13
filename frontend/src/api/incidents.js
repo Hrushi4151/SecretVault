@@ -9,17 +9,17 @@ export const incidentsApi = {
     if (params.size !== undefined) query.append('size', params.size);
     const qs = query.toString() ? `?${query.toString()}` : '';
     const res = await apiClient.get(`/workspaces/${workspaceId}/incidents${qs}`);
-    return res.data;
+    return (res && res.data !== undefined) ? res.data : res;
   },
 
   getIncident: async (workspaceId, incidentId) => {
     const res = await apiClient.get(`/workspaces/${workspaceId}/incidents/${incidentId}`);
-    return res.data;
+    return (res && res.data !== undefined) ? res.data : res;
   },
 
   createIncident: async (workspaceId, data) => {
     const res = await apiClient.post(`/workspaces/${workspaceId}/incidents`, data);
-    return res.data;
+    return (res && res.data !== undefined) ? res.data : res;
   },
 
   updateIncidentStatus: async (workspaceId, incidentId, status, resolutionSummary = '') => {
@@ -27,11 +27,16 @@ export const incidentsApi = {
       status,
       resolutionSummary
     });
-    return res.data;
+    return (res && res.data !== undefined) ? res.data : res;
   },
 
   getIncidentEvents: async (workspaceId, incidentId) => {
     const res = await apiClient.get(`/workspaces/${workspaceId}/incidents/${incidentId}/events`);
-    return res.data;
+    return (res && res.data !== undefined) ? res.data : res;
+  },
+
+  remediateIncident: async (workspaceId, incidentId, data) => {
+    const res = await apiClient.post(`/workspaces/${workspaceId}/incidents/${incidentId}/remediate`, data);
+    return (res && res.data !== undefined) ? res.data : res;
   }
 };

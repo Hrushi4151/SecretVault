@@ -5,6 +5,9 @@ import com.secretvault.automation.entity.AutomationApprovalStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -26,4 +29,27 @@ public interface AutomationApprovalRepository extends JpaRepository<AutomationAp
     List<AutomationApproval> findByStatusAndExpiresAtLessThanEqual(AutomationApprovalStatus status, Instant cutoff);
 
     long countByWorkspaceIdAndStatus(UUID workspaceId, AutomationApprovalStatus status);
+
+    @Modifying
+    @Query("""
+        UPDATE AutomationApproval a
+        SET a.status = :newStatus,
+            a.decidedBy = :decidedBy,
+            a.decidedAt = :decidedAt,
+            a.rejectionReason = :rejectionReason,
+            a.updatedAt = :now
+        WHERE a.id = :id
+          AND a.workspaceId = :workspaceId
+          AND a.status = :expectedStatus
+    """)
+    int updateStatusGuarded(
+            @Param("id") UUID id,
+            @Param("workspaceId") UUID workspaceId,
+            @Param("expectedStatus") AutomationApprovalStatus expectedStatus,
+            @Param("newStatus") AutomationApprovalStatus newStatus,
+            @Param("decidedBy") UUID decidedBy,
+            @Param("decidedAt") Instant decidedAt,
+            @Param("rejectionReason") String rejectionReason,
+            @Param("now") Instant now
+    );
 }

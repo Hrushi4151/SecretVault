@@ -76,6 +76,48 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
     }
 
     @Override
+    public UserProfileDto getUserProfile(String token) {
+        String effectiveToken = getEffectiveToken(token);
+        if (effectiveToken == null || effectiveToken.isBlank()) {
+            return null;
+        }
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GITHUB_API_BASE + "/user"))
+                    .header("Authorization", "Bearer " + effectiveToken)
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "SecretVault-RepoSecurity/1.0")
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                String login = root.path("login").asText("");
+                String name = root.path("name").asText(login);
+                String avatarUrl = root.path("avatar_url").asText("");
+                String email = root.path("email").asText("");
+                int publicRepos = root.path("public_repos").asInt(0);
+                int totalPrivateRepos = root.path("total_private_repos").asInt(0);
+
+                List<String> scopes = new ArrayList<>();
+                response.headers().firstValue("X-OAuth-Scopes").ifPresent(header -> {
+                    for (String s : header.split(",")) {
+                        if (!s.isBlank()) scopes.add(s.trim());
+                    }
+                });
+
+                return new UserProfileDto(login, name, avatarUrl, email, scopes, publicRepos, totalPrivateRepos);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to retrieve GitHub user profile: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
     public List<RemoteRepositoryDto> listRepositories(String token) {
         return listRepositories(token, null);
     }
@@ -85,8 +127,14 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
         String effectiveToken = getEffectiveToken(token);
 
         String url;
+        String authUserLogin = null;
         if (effectiveToken != null && !effectiveToken.isBlank() && (username == null || username.isBlank())) {
-            url = GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated";
+            // Affiliation includes user-owned, collaborator, and organization repos
+            url = GITHUB_API_BASE + "/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100";
+            UserProfileDto profile = getUserProfile(effectiveToken);
+            if (profile != null) {
+                authUserLogin = profile.login();
+            }
         } else if (username != null && !username.isBlank()) {
             String cleanUser = username.trim();
             if (cleanUser.contains("@")) {
@@ -95,7 +143,7 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
             String encodedUser = java.net.URLEncoder.encode(cleanUser, java.nio.charset.StandardCharsets.UTF_8);
             url = GITHUB_API_BASE + "/users/" + encodedUser + "/repos?per_page=100&sort=updated";
         } else if (effectiveToken != null && !effectiveToken.isBlank()) {
-            url = GITHUB_API_BASE + "/user/repos?per_page=100&sort=updated";
+            url = GITHUB_API_BASE + "/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100";
         } else {
             return List.of();
         }
@@ -120,11 +168,31 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                     for (JsonNode repoNode : arrayNode) {
                         String id = repoNode.path("id").asText();
                         String name = repoNode.path("name").asText();
-                        String owner = repoNode.path("owner").path("login").asText();
+                        JsonNode ownerNode = repoNode.path("owner");
+                        String owner = ownerNode.path("login").asText();
+                        String ownerType = ownerNode.path("type").asText("User");
                         String defaultBranch = repoNode.path("default_branch").asText("main");
                         String cloneUrl = repoNode.path("clone_url").asText();
                         boolean isPrivate = repoNode.path("private").asBoolean(false);
                         String description = repoNode.path("description").asText("");
+
+                        // Inspect GitHub fine-grained / OAuth permissions
+                        JsonNode permissionsNode = repoNode.path("permissions");
+                        boolean canRead = permissionsNode.path("pull").asBoolean(true);
+                        boolean canAdminHooks = permissionsNode.path("admin").asBoolean(false);
+
+                        // Determine contributor / affiliation role
+                        String role = "COLLABORATOR";
+                        if (authUserLogin != null && authUserLogin.equalsIgnoreCase(owner)) {
+                            role = "OWNER";
+                        } else if ("Organization".equalsIgnoreCase(ownerType)) {
+                            role = "ORGANIZATION_MEMBER";
+                        }
+
+                        String permissionWarning = null;
+                        if (!canAdminHooks) {
+                            permissionWarning = "Continuous webhook configuration requires repository admin privileges; manual and scheduled scans supported.";
+                        }
 
                         results.add(new RemoteRepositoryDto(
                                 id,
@@ -134,7 +202,14 @@ public class GitHubRepositoryProviderAdapter implements RepositoryProviderAdapte
                                 cloneUrl,
                                 isPrivate ? RepositoryVisibility.PRIVATE : RepositoryVisibility.PUBLIC,
                                 description,
-                                isPrivate
+                                isPrivate,
+                                canRead,
+                                canAdminHooks,
+                                false,
+                                null,
+                                null,
+                                permissionWarning,
+                                role
                         ));
                     }
                 }

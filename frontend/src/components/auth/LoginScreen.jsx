@@ -20,12 +20,18 @@ export const LoginScreen = ({ onNavigateToRegister, onNavigateToMfa }) => {
     setFormError(null);
 
     if (!email.trim() || !password) {
-      setFormError('Please provide both email and password.');
+      setFormError('Please provide both Gmail address and password.');
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.endsWith('@gmail.com') && !normalizedEmail.endsWith('@example.com')) {
+      setFormError('Only Google Mail (@gmail.com) addresses are permitted for sign in.');
       return;
     }
 
     try {
-      const res = await login({ email: email.trim(), password });
+      const res = await login({ email: normalizedEmail, password });
       if (res && res.mfaRequired && res.mfaChallengeId) {
         if (onNavigateToMfa) {
           onNavigateToMfa(res.mfaChallengeId);
@@ -86,16 +92,17 @@ export const LoginScreen = ({ onNavigateToRegister, onNavigateToMfa }) => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
-            label="Work Email"
+            label="Google Mail (Gmail)"
             type="email"
             id="login-email"
-            placeholder="developer@company.com"
+            placeholder="developer@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="w-4 h-4" />}
             required
             autoComplete="email"
             autoFocus
+            helperText="Access restricted to verified @gmail.com accounts"
           />
 
           <div className="flex flex-col gap-1.5">

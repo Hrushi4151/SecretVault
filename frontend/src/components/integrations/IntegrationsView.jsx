@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { integrationsApi } from '../../api/integrations';
 import { projectApi } from '../../api/projects';
 import { environmentApi } from '../../api/environments';
 import { secretApi } from '../../api/secrets';
+import {
+  getProviderMeta,
+  AVAILABLE_PROVIDERS_LIST,
+} from '../../utils/providerRegistry';
 import {
   Network,
   Plus,
@@ -15,6 +19,7 @@ import {
   FolderGit2,
   Globe,
   Trash2,
+  Unlink,
   UploadCloud,
   Eye,
   Shield,
@@ -23,14 +28,29 @@ import {
   Layers,
   Check,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Info,
   Server,
   Zap,
+  Search,
+  Filter,
+  ArrowRight,
+  Cloud,
+  CheckSquare,
+  ShieldCheck,
 } from 'lucide-react';
 
-export const IntegrationsView = () => {
+export const IntegrationsView = ({ initialProjectId = null }) => {
   const { activeWorkspace } = useAuth();
-  const [activeTab, setActiveTab] = useState('PROVIDERS'); // 'PROVIDERS' | 'MAPPINGS'
+  const [activeTab, setActiveTab] = useState(initialProjectId ? 'MAPPINGS' : 'PROVIDERS'); // 'MAPPINGS' | 'PROVIDERS'
+  const [mappingViewMode, setMappingViewMode] = useState('PROJECT_WISE'); // 'PROJECT_WISE' | 'TABLE'
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState(initialProjectId || 'ALL');
+  const [mappingSearch, setMappingSearch] = useState('');
+  const [expandedProjectIds, setExpandedProjectIds] = useState(new Set());
+  const [providerCategoryFilter, setProviderCategoryFilter] = useState('ALL');
+  const [providerSearchQuery, setProviderSearchQuery] = useState('');
+
   const [integrations, setIntegrations] = useState([]);
   const [mappings, setMappings] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -88,7 +108,12 @@ export const IntegrationsView = () => {
         projectApi.list(activeWorkspace.id),
       ]);
 
-      const intList = intRes?.items || intRes?.content || (Array.isArray(intRes) ? intRes : []);
+      const rawList = intRes?.items || intRes?.content || (Array.isArray(intRes) ? intRes : []);
+      // Keep code repository integrations (e.g. GitHub/GitLab used in Settings) completely separate
+      // from cloud hosting runtime provider integrations (e.g. Vercel, Render)
+      const intList = rawList.filter(
+        (i) => i.providerType !== 'GITHUB' && i.providerType !== 'GITLAB'
+      );
       setIntegrations(intList);
 
       const projList = Array.isArray(projRes) ? projRes : (projRes?.items || projRes?.content || []);
@@ -131,7 +156,70 @@ export const IntegrationsView = () => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (initialProjectId) {
+      setActiveTab('MAPPINGS');
+      setSelectedProjectFilter(initialProjectId);
+      setExpandedProjectIds((prev) => new Set([...prev, initialProjectId]));
+    }
+  }, [initialProjectId]);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      if (initialProjectId) {
+        setExpandedProjectIds(new Set([initialProjectId]));
+      } else {
+        setExpandedProjectIds(new Set(projects.map((p) => p.id)));
+      }
+    }
+  }, [projects, initialProjectId]);
+
+  const toggleProjectExpand = (projId) => {
+    setExpandedProjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(projId)) {
+        next.delete(projId);
+      } else {
+        next.add(projId);
+      }
+      return next;
+    });
+  };
+
+  const expandAllProjects = () => {
+    setExpandedProjectIds(new Set(projects.map((p) => p.id)));
+  };
+
+  const collapseAllProjects = () => {
+    setExpandedProjectIds(new Set());
+  };
+
+  const handleOpenMappingModalForProject = (project) => {
+    const defaultInt = integrations[0];
+    setSelectedIntegrationForMapping(defaultInt || null);
+    const envList = environmentsMap[project.id] || [];
+    setMappingForm({
+      integrationId: defaultInt ? defaultInt.id : '',
+      projectId: project.id,
+      environmentId: envList[0]?.id || '',
+      providerResourceType: defaultInt ? getProviderMeta(defaultInt.providerType).defaultResourceType : 'PROJECT',
+      providerResourceId: '',
+      providerResourceName: '',
+      providerEnvironment: 'production',
+      syncEnabled: true,
+    });
+    setIsMappingModalOpen(true);
+    if (defaultInt) {
+      handleDiscoverResources(defaultInt.id);
+    }
+  };
+
   const handleValidateIntegration = async (integrationId) => {
+    const target = integrations.find((i) => i.id === integrationId);
+    if (target?.providerType === 'GITHUB' || target?.providerType === 'GITLAB') {
+      showFeedback('error', 'Repository integrations cannot be validated from Provider Integrations. Manage them in Settings.');
+      return;
+    }
     try {
       setActionLoadingId(integrationId);
       const res = await integrationsApi.validate(activeWorkspace.id, integrationId);
@@ -149,6 +237,11 @@ export const IntegrationsView = () => {
   };
 
   const handleDeleteIntegration = async (integrationId, name) => {
+    const target = integrations.find((i) => i.id === integrationId);
+    if (target?.providerType === 'GITHUB' || target?.providerType === 'GITLAB') {
+      showFeedback('error', 'Repository integrations cannot be deleted from Provider Integrations. Manage them in Settings.');
+      return;
+    }
     if (!window.confirm(`Are you sure you want to delete integration "${name}" and all associated resource mappings?`)) {
       return;
     }
@@ -159,6 +252,27 @@ export const IntegrationsView = () => {
       loadData();
     } catch (err) {
       showFeedback('error', err.message || 'Failed to delete provider integration.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDisconnectIntegration = async (integrationId, name) => {
+    const target = integrations.find((i) => i.id === integrationId);
+    if (target?.providerType === 'GITHUB' || target?.providerType === 'GITLAB') {
+      showFeedback('error', 'Repository integrations cannot be disconnected from Provider Integrations. Manage them in Settings.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to disconnect integration "${name}"? Existing resource mappings will be preserved, but synchronization will be suspended until re-connected.`)) {
+      return;
+    }
+    try {
+      setActionLoadingId(integrationId);
+      await integrationsApi.disconnect(activeWorkspace.id, integrationId);
+      showFeedback('success', `Integration "${name}" disconnected. Resource mappings preserved.`);
+      loadData();
+    } catch (err) {
+      showFeedback('error', err.message || 'Failed to disconnect provider integration.');
     } finally {
       setActionLoadingId(null);
     }
@@ -443,12 +557,12 @@ export const IntegrationsView = () => {
             <span className="text-[11px] font-mono font-bold uppercase tracking-wider">Supported Connectors</span>
             <Zap className="w-4 h-4 text-[#FBBF24]" />
           </div>
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-1.5 flex-wrap">
             <span className="px-2 py-0.5 rounded bg-[#3F0016] text-[10px] font-mono text-white border border-[#FFB4C8]/15">
-              ▲ Vercel
+              {AVAILABLE_PROVIDERS_LIST.length}+ Platforms
             </span>
-            <span className="px-2 py-0.5 rounded bg-[#3F0016] text-[10px] font-mono text-white border border-[#FFB4C8]/15">
-              ⬡ Render
+            <span className="text-[10px] text-[#A26377] font-mono">
+              AWS, Vercel, K8s, Render...
             </span>
           </div>
         </div>
@@ -456,6 +570,19 @@ export const IntegrationsView = () => {
 
       {/* Tabs Navigation */}
       <div className="flex items-center gap-2 border-b border-[#FFB4C8]/15 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('MAPPINGS')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'MAPPINGS'
+              ? 'bg-[#FF2D6D]/20 text-white border border-[#FF2D6D]/40 shadow-sm'
+              : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Resource Mappings (Project-Wise) ({mappings.length})</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab('PROVIDERS')}
@@ -467,19 +594,6 @@ export const IntegrationsView = () => {
         >
           <Server className="w-3.5 h-3.5" />
           <span>Connected Providers ({integrations.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('MAPPINGS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'MAPPINGS'
-              ? 'bg-[#FF2D6D]/20 text-white border border-[#FF2D6D]/40 shadow-sm'
-              : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Resource Mappings ({mappings.length})</span>
         </button>
       </div>
 
@@ -507,10 +621,13 @@ export const IntegrationsView = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {integrations.map((item) => {
-                const isVercel = item.providerType === 'VERCEL';
+                const meta = getProviderMeta(item.providerType);
                 const isActive = item.status === 'ACTIVE';
+                const isRevoked = item.status === 'REVOKED';
                 const isError = item.status === 'ERROR';
                 const itemMappings = mappings.filter((m) => m.providerIntegrationId === item.id);
+                const linkedProjectIds = [...new Set(itemMappings.map((m) => m.projectId))];
+                const linkedProjects = projects.filter((p) => linkedProjectIds.includes(p.id));
 
                 return (
                   <div
@@ -521,13 +638,13 @@ export const IntegrationsView = () => {
                       {/* Top Row: Provider Logo & Status */}
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 flex items-center justify-center text-lg font-bold">
-                            {isVercel ? '▲' : '⬡'}
+                          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-lg font-bold shadow-sm ${meta.badgeBg} ${meta.badgeBorder} ${meta.badgeText}`}>
+                            {meta.iconSymbol}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-white">{item.displayName}</span>
                             <span className="text-[10px] font-mono text-[#A26377]">
-                              {item.providerType} • {itemMappings.length} mapping(s)
+                              {meta.displayName} ({meta.category}) • {itemMappings.length} mapping{itemMappings.length !== 1 ? 's' : ''}
                             </span>
                           </div>
                         </div>
@@ -536,6 +653,8 @@ export const IntegrationsView = () => {
                           className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase flex items-center gap-1.5 ${
                             isActive
                               ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30'
+                              : isRevoked
+                              ? 'bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30'
                               : isError
                               ? 'bg-[#F87171]/15 text-[#F87171] border border-[#F87171]/30'
                               : 'bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30'
@@ -543,7 +662,7 @@ export const IntegrationsView = () => {
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              isActive ? 'bg-[#34D399]' : isError ? 'bg-[#F87171]' : 'bg-[#FBBF24] animate-pulse'
+                              isActive ? 'bg-[#34D399]' : isRevoked ? 'bg-[#9CA3AF]' : isError ? 'bg-[#F87171]' : 'bg-[#FBBF24] animate-pulse'
                             }`}
                           />
                           {item.status}
@@ -620,15 +739,28 @@ export const IntegrationsView = () => {
                         </button>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteIntegration(item.id, item.displayName)}
-                        disabled={actionLoadingId === item.id}
-                        className="p-2 rounded-xl text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Delete Integration"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {item.status !== 'REVOKED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectIntegration(item.id, item.displayName)}
+                            disabled={actionLoadingId === item.id}
+                            className="p-2 rounded-xl text-[#A26377] hover:text-[#FBBF24] hover:bg-[#3F0016] transition-colors cursor-pointer disabled:opacity-50"
+                            title="Disconnect Integration (Preserve Mappings)"
+                          >
+                            <Unlink className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteIntegration(item.id, item.displayName)}
+                          disabled={actionLoadingId === item.id}
+                          className="p-2 rounded-xl text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer disabled:opacity-50"
+                          title="Delete Integration"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -638,16 +770,24 @@ export const IntegrationsView = () => {
         </div>
       )}
 
-      {/* TAB 2: RESOURCE MAPPINGS */}
+      {/* TAB: RESOURCE MAPPINGS (PROJECT-WISE & DYNAMIC PLATFORMS) */}
       {activeTab === 'MAPPINGS' && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between bg-[#30000F] border border-[#FFB4C8]/15 p-4 rounded-2xl">
-            <div>
-              <h2 className="text-sm font-bold text-white">Configured Resource Mappings</h2>
-              <p className="text-[11px] text-[#F4B5C8]">
-                Binds a SecretVault Project &amp; Environment to an external provider project &amp; deployment target.
+        <div className="flex flex-col gap-5">
+          {/* Section Header Card */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#30000F] border border-[#FFB4C8]/15 p-5 rounded-2xl shadow-sm">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#FF2D6D]" />
+                <h2 className="text-base font-bold text-white">Project-Centric Resource Mappings</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#FF2D6D]/15 text-[#FF85A2] border border-[#FF2D6D]/30">
+                  {mappings.length} Active Routes
+                </span>
+              </div>
+              <p className="text-xs text-[#F4B5C8]">
+                Organized project-by-project. Identify exactly which local project environment is sharing secrets to which external cloud platform.
               </p>
             </div>
+
             {integrations.length > 0 && (
               <button
                 type="button"
@@ -659,132 +799,519 @@ export const IntegrationsView = () => {
                     integrationId: defaultInt.id,
                     projectId: projects[0]?.id || '',
                     environmentId: projects[0] ? environmentsMap[projects[0].id]?.[0]?.id || '' : '',
+                    providerResourceType: getProviderMeta(defaultInt.providerType).defaultResourceType,
                   }));
                   setIsMappingModalOpen(true);
                   handleDiscoverResources(defaultInt.id);
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold cursor-pointer transition-all shadow-md shadow-[#FF2D6D]/20"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold cursor-pointer transition-all shadow-md shadow-[#FF2D6D]/20 self-start sm:self-auto"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Mapping</span>
+                <Plus className="w-4 h-4" />
+                <span>New Resource Mapping</span>
               </button>
             )}
           </div>
 
-          {mappings.length === 0 ? (
-            <div className="p-8 bg-[#30000F] border border-[#FFB4C8]/15 rounded-2xl text-center flex flex-col items-center gap-2">
-              <Layers className="w-8 h-8 text-[#A26377]" />
-              <span className="text-sm font-bold text-white">No Resource Mappings Configured</span>
-              <span className="text-xs text-[#F4B5C8] max-w-sm">
-                Map a SecretVault project environment to a remote Vercel/Render project to push and synchronize secrets.
-              </span>
-            </div>
-          ) : (
-            <div className="bg-[#30000F] border border-[#FFB4C8]/15 rounded-2xl overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#1E000A] text-[#A26377] font-mono text-[10px] uppercase border-b border-[#FFB4C8]/15 tracking-wider">
-                    <tr>
-                      <th className="py-3 px-4">Local Project &amp; Env</th>
-                      <th className="py-3 px-4">Provider</th>
-                      <th className="py-3 px-4">Remote Target Resource</th>
-                      <th className="py-3 px-4">Remote Target Env</th>
-                      <th className="py-3 px-4">Sync Engine</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#FFB4C8]/10 text-white font-body">
-                    {mappings.map((m) => {
-                      const proj = projects.find((p) => p.id === m.projectId);
-                      const envList = environmentsMap[m.projectId] || [];
-                      const env = envList.find((e) => e.id === m.environmentId);
-                      const isSyncing = actionLoadingId === m.id;
-
-                      return (
-                        <tr key={m.id} className="hover:bg-[#3F0016]/50 transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-white">{proj?.name || m.projectId}</span>
-                              <span className="text-[10px] font-mono text-[#FF85A2]">{env?.name || m.environmentId}</span>
-                            </div>
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded bg-[#1E000A] border border-[#FFB4C8]/20 flex items-center justify-center font-bold text-[10px]">
-                                {m.providerType === 'VERCEL' ? '▲' : '⬡'}
-                              </span>
-                              <span className="font-medium text-xs text-white">{m.integrationName || m.providerType}</span>
-                            </div>
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
-                              <span className="font-mono text-xs font-semibold text-white">{m.providerResourceName}</span>
-                              <span className="text-[10px] font-mono text-[#A26377]">ID: {m.providerResourceId}</span>
-                            </div>
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30">
-                              {m.providerEnvironment}
-                            </span>
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleSync(m)}
-                              disabled={isSyncing}
-                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                                m.syncEnabled
-                                  ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30 hover:bg-[#34D399]/25'
-                                  : 'bg-[#A26377]/15 text-[#A26377] border border-[#A26377]/30 hover:bg-[#A26377]/25'
-                              }`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${m.syncEnabled ? 'bg-[#34D399]' : 'bg-[#A26377]'}`} />
-                              <span>{m.syncEnabled ? 'SYNC ON' : 'DISABLED'}</span>
-                            </button>
-                          </td>
-
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPushModal(m)}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF2D6D]/15 text-[#FF85A2] hover:bg-[#FF2D6D]/25 border border-[#FF2D6D]/30 text-[11px] font-semibold transition-colors cursor-pointer"
-                                title="Push a secret directly to this provider target"
-                              >
-                                <UploadCloud className="w-3.5 h-3.5" />
-                                <span>Push</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleOpenInspectModal(m)}
-                                className="p-1.5 rounded-lg bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 transition-colors cursor-pointer"
-                                title="Inspect remote environment variables"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteMapping(m)}
-                                disabled={isSyncing}
-                                className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer"
-                                title="Delete Mapping"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          {/* Filtering and Controls Toolbar */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-4 rounded-2xl bg-[#1E000A] border border-[#FFB4C8]/15">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+              {/* Search Bar */}
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#A26377]" />
+                <input
+                  type="text"
+                  value={mappingSearch}
+                  onChange={(e) => setMappingSearch(e.target.value)}
+                  placeholder="Filter by project, environment, or target platform..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 focus:border-[#FF2D6D] focus:ring-1 focus:ring-[#FF2D6D] text-xs text-white placeholder-[#A26377] outline-none transition-all"
+                />
               </div>
+
+              {/* Project Filter Dropdown */}
+              <div className="flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-[#A26377] shrink-0" />
+                <select
+                  value={selectedProjectFilter}
+                  onChange={(e) => setSelectedProjectFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-[#30000F] border border-[#FFB4C8]/20 text-xs text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
+                >
+                  <option value="ALL">All Projects ({projects.length})</option>
+                  {projects.map((p) => {
+                    const count = mappings.filter((m) => m.projectId === p.id).length;
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({count} mapping{count !== 1 ? 's' : ''})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            {/* View Mode & Expand/Collapse Toggles */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#FFB4C8]/10">
+              {mappingViewMode === 'PROJECT_WISE' && (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <button
+                    type="button"
+                    onClick={expandAllProjects}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#A26377] hover:text-white text-[11px] font-mono transition-colors cursor-pointer"
+                  >
+                    Expand All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={collapseAllProjects}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#30000F] hover:bg-[#3F0016] text-[#A26377] hover:text-white text-[11px] font-mono transition-colors cursor-pointer"
+                  >
+                    Collapse All
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center rounded-xl bg-[#30000F] p-1 border border-[#FFB4C8]/15 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMappingViewMode('PROJECT_WISE')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    mappingViewMode === 'PROJECT_WISE'
+                      ? 'bg-[#FF2D6D] text-white shadow-sm font-bold'
+                      : 'text-[#A26377] hover:text-white'
+                  }`}
+                  title="Group mappings project by project"
+                >
+                  <FolderGit2 className="w-3.5 h-3.5" />
+                  <span>By Project</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMappingViewMode('TABLE')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    mappingViewMode === 'TABLE'
+                      ? 'bg-[#FF2D6D] text-white shadow-sm font-bold'
+                      : 'text-[#A26377] hover:text-white'
+                  }`}
+                  title="View all mappings in a tabular list"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Table View</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* VIEW MODE 1: PROJECT-WISE ACCORDION CARDS */}
+          {mappingViewMode === 'PROJECT_WISE' && (() => {
+            const displayedProjects = projects.filter((p) => {
+              if (selectedProjectFilter !== 'ALL' && p.id !== selectedProjectFilter) {
+                return false;
+              }
+              if (!mappingSearch.trim()) return true;
+              const q = mappingSearch.toLowerCase();
+              const pMatch = p.name?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q);
+              const pMaps = mappings.filter((m) => m.projectId === p.id);
+              const mapMatch = pMaps.some(
+                (m) =>
+                  m.providerResourceName?.toLowerCase().includes(q) ||
+                  m.providerType?.toLowerCase().includes(q) ||
+                  m.providerEnvironment?.toLowerCase().includes(q) ||
+                  m.integrationName?.toLowerCase().includes(q)
+              );
+              return pMatch || mapMatch;
+            });
+
+            if (displayedProjects.length === 0) {
+              return (
+                <div className="p-12 bg-[#30000F] border border-[#FFB4C8]/15 rounded-2xl text-center flex flex-col items-center gap-3">
+                  <FolderGit2 className="w-10 h-10 text-[#A26377]" />
+                  <h3 className="text-sm font-bold text-white">No Projects Match Your Filter</h3>
+                  <p className="text-xs text-[#F4B5C8] max-w-sm">
+                    {mappingSearch ? 'Try clearing your search terms to see all project mappings.' : 'No projects found in this workspace.'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="flex flex-col gap-4">
+                {displayedProjects.map((proj) => {
+                  const projMappings = mappings.filter((m) => m.projectId === proj.id);
+                  const isExpanded = expandedProjectIds.has(proj.id);
+                  const uniqueProviderTypes = [...new Set(projMappings.map((m) => m.providerType))];
+                  const activeSyncCount = projMappings.filter((m) => m.syncEnabled).length;
+                  const envList = environmentsMap[proj.id] || [];
+
+                  return (
+                    <div
+                      key={proj.id}
+                      className="bg-[#30000F] border border-[#FFB4C8]/15 hover:border-[#FFB4C8]/30 rounded-2xl overflow-hidden transition-all shadow-md"
+                    >
+                      {/* Project Header Bar */}
+                      <div
+                        onClick={() => toggleProjectExpand(proj.id)}
+                        className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none bg-[#30000F] hover:bg-[#380012] transition-colors"
+                      >
+                        {/* Left: Project Identity */}
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-[#1E000A] border border-[#FF2D6D]/30 flex items-center justify-center text-[#FF2D6D] shrink-0">
+                            <FolderGit2 className="w-5 h-5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-bold text-white">{proj.name}</h3>
+                              <span className="text-[10px] font-mono text-[#A26377]">({proj.slug})</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[11px] font-mono text-[#FF85A2]">
+                                {envList.length} local env{envList.length !== 1 ? 's' : ''}
+                              </span>
+                              <span className="text-[#A26377]">•</span>
+                              <span className="text-[11px] font-mono text-[#34D399]">
+                                {activeSyncCount} active sync{activeSyncCount !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Center: Connected External Platform Badges */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {uniqueProviderTypes.length === 0 ? (
+                            <span className="text-[10px] font-mono text-[#A26377] italic">
+                              No external platforms connected
+                            </span>
+                          ) : (
+                            uniqueProviderTypes.map((pType) => {
+                              const meta = getProviderMeta(pType);
+                              const count = projMappings.filter((m) => m.providerType === pType).length;
+                              return (
+                                <div
+                                  key={pType}
+                                  title={`${meta.displayName} (${count} resource mapping${count !== 1 ? 's' : ''})`}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border ${meta.badgeBg} ${meta.badgeBorder} ${meta.badgeText}`}
+                                >
+                                  <span>{meta.iconSymbol}</span>
+                                  <span>{meta.shortName}</span>
+                                  <span className="opacity-75 text-[9px]">({count})</span>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Right: Actions & Expand Chevron */}
+                        <div className="flex items-center gap-2 self-end md:self-auto" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMappingModalForProject(proj)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF2D6D]/15 hover:bg-[#FF2D6D] text-[#FF85A2] hover:text-white border border-[#FF2D6D]/30 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                            title="Add an external cloud platform mapping to this project"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Map Platform</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleProjectExpand(proj.id)}
+                            className="p-1.5 rounded-xl text-[#A26377] hover:text-white hover:bg-[#1E000A] transition-colors cursor-pointer"
+                            title={isExpanded ? 'Collapse project' : 'Expand project'}
+                          >
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Project Body (Expanded) */}
+                      {isExpanded && (
+                        <div className="border-t border-[#FFB4C8]/10 bg-[#1E000A]/60 p-4 sm:p-5 flex flex-col gap-3">
+                          {projMappings.length === 0 ? (
+                            <div className="p-6 rounded-xl border border-dashed border-[#FFB4C8]/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left bg-[#30000F]/30">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-[#3F0016] text-[#FF2D6D] flex items-center justify-center shrink-0">
+                                  <Cloud className="w-5 h-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold text-white">No external platforms mapped to {proj.name}</span>
+                                  <span className="text-[11px] text-[#A26377]">
+                                    Bind any local environment to Vercel, AWS, Render, Railway, or another cloud service to automate secret distribution.
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenMappingModalForProject(proj)}
+                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FF2D6D] hover:bg-[#FF4D85] text-white text-xs font-bold transition-all cursor-pointer shadow-sm shrink-0"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Connect First Platform</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-3">
+                              {projMappings.map((m) => {
+                                const meta = getProviderMeta(m.providerType);
+                                const env = envList.find((e) => e.id === m.environmentId);
+                                const isSyncing = actionLoadingId === m.id;
+                                const isProdEnv = env?.envType === 'PRODUCTION' || env?.isProtected;
+                                const isStagingEnv = env?.envType === 'STAGING';
+
+                                return (
+                                  <div
+                                    key={m.id}
+                                    className="p-4 rounded-xl bg-[#30000F] border border-[#FFB4C8]/15 hover:border-[#FF2D6D]/40 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm"
+                                  >
+                                    {/* Pipeline Visual Route */}
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 flex-1">
+                                      {/* Local Source */}
+                                      <div className="flex items-center gap-2.5 min-w-[180px]">
+                                        <div className="w-8 h-8 rounded-lg bg-[#1E000A] border border-[#FFB4C8]/20 flex items-center justify-center text-[#FF2D6D] shrink-0 font-bold text-xs">
+                                          SV
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-mono text-[#A26377] uppercase font-bold">Local Source</span>
+                                          <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span
+                                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1 ${
+                                                isProdEnv
+                                                  ? 'bg-[#3F0016] text-[#F87171] border-[#F87171]/40'
+                                                  : isStagingEnv
+                                                  ? 'bg-[#3F0016] text-[#FBBF24] border-[#FBBF24]/40'
+                                                  : 'bg-[#3F0016] text-[#60A5FA] border-[#60A5FA]/40'
+                                              }`}
+                                            >
+                                              {isProdEnv && <ShieldCheck className="w-3 h-3 text-[#F87171]" />}
+                                              <span>{env?.name || m.environmentId}</span>
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Sync Engine Arrow */}
+                                      <div className="flex items-center gap-2 text-[#A26377] font-mono text-[10px] py-1 sm:py-0">
+                                        <div className="hidden sm:flex items-center gap-1">
+                                          <div className="w-6 h-0.5 bg-[#FF2D6D]/40" />
+                                          <ArrowRight className="w-3.5 h-3.5 text-[#FF2D6D]" />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleSync(m)}
+                                          disabled={isSyncing}
+                                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                            m.syncEnabled
+                                              ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30 hover:bg-[#34D399]/25'
+                                              : 'bg-[#A26377]/15 text-[#A26377] border border-[#A26377]/30 hover:bg-[#A26377]/25'
+                                          }`}
+                                          title="Toggle automated secret sync on update"
+                                        >
+                                          <span className={`w-1.5 h-1.5 rounded-full ${m.syncEnabled ? 'bg-[#34D399]' : 'bg-[#A26377]'}`} />
+                                          <span>{m.syncEnabled ? 'SYNC ACTIVE' : 'DISABLED'}</span>
+                                        </button>
+                                      </div>
+
+                                      {/* External Target */}
+                                      <div className="flex items-center gap-2.5 flex-1 min-w-[200px]">
+                                        <div
+                                          className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs shrink-0 ${meta.badgeBg} ${meta.badgeBorder} ${meta.badgeText}`}
+                                        >
+                                          {meta.iconSymbol}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-mono text-[#A26377] uppercase font-bold">
+                                              {meta.displayName} Target
+                                            </span>
+                                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30">
+                                              {m.providerEnvironment}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs font-mono font-bold text-white">
+                                              {m.providerResourceName || m.providerResourceId}
+                                            </span>
+                                            <span className="text-[10px] font-mono text-[#A26377] truncate max-w-[140px]">
+                                              (ID: {m.providerResourceId})
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-2 border-t sm:border-t-0 border-[#FFB4C8]/10 pt-2 sm:pt-0 justify-end shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenPushModal(m)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF2D6D]/15 text-[#FF85A2] hover:bg-[#FF2D6D] hover:text-white border border-[#FF2D6D]/30 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                                        title="Push secrets to this remote target"
+                                      >
+                                        <UploadCloud className="w-3.5 h-3.5" />
+                                        <span>Push Secrets</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenInspectModal(m)}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#1E000A] text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] border border-[#FFB4C8]/15 text-xs transition-colors cursor-pointer"
+                                        title="Inspect remote secrets on this platform"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span>Inspect</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteMapping(m)}
+                                        disabled={isSyncing}
+                                        className="p-2 rounded-xl text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer disabled:opacity-50"
+                                        title="Unlink mapping"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* VIEW MODE 2: FLAT TABLE VIEW */}
+          {mappingViewMode === 'TABLE' && (
+            <div className="bg-[#30000F] border border-[#FFB4C8]/15 rounded-2xl overflow-hidden shadow-xl">
+              {mappings.length === 0 ? (
+                <div className="p-8 text-center flex flex-col items-center gap-2">
+                  <Layers className="w-8 h-8 text-[#A26377]" />
+                  <span className="text-sm font-bold text-white">No Resource Mappings Configured</span>
+                  <span className="text-xs text-[#F4B5C8] max-w-sm">
+                    Map a SecretVault project environment to an external cloud platform to push and synchronize secrets.
+                  </span>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#1E000A] text-[#A26377] font-mono text-[10px] uppercase border-b border-[#FFB4C8]/15 tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Local Project &amp; Env</th>
+                        <th className="py-3 px-4">Platform Connector</th>
+                        <th className="py-3 px-4">Remote Target Resource</th>
+                        <th className="py-3 px-4">Remote Env</th>
+                        <th className="py-3 px-4">Sync Engine</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#FFB4C8]/10 text-white font-body">
+                      {mappings
+                        .filter((m) => {
+                          if (selectedProjectFilter !== 'ALL' && m.projectId !== selectedProjectFilter) return false;
+                          if (!mappingSearch.trim()) return true;
+                          const q = mappingSearch.toLowerCase();
+                          return (
+                            m.providerResourceName?.toLowerCase().includes(q) ||
+                            m.providerType?.toLowerCase().includes(q) ||
+                            m.providerEnvironment?.toLowerCase().includes(q) ||
+                            m.integrationName?.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((m) => {
+                          const proj = projects.find((p) => p.id === m.projectId);
+                          const envList = environmentsMap[m.projectId] || [];
+                          const env = envList.find((e) => e.id === m.environmentId);
+                          const meta = getProviderMeta(m.providerType);
+                          const isSyncing = actionLoadingId === m.id;
+
+                          return (
+                            <tr key={m.id} className="hover:bg-[#3F0016]/50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-white">{proj?.name || m.projectId}</span>
+                                  <span className="text-[10px] font-mono text-[#FF85A2]">{env?.name || m.environmentId}</span>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] border ${meta.badgeBg} ${meta.badgeBorder} ${meta.badgeText}`}>
+                                    {meta.iconSymbol}
+                                  </span>
+                                  <span className="font-medium text-xs text-white">{m.integrationName || meta.displayName}</span>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4">
+                                <div className="flex flex-col">
+                                  <span className="font-mono text-xs font-semibold text-white">{m.providerResourceName || m.providerResourceId}</span>
+                                  <span className="text-[10px] font-mono text-[#A26377]">ID: {m.providerResourceId}</span>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/30">
+                                  {m.providerEnvironment}
+                                </span>
+                              </td>
+
+                              <td className="py-3 px-4">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSync(m)}
+                                  disabled={isSyncing}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                    m.syncEnabled
+                                      ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30 hover:bg-[#34D399]/25'
+                                      : 'bg-[#A26377]/15 text-[#A26377] border border-[#A26377]/30 hover:bg-[#A26377]/25'
+                                  }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${m.syncEnabled ? 'bg-[#34D399]' : 'bg-[#A26377]'}`} />
+                                  <span>{m.syncEnabled ? 'SYNC ON' : 'DISABLED'}</span>
+                                </button>
+                              </td>
+
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenPushModal(m)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF2D6D]/15 text-[#FF85A2] hover:bg-[#FF2D6D]/25 border border-[#FF2D6D]/30 text-[11px] font-semibold transition-colors cursor-pointer"
+                                    title="Push secrets to this provider target"
+                                  >
+                                    <UploadCloud className="w-3.5 h-3.5" />
+                                    <span>Push</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenInspectModal(m)}
+                                    className="p-1.5 rounded-lg bg-[#3F0016] text-[#F4B5C8] hover:text-white border border-[#FFB4C8]/15 transition-colors cursor-pointer"
+                                    title="Inspect remote secrets"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMapping(m)}
+                                    disabled={isSyncing}
+                                    className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer"
+                                    title="Delete Mapping"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -793,61 +1320,88 @@ export const IntegrationsView = () => {
       {/* MODAL 1: CONNECT PROVIDER */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#30000F] border border-[#FFB4C8]/25 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-in">
-            <div className="px-6 py-4 border-b border-[#FFB4C8]/15 flex items-center justify-between">
+          <div className="bg-[#30000F] border border-[#FFB4C8]/25 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl animate-scale-in flex flex-col">
+            <div className="px-6 py-4 border-b border-[#FFB4C8]/15 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <Network className="w-5 h-5 text-[#FF2D6D]" />
-                <h3 className="text-base font-bold text-white">Connect External Provider</h3>
+                <h3 className="text-base font-bold text-white">Connect External Cloud Provider</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-[#A26377] hover:text-white text-lg font-bold"
+                className="text-[#A26377] hover:text-white text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateIntegration} className="p-6 flex flex-col gap-4 text-xs">
-              {/* Provider Selection */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">Select Provider</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setProviderForm({ ...providerForm, providerType: 'VERCEL' })}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                      providerForm.providerType === 'VERCEL'
-                        ? 'bg-[#FF2D6D]/15 border-[#FF2D6D] text-white'
-                        : 'bg-[#1E000A] border-[#FFB4C8]/15 text-[#F4B5C8] hover:border-[#FFB4C8]/30'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#30000F] flex items-center justify-center font-bold text-sm">
-                      ▲
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-xs">Vercel</span>
-                      <span className="text-[10px] text-[#A26377]">Deployments &amp; Serverless</span>
-                    </div>
-                  </button>
+            <form onSubmit={handleCreateIntegration} className="p-6 flex flex-col gap-4 text-xs overflow-y-auto">
+              {/* Dynamic Extensible Provider Selection */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
+                    Select External Platform ({AVAILABLE_PROVIDERS_LIST.length} Available)
+                  </label>
+                  <span className="text-[10px] font-mono text-[#34D399]">Extensible Registry</span>
+                </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setProviderForm({ ...providerForm, providerType: 'RENDER' })}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                      providerForm.providerType === 'RENDER'
-                        ? 'bg-[#FF2D6D]/15 border-[#FF2D6D] text-white'
-                        : 'bg-[#1E000A] border-[#FFB4C8]/15 text-[#F4B5C8] hover:border-[#FFB4C8]/30'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#30000F] flex items-center justify-center font-bold text-sm">
-                      ⬡
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-xs">Render</span>
-                      <span className="text-[10px] text-[#A26377]">Web &amp; Background Services</span>
-                    </div>
-                  </button>
+                {/* Search Bar for Providers */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#A26377]" />
+                  <input
+                    type="text"
+                    value={providerSearchQuery}
+                    onChange={(e) => setProviderSearchQuery(e.target.value)}
+                    placeholder="Search cloud platform (e.g. AWS, Vercel, Render, Railway, Fly.io, Azure, GCP)..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/15 text-xs text-white placeholder-[#A26377] focus:outline-none focus:border-[#FF2D6D]"
+                  />
+                </div>
+
+                {/* Provider Scrollable Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto p-1 rounded-xl bg-[#1E000A]/60 border border-[#FFB4C8]/10">
+                  {AVAILABLE_PROVIDERS_LIST.filter((p) => {
+                    if (!providerSearchQuery.trim()) return true;
+                    const q = providerSearchQuery.toLowerCase();
+                    return (
+                      p.displayName.toLowerCase().includes(q) ||
+                      p.id.toLowerCase().includes(q) ||
+                      p.category.toLowerCase().includes(q) ||
+                      p.description.toLowerCase().includes(q)
+                    );
+                  }).map((p) => {
+                    const isSelected = providerForm.providerType === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setProviderForm({
+                            ...providerForm,
+                            providerType: p.id,
+                            displayName: providerForm.displayName || `${p.displayName} Production`,
+                          });
+                        }}
+                        className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1.5 relative ${
+                          isSelected
+                            ? 'bg-[#FF2D6D]/15 border-[#FF2D6D] text-white shadow-sm ring-1 ring-[#FF2D6D]'
+                            : 'bg-[#1E000A] border-[#FFB4C8]/15 text-[#F4B5C8] hover:border-[#FFB4C8]/30 hover:bg-[#3F0016]/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={`w-7 h-7 rounded-lg border flex items-center justify-center font-bold text-xs ${p.badgeBg} ${p.badgeBorder} ${p.badgeText}`}>
+                            {p.iconSymbol}
+                          </div>
+                          <span className="text-[9px] font-mono text-[#A26377] truncate max-w-[80px]">
+                            {p.category.split(' ')[0]}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-xs text-white">{p.displayName}</span>
+                          <span className="text-[10px] text-[#A26377] line-clamp-1">{p.description}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -858,7 +1412,7 @@ export const IntegrationsView = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Production Vercel Org or Main Render Account"
+                  placeholder="e.g. Production AWS Org, Main Vercel Team, Staging Render"
                   value={providerForm.displayName}
                   onChange={(e) => setProviderForm({ ...providerForm, displayName: e.target.value })}
                   className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white placeholder-[#A26377] focus:outline-none focus:border-[#FF2D6D]"
@@ -867,22 +1421,27 @@ export const IntegrationsView = () => {
               </div>
 
               {/* API Token / Credential */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
-                    Provider API Token / Secret Key
-                  </label>
-                  <span className="text-[10px] font-mono text-[#34D399]">AES-256 Envelope Encrypted</span>
-                </div>
-                <input
-                  type="password"
-                  placeholder="Paste external platform personal/team access token..."
-                  value={providerForm.credential}
-                  onChange={(e) => setProviderForm({ ...providerForm, credential: e.target.value })}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white placeholder-[#A26377] font-mono focus:outline-none focus:border-[#FF2D6D]"
-                  required
-                />
-              </div>
+              {(() => {
+                const curMeta = getProviderMeta(providerForm.providerType);
+                return (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
+                        {curMeta.displayName} API Token / Access Key
+                      </label>
+                      <span className="text-[10px] font-mono text-[#34D399]">AES-256 Envelope Encrypted</span>
+                    </div>
+                    <input
+                      type="password"
+                      placeholder={`Paste ${curMeta.displayName} API key or access token...`}
+                      value={providerForm.credential}
+                      onChange={(e) => setProviderForm({ ...providerForm, credential: e.target.value })}
+                      className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white placeholder-[#A26377] font-mono focus:outline-none focus:border-[#FF2D6D]"
+                      required
+                    />
+                  </div>
+                );
+              })()}
 
               {/* Optional Config JSON */}
               <div className="flex flex-col gap-1.5">
@@ -891,7 +1450,7 @@ export const IntegrationsView = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder='e.g. {"teamId": "team_abc123"}'
+                  placeholder='e.g. {"teamId": "team_abc123", "region": "us-east-1"}'
                   value={providerForm.configuration}
                   onChange={(e) => setProviderForm({ ...providerForm, configuration: e.target.value })}
                   className="px-3.5 py-2 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white placeholder-[#A26377] font-mono text-[11px] focus:outline-none focus:border-[#FF2D6D]"
@@ -899,7 +1458,7 @@ export const IntegrationsView = () => {
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#FFB4C8]/15">
+              <div className="flex items-center justify-end gap-3 mt-2 pt-3 border-t border-[#FFB4C8]/15">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
@@ -910,10 +1469,10 @@ export const IntegrationsView = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold shadow-lg shadow-[#FF2D6D]/25 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold shadow-lg shadow-[#FF2D6D]/25 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Save &amp; Connect</span>
+                  <span>Save &amp; Connect Provider</span>
                 </button>
               </div>
             </form>
@@ -921,51 +1480,49 @@ export const IntegrationsView = () => {
         </div>
       )}
 
-      {/* MODAL 2: ADD RESOURCE MAPPING */}
+      {/* MODAL 2: ADD RESOURCE MAPPING (PROJECT-CENTRIC) */}
       {isMappingModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#30000F] border border-[#FFB4C8]/25 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scale-in">
             <div className="px-6 py-4 border-b border-[#FFB4C8]/15 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#FF2D6D]" />
-                <h3 className="text-base font-bold text-white">Create Resource Mapping</h3>
+                <h3 className="text-base font-bold text-white">Create Project Resource Mapping</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsMappingModalOpen(false)}
-                className="text-[#A26377] hover:text-white text-lg font-bold"
+                className="text-[#A26377] hover:text-white text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleCreateMapping} className="p-6 flex flex-col gap-4 text-xs">
-              {/* Integration Selection */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">Provider Integration</label>
-                <select
-                  value={mappingForm.integrationId}
-                  onChange={(e) => {
-                    const intId = e.target.value;
-                    setMappingForm({ ...mappingForm, integrationId: intId });
-                    const found = integrations.find((i) => i.id === intId);
-                    setSelectedIntegrationForMapping(found);
-                    if (found) handleDiscoverResources(found.id);
-                  }}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
-                >
-                  {integrations.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.displayName} ({i.providerType})
-                    </option>
-                  ))}
-                </select>
+              {/* Visual Step Pipeline Breadcrumbs */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/15 text-[11px] font-mono">
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <span className="w-5 h-5 rounded-full bg-[#FF2D6D] text-white flex items-center justify-center text-[10px]">1</span>
+                  <span>Project &amp; Env</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-[#A26377]" />
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <span className="w-5 h-5 rounded-full bg-[#FF2D6D] text-white flex items-center justify-center text-[10px]">2</span>
+                  <span>External Platform</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-[#A26377]" />
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <span className="w-5 h-5 rounded-full bg-[#FF2D6D] text-white flex items-center justify-center text-[10px]">3</span>
+                  <span>Target Resource</span>
+                </div>
               </div>
 
-              {/* Project & Environment */}
+              {/* Step 1: Project & Environment */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">SecretVault Project</label>
+                  <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
+                    1. SecretVault Project
+                  </label>
                   <select
                     value={mappingForm.projectId}
                     onChange={(e) => {
@@ -977,7 +1534,7 @@ export const IntegrationsView = () => {
                         environmentId: envList[0]?.id || '',
                       });
                     }}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
+                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
                   >
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -989,12 +1546,12 @@ export const IntegrationsView = () => {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
-                    SecretVault Environment
+                    Local Environment
                   </label>
                   <select
                     value={mappingForm.environmentId}
                     onChange={(e) => setMappingForm({ ...mappingForm, environmentId: e.target.value })}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
+                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
                   >
                     {(environmentsMap[mappingForm.projectId] || []).map((env) => (
                       <option key={env.id} value={env.id}>
@@ -1005,15 +1562,48 @@ export const IntegrationsView = () => {
                 </div>
               </div>
 
-              {/* Provider Discovered Resource Picker or Manual */}
+              {/* Step 2: Target Integration Provider */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
+                  2. External Platform Provider
+                </label>
+                <select
+                  value={mappingForm.integrationId}
+                  onChange={(e) => {
+                    const intId = e.target.value;
+                    setMappingForm({ ...mappingForm, integrationId: intId });
+                    const found = integrations.find((i) => i.id === intId);
+                    setSelectedIntegrationForMapping(found);
+                    if (found) {
+                      setMappingForm((prev) => ({
+                        ...prev,
+                        providerResourceType: getProviderMeta(found.providerType).defaultResourceType,
+                      }));
+                      handleDiscoverResources(found.id);
+                    }
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
+                >
+                  {integrations.map((i) => {
+                    const meta = getProviderMeta(i.providerType);
+                    return (
+                      <option key={i.id} value={i.id}>
+                        {meta.iconSymbol} {i.displayName} ({meta.displayName})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Step 3: Provider Discovered Resource Picker or Manual */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[#A26377] font-mono uppercase font-bold text-[10px]">
-                    Target Remote Resource (Project / Service)
+                    3. Target Remote Resource (Service / App / Secret Store)
                   </label>
                   {isDiscovering && (
                     <span className="flex items-center gap-1 text-[10px] text-[#818CF8] font-mono">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Discovering...
+                      <Loader2 className="w-3 h-3 animate-spin" /> Auto-discovering...
                     </span>
                   )}
                 </div>
@@ -1029,7 +1619,7 @@ export const IntegrationsView = () => {
                         providerResourceName: selected?.name || e.target.value,
                       });
                     }}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
+                    className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
                   >
                     <option value="">-- Choose Discovered Remote Resource --</option>
                     {discoveredResources.map((r) => (
@@ -1067,12 +1657,12 @@ export const IntegrationsView = () => {
                 <select
                   value={mappingForm.providerEnvironment}
                   onChange={(e) => setMappingForm({ ...mappingForm, providerEnvironment: e.target.value })}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D]"
+                  className="px-3.5 py-2.5 rounded-xl bg-[#1E000A] border border-[#FFB4C8]/20 text-white focus:outline-none focus:border-[#FF2D6D] cursor-pointer"
                 >
                   <option value="production">production</option>
+                  <option value="staging">staging</option>
                   <option value="preview">preview</option>
                   <option value="development">development</option>
-                  <option value="staging">staging</option>
                 </select>
               </div>
 
@@ -1085,15 +1675,38 @@ export const IntegrationsView = () => {
                   className="rounded text-[#FF2D6D] focus:ring-0 cursor-pointer"
                 />
                 <div className="flex flex-col">
-                  <span className="font-semibold text-white">Enable Automated Sync</span>
+                  <span className="font-semibold text-white">Enable Automated Sync Engine</span>
                   <span className="text-[10px] text-[#A26377]">
-                    Automatically synchronize secrets to this provider when created or modified.
+                    Automatically synchronize secrets to this remote target when updated in SecretVault.
                   </span>
                 </div>
               </label>
 
+              {/* Mapping Route Preview Summary */}
+              {(() => {
+                const selectedProj = projects.find((p) => p.id === mappingForm.projectId);
+                const selectedEnv = (environmentsMap[mappingForm.projectId] || []).find((e) => e.id === mappingForm.environmentId);
+                const selectedInt = integrations.find((i) => i.id === mappingForm.integrationId);
+                const intMeta = selectedInt ? getProviderMeta(selectedInt.providerType) : null;
+
+                return (
+                  <div className="p-3 rounded-xl bg-[#1E000A] border border-[#FF2D6D]/30 flex flex-col gap-1 text-[11px]">
+                    <span className="font-mono text-[#A26377] uppercase text-[9px] font-bold">Route Preview Summary</span>
+                    <div className="flex items-center gap-2 text-white font-mono flex-wrap">
+                      <span className="font-bold text-[#FF85A2]">{selectedProj?.name || 'Project'}</span>
+                      <span className="text-[#A26377]">({selectedEnv?.name || 'Environment'})</span>
+                      <span className="text-[#34D399]">──(Sync)──▶</span>
+                      <span className="font-bold text-white flex items-center gap-1">
+                        {intMeta?.iconSymbol} {selectedInt?.displayName || 'Provider'}
+                      </span>
+                      <span className="text-[#818CF8]">[{mappingForm.providerResourceName || mappingForm.providerResourceId || 'Target'} / {mappingForm.providerEnvironment}]</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#FFB4C8]/15">
+              <div className="flex items-center justify-end gap-3 mt-1 pt-3 border-t border-[#FFB4C8]/15">
                 <button
                   type="button"
                   onClick={() => setIsMappingModalOpen(false)}
@@ -1104,7 +1717,7 @@ export const IntegrationsView = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold shadow-lg shadow-[#FF2D6D]/25 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF2D6D] text-white hover:bg-[#FF4D85] text-xs font-bold shadow-lg shadow-[#FF2D6D]/25 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>Create Resource Mapping</span>

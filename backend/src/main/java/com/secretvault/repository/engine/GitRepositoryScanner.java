@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Executes scans across Git working trees, commit histories, branch diffs, and pull requests.
@@ -50,7 +51,7 @@ public class GitRepositoryScanner {
         for (Path file : files) {
             try {
                 String content = Files.readString(file, StandardCharsets.UTF_8);
-                String relativePath = repoDir.relativize(file).toString();
+                String relativePath = repoDir.relativize(file).toString().replace('\\', '/');
                 List<SecretDetectionResult> results = secretDetector.scanContent(
                         content, relativePath, headSha, branch, "HEAD");
                 findings.addAll(results);
@@ -82,7 +83,7 @@ public class GitRepositoryScanner {
             return scanWorkingTree(repoDir, "HEAD");
         }
 
-        String[] commitLines = logResult.stdout().split("\n");
+        String[] commitLines = logResult.stdout().split("\r\n|\r|\n");
         List<SecretDetectionResult> historyFindings = new ArrayList<>();
         int commitsCount = 0;
 
@@ -105,10 +106,17 @@ public class GitRepositoryScanner {
 
         // Also scan current working tree to ensure complete coverage
         GitScanOutput workingTreeOutput = scanWorkingTree(repoDir, "HEAD");
-        historyFindings.addAll(workingTreeOutput.findings());
+
+        Map<String, SecretDetectionResult> dedupMap = new java.util.LinkedHashMap<>();
+        for (SecretDetectionResult r : historyFindings) {
+            dedupMap.put(r.filePath() + ":" + r.lineNumber() + ":" + r.fingerprint(), r);
+        }
+        for (SecretDetectionResult r : workingTreeOutput.findings()) {
+            dedupMap.put(r.filePath() + ":" + r.lineNumber() + ":" + r.fingerprint(), r);
+        }
 
         return new GitScanOutput(
-                historyFindings,
+                new ArrayList<>(dedupMap.values()),
                 workingTreeOutput.filesScanned(),
                 commitsCount,
                 currentHead
@@ -117,13 +125,13 @@ public class GitRepositoryScanner {
 
     private List<SecretDetectionResult> scanDiffContent(String diffOutput, String commitSha, String author) {
         List<SecretDetectionResult> findings = new ArrayList<>();
-        String[] lines = diffOutput.split("\n");
+        String[] lines = diffOutput.split("\r\n|\r|\n");
         String currentFile = "unknown";
         int currentLineNumber = 1;
 
         for (String line : lines) {
             if (line.startsWith("+++ b/")) {
-                currentFile = line.substring(6).trim();
+                currentFile = line.substring(6).trim().replace('\\', '/');
             } else if (line.startsWith("@@")) {
                 // Parse line number if possible, e.g. @@ -10,4 +12,6 @@
                 int plusIdx = line.indexOf('+');

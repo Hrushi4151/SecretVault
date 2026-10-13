@@ -29,6 +29,9 @@ import {
   Zap,
   Webhook,
   Layers,
+  Settings,
+  Sliders,
+  ChevronRight,
 } from 'lucide-react';
 import { NotificationCenterModal } from '../notification/NotificationCenterModal';
 
@@ -67,58 +70,41 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     return 'SV';
   };
 
-  const workspaceNavItems = [
+  // Group 1: Core Infrastructure & Vault
+  const infrastructureNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'projects', label: 'Projects', icon: <FolderGit2 className="w-4 h-4" /> },
-    { id: 'secrets', label: 'Secrets', icon: <Key className="w-4 h-4" />, badge: 'Phase 3' },
-    { id: 'rotation', label: 'Rotation & Leases', icon: <RotateCw className="w-4 h-4 text-[#38BDF8]" />, badge: 'Phase 12' },
-    { id: 'access', label: 'Access & JIT', icon: <ShieldCheck className="w-4 h-4 text-[#FF85A2]" />, badge: 'Phase 5' },
-    { id: 'machine-identities', label: 'Machine & OIDC', icon: <Bot className="w-4 h-4 text-[#F43F5E]" />, badge: 'Phase 9' },
-    { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Phase 7' },
-    { id: 'sync-center', label: 'Sync Center', icon: <RefreshCw className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 8' },
-    { id: 'events', label: 'Event Center', icon: <Activity className="w-4 h-4 text-[#818CF8]" />, badge: 'Phase 13' },
-    { id: 'automation', label: 'Automation', icon: <Zap className="w-4 h-4 text-[#F59E0B]" />, badge: 'Phase 13' },
-    { id: 'webhooks', label: 'Webhooks', icon: <Webhook className="w-4 h-4 text-[#10B981]" />, badge: 'Phase 13' },
-    { id: 'incidents', label: 'SecOps Incidents', icon: <ShieldAlert className="w-4 h-4 text-[#EF4444]" />, badge: 'Phase 13' },
+    { id: 'projects', label: 'Projects Fleet', icon: <FolderGit2 className="w-4 h-4" /> },
+    { id: 'secrets', label: 'Secrets Vault', icon: <Key className="w-4 h-4" />, badge: 'KMS' },
+    { id: 'integrations', label: 'Integrations', icon: <Network className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Multi-Cloud' },
+    { id: 'sync-center', label: 'Sync & Drift', icon: <RefreshCw className="w-4 h-4 text-[#34D399]" />, badge: 'Live' },
   ];
 
+  // Group 2: Security & Governance
   const securityNavItems = [
-    { label: 'Security Overview', icon: <Shield className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    { label: 'Risk Center', icon: <ShieldAlert className="w-4 h-4" />, active: false, badge: 'Phase 2' },
-    {
-      id: 'repo-security',
-      label: 'Repo Security & Leaks',
-      icon: <Lock className="w-4 h-4 text-[#F43F5E]" />,
-      badge: 'Phase 12',
-      action: () => onSelectTab && onSelectTab('repo-security'),
-    },
-    {
-      id: 'drift',
-      label: 'Drift Detection',
-      icon: <RefreshCw className="w-4 h-4 text-[#34D399]" />,
-      badge: 'Phase 8',
-      action: () => onSelectTab && onSelectTab('sync-center'),
-    },
-    { label: 'Audit Logs', icon: <FileText className="w-4 h-4" />, active: false, badge: 'Phase 2' },
+    { id: 'security-overview', label: 'Security Posture', icon: <Shield className="w-4 h-4 text-[#FF2D6D]" />, badge: 'Live' },
+    { id: 'risk-center', label: 'Risk Center', icon: <ShieldAlert className="w-4 h-4 text-[#FF85A2]" />, badge: 'Posture' },
+    { id: 'access', label: 'Access & JIT', icon: <ShieldCheck className="w-4 h-4 text-[#FF85A2]" />, badge: 'Zero-Trust' },
+    { id: 'rotation', label: 'Key Rotation', icon: <RotateCw className="w-4 h-4 text-[#38BDF8]" /> },
+    { id: 'machine-identities', label: 'Machine & OIDC', icon: <Bot className="w-4 h-4 text-[#F43F5E]" /> },
+    { id: 'repo-security', label: 'Code Leaks & Repo', icon: <Lock className="w-4 h-4 text-[#F43F5E]" /> },
+    { id: 'audit-logs', label: 'Audit Trail', icon: <FileText className="w-4 h-4 text-[#38BDF8]" />, badge: 'Immutable' },
   ];
 
-  const aiOpsNavItems = [
-    {
-      id: 'ai-assistant',
-      label: 'AI Copilot & RCA',
-      icon: <Sparkles className="w-4 h-4 text-[#FF2D6D]" />,
-      badge: 'Phase 15',
-      action: () => onSelectTab && onSelectTab('ai-assistant')
-    },
-    {
-      id: 'ai-workbench',
-      label: 'Remediation Workbench',
-      icon: <Layers className="w-4 h-4 text-[#818CF8]" />,
-      badge: 'Phase 15',
-      action: () => onSelectTab && onSelectTab('ai-workbench')
-    },
+  // Group 3: Operations & Automations
+  const operationsNavItems = [
+    { id: 'events', label: 'Event Streams', icon: <Activity className="w-4 h-4 text-[#818CF8]" /> },
+    { id: 'automation', label: 'Policy Engine', icon: <Zap className="w-4 h-4 text-[#F59E0B]" /> },
+    { id: 'webhooks', label: 'Webhooks', icon: <Webhook className="w-4 h-4 text-[#10B981]" /> },
+    { id: 'incidents', label: 'SecOps Incidents', icon: <ShieldAlert className="w-4 h-4 text-[#EF4444]" /> },
   ];
 
+  // Group 4: AI Security Copilot
+  const aiNavItems = [
+    { id: 'ai-assistant', label: 'AI Copilot & RCA', icon: <Sparkles className="w-4 h-4 text-[#FF2D6D]" />, badge: 'AI' },
+    { id: 'ai-workbench', label: 'Remediation Workbench', icon: <Layers className="w-4 h-4 text-[#818CF8]" /> },
+  ];
+
+  // Group 5: Organization & Admin
   const orgNavItems = [
     {
       id: 'team',
@@ -135,11 +121,60 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
     },
     {
       id: 'settings',
-      label: 'Settings',
-      icon: <FolderGit2 className="w-4 h-4 text-[#FF85A2]" />,
+      label: 'Vault Settings',
+      icon: <Settings className="w-4 h-4 text-[#FF85A2]" />,
       action: () => onSelectTab && onSelectTab('settings'),
     },
   ];
+
+  const renderNavItem = (item) => {
+    const isActive = item.id ? item.id === activeTab : false;
+    const handleClick = () => {
+      if (item.action) {
+        item.action();
+      } else if (item.id && onSelectTab) {
+        onSelectTab(item.id);
+      }
+      setIsMobileMenuOpen(false);
+    };
+
+    return (
+      <button
+        key={item.id || item.label}
+        type="button"
+        onClick={handleClick}
+        className={`group w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all duration-150 cursor-pointer text-left ${
+          isActive
+            ? 'bg-gradient-to-r from-[#FF2D6D]/20 via-[#FF2D6D]/10 to-transparent text-white font-semibold border-l-[3px] border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/15'
+            : 'text-[#F4B5C8]/80 hover:text-white hover:bg-[#30000F]/80'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className={`shrink-0 transition-colors duration-150 ${
+              isActive
+                ? 'text-[#FF2D6D] drop-shadow-[0_0_8px_rgba(255,45,109,0.5)]'
+                : 'text-[#A26377] group-hover:text-[#FF85A2]'
+            }`}
+          >
+            {item.icon}
+          </span>
+          <span className="truncate">{item.label}</span>
+        </div>
+        {item.badge && (
+          <span
+            className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 border ${
+              isActive
+                ? 'bg-[#FF2D6D]/25 text-[#FFB4C8] border-[#FF2D6D]/40 font-bold shadow-xs'
+                : 'bg-[#30000F] text-[#A26377] border-[#FFB4C8]/10 group-hover:border-[#FFB4C8]/25 group-hover:text-[#F4B5C8]'
+            }`}
+          >
+            {item.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#26000B] font-body text-white flex flex-col antialiased">
@@ -175,197 +210,181 @@ export const AppShell = ({ children, activeTab = 'dashboard', onSelectTab }) => 
         </div>
       </div>
 
-      {/* Sidebar Desktop */}
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Desktop & Mobile Drawer */}
       <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-[#1E000A] border-r border-[#FFB4C8]/15 z-50 flex flex-col justify-between overflow-y-auto transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 h-full w-64 bg-[#1E000A] border-r border-[#FFB4C8]/15 z-50 flex flex-col justify-between transition-transform duration-200 lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-4 flex flex-col gap-6">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3 px-2 py-1">
-            <div className="w-9 h-9 rounded-xl bg-[#30000F] border border-[#FF2D6D]/40 flex items-center justify-center text-[#FF2D6D] shadow-lg shadow-[#FF2D6D]/15">
-              <Shield className="w-5 h-5" />
+        {/* Top Header & Navigation Section */}
+        <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
+          {/* Brand Logo & Mobile Close */}
+          <div className="p-3.5 pb-2.5 flex items-center justify-between border-b border-[#FFB4C8]/10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF2D6D] to-[#80002A] p-0.5 shadow-md shadow-[#FF2D6D]/20 flex items-center justify-center">
+                <div className="w-full h-full bg-[#1E000A] rounded-[10px] flex items-center justify-center text-[#FF2D6D]">
+                  <Shield className="w-4 h-4 text-[#FF2D6D]" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-headline font-bold tracking-tight text-white">
+                    SecretVault
+                  </span>
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[#FF2D6D]/20 text-[#FF85A2] border border-[#FF2D6D]/30 font-semibold">
+                    ENTERPRISE
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono tracking-wider text-[#A26377] font-medium">
+                  DevSecOps Platform
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-base font-headline font-bold tracking-tight text-white">
-                SecretVault
-              </span>
-              <span className="text-[10px] font-mono tracking-widest text-[#A26377] uppercase font-semibold">
-                DevSecOps Platform
-              </span>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg text-[#F4B5C8] hover:text-white hover:bg-[#30000F]"
+              title="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Active Workspace Mini-Badge */}
+          <div className="px-3.5 py-2.5 border-b border-[#FFB4C8]/10 bg-[#25000D]/50">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#30000F]/80 border border-[#FFB4C8]/15 shadow-inner">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-[#4A001C] border border-[#FF2D6D]/30 flex items-center justify-center text-[10px] font-bold text-[#FF85A2] shrink-0 font-mono shadow-xs">
+                  {activeWorkspace?.name ? activeWorkspace.name.slice(0, 2).toUpperCase() : 'WS'}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-white truncate">
+                    {activeWorkspace?.name || 'Default Workspace'}
+                  </span>
+                  <div className="flex items-center gap-1 text-[9px] font-mono text-[#34D399]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse" />
+                    <span>KMS VAULT ACTIVE</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMembersModalOpen(true)}
+                className="p-1 rounded-md text-[#A26377] hover:text-[#FF85A2] hover:bg-[#3F0016] transition-colors"
+                title="Manage Members"
+              >
+                <Users className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex flex-col gap-5 text-xs">
-            {/* WORKSPACE */}
+          {/* Navigation Links Scrollable List */}
+          <nav className="flex-1 px-3 py-3 flex flex-col gap-4 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#3F0016] scrollbar-track-transparent hover:scrollbar-thumb-[#FF2D6D]/30">
+            {/* GROUP 1: INFRASTRUCTURE */}
             <div className="flex flex-col gap-1">
-              <span className="px-2.5 text-[10px] font-mono font-bold tracking-wider text-[#A26377] uppercase">
-                Workspace
-              </span>
-              <div className="flex flex-col gap-1">
-                {workspaceNavItems.map((item) => {
-                  const isActive = item.id === activeTab;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onSelectTab && onSelectTab(item.id)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
-                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
-                          {item.icon}
-                        </span>
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="px-2.5 py-0.5 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest text-[#A26377] uppercase">
+                <span>Infrastructure</span>
+                <span className="text-[9px] text-[#A26377]/60 font-mono">5</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {infrastructureNavItems.map(renderNavItem)}
               </div>
             </div>
 
-            {/* SECURITY */}
+            {/* GROUP 2: SECURITY & GOVERNANCE */}
             <div className="flex flex-col gap-1">
-              <span className="px-2.5 text-[10px] font-mono font-bold tracking-wider text-[#A26377] uppercase">
-                Security
-              </span>
-              <div className="flex flex-col gap-1">
-                {securityNavItems.map((item) => {
-                  const isActive = item.id && (item.id === activeTab || (item.id === 'drift' && activeTab === 'sync-center'));
-                  return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={item.action}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
-                        item.action ? 'cursor-pointer' : 'cursor-default'
-                      } ${
-                        isActive
-                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
-                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>{item.icon}</span>
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="px-2.5 py-0.5 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest text-[#A26377] uppercase">
+                <span>Security & Governance</span>
+                <span className="text-[9px] text-[#A26377]/60 font-mono">7</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {securityNavItems.map(renderNavItem)}
               </div>
             </div>
 
-            {/* AI OPS */}
+            {/* GROUP 3: OPERATIONS & AUTOMATIONS */}
             <div className="flex flex-col gap-1">
-              <span className="px-2.5 text-[10px] font-mono font-bold tracking-wider text-[#A26377] uppercase">
-                AI Ops
-              </span>
-              <div className="flex flex-col gap-1">
-                {aiOpsNavItems.map((item) => {
-                  const isActive = item.id === activeTab;
-                  return (
-                    <button
-                      key={item.id || item.label}
-                      type="button"
-                      onClick={item.action}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
-                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
-                          {item.icon}
-                        </span>
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="px-2.5 py-0.5 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest text-[#A26377] uppercase">
+                <span>Automations & Ops</span>
+                <span className="text-[9px] text-[#A26377]/60 font-mono">4</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {operationsNavItems.map(renderNavItem)}
               </div>
             </div>
 
-            {/* ORGANIZATION */}
+            {/* GROUP 4: AI INTELLIGENCE */}
             <div className="flex flex-col gap-1">
-              <span className="px-2.5 text-[10px] font-mono font-bold tracking-wider text-[#A26377] uppercase">
-                Organization
-              </span>
-              <div className="flex flex-col gap-1">
-                {orgNavItems.map((item) => {
-                  const isActive = item.id === activeTab;
-                  return (
-                    <button
-                      key={item.id || item.label}
-                      type="button"
-                      onClick={item.action}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all text-left cursor-pointer ${
-                        isActive
-                          ? 'bg-[#FF2D6D]/15 text-white font-bold border-l-2 border-[#FF2D6D] shadow-sm shadow-[#FF2D6D]/10'
-                          : 'text-[#F4B5C8] hover:bg-[#30000F] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-[#FF2D6D]' : 'text-[#F4B5C8]'}>
-                          {item.icon}
-                        </span>
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#30000F] text-[#A26377] border border-[#FFB4C8]/15">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="px-2.5 py-0.5 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest text-[#A26377] uppercase">
+                <span>AI Intelligence</span>
+                <span className="text-[9px] text-[#FF2D6D] font-mono font-bold">AI</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {aiNavItems.map(renderNavItem)}
+              </div>
+            </div>
+
+            {/* GROUP 5: ORGANIZATION & ADMIN */}
+            <div className="flex flex-col gap-1">
+              <div className="px-2.5 py-0.5 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest text-[#A26377] uppercase">
+                <span>Organization</span>
+                <span className="text-[9px] text-[#A26377]/60 font-mono">3</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {orgNavItems.map(renderNavItem)}
               </div>
             </div>
           </nav>
         </div>
 
-        {/* Sidebar Bottom Profile */}
-        <div className="p-3 flex flex-col gap-1 bg-[#1E000A] border-t border-[#FFB4C8]/15">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#30000F] border border-[#FFB4C8]/15">
-            <div className="w-8 h-8 rounded-full bg-[#4A001C] flex items-center justify-center font-bold text-xs text-[#FF2D6D] shrink-0 border border-[#FF2D6D]/40 shadow-inner">
-              {getInitials(user?.fullName, user?.email)}
+        {/* Sidebar Bottom Profile Card */}
+        <div className="p-3 bg-[#180007] border-t border-[#FFB4C8]/15 flex flex-col gap-1 shrink-0">
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[#26000B] border border-[#FFB4C8]/15 hover:border-[#FFB4C8]/30 transition-all">
+            <div className="relative shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF2D6D] to-[#80002A] p-0.5 shadow-xs">
+                <div className="w-full h-full rounded-full bg-[#30000F] flex items-center justify-center font-bold text-xs text-[#FF2D6D]">
+                  {getInitials(user?.fullName, user?.email)}
+                </div>
+              </div>
+              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-[#1E000A]" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-semibold text-white truncate">
-                {user?.fullName || 'User'}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-semibold text-white truncate">
+                  {user?.fullName || 'User'}
+                </span>
+              </div>
               <span className="text-[10px] font-mono text-[#A26377] truncate">
                 {user?.email}
               </span>
             </div>
-            <button
-              onClick={logout}
-              className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsNotificationsModalOpen(true)}
+                className="relative p-1.5 rounded-lg text-[#F4B5C8] hover:text-white hover:bg-[#3F0016] transition-colors cursor-pointer"
+                title="Notifications"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {pendingInvitationsCount > 0 && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#FF2D6D] ring-2 ring-[#26000B]" />
+                )}
+              </button>
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-lg text-[#A26377] hover:text-[#F87171] hover:bg-[#3F0016] transition-colors cursor-pointer"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

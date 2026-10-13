@@ -153,7 +153,7 @@ public class DriftDetectionEngine {
             } else {
                 // Secret exists on both SecretVault and external provider: check for value/fingerprint divergence
                 if (desired.desiredFingerprint() != null && actual.providerFingerprint() != null
-                        && !desired.desiredFingerprint().equals(actual.providerFingerprint())) {
+                        && !SecretFingerprintCalculator.secureEquals(desired.desiredFingerprint(), actual.providerFingerprint())) {
                     DriftType driftType = DriftType.VALUE_MISMATCH;
                     DriftSeverity severity = calculateSeverity(envType, driftType);
                     String fingerprint = DriftFingerprintUtil.computeFingerprint(
@@ -201,6 +201,16 @@ public class DriftDetectionEngine {
         existingToEvaluate.addAll(existingAck);
 
         for (DriftRecord existing : existingToEvaluate) {
+            // If the existing drift was VALUE_MISMATCH but the provider does not expose a fingerprint,
+            // remote state is UNKNOWN/UNVERIFIED — do not falsely resolve as IN_SYNC!
+            if (existing.getDriftType() == DriftType.VALUE_MISMATCH) {
+                ProviderSecretState actualState = actualMap.get(existing.getSecretName());
+                if (actualState != null && actualState.providerFingerprint() == null) {
+                    log.debug("Preserving existing VALUE_MISMATCH drift for secret [{}] because provider value is UNKNOWN/unsupported", existing.getSecretName());
+                    continue;
+                }
+            }
+
             if (!activeDetectedFingerprints.contains(existing.getFingerprint())) {
                 existing.setStatus(DriftStatus.RESOLVED);
                 existing.setResolvedAt(now);

@@ -14,6 +14,8 @@ public interface EnvironmentRepository extends JpaRepository<Environment, UUID> 
 
     List<Environment> findByProjectId(UUID projectId);
 
+    List<Environment> findByProjectIdIn(java.util.Collection<UUID> projectIds);
+
     List<Environment> findByProjectIdAndStatus(UUID projectId, EnvironmentStatus status);
 
     Optional<Environment> findByIdAndProjectId(UUID id, UUID projectId);

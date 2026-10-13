@@ -57,7 +57,10 @@ public class AutomationExecutionService {
         if (actorId == null) return;
         var decision = effectiveAccessService.evaluateAccess(workspaceId, null, null, null, AccessPermission.AUTOMATION_VIEW, actorId);
         if (!decision.allowed()) {
-            throw ApiException.forbidden("Access denied: missing WORKSPACE_AUDIT_READ permission");
+            if (decision.deniedReason() != null && decision.deniedReason().toLowerCase().contains("not found")) {
+                throw ApiException.notFound(decision.deniedReason());
+            }
+            throw ApiException.forbidden(decision.deniedReason() != null ? "Access denied: " + decision.deniedReason() : "Access denied: missing AUTOMATION_VIEW permission");
         }
     }
 }

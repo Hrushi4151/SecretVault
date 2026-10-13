@@ -48,6 +48,7 @@ public class SecurityPostureService {
     private final AccessGrantRepository grantRepository;
     private final RiskAssessmentEngine riskAssessmentEngine;
     private final EffectiveAccessService effectiveAccessService;
+    private final com.secretvault.common.cache.SafeCacheService safeCacheService;
 
     private static final Set<FindingStatus> UNRESOLVED_STATUSES = Set.of(
             FindingStatus.OPEN, FindingStatus.ACKNOWLEDGED, FindingStatus.IN_PROGRESS
@@ -72,6 +73,22 @@ public class SecurityPostureService {
             RiskAssessmentEngine riskAssessmentEngine,
             EffectiveAccessService effectiveAccessService
     ) {
+        this(findingRepository, eventRepository, auditLogRepository, campaignRepository,
+             membershipRepository, grantRepository, riskAssessmentEngine, effectiveAccessService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SecurityPostureService(
+            SecurityFindingRepository findingRepository,
+            SecurityEventRepository eventRepository,
+            AuditLogRepository auditLogRepository,
+            AccessReviewCampaignRepository campaignRepository,
+            WorkspaceMembershipRepository membershipRepository,
+            AccessGrantRepository grantRepository,
+            RiskAssessmentEngine riskAssessmentEngine,
+            EffectiveAccessService effectiveAccessService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.secretvault.common.cache.SafeCacheService safeCacheService
+    ) {
         this.findingRepository = findingRepository;
         this.eventRepository = eventRepository;
         this.auditLogRepository = auditLogRepository;
@@ -80,6 +97,7 @@ public class SecurityPostureService {
         this.grantRepository = grantRepository;
         this.riskAssessmentEngine = riskAssessmentEngine;
         this.effectiveAccessService = effectiveAccessService;
+        this.safeCacheService = safeCacheService;
     }
 
     /**
@@ -92,7 +110,16 @@ public class SecurityPostureService {
                 AccessPermission.SECURITY_VIEW, callerUserId
         );
 
-        RiskAssessmentEngine.RiskAssessmentResult risk = riskAssessmentEngine.computeRisk(workspaceId);
+        if (safeCacheService != null) {
+            return safeCacheService.getOrCompute("posture_metrics", workspaceId.toString(),
+                    SecurityPostureResponse.class, Duration.ofSeconds(60),
+                    () -> computePosture(workspaceId));
+        }
+
+        return computePosture(workspaceId);
+    }
+
+    private SecurityPostureResponse computePosture(UUID workspaceId) {
 
         long openCount = findingRepository.countByWorkspaceIdAndStatusIn(workspaceId, UNRESOLVED_STATUSES);
         long criticalCount = findingRepository.countByWorkspaceIdAndSeverityAndStatusIn(workspaceId, FindingSeverity.CRITICAL, UNRESOLVED_STATUSES);
@@ -156,6 +183,16 @@ public class SecurityPostureService {
                 AccessPermission.SECURITY_VIEW, callerUserId
         );
 
+        if (safeCacheService != null) {
+            return safeCacheService.getOrCompute("posture_overview", workspaceId.toString(),
+                    SecurityOverviewResponse.class, Duration.ofSeconds(60),
+                    () -> computeOverview(workspaceId, callerUserId));
+        }
+
+        return computeOverview(workspaceId, callerUserId);
+    }
+
+    private SecurityOverviewResponse computeOverview(UUID workspaceId, UUID callerUserId) {
         RiskAssessmentEngine.RiskAssessmentResult risk = riskAssessmentEngine.computeRisk(workspaceId);
 
         List<SecurityFinding> activeFindings = findingRepository.findByWorkspaceIdAndStatusIn(workspaceId, UNRESOLVED_STATUSES);
@@ -221,8 +258,16 @@ public class SecurityPostureService {
             ));
         }
 
-        // 2. Audit Logs (if not duplicated)
-        List<AuditLog> auditLogs = auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        // 2. Audit Logs (bounded to prevent full table scan into memory)
+        List<AuditLog> auditLogs;
+        try {
+            auditLogs = auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, PageRequest.of(0, boundLimit)).getContent();
+        } catch (Exception ex) {
+            auditLogs = auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        }
+        if (auditLogs == null) {
+            auditLogs = auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        }
         for (AuditLog a : auditLogs) {
             timeline.add(new SecurityTimelineEventResponse(
                     a.getId().toString(),

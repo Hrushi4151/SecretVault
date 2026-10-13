@@ -46,16 +46,25 @@ export const JitAccessView = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const normalizeList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (Array.isArray(val.content)) return val.content;
+    if (Array.isArray(val.data)) return val.data;
+    if (Array.isArray(val.data?.data)) return val.data.data;
+    if (Array.isArray(val.data?.content)) return val.data.content;
+    return [];
+  };
+
   const loadRequests = async () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
       const statusParam = activeTab === 'PENDING' ? 'PENDING' : activeTab === 'ACTIVE' ? 'APPROVED' : null;
       const res = await jitApi.listRequests(activeWorkspace.id, statusParam);
-      const list = res.data?.data || res.data || [];
-      setRequests(list);
+      setRequests(normalizeList(res));
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Failed to load JIT requests');
+      setErrorMessage(err.payload?.message || err.response?.data?.message || err.message || 'Failed to load JIT requests');
     } finally {
       setIsLoading(false);
     }

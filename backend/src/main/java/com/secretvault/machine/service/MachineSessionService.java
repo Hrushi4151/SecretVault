@@ -80,8 +80,8 @@ public class MachineSessionService {
             throw ApiException.forbidden("Cannot issue token: machine identity is " + machine.getStatus());
         }
 
-        // Bound TTL between 60 seconds and 3600 seconds (1 hour max)
-        long effectiveTtl = Math.max(60, Math.min(ttlSeconds, 3600));
+        // Bound TTL between 60 seconds and 2,592,000 seconds (30 days max)
+        long effectiveTtl = Math.max(60, Math.min(ttlSeconds, 2592000L));
         Instant expiresAt = Instant.now().plusSeconds(effectiveTtl);
 
         // If machine identity itself has an earlier expiresAt, cap token expiration

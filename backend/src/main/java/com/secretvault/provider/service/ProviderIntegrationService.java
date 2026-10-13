@@ -27,8 +27,12 @@ import com.secretvault.security.event.model.SecurityEventSeverity;
 import com.secretvault.security.event.model.SecurityEventType;
 import com.secretvault.security.event.service.SecurityEventService;
 import com.secretvault.security.util.PaginationUtils;
+import com.secretvault.events.model.EventSeverity;
+import com.secretvault.events.model.EventType;
+import com.secretvault.events.publisher.EventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -58,6 +62,13 @@ public class ProviderIntegrationService {
     private final AuditService auditService;
     private final SecurityEventService securityEventService;
     private final ObjectMapper objectMapper;
+
+    @Autowired(required = false)
+    private EventPublisher eventPublisher;
+
+    public void setEventPublisher(EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     public ProviderIntegrationService(
             ProviderIntegrationRepository integrationRepository,
@@ -160,6 +171,35 @@ public class ProviderIntegrationService {
             );
         }
 
+        if (eventPublisher != null) {
+            if (validation.valid()) {
+                eventPublisher.publish(
+                        EventType.PROVIDER_CONNECTED,
+                        workspaceId,
+                        "PROVIDER",
+                        saved.getId().toString(),
+                        EventSeverity.INFO,
+                        Map.of(
+                                "providerId", saved.getId().toString(),
+                                "providerType", saved.getProviderType().name()
+                        )
+                );
+            } else {
+                eventPublisher.publish(
+                        EventType.PROVIDER_CONNECTION_FAILED,
+                        workspaceId,
+                        "PROVIDER",
+                        saved.getId().toString(),
+                        EventSeverity.MEDIUM,
+                        Map.of(
+                                "providerId", saved.getId().toString(),
+                                "providerType", saved.getProviderType().name(),
+                                "errorSummary", validation.errorMessage() != null ? validation.errorMessage() : "Validation failed"
+                        )
+                );
+            }
+        }
+
         return ProviderIntegrationResponse.fromEntity(saved);
     }
 
@@ -250,6 +290,10 @@ public class ProviderIntegrationService {
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
 
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations cannot be validated from Provider Integrations. Manage them in Settings > GitHub Settings.");
+        }
+
         ProviderAdapter adapter = adapterRegistry.getAdapter(integration.getProviderType());
         Map<String, Object> config = parseConfig(integration.getConfigurationJson());
         String credential = credentialService.decryptCredential(integration);
@@ -303,6 +347,58 @@ public class ProviderIntegrationService {
     }
 
     /**
+     * Disconnects an integration safely without deleting its associated resource mappings.
+     * Transitions status to REVOKED, suspending sync operations until re-connected.
+     */
+    @Transactional
+    public ProviderIntegrationResponse disconnectIntegration(UUID workspaceId, UUID integrationId, UUID callerUserId) {
+        effectiveAccessService.checkPermission(workspaceId, null, null, null, AccessPermission.INTEGRATION_MANAGE, callerUserId);
+
+        ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
+                .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
+
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations cannot be disconnected from Provider Integrations. Manage them in Settings > GitHub Settings.");
+        }
+
+        integration.setStatus(IntegrationStatus.REVOKED);
+        integration.setLastErrorMessage("Integration disconnected by user");
+        integration.setLastErrorAt(Instant.now());
+        integration.setUpdatedAt(Instant.now());
+        ProviderIntegration updated = integrationRepository.save(integration);
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                callerUserId,
+                "USER",
+                AuditAction.PROVIDER_INTEGRATION_DISABLED,
+                "PROVIDER_INTEGRATION",
+                integrationId,
+                null,
+                null,
+                "SUCCESS"
+        );
+
+        securityEventService.recordEvent(
+                workspaceId,
+                null,
+                null,
+                callerUserId,
+                SecurityEventType.PROVIDER_INTEGRATION_DISABLED,
+                SecurityEventSeverity.LOW,
+                SecurityEventOutcome.SUCCESS,
+                "PROVIDER_INTEGRATION_SERVICE",
+                null,
+                null,
+                null,
+                Map.of("integrationId", integrationId.toString(), "action", "DISCONNECT")
+        );
+
+        return ProviderIntegrationResponse.fromEntity(updated);
+    }
+
+    /**
      * Deletes an integration and cascades to associated resource mappings.
      */
     @Transactional
@@ -311,6 +407,10 @@ public class ProviderIntegrationService {
 
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
+
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations cannot be deleted from Provider Integrations. Manage them in Settings > GitHub Settings.");
+        }
 
         mappingRepository.deleteByIntegrationId(integrationId);
         integrationRepository.delete(integration);
@@ -338,6 +438,10 @@ public class ProviderIntegrationService {
 
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
+
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.notFound("Provider integration not found in this workspace");
+        }
 
         return ProviderIntegrationResponse.fromEntity(integration);
     }
@@ -375,6 +479,11 @@ public class ProviderIntegrationService {
                 "createdAt",
                 org.springframework.data.domain.Sort.Direction.DESC
         );
+
+        if (providerType != null && isRepositoryProvider(providerType)) {
+            return Page.empty(pageable);
+        }
+
         String cleanSearch = (search != null && !search.isBlank()) ? "%" + search.trim().toLowerCase() + "%" : null;
 
         return integrationRepository.searchIntegrations(workspaceId, providerType, status, cleanSearch, pageable)
@@ -391,6 +500,10 @@ public class ProviderIntegrationService {
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
 
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations do not support runtime environment capabilities.");
+        }
+
         ProviderAdapter adapter = adapterRegistry.getAdapter(integration.getProviderType());
         return adapter.getCapabilities();
     }
@@ -404,6 +517,10 @@ public class ProviderIntegrationService {
 
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
+
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations do not support runtime resource discovery.");
+        }
 
         ProviderAdapter adapter = adapterRegistry.getAdapter(integration.getProviderType());
         Map<String, Object> config = parseConfig(integration.getConfigurationJson());
@@ -427,11 +544,19 @@ public class ProviderIntegrationService {
         ProviderIntegration integration = integrationRepository.findByIdAndWorkspaceId(integrationId, workspaceId)
                 .orElseThrow(() -> ApiException.notFound("Provider integration not found in this workspace"));
 
+        if (isRepositoryProvider(integration.getProviderType())) {
+            throw ApiException.badRequest("Code repository integrations do not support runtime environment discovery.");
+        }
+
         ProviderAdapter adapter = adapterRegistry.getAdapter(integration.getProviderType());
         Map<String, Object> config = parseConfig(integration.getConfigurationJson());
         String credential = credentialService.decryptCredential(integration);
 
         return adapter.discoverEnvironments(config, credential, providerResourceId);
+    }
+
+    private boolean isRepositoryProvider(ProviderType type) {
+        return type == ProviderType.GITHUB || type == ProviderType.GITLAB;
     }
 
     @SuppressWarnings("unchecked")

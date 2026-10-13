@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { oidcApi } from '../../api/oidc';
 import {
   Server,
@@ -19,7 +20,9 @@ import {
   Globe
 } from 'lucide-react';
 
-export const OidcProvidersView = ({ workspaceId, onBack }) => {
+export const OidcProvidersView = ({ workspaceId: propWorkspaceId, onBack }) => {
+  const { activeWorkspace } = useAuth();
+  const workspaceId = propWorkspaceId || activeWorkspace?.id;
   const [providers, setProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -50,15 +53,29 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
     }
   }, [workspaceId]);
 
-  const loadProviders = async () => {
+  const unwrapData = (res, fallback = null) => {
+    if (res == null) return fallback;
+    if (Array.isArray(res)) return res;
+    if (typeof res === 'object') {
+      if (Array.isArray(res.data)) return res.data;
+      if (res.data?.data !== undefined) return res.data.data;
+      if (res.data !== undefined) return res.data;
+      return res;
+    }
+    return res;
+  };
+
+  const loadProviders = async (clearError = true) => {
     try {
       setIsLoading(true);
-      setErrorMessage(null);
+      if (clearError) {
+        setErrorMessage(null);
+      }
       const res = await oidcApi.listProviders(workspaceId);
-      const data = res.data?.data || res.data || [];
+      const data = unwrapData(res, []);
       setProviders(Array.isArray(data) ? data : []);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to load OIDC providers');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to load OIDC providers');
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +106,7 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
     } else {
       setFormData({
         name: 'Generic OIDC Provider',
-        providerType: 'GENERIC_OIDC',
+        providerType: 'GENERIC',
         issuer: 'https://oidc.example.com',
         audience: 'secretvault',
         discoveryUrl: 'https://oidc.example.com/.well-known/openid-configuration',
@@ -109,7 +126,9 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
       setIsCreateModalOpen(false);
       loadProviders();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to create OIDC provider');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to create OIDC provider');
+      // If conflict or error, reload providers so already existing providers show up without wiping error
+      loadProviders(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,13 +139,13 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
       setTestingProviderId(providerId);
       setTestResult(null);
       const res = await oidcApi.testConnection(workspaceId, providerId);
-      const resultData = res.data?.data || res.data;
+      const resultData = unwrapData(res, {});
       setTestResult({ providerId, ...resultData });
     } catch (err) {
       setTestResult({
         providerId,
         success: false,
-        message: err.response?.data?.message || err.message || 'Connection test failed',
+        message: err.payload?.message || err.message || 'Connection test failed',
       });
     } finally {
       setTestingProviderId(null);
@@ -140,7 +159,7 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
       setSuccessMessage('JWKS keys successfully refreshed and cached in memory.');
       loadProviders();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to refresh JWKS');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to refresh JWKS');
     } finally {
       setRefreshingProviderId(null);
     }
@@ -155,7 +174,7 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
       setSuccessMessage(`OIDC Provider "${providerName}" deleted.`);
       loadProviders();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to delete provider');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to delete provider');
     }
   };
 
@@ -314,24 +333,28 @@ export const OidcProvidersView = ({ workspaceId, onBack }) => {
                 </div>
 
                 {/* Test Connection Output */}
-                {testResult && testResult.providerId === p.id && (
-                  <div className={`p-2.5 rounded-lg text-xs font-mono border ${
-                    testResult.success
-                      ? 'bg-status-success/10 text-status-success border-status-success/20'
-                      : 'bg-status-error/10 text-status-error border-status-error/20'
-                  }`}>
-                    <div className="flex items-center gap-1.5 font-semibold mb-1">
-                      {testResult.success ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                      {testResult.success ? 'Discovery & JWKS Reachable' : 'Discovery Test Failed'}
-                    </div>
-                    <div className="text-[11px] opacity-90">{testResult.message}</div>
-                    {testResult.keysCount !== undefined && (
-                      <div className="text-[10px] text-text-secondary mt-1">
-                        Discovered Public Keys: {testResult.keysCount} RSA/EC Keys
+                {testResult && testResult.providerId === p.id && (() => {
+                  const isOk = testResult.success === true || testResult.status === 'SUCCESS';
+                  const keyCount = testResult.keysCount ?? testResult.keysLoadedCount;
+                  return (
+                    <div className={`p-2.5 rounded-lg text-xs font-mono border ${
+                      isOk
+                        ? 'bg-status-success/10 text-status-success border-status-success/20'
+                        : 'bg-status-error/10 text-status-error border-status-error/20'
+                    }`}>
+                      <div className="flex items-center gap-1.5 font-semibold mb-1">
+                        {isOk ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        {isOk ? 'Discovery & JWKS Reachable' : 'Discovery Test Failed'}
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="text-[11px] opacity-90">{testResult.message || testResult.error}</div>
+                      {keyCount !== undefined && (
+                        <div className="text-[10px] text-text-secondary mt-1">
+                          Discovered Public Keys: {keyCount} RSA/EC Keys
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-2 border-t border-outline-variant/60">

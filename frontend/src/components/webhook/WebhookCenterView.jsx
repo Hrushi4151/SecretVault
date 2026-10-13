@@ -102,6 +102,19 @@ export const WebhookCenterView = () => {
     }
   };
 
+  const handleRotate = async (endpointId) => {
+    if (!workspaceId) return;
+    if (!window.confirm('Rotate webhook signing secret? The previous secret remains valid during the transition period.')) return;
+    try {
+      const data = await webhooksApi.rotateSecret(workspaceId, endpointId);
+      setRevealedSecret(data?.signingSecret || data);
+      alert('Webhook signing secret rotated successfully!');
+      fetchEndpoints();
+    } catch (err) {
+      alert('Failed to rotate secret: ' + (err?.response?.data?.message || err.message));
+    }
+  };
+
   const handleTest = async (endpointId) => {
     if (!workspaceId) return;
     try {
@@ -110,6 +123,17 @@ export const WebhookCenterView = () => {
       fetchDeliveries();
     } catch (err) {
       alert('Test ping failed: ' + (err?.response?.data?.message || err.message));
+    }
+  };
+
+  const handleRetry = async (deliveryId) => {
+    if (!workspaceId) return;
+    try {
+      await webhooksApi.retryDelivery(workspaceId, deliveryId);
+      alert('Delivery replay queued!');
+      fetchDeliveries();
+    } catch (err) {
+      alert('Failed to replay delivery: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -215,6 +239,13 @@ export const WebhookCenterView = () => {
                     <Key className="w-3.5 h-3.5" />
                     <span>Reveal Secret</span>
                   </button>
+                  <button
+                    onClick={() => handleRotate(selectedEndpoint.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Rotate</span>
+                  </button>
                 </div>
               </div>
 
@@ -234,6 +265,7 @@ export const WebhookCenterView = () => {
                           <th className="py-2.5 px-3">HTTP Code</th>
                           <th className="py-2.5 px-3">Duration</th>
                           <th className="py-2.5 px-3">Delivered At</th>
+                          <th className="py-2.5 px-3 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/30">
@@ -247,6 +279,17 @@ export const WebhookCenterView = () => {
                             <td className="py-2.5 px-3 font-mono text-white">{del.httpStatus || 'N/A'}</td>
                             <td className="py-2.5 px-3 font-mono text-[#94A3B8]">{del.durationMs || 0} ms</td>
                             <td className="py-2.5 px-3 font-mono text-[#94A3B8]">{new Date(del.createdAt).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right">
+                              {del.status !== 'SUCCESS' && (
+                                <button
+                                  onClick={() => handleRetry(del.id)}
+                                  className="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-highest text-white border border-outline-variant text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                >
+                                  <Play className="w-3 h-3 text-emerald-400" />
+                                  <span>Retry</span>
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

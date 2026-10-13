@@ -55,6 +55,9 @@ public class OutboxEvent {
     @Column(name = "locked_by", length = 128)
     private String lockedBy;
 
+    @Column(name = "claim_token", length = 128)
+    private String claimToken;
+
     @Column(name = "last_error", columnDefinition = "TEXT")
     private String lastError;
 
@@ -122,6 +125,8 @@ public class OutboxEvent {
     public void setLockedAt(Instant lockedAt) { this.lockedAt = lockedAt; }
     public String getLockedBy() { return lockedBy; }
     public void setLockedBy(String lockedBy) { this.lockedBy = lockedBy; }
+    public String getClaimToken() { return claimToken; }
+    public void setClaimToken(String claimToken) { this.claimToken = claimToken; }
     public String getLastError() { return lastError; }
     public void setLastError(String lastError) { this.lastError = lastError; }
     public Instant getProcessedAt() { return processedAt; }
@@ -133,5 +138,6 @@ public class OutboxEvent {
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }
     public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

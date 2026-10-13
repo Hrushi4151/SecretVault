@@ -24,7 +24,10 @@ public interface OidcTrustPolicyRepository extends JpaRepository<OidcTrustPolicy
     @Query("SELECT p FROM OidcTrustPolicy p WHERE p.oidcProviderId = :providerId AND p.enabled = true ORDER BY p.priority DESC")
     List<OidcTrustPolicy> findActivePoliciesByProviderId(@Param("providerId") UUID providerId);
 
-    @Query("SELECT p FROM OidcTrustPolicy p WHERE p.workspaceId = :workspaceId AND p.oidcProviderId = :providerId AND p.enabled = true ORDER BY p.priority DESC")
+    @Query("SELECT p FROM OidcTrustPolicy p, com.secretvault.machine.entity.MachineIdentity m " +
+           "WHERE p.machineIdentityId = m.id AND p.workspaceId = :workspaceId AND p.oidcProviderId = :providerId " +
+           "AND p.enabled = true AND m.deletedAt IS NULL AND m.status = com.secretvault.machine.model.MachineStatus.ACTIVE " +
+           "ORDER BY p.priority DESC")
     List<OidcTrustPolicy> findActivePoliciesByWorkspaceAndProvider(@Param("workspaceId") UUID workspaceId, @Param("providerId") UUID providerId);
 
     void deleteByMachineIdentityId(UUID machineIdentityId);

@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface SecurityFindingRepository extends JpaRepository<SecurityFinding, UUID> {
+public interface SecurityFindingRepository extends JpaRepository<SecurityFinding, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<SecurityFinding> {
 
     Optional<SecurityFinding> findByWorkspaceIdAndFingerprint(UUID workspaceId, String fingerprint);
 
@@ -25,27 +25,45 @@ public interface SecurityFindingRepository extends JpaRepository<SecurityFinding
 
     Page<SecurityFinding> findByWorkspaceId(UUID workspaceId, Pageable pageable);
 
-    @Query("""
-        SELECT f FROM SecurityFinding f
-        WHERE f.workspaceId = :workspaceId
-          AND (:status IS NULL OR f.status = :status)
-          AND (:severity IS NULL OR f.severity = :severity)
-          AND (:category IS NULL OR f.category = :category)
-          AND (:projectId IS NULL OR f.projectId = :projectId)
-          AND (:environmentId IS NULL OR f.environmentId = :environmentId)
-          AND (:search IS NULL OR LOWER(f.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(f.safeDescription) LIKE LOWER(CONCAT('%', :search, '%')))
-        ORDER BY f.lastObservedAt DESC
-    """)
-    Page<SecurityFinding> searchFindings(
-            @Param("workspaceId") UUID workspaceId,
-            @Param("status") FindingStatus status,
-            @Param("severity") FindingSeverity severity,
-            @Param("category") FindingCategory category,
-            @Param("projectId") UUID projectId,
-            @Param("environmentId") UUID environmentId,
-            @Param("search") String search,
+    default Page<SecurityFinding> searchFindings(
+            UUID workspaceId,
+            FindingStatus status,
+            FindingSeverity severity,
+            FindingCategory category,
+            UUID projectId,
+            UUID environmentId,
+            String search,
             Pageable pageable
-    );
+    ) {
+        org.springframework.data.jpa.domain.Specification<SecurityFinding> spec = (root, query, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            predicates.add(cb.equal(root.get("workspaceId"), workspaceId));
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (severity != null) {
+                predicates.add(cb.equal(root.get("severity"), severity));
+            }
+            if (category != null) {
+                predicates.add(cb.equal(root.get("category"), category));
+            }
+            if (projectId != null) {
+                predicates.add(cb.equal(root.get("projectId"), projectId));
+            }
+            if (environmentId != null) {
+                predicates.add(cb.equal(root.get("environmentId"), environmentId));
+            }
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.trim().toLowerCase(java.util.Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), pattern),
+                        cb.like(cb.lower(root.get("safeDescription")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        return findAll(spec, pageable);
+    }
 
     List<SecurityFinding> findByWorkspaceIdAndStatusIn(UUID workspaceId, Collection<FindingStatus> statuses);
 

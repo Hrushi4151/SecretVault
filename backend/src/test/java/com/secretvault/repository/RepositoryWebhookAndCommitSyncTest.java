@@ -96,13 +96,15 @@ class RepositoryWebhookAndCommitSyncTest {
 
         assertEquals(200, response.getStatusCode().value());
         assertTrue(Boolean.TRUE.equals(response.getBody().get("scansTriggered") != null));
+        assertEquals(1, response.getBody().get("scansEnqueued"));
 
-        // Verify scanService.triggerRepositoryScan was called immediately with ScanType.FULL
-        verify(scanService, times(1)).triggerRepositoryScan(
+        // Verify scanService.enqueueRepositoryScan was called to durably queue the scan
+        verify(scanService, times(1)).enqueueRepositoryScan(
                 eq(workspaceId),
                 eq(repositoryId),
                 eq(ScanType.FULL),
                 eq("main"),
+                isNull(),
                 isNull()
         );
 
@@ -112,7 +114,7 @@ class RepositoryWebhookAndCommitSyncTest {
     }
 
     @Test
-    @DisplayName("Dedicated repository webhook endpoint triggers immediate FULL scan")
+    @DisplayName("Dedicated repository webhook endpoint durably enqueues FULL scan")
     void testDedicatedRepositoryWebhookTriggersScan() {
         when(repositoryRepo.findByIdAndWorkspaceId(repositoryId, workspaceId))
                 .thenReturn(Optional.of(testRepo));
@@ -125,18 +127,125 @@ class RepositoryWebhookAndCommitSyncTest {
                 """;
 
         ResponseEntity<Map<String, Object>> response = webhookController.handleRepositorySpecificWebhook(
-                workspaceId, repositoryId, "push", payload
+                workspaceId, repositoryId, "push", "deliv-spec-123", payload
         );
 
         assertEquals(200, response.getStatusCode().value());
-        verify(scanService, times(1)).triggerRepositoryScan(
+        verify(scanService, times(1)).enqueueRepositoryScan(
                 eq(workspaceId),
                 eq(repositoryId),
                 eq(ScanType.FULL),
                 eq("feature-branch"),
+                eq("deliv-spec-123"),
                 isNull()
         );
         assertEquals("commit33333333333333333333333333333333333333", testRepo.getLastCommitSha());
+    }
+
+    @Test
+    @DisplayName("Fast acknowledgement: Webhook accepts delivery and responds without blocking on scan execution")
+    void testWebhookFastAcknowledgement() {
+        when(repositoryRepo.findByOwnerIgnoreCaseAndNameIgnoreCase("Hrushi4151", "Rally"))
+                .thenReturn(List.of(testRepo));
+
+        String payload = """
+                {
+                    "ref": "refs/heads/main",
+                    "after": "fastcommit1111111111111111111111111111111111",
+                    "repository": {
+                        "name": "Rally",
+                        "owner": { "login": "Hrushi4151" }
+                    }
+                }
+                """;
+
+        long start = System.currentTimeMillis();
+        ResponseEntity<Map<String, Object>> response =
+                webhookController.handleGitHubWebhook("push", "fast-deliv-001", null, payload);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("SUCCESS", response.getBody().get("status"));
+        assertEquals("fast-deliv-001", response.getBody().get("deliveryId"));
+        assertTrue(elapsed < 500, "Webhook acknowledgement took longer than expected: " + elapsed + "ms");
+
+        verify(scanService, times(1)).enqueueRepositoryScan(
+                eq(workspaceId), eq(repositoryId), eq(ScanType.FULL), eq("main"), eq("fast-deliv-001"), isNull()
+        );
+    }
+
+    @Test
+    @DisplayName("Duplicate deliveries: Same delivery ID is acknowledged as DUPLICATE without re-enqueue")
+    void testWebhookDuplicateDeliveryDeduplication() {
+        when(repositoryRepo.findByOwnerIgnoreCaseAndNameIgnoreCase("Hrushi4151", "Rally"))
+                .thenReturn(List.of(testRepo));
+
+        String payload = """
+                {
+                    "ref": "refs/heads/main",
+                    "after": "dupcommit2222222222222222222222222222222222",
+                    "repository": {
+                        "name": "Rally",
+                        "owner": { "login": "Hrushi4151" }
+                    }
+                }
+                """;
+
+        String deliveryId = "dup-deliv-" + UUID.randomUUID();
+
+        // 1. First delivery -> accepted & enqueued
+        ResponseEntity<Map<String, Object>> first =
+                webhookController.handleGitHubWebhook("push", deliveryId, null, payload);
+        assertEquals(200, first.getStatusCode().value());
+        assertEquals("SUCCESS", first.getBody().get("status"));
+
+        // 2. Duplicate delivery -> DUPLICATE status, scan not enqueued again
+        ResponseEntity<Map<String, Object>> second =
+                webhookController.handleGitHubWebhook("push", deliveryId, null, payload);
+        assertEquals(200, second.getStatusCode().value());
+        assertEquals("DUPLICATE", second.getBody().get("status"));
+        assertEquals(deliveryId, second.getBody().get("deliveryId"));
+
+        verify(scanService, times(1)).enqueueRepositoryScan(any(), any(), any(), any(), eq(deliveryId), isNull());
+    }
+
+    @Test
+    @DisplayName("Enqueue failure & retry: Enqueue exceptions clear delivery cache allowing successful retry")
+    void testWebhookEnqueueFailureAndRetry() {
+        when(repositoryRepo.findByOwnerIgnoreCaseAndNameIgnoreCase("Hrushi4151", "Rally"))
+                .thenReturn(List.of(testRepo));
+
+        String payload = """
+                {
+                    "ref": "refs/heads/main",
+                    "after": "retrycommit333333333333333333333333333333333",
+                    "repository": {
+                        "name": "Rally",
+                        "owner": { "login": "Hrushi4151" }
+                    }
+                }
+                """;
+
+        String deliveryId = "retry-deliv-" + UUID.randomUUID();
+
+        // Simulate database/enqueue failure on first attempt
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("DB Connection timeout"))
+                .doAnswer(inv -> new RepositoryScan())
+                .when(scanService).enqueueRepositoryScan(any(), any(), any(), any(), eq(deliveryId), isNull());
+
+        // Attempt 1: Fails with 500 ERROR and clears delivery cache
+        ResponseEntity<Map<String, Object>> first =
+                webhookController.handleGitHubWebhook("push", deliveryId, null, payload);
+        assertEquals(500, first.getStatusCode().value());
+        assertEquals("ERROR", first.getBody().get("status"));
+
+        // Attempt 2 (GitHub retry): Delivery cache cleared, retry succeeds with 200 SUCCESS
+        ResponseEntity<Map<String, Object>> retry =
+                webhookController.handleGitHubWebhook("push", deliveryId, null, payload);
+        assertEquals(200, retry.getStatusCode().value());
+        assertEquals("SUCCESS", retry.getBody().get("status"));
+
+        verify(scanService, times(2)).enqueueRepositoryScan(any(), any(), any(), any(), eq(deliveryId), isNull());
     }
 
     @Test

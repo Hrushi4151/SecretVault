@@ -12,6 +12,8 @@ public enum ErrorCode {
     SV_TIMEOUT("Network request timed out"),
     SV_CIRCUIT_OPEN("Circuit breaker is open due to consecutive failures"),
     SV_CONFIGURATION_INVALID("Invalid SDK or client configuration"),
+    SV_INVALID_REQUEST("Invalid request parameters or payload validation failure"),
+    SV_CONFLICT("Resource conflict or concurrent modification"),
     SV_STALE_CACHE_EXPIRED("Cached secret exceeded maximum allowed stale duration"),
     SV_INTERNAL_ERROR("Unexpected internal SDK error");
 

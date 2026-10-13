@@ -84,8 +84,7 @@ public class AutomationApprovalService {
     ) {
         verifyManageAccess(workspaceId, actorId);
 
-        AutomationApproval approval = approvalRepository.findById(approvalId)
-                .filter(a -> a.getWorkspaceId().equals(workspaceId))
+        AutomationApproval approval = approvalRepository.findByWorkspaceIdAndId(workspaceId, approvalId)
                 .orElseThrow(() -> ApiException.notFound("Automation approval not found"));
 
         if (approval.getStatus() != AutomationApprovalStatus.PENDING) {
@@ -98,19 +97,51 @@ public class AutomationApprovalService {
             throw ApiException.badRequest("Approval request has expired");
         }
 
-        // Anti-self-approval rule
-        if (actorId != null && actorId.toString().equals(approval.getRequestedBy())) {
-            throw ApiException.forbidden("Anti-self-approval violation: Requester cannot approve their own automation action");
+        // Anti-self-approval rule: Requester or Policy Creator cannot approve their own action
+        AutomationPolicy policy = approval.getPolicyId() != null
+                ? policyRepository.findById(approval.getPolicyId()).orElse(null)
+                : null;
+
+        if (actorId != null) {
+            if (actorId.toString().equalsIgnoreCase(approval.getRequestedBy())) {
+                throw ApiException.forbidden("Anti-self-approval violation: Requester cannot approve their own automation action");
+            }
+            if (policy != null && policy.getCreatedBy() != null && policy.getCreatedBy().equals(actorId)) {
+                throw ApiException.forbidden("Anti-self-approval violation: Policy creator cannot approve sensitive automation execution (four-eyes principle)");
+            }
         }
 
+        // Recheck policy state at execution time
+        if (approve) {
+            if (policy == null || !policy.isEnabled()) {
+                throw ApiException.badRequest("Cannot execute approved action: parent automation policy is disabled or deleted");
+            }
+        }
+
+        // Atomic DB guarded update for replay and race protection
+        Instant now = Instant.now();
+        AutomationApprovalStatus newStatus = approve ? AutomationApprovalStatus.APPROVED : AutomationApprovalStatus.REJECTED;
+        String reason = !approve ? (rejectionReason != null ? rejectionReason : "Rejected by operator") : null;
+
+        int updated = approvalRepository.updateStatusGuarded(
+                approvalId,
+                workspaceId,
+                AutomationApprovalStatus.PENDING,
+                newStatus,
+                actorId,
+                now,
+                reason,
+                now
+        );
+
+        if (updated == 0) {
+            throw ApiException.conflict("Approval decision failed: already decided or expired by another concurrent transaction");
+        }
+
+        approval.setStatus(newStatus);
         approval.setDecidedBy(actorId);
-        approval.setDecidedAt(Instant.now());
-        approval.setStatus(approve ? AutomationApprovalStatus.APPROVED : AutomationApprovalStatus.REJECTED);
-        if (!approve) {
-            approval.setRejectionReason(rejectionReason != null ? rejectionReason : "Rejected by operator");
-        }
-
-        AutomationApproval saved = approvalRepository.save(approval);
+        approval.setDecidedAt(now);
+        approval.setRejectionReason(reason);
 
         // Update parent execution
         AutomationExecution exec = executionRepository.findById(approval.getExecutionId()).orElse(null);
@@ -119,14 +150,9 @@ public class AutomationApprovalService {
                 exec.setStatus(AutomationExecutionStatus.COMPLETED);
                 // Execute the action
                 try {
-                    AutomationPolicy policy = approval.getPolicyId() != null
-                            ? policyRepository.findById(approval.getPolicyId()).orElse(null)
-                            : null;
-                    if (policy != null) {
-                        Map<String, Object> params = objectMapper.readValue(approval.getActionPayloadJson(), new TypeReference<>() {});
-                        AutomationAction action = new AutomationAction(AutomationActionType.valueOf(approval.getActionType()), params);
-                        automationEngine.executeAction(policy, null, action);
-                    }
+                    Map<String, Object> params = objectMapper.readValue(approval.getActionPayloadJson(), new TypeReference<>() {});
+                    AutomationAction action = new AutomationAction(AutomationActionType.valueOf(approval.getActionType()), params);
+                    automationEngine.executeAction(policy, null, action);
                 } catch (Exception e) {
                     log.error("Failed to execute approved automation action {}: {}", approval.getId(), e.getMessage(), e);
                     exec.setStatus(AutomationExecutionStatus.FAILED);
@@ -134,7 +160,7 @@ public class AutomationApprovalService {
                 }
             } else {
                 exec.setStatus(AutomationExecutionStatus.DENIED);
-                exec.setErrorMessage("Action rejected: " + rejectionReason);
+                exec.setErrorMessage("Action rejected: " + reason);
             }
             executionRepository.save(exec);
         }
@@ -146,20 +172,80 @@ public class AutomationApprovalService {
                 "USER",
                 approve ? AuditAction.AUTOMATION_APPROVAL_APPROVED : AuditAction.AUTOMATION_APPROVAL_REJECTED,
                 "AUTOMATION_APPROVAL",
-                saved.getId(),
+                approval.getId(),
                 null,
                 null,
-                approve ? "Approved action " + saved.getActionType() : "Rejected: " + rejectionReason
+                approve ? "Approved action " + approval.getActionType() : "Rejected: " + reason
         );
 
-        return saved;
+        return approval;
+    }
+
+    @Transactional
+    public AutomationApproval cancelApproval(UUID workspaceId, UUID approvalId, UUID actorId) {
+        verifyManageAccess(workspaceId, actorId);
+
+        AutomationApproval approval = approvalRepository.findByWorkspaceIdAndId(workspaceId, approvalId)
+                .orElseThrow(() -> ApiException.notFound("Automation approval not found"));
+
+        if (approval.getStatus() != AutomationApprovalStatus.PENDING) {
+            throw ApiException.badRequest("Cannot cancel approval: already " + approval.getStatus());
+        }
+
+        Instant now = Instant.now();
+        String reason = "Cancelled by operator";
+
+        int updated = approvalRepository.updateStatusGuarded(
+                approvalId,
+                workspaceId,
+                AutomationApprovalStatus.PENDING,
+                AutomationApprovalStatus.REJECTED,
+                actorId,
+                now,
+                reason,
+                now
+        );
+
+        if (updated == 0) {
+            throw ApiException.conflict("Cancel failed: approval was already decided concurrently");
+        }
+
+        approval.setStatus(AutomationApprovalStatus.REJECTED);
+        approval.setDecidedBy(actorId);
+        approval.setDecidedAt(now);
+        approval.setRejectionReason(reason);
+
+        AutomationExecution exec = executionRepository.findById(approval.getExecutionId()).orElse(null);
+        if (exec != null) {
+            exec.setStatus(AutomationExecutionStatus.DENIED);
+            exec.setErrorMessage(reason);
+            executionRepository.save(exec);
+        }
+
+        auditService.recordAudit(
+                null,
+                workspaceId,
+                actorId,
+                "USER",
+                AuditAction.AUTOMATION_APPROVAL_REJECTED,
+                "AUTOMATION_APPROVAL",
+                approval.getId(),
+                null,
+                null,
+                reason
+        );
+
+        return approval;
     }
 
     private void verifyManageAccess(UUID workspaceId, UUID actorId) {
         if (actorId == null) return;
         var decision = effectiveAccessService.evaluateAccess(workspaceId, null, null, null, AccessPermission.AUTOMATION_MANAGE, actorId);
         if (!decision.allowed()) {
-            throw ApiException.forbidden("Access denied: missing WORKSPACE_SETTINGS_MANAGE permission");
+            if (decision.deniedReason() != null && decision.deniedReason().toLowerCase().contains("not found")) {
+                throw ApiException.notFound(decision.deniedReason());
+            }
+            throw ApiException.forbidden(decision.deniedReason() != null ? "Access denied: " + decision.deniedReason() : "Access denied: missing AUTOMATION_MANAGE permission");
         }
     }
 
@@ -167,7 +253,10 @@ public class AutomationApprovalService {
         if (actorId == null) return;
         var decision = effectiveAccessService.evaluateAccess(workspaceId, null, null, null, AccessPermission.AUTOMATION_VIEW, actorId);
         if (!decision.allowed()) {
-            throw ApiException.forbidden("Access denied: missing WORKSPACE_SETTINGS_READ permission");
+            if (decision.deniedReason() != null && decision.deniedReason().toLowerCase().contains("not found")) {
+                throw ApiException.notFound(decision.deniedReason());
+            }
+            throw ApiException.forbidden(decision.deniedReason() != null ? "Access denied: " + decision.deniedReason() : "Access denied: missing AUTOMATION_VIEW permission");
         }
     }
 }

@@ -42,6 +42,35 @@ public class NotificationController {
             String quietHoursEnd
     ) {}
 
+    public record CreateNotificationRequest(
+            String title,
+            String message,
+            NotificationSeverity severity,
+            String actionUrl,
+            UUID recipientId
+    ) {}
+
+    @PostMapping("/notifications")
+    @Operation(summary = "Create and dispatch an in-app notification")
+    public ResponseEntity<ApiResponse<Notification>> createNotification(
+            @PathVariable UUID workspaceId,
+            @RequestBody CreateNotificationRequest req,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = req.recipientId() != null ? req.recipientId() : (principal != null ? principal.getId() : null);
+        NotificationSeverity sev = req.severity() != null ? req.severity() : NotificationSeverity.INFO;
+        Notification notif = notificationService.createNotification(
+                workspaceId,
+                actorId,
+                sev,
+                req.title(),
+                req.message(),
+                null,
+                req.actionUrl()
+        );
+        return ResponseEntity.ok(ApiResponse.success(notif, "Notification dispatched successfully"));
+    }
+
     @GetMapping("/notifications")
     @Operation(summary = "List notifications for current user/workspace")
     public ResponseEntity<ApiResponse<Page<Notification>>> listNotifications(

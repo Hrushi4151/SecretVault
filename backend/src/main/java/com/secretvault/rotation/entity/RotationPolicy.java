@@ -13,6 +13,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -82,6 +84,7 @@ public class RotationPolicy {
     @Column(name = "secret_type", nullable = false, length = 32)
     private SecretType secretType = SecretType.PASSWORD;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "secret_generator_config", columnDefinition = "jsonb")
     private String secretGeneratorConfig;
 

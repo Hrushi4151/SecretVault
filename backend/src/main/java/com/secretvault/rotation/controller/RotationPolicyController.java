@@ -26,6 +26,30 @@ public class RotationPolicyController {
         this.rotationService = rotationService;
     }
 
+    @GetMapping("/api/v1/workspaces/{workspaceId}/rotation-policies")
+    @Operation(summary = "List all rotation policies in a workspace")
+    public ResponseEntity<ApiResponse<java.util.List<RotationPolicyResponse>>> listPolicies(
+            @PathVariable UUID workspaceId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        java.util.List<RotationPolicyResponse> response = rotationService.listPolicies(workspaceId, actorId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/api/v1/workspaces/{workspaceId}/secrets/{secretId}/rotation-policy")
+    @Operation(summary = "Create rotation policy for a secret (auto-resolves project and environment)")
+    public ResponseEntity<ApiResponse<RotationPolicyResponse>> createPolicyDirect(
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID secretId,
+            @Valid @RequestBody CreateRotationPolicyRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID actorId = principal != null ? principal.getId() : null;
+        RotationPolicyResponse response = rotationService.createPolicy(workspaceId, secretId, request, actorId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Rotation policy created successfully"));
+    }
+
     @PostMapping("/api/v1/workspaces/{workspaceId}/projects/{projectId}/environments/{environmentId}/secrets/{secretId}/rotation-policy")
     @Operation(summary = "Create rotation policy for a secret")
     public ResponseEntity<ApiResponse<RotationPolicyResponse>> createPolicy(

@@ -372,6 +372,424 @@ public class EffectiveAccessService {
      * Explains the effective state and lineage for all canonical permissions on a given resource target.
      * Provides the foundation for Access Reviews and Governance Auditing.
      */
+    private static class EvaluationContext {
+        AccessDecision failureDecision;
+        WorkspaceRole wsRole;
+        WorkspaceRole effProjectRole;
+        PermissionLevel effEnvPerm;
+        Project project;
+        Environment environment;
+        Secret secret;
+        UUID projectId;
+        UUID environmentId;
+        UUID secretId;
+        boolean userAuthorizedForProject = true;
+        List<AccessGrant> userGrants = List.of();
+        List<JitAccessRequest> userJits = List.of();
+        List<com.secretvault.access.privileged.entity.PrivilegedAccessElevation> userElevations = List.of();
+        Instant now;
+        com.secretvault.machine.entity.MachineIdentity machineIdentity;
+    }
+
+    private EvaluationContext buildEvaluationContext(
+            UUID workspaceId,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            UUID userId
+    ) {
+        EvaluationContext ctx = new EvaluationContext();
+        ctx.now = clock.instant();
+
+        if (userId == null) {
+            ctx.failureDecision = AccessDecision.deny(null, "Unauthenticated actor: user ID must not be null");
+            return ctx;
+        }
+        if (workspaceId == null) {
+            ctx.failureDecision = AccessDecision.deny(null, "Tenant context missing: workspace ID must not be null");
+            return ctx;
+        }
+
+        if (!workspaceRepository.existsById(workspaceId)) {
+            ctx.failureDecision = AccessDecision.deny(null, AccessScope.WORKSPACE, "Workspace not found");
+            return ctx;
+        }
+
+        if (machineIdentityRepository != null) {
+            Optional<com.secretvault.machine.entity.MachineIdentity> machineOpt = machineIdentityRepository.findByIdAndDeletedAtIsNull(userId);
+            if (machineOpt.isPresent()) {
+                ctx.machineIdentity = machineOpt.get();
+                if (!ctx.machineIdentity.getWorkspaceId().equals(workspaceId)) {
+                    ctx.failureDecision = AccessDecision.deny(null, AccessScope.WORKSPACE, "Cross-tenant access denied: Machine identity belongs to a different workspace");
+                    return ctx;
+                }
+            }
+        }
+
+        WorkspaceMembership membership = null;
+        if (ctx.machineIdentity == null) {
+            Optional<WorkspaceMembership> membershipOpt = membershipRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            if (membershipOpt.isEmpty()) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.WORKSPACE, "User is not an active member of this workspace");
+                return ctx;
+            }
+            membership = membershipOpt.get();
+            ctx.wsRole = membership.getRole();
+        }
+
+        // Secret validation
+        if (secretId != null) {
+            Optional<Secret> sOpt = secretRepository.findById(secretId);
+            if (sOpt.isEmpty()) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.SECRET, "Secret not found");
+                return ctx;
+            }
+            ctx.secret = sOpt.get();
+            if (environmentId != null && !ctx.secret.getEnvironmentId().equals(environmentId)) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.SECRET, "Secret does not belong to the specified environment");
+                return ctx;
+            }
+            environmentId = ctx.secret.getEnvironmentId();
+        }
+
+        // Environment resolution
+        if (environmentId != null && projectId == null) {
+            Optional<Environment> eOpt = environmentRepository.findById(environmentId);
+            if (eOpt.isEmpty()) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.ENVIRONMENT, "Environment not found");
+                return ctx;
+            }
+            ctx.environment = eOpt.get();
+            projectId = ctx.environment.getProjectId();
+        }
+
+        // Project validation
+        if (projectId != null) {
+            Optional<Project> projOpt = projectRepository.findByIdAndWorkspaceId(projectId, workspaceId);
+            if (projOpt.isEmpty()) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.PROJECT, "Project not found in this workspace");
+                return ctx;
+            }
+            ctx.project = projOpt.get();
+        }
+
+        // Environment validation
+        if (environmentId != null && ctx.environment == null) {
+            Optional<Environment> envOpt = environmentRepository.findByIdAndProjectId(environmentId, projectId);
+            if (envOpt.isEmpty()) {
+                ctx.failureDecision = AccessDecision.deny(null, AccessScope.ENVIRONMENT, "Environment not found in this project");
+                return ctx;
+            }
+            ctx.environment = envOpt.get();
+        }
+
+        ctx.projectId = projectId;
+        ctx.environmentId = environmentId;
+        ctx.secretId = secretId;
+
+        if (ctx.machineIdentity != null) {
+            return ctx;
+        }
+
+        // Standing project role & authorization
+        if (projectId != null) {
+            if (ctx.wsRole != WorkspaceRole.OWNER && ctx.wsRole != WorkspaceRole.ADMIN) {
+                ctx.userAuthorizedForProject = isUserAuthorizedForProject(workspaceId, ctx.project, membership, userId);
+            }
+
+            Optional<ProjectAccess> projAccess = projectAccessRepository.findByProjectIdAndUserId(projectId, userId);
+            ctx.effProjectRole = ProjectAccessService.computeEffectiveRole(
+                    ctx.wsRole,
+                    projAccess.map(ProjectAccess::getRole).orElse(ctx.wsRole)
+            );
+        }
+
+        if (environmentId != null) {
+            Optional<EnvironmentAccess> envAccess = environmentAccessRepository.findByEnvironmentIdAndUserId(environmentId, userId);
+            ctx.effEnvPerm = EnvironmentAccessService.computeEffectivePermission(
+                    ctx.effProjectRole,
+                    envAccess.map(EnvironmentAccess::getPermissionLevel).orElse(null)
+            );
+        }
+
+        // Batch load user grants, jits, elevations
+        if (accessGrantRepository != null) {
+            try {
+                ctx.userGrants = accessGrantRepository.findByWorkspaceIdAndUserId(workspaceId, userId);
+            } catch (Exception e) {
+                ctx.userGrants = List.of();
+            }
+        }
+        if (jitRepository != null) {
+            try {
+                ctx.userJits = jitRepository.findActiveGrantsForUser(workspaceId, userId, ctx.now);
+            } catch (Exception e) {
+                ctx.userJits = List.of();
+            }
+        }
+        if (privilegedElevationRepository != null) {
+            try {
+                ctx.userElevations = privilegedElevationRepository.findActiveElevationsForUser(workspaceId, userId, ctx.now);
+            } catch (Exception e) {
+                ctx.userElevations = List.of();
+            }
+        }
+
+        return ctx;
+    }
+
+    private AccessDecision evaluateAccessWithContext(EvaluationContext ctx, AccessPermission permission) {
+        if (permission == null) {
+            return AccessDecision.deny(null, "Permission must not be null");
+        }
+        if (ctx.failureDecision != null) {
+            return AccessDecision.deny(
+                    permission,
+                    ctx.failureDecision.scope(),
+                    ctx.failureDecision.deniedReason()
+            );
+        }
+        if (ctx.machineIdentity != null) {
+            return evaluateMachineAccess(
+                    ctx.machineIdentity.getWorkspaceId(),
+                    ctx.projectId,
+                    ctx.environmentId,
+                    ctx.secretId,
+                    permission,
+                    ctx.machineIdentity
+            );
+        }
+
+        // Hard invariants
+        if (ctx.secret != null && ctx.secret.getStatus() == SecretStatus.DELETED) {
+            if (permission == AccessPermission.SECRET_UPDATE ||
+                    permission == AccessPermission.SECRET_DELETE ||
+                    permission == AccessPermission.SECRET_ROLLBACK ||
+                    permission == AccessPermission.SECRET_BRANCH) {
+                return AccessDecision.deny(permission, AccessScope.SECRET, "Cannot perform mutations on a deleted secret");
+            }
+        }
+
+        if (permission == AccessPermission.SECRET_BRANCH && ctx.environment != null) {
+            if (ctx.environment.getEnvType() != EnvType.DEVELOPMENT) {
+                return AccessDecision.deny(
+                        permission,
+                        AccessScope.ENVIRONMENT,
+                        "Feature branches are only permitted in DEVELOPMENT environments. Environment [" + ctx.environment.getName() + "] is of type " + ctx.environment.getEnvType() + "."
+                );
+            }
+        }
+
+        // Standing authorization for project check
+        if (ctx.projectId != null && !ctx.userAuthorizedForProject) {
+            AccessDecision granularDecision = evaluateGranularGrantFromList(
+                    ctx.userGrants, ctx.projectId, ctx.environmentId, ctx.secretId, permission
+            );
+            if (granularDecision != null && granularDecision.allowed()) {
+                return granularDecision;
+            }
+            AccessDecision jitDecision = evaluateJitGrantFromList(
+                    ctx.userJits, ctx.environmentId, ctx.secretId, permission
+            );
+            if (jitDecision != null && jitDecision.allowed()) {
+                return jitDecision;
+            }
+            AccessDecision privDecision = evaluatePrivilegedElevationFromList(
+                    ctx.userElevations, ctx.projectId, ctx.environmentId, ctx.secretId, permission, ctx.now
+            );
+            if (privDecision != null && privDecision.allowed()) {
+                return privDecision;
+            }
+            return AccessDecision.deny(permission, AccessScope.PROJECT, "You are not authorized to access this project");
+        }
+
+        // Standing scoped access
+        AccessDecision standingDecision = evaluateStandingPermission(
+                permission, ctx.wsRole, ctx.effProjectRole, ctx.effEnvPerm, ctx.project, ctx.environment, ctx.secret
+        );
+        if (standingDecision.allowed()) {
+            return standingDecision;
+        }
+
+        // Granular grants
+        AccessDecision granularDecision = evaluateGranularGrantFromList(
+                ctx.userGrants, ctx.projectId, ctx.environmentId, ctx.secretId, permission
+        );
+        if (granularDecision != null && granularDecision.allowed()) {
+            return granularDecision;
+        }
+
+        // JIT grants
+        AccessDecision jitDecision = evaluateJitGrantFromList(
+                ctx.userJits, ctx.environmentId, ctx.secretId, permission
+        );
+        if (jitDecision != null && jitDecision.allowed()) {
+            return jitDecision;
+        }
+
+        // Privileged elevations
+        AccessDecision privDecision = evaluatePrivilegedElevationFromList(
+                ctx.userElevations, ctx.projectId, ctx.environmentId, ctx.secretId, permission, ctx.now
+        );
+        if (privDecision != null && privDecision.allowed()) {
+            return privDecision;
+        }
+
+        return standingDecision;
+    }
+
+    private AccessDecision evaluateGranularGrantFromList(
+            List<AccessGrant> grants,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            AccessPermission permission
+    ) {
+        if (grants == null || grants.isEmpty()) {
+            return null;
+        }
+        for (AccessGrant grant : grants) {
+            if (grant.getPermission() != permission) {
+                continue;
+            }
+            switch (grant.getScopeType()) {
+                case WORKSPACE -> {
+                    return AccessDecision.allow(
+                            permission,
+                            AccessScope.WORKSPACE,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit workspace granular grant authorizes " + permission.getCode()
+                    );
+                }
+                case PROJECT -> {
+                    if (projectId != null && projectId.equals(grant.getProjectId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.PROJECT,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit project granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+                case ENVIRONMENT -> {
+                    if (environmentId != null && environmentId.equals(grant.getEnvironmentId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.ENVIRONMENT,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit environment granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+                case SECRET -> {
+                    if (secretId != null && secretId.equals(grant.getSecretId())) {
+                        return AccessDecision.allow(
+                            permission,
+                            AccessScope.SECRET,
+                            AccessSourceType.GRANULAR_GRANT,
+                            grant.getId().toString(),
+                            "Explicit secret granular grant authorizes " + permission.getCode()
+                        );
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private AccessDecision evaluateJitGrantFromList(
+            List<JitAccessRequest> jits,
+            UUID environmentId,
+            UUID secretId,
+            AccessPermission permission
+    ) {
+        if (jits == null || jits.isEmpty() || environmentId == null) {
+            return null;
+        }
+        for (JitAccessRequest req : jits) {
+            if (req.getRequestedPermission() != permission) {
+                continue;
+            }
+            if (!environmentId.equals(req.getEnvironmentId())) {
+                continue;
+            }
+            if (req.getSecretId() == null || (secretId != null && req.getSecretId().equals(secretId))) {
+                return AccessDecision.allow(
+                        permission,
+                        AccessScope.ENVIRONMENT,
+                        AccessSourceType.JIT_GRANT,
+                        req.getId().toString(),
+                        "Active JIT temporary elevation authorizes " + permission.getCode() + " until " + req.getExpiresAt()
+                );
+            }
+        }
+        return null;
+    }
+
+    private AccessDecision evaluatePrivilegedElevationFromList(
+            List<com.secretvault.access.privileged.entity.PrivilegedAccessElevation> elevations,
+            UUID projectId,
+            UUID environmentId,
+            UUID secretId,
+            AccessPermission permission,
+            Instant now
+    ) {
+        if (elevations == null || elevations.isEmpty()) {
+            return null;
+        }
+        for (var elev : elevations) {
+            if (!elev.isActive(now)) {
+                continue;
+            }
+            if (elev.getGrantedPermission() != null && elev.getGrantedPermission() != permission) {
+                continue;
+            }
+            boolean matchesScope = false;
+            AccessScope targetScope = AccessScope.WORKSPACE;
+            switch (elev.getScopeType()) {
+                case WORKSPACE -> {
+                    matchesScope = true;
+                    targetScope = AccessScope.WORKSPACE;
+                }
+                case PROJECT -> {
+                    if (projectId != null && projectId.equals(elev.getProjectId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.PROJECT;
+                    }
+                }
+                case ENVIRONMENT -> {
+                    if (environmentId != null && environmentId.equals(elev.getEnvironmentId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.ENVIRONMENT;
+                    }
+                }
+                case SECRET -> {
+                    if (secretId != null && secretId.equals(elev.getSecretId())) {
+                        matchesScope = true;
+                        targetScope = AccessScope.SECRET;
+                    }
+                }
+            }
+            if (matchesScope) {
+                return AccessDecision.allow(
+                        permission,
+                        targetScope,
+                        AccessSourceType.PRIVILEGED_ELEVATION,
+                        elev.getId().toString(),
+                        "Active privileged elevation [" + elev.getAction() + "] authorizes " + permission.getCode() + " until " + elev.getExpiresAt()
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Explains the effective state and lineage for all canonical permissions on a given resource target.
+     * Provides the foundation for Access Reviews and Governance Auditing.
+     */
     @Transactional(readOnly = true)
     public List<EffectiveAccessExplanation> explainAccess(
             UUID workspaceId,
@@ -380,9 +798,10 @@ public class EffectiveAccessService {
             UUID secretId,
             UUID userId
     ) {
-        List<EffectiveAccessExplanation> explanations = new ArrayList<>();
+        EvaluationContext ctx = buildEvaluationContext(workspaceId, projectId, environmentId, secretId, userId);
+        List<EffectiveAccessExplanation> explanations = new ArrayList<>(AccessPermission.values().length);
         for (AccessPermission perm : AccessPermission.values()) {
-            AccessDecision decision = evaluateAccess(workspaceId, projectId, environmentId, secretId, perm, userId);
+            AccessDecision decision = evaluateAccessWithContext(ctx, perm);
             explanations.add(EffectiveAccessExplanation.fromDecision(perm, decision));
         }
         return explanations;
@@ -399,9 +818,10 @@ public class EffectiveAccessService {
             UUID secretId,
             UUID userId
     ) {
+        EvaluationContext ctx = buildEvaluationContext(workspaceId, projectId, environmentId, secretId, userId);
         Set<AccessPermission> grantedPerms = EnumSet.noneOf(AccessPermission.class);
         for (AccessPermission perm : AccessPermission.values()) {
-            AccessDecision decision = evaluateAccess(workspaceId, projectId, environmentId, secretId, perm, userId);
+            AccessDecision decision = evaluateAccessWithContext(ctx, perm);
             if (decision.allowed()) {
                 grantedPerms.add(perm);
             }
@@ -587,16 +1007,22 @@ public class EffectiveAccessService {
             case SECRET_ROTATION_CREATE:
             case SECRET_ROTATION_MANAGE:
             case SECRET_ROTATION_CANCEL:
+            case SECRET_ROTATION_ROLLBACK:
+            case SECRET_ROTATION_POLICY_MANAGE:
+            case SECRET_LEASE_MANAGE:
+            case CONSUMER_MANAGE:
+            case AUTOMATION_MANAGE:
+            case WEBHOOK_MANAGE:
                 if (wsRole == WorkspaceRole.OWNER || wsRole == WorkspaceRole.ADMIN || (effProjectRole == WorkspaceRole.ADMIN)) {
                     return AccessDecision.allow(
                             permission,
                             AccessScope.WORKSPACE,
                             AccessSourceType.WORKSPACE_ROLE,
                             wsRole.name(),
-                            "Workspace governance role authorizes security, repository security, integrations, drift management, rotation, and access administration"
+                            "Workspace governance role authorizes security, repository security, integrations, drift management, rotation, automation, and access administration"
                     );
                 }
-                return AccessDecision.deny(permission, targetScope, "Governance, repository security, drift, and integration administration require OWNER or ADMIN authority");
+                return AccessDecision.deny(permission, targetScope, "Governance, repository security, drift, automation, and integration administration require OWNER or ADMIN authority");
 
             case INTEGRATION_SYNC:
             case SYNC_EXECUTE:
@@ -629,12 +1055,16 @@ public class EffectiveAccessService {
             case SYNC_DRY_RUN:
             case DRIFT_VIEW:
             case REPOSITORY_VIEW:
+            case SECRET_ROTATION_READ:
+            case SECRET_LEASE_READ:
+            case AUTOMATION_VIEW:
+            case WEBHOOK_VIEW:
                 return AccessDecision.allow(
                         permission,
                         AccessScope.WORKSPACE,
                         AccessSourceType.WORKSPACE_ROLE,
                         wsRole.name(),
-                        "Active workspace members are permitted to view integrations, repositories, scans, drift status, security posture, and submit JIT requests"
+                        "Active workspace members are permitted to view integrations, repositories, scans, drift status, security posture, automation policies, rotation policies/jobs, leases, and submit JIT requests"
                 );
 
             default:

@@ -307,4 +307,139 @@ describe('SecretRevealProtection Frontend Flow', () => {
       expect(screen.queryByTestId('copy-secret-button')).not.toBeInTheDocument();
     });
   });
+
+  it('correctly renders immutable version history ledger from paginated Page response', async () => {
+    versionsApi.getVersions.mockResolvedValue({
+      content: [
+        { id: 'v-3', versionNumber: 3, versionType: 'UPDATE', createdAt: new Date().toISOString(), tags: ['production'] },
+        { id: 'v-2', versionNumber: 2, versionType: 'UPDATE', createdAt: new Date().toISOString(), tags: [] },
+        { id: 'v-1', versionNumber: 1, versionType: 'INITIAL', createdAt: new Date().toISOString(), tags: [] },
+      ],
+      totalElements: 3,
+      totalPages: 1,
+    });
+
+    render(
+      <SecretDetailsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        secret={{ ...testSecret, currentVersionNumber: 3 }}
+        workspaceId="ws-1"
+        projectId="proj-1"
+        environmentId="env-1"
+        environmentName="Production"
+      />
+    );
+
+    const versionsTabBtn = screen.getByText(/Versions & Lineage/i);
+    fireEvent.click(versionsTabBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Version 3')).toBeInTheDocument();
+      expect(screen.getByText('Version 2')).toBeInTheDocument();
+      expect(screen.getByText('Version 1')).toBeInTheDocument();
+      expect(screen.getByText('CURRENT')).toBeInTheDocument();
+      expect(screen.getByText('production')).toBeInTheDocument();
+    });
+  });
+
+  it('warns operator and disables reveal when secret lifecycle status is DISABLED', async () => {
+    render(
+      <SecretDetailsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        secret={{ ...testSecret, status: 'DISABLED' }}
+        workspaceId="ws-1"
+        projectId="proj-1"
+        environmentId="env-1"
+        environmentName="Production"
+      />
+    );
+
+    expect(screen.getByText(/This secret is currently/i)).toBeInTheDocument();
+    expect(screen.getByText('DISABLED', { selector: 'strong' })).toBeInTheDocument();
+
+    const revealBtn = screen.getByTestId('reveal-secret-button');
+    expect(revealBtn).toBeDisabled();
+  });
+
+  it('allows revealing and hiding historical secret version inline within the Versions & Lineage section', async () => {
+    versionsApi.getVersions.mockResolvedValue({
+      content: [
+        { id: 'v-2', versionNumber: 2, versionType: 'UPDATE', createdAt: new Date().toISOString(), tags: [] },
+        { id: 'v-1', versionNumber: 1, versionType: 'INITIAL', createdAt: new Date().toISOString(), tags: [] },
+      ],
+    });
+
+    secretApi.createRevealIntent.mockResolvedValueOnce({
+      data: {
+        intentToken: 'intent_tok_v1',
+        policyLevel: 'DEFAULT',
+        copyAllowed: true,
+        maxDisplayDurationSeconds: 30,
+      },
+    });
+
+    secretApi.reveal.mockResolvedValueOnce({
+      data: {
+        value: 'decrypted_historical_v1_payload',
+        versionNumber: 1,
+        maxDisplayDurationSeconds: 30,
+        policyLevel: 'DEFAULT',
+        copyAllowed: true,
+      },
+    });
+
+    render(
+      <SecretDetailsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        secret={{ ...testSecret, currentVersionNumber: 2 }}
+        workspaceId="ws-1"
+        projectId="proj-1"
+        environmentId="env-1"
+        environmentName="Production"
+      />
+    );
+
+    const versionsTabBtn = screen.getByText(/Versions & Lineage/i);
+    fireEvent.click(versionsTabBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Version 1')).toBeInTheDocument();
+    });
+
+    const revealV1Btn = screen.getByTestId('reveal-version-1-button');
+    fireEvent.click(revealV1Btn);
+
+    await waitFor(() => {
+      expect(secretApi.createRevealIntent).toHaveBeenCalledWith(
+        'ws-1',
+        'proj-1',
+        'env-1',
+        'sec-uuid-1',
+        expect.objectContaining({ versionNumber: 1 }),
+        null
+      );
+      expect(secretApi.reveal).toHaveBeenCalledWith(
+        'ws-1',
+        'proj-1',
+        'env-1',
+        'sec-uuid-1',
+        expect.objectContaining({ intentToken: 'intent_tok_v1', versionNumber: 1 }),
+        null
+      );
+      expect(screen.getByTestId('version-revealed-value-1')).toHaveTextContent('decrypted_historical_v1_payload');
+      expect(screen.getByTestId('hide-version-1-button')).toBeInTheDocument();
+    });
+
+    // Clicking hide hides the inline version value
+    const hideV1Btn = screen.getByTestId('hide-version-1-button');
+    fireEvent.click(hideV1Btn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('version-revealed-value-1')).not.toBeInTheDocument();
+      expect(screen.getByTestId('reveal-version-1-button')).toBeInTheDocument();
+    });
+  });
 });

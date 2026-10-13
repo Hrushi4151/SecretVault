@@ -10,13 +10,20 @@ import com.secretvault.machine.model.MachineType;
 import com.secretvault.machine.repository.MachineIdentityRepository;
 import com.secretvault.machine.repository.MachineSessionRepository;
 import com.secretvault.workspace.repository.WorkspaceRepository;
+import com.secretvault.events.model.EventSeverity;
+import com.secretvault.events.model.EventType;
+import com.secretvault.events.publisher.EventPublisher;
+import com.secretvault.machine.repository.MachineAccessGrantRepository;
+import com.secretvault.oidc.repository.OidcTrustPolicyRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -28,6 +35,16 @@ public class MachineIdentityService {
     private final MachineSessionRepository sessionRepository;
     private final WorkspaceRepository workspaceRepository;
     private final AuditService auditService;
+    private final MachineSessionService sessionService;
+    private final MachineAccessGrantRepository grantRepository;
+    private final OidcTrustPolicyRepository policyRepository;
+
+    @Autowired(required = false)
+    private EventPublisher eventPublisher;
+
+    public void setEventPublisher(EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     public MachineIdentityService(
             MachineIdentityRepository machineRepository,
@@ -35,10 +52,26 @@ public class MachineIdentityService {
             WorkspaceRepository workspaceRepository,
             AuditService auditService
     ) {
+        this(machineRepository, sessionRepository, workspaceRepository, auditService, null, null, null);
+    }
+
+    @Autowired
+    public MachineIdentityService(
+            MachineIdentityRepository machineRepository,
+            MachineSessionRepository sessionRepository,
+            WorkspaceRepository workspaceRepository,
+            AuditService auditService,
+            @Autowired(required = false) MachineSessionService sessionService,
+            @Autowired(required = false) MachineAccessGrantRepository grantRepository,
+            @Autowired(required = false) OidcTrustPolicyRepository policyRepository
+    ) {
         this.machineRepository = machineRepository;
         this.sessionRepository = sessionRepository;
         this.workspaceRepository = workspaceRepository;
         this.auditService = auditService;
+        this.sessionService = sessionService;
+        this.grantRepository = grantRepository;
+        this.policyRepository = policyRepository;
     }
 
     @Transactional
@@ -86,6 +119,23 @@ public class MachineIdentityService {
         );
 
         log.info("Created machine identity [{}] (ID: {}) in workspace [{}]", saved.getName(), saved.getId(), workspaceId);
+
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.MACHINE_CREATED,
+                    workspaceId,
+                    "MACHINE_IDENTITY",
+                    saved.getId().toString(),
+                    EventSeverity.INFO,
+                    Map.of(
+                            "machineId", saved.getId().toString(),
+                            "machineName", saved.getName(),
+                            "role", saved.getType() != null ? saved.getType().name() : "CI_CD",
+                            "status", saved.getStatus().name()
+                    )
+            );
+        }
+
         return MachineDtos.MachineIdentityResponse.fromEntity(saved);
     }
 
@@ -213,6 +263,22 @@ public class MachineIdentityService {
         );
 
         log.info("Disabled machine identity [{}] (ID: {}) in workspace [{}]", saved.getName(), saved.getId(), workspaceId);
+
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.MACHINE_DISABLED,
+                    workspaceId,
+                    "MACHINE_IDENTITY",
+                    saved.getId().toString(),
+                    EventSeverity.MEDIUM,
+                    Map.of(
+                            "machineId", saved.getId().toString(),
+                            "machineName", saved.getName(),
+                            "status", saved.getStatus().name()
+                    )
+            );
+        }
+
         return MachineDtos.MachineIdentityResponse.fromEntity(saved);
     }
 
@@ -280,7 +346,69 @@ public class MachineIdentityService {
         );
 
         log.warn("Revoked machine identity [{}] (ID: {}) in workspace [{}]", saved.getName(), saved.getId(), workspaceId);
+
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    EventType.MACHINE_REVOKED,
+                    workspaceId,
+                    "MACHINE_IDENTITY",
+                    saved.getId().toString(),
+                    EventSeverity.HIGH,
+                    Map.of(
+                            "machineId", saved.getId().toString(),
+                            "machineName", saved.getName(),
+                            "status", saved.getStatus().name()
+                    )
+            );
+        }
+
         return MachineDtos.MachineIdentityResponse.fromEntity(saved);
+    }
+
+    @Transactional
+    public MachineDtos.GenerateMachineTokenResponse generateDirectToken(
+            UUID workspaceId,
+            UUID machineId,
+            MachineDtos.GenerateMachineTokenRequest request,
+            String sourceIp,
+            String userAgent,
+            UUID actorId
+    ) {
+        if (sessionService == null) {
+            throw ApiException.internalServerError("Machine session service is unavailable");
+        }
+
+        MachineIdentity machine = machineRepository.findByIdAndWorkspaceIdAndDeletedAtIsNull(machineId, workspaceId)
+                .orElseThrow(() -> ApiException.notFound("Machine identity not found in this workspace"));
+
+        if (!machine.isUsable(Instant.now())) {
+            throw ApiException.forbidden("Cannot generate token: machine identity is " + machine.getStatus());
+        }
+
+        long ttlSeconds = (request != null && request.ttlSeconds() != null && request.ttlSeconds() > 0)
+                ? request.ttlSeconds()
+                : 2592000L; // default 30 days for service / direct token
+
+        MachineSessionService.MachineTokenResult result = sessionService.createSession(
+                workspaceId,
+                machineId,
+                null,
+                sourceIp,
+                userAgent,
+                Map.of(
+                        "description", request != null && request.description() != null ? request.description() : "Direct token generation",
+                        "generatedBy", actorId != null ? actorId.toString() : "SYSTEM"
+                ),
+                ttlSeconds
+        );
+
+        return new MachineDtos.GenerateMachineTokenResponse(
+                result.rawToken(),
+                result.tokenPrefix(),
+                result.expiresAt(),
+                result.expiresInSeconds(),
+                MachineDtos.MachineIdentityResponse.fromEntity(machine)
+        );
     }
 
     @Transactional
@@ -295,6 +423,22 @@ public class MachineIdentityService {
 
         sessionRepository.revokeAllByWorkspaceAndMachine(workspaceId, id, Instant.now());
         machineRepository.save(identity);
+
+        if (policyRepository != null) {
+            try {
+                policyRepository.deleteByMachineIdentityId(id);
+            } catch (Exception e) {
+                log.warn("Could not delete trust policies for machine identity [{}]: {}", id, e.getMessage());
+            }
+        }
+
+        if (grantRepository != null) {
+            try {
+                grantRepository.deleteByMachineIdentityId(id);
+            } catch (Exception e) {
+                log.warn("Could not delete grants for machine identity [{}]: {}", id, e.getMessage());
+            }
+        }
 
         auditService.recordAudit(
                 null,

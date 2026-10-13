@@ -59,15 +59,29 @@ export const MachineIdentitiesView = () => {
     }
   }, [activeWorkspace?.id]);
 
-  const loadMachines = async () => {
+  const unwrapData = (res, fallback = null) => {
+    if (res == null) return fallback;
+    if (Array.isArray(res)) return res;
+    if (typeof res === 'object') {
+      if (Array.isArray(res.data)) return res.data;
+      if (res.data?.data !== undefined) return res.data.data;
+      if (res.data !== undefined) return res.data;
+      return res;
+    }
+    return res;
+  };
+
+  const loadMachines = async (clearError = true) => {
     try {
       setIsLoading(true);
-      setErrorMessage(null);
+      if (clearError) {
+        setErrorMessage(null);
+      }
       const res = await machineApi.list(activeWorkspace.id);
-      const data = res.data?.data || res.data || [];
+      const data = unwrapData(res, []);
       setMachines(Array.isArray(data) ? data : []);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to load machine identities');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to load machine identities');
     } finally {
       setIsLoading(false);
     }
@@ -80,9 +94,9 @@ export const MachineIdentitiesView = () => {
       setErrorMessage(null);
 
       // Validate name pattern
-      const nameRegex = /^[a-z0-9][a-z0-9-_]{1,63}$/;
+      const nameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_]{1,63}$/;
       if (!nameRegex.test(createFormData.name.trim())) {
-        setErrorMessage('Machine name must be 2-64 characters, lowercase alphanumeric with hyphens or underscores (e.g. github-rally-ci).');
+        setErrorMessage('Machine name must be 2-64 characters, alphanumeric with hyphens or underscores (e.g. github-rally-ci, PROD_WORKER).');
         setIsCreating(false);
         return;
       }
@@ -95,16 +109,17 @@ export const MachineIdentitiesView = () => {
       };
 
       const res = await machineApi.create(activeWorkspace.id, payload);
-      const created = res.data?.data || res.data;
+      const created = unwrapData(res, null);
       setSuccessMessage(`Machine Identity "${payload.name}" created successfully.`);
       setIsCreateModalOpen(false);
       setCreateFormData({ name: '', description: '', type: 'CI_CD', expiresAt: '' });
-      loadMachines();
+      loadMachines(true);
       if (created?.id) {
         setSelectedMachineId(created.id);
       }
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to create machine identity');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to create machine identity');
+      loadMachines(false);
     } finally {
       setIsCreating(false);
     }
@@ -123,7 +138,7 @@ export const MachineIdentitiesView = () => {
       }
       loadMachines();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to update machine status');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to update machine status');
     }
   };
 
@@ -137,7 +152,7 @@ export const MachineIdentitiesView = () => {
       setSuccessMessage(`Machine identity "${machine.name}" deleted.`);
       loadMachines();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to delete machine identity');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to delete machine identity');
     }
   };
 

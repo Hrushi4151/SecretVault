@@ -25,6 +25,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -169,7 +171,8 @@ public class RenderProviderAdapter implements ProviderAdapter {
     public List<ProviderSecretMetadata> listSecrets(Map<String, Object> configuration, String credential, ProviderResourceMapping mapping) {
         try {
             String serviceId = mapping.getProviderResourceId();
-            String responseBody = executeGet("/services/" + serviceId + "/env-vars?limit=100", credential);
+            String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+            String responseBody = executeGet("/services/" + encodedServiceId + "/env-vars?limit=100", credential);
             JsonNode root = objectMapper.readTree(responseBody);
 
             List<ProviderSecretMetadata> results = new ArrayList<>();
@@ -204,7 +207,9 @@ public class RenderProviderAdapter implements ProviderAdapter {
     ) {
         try {
             String serviceId = mapping.getProviderResourceId();
-            String uri = "/services/" + serviceId + "/env-vars/" + secretName;
+            String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+            String encodedSecretName = URLEncoder.encode(secretName, StandardCharsets.UTF_8);
+            String uri = "/services/" + encodedServiceId + "/env-vars/" + encodedSecretName;
 
             Map<String, Object> payload = Map.of("value", secretValue);
             executeRequest(HttpMethod.PUT, uri, credential, payload);
@@ -214,7 +219,8 @@ public class RenderProviderAdapter implements ProviderAdapter {
             // If direct PUT /env-vars/{key} returns 404, upsert via batch PUT /env-vars
             try {
                 String serviceId = mapping.getProviderResourceId();
-                String uri = "/services/" + serviceId + "/env-vars";
+                String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+                String uri = "/services/" + encodedServiceId + "/env-vars";
                 List<Map<String, String>> batchPayload = List.of(Map.of("key", secretName, "value", secretValue));
                 executeRequest(HttpMethod.PUT, uri, credential, batchPayload);
                 return ProviderSecretOperationResult.success("PUSH", secretName, secretName);
@@ -242,12 +248,20 @@ public class RenderProviderAdapter implements ProviderAdapter {
     ) {
         try {
             String serviceId = mapping.getProviderResourceId();
-            String uri = "/services/" + serviceId + "/env-vars/" + secretName;
+            String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+            String encodedSecretName = URLEncoder.encode(secretName, StandardCharsets.UTF_8);
+            String uri = "/services/" + encodedServiceId + "/env-vars/" + encodedSecretName;
 
             executeRequest(HttpMethod.DELETE, uri, credential, null);
             return ProviderSecretOperationResult.success("DELETE", secretName, secretName);
         } catch (HttpClientErrorException.NotFound e) {
             return ProviderSecretOperationResult.success("DELETE", secretName, "not_found");
+        } catch (HttpClientErrorException.Unauthorized e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_AUTHENTICATION_FAILED, "Render API key unauthorized");
+        } catch (HttpClientErrorException.Forbidden e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_AUTHORIZATION_FAILED, "Insufficient permissions to delete Render service environment variables");
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_RATE_LIMITED, "Render API rate limit exceeded");
         } catch (Exception e) {
             log.warn("Failed to delete secret [{}] from Render service: {}", secretName, e.getMessage());
             return ProviderSecretOperationResult.failure("DELETE", secretName, ProviderErrorCode.PROVIDER_UNAVAILABLE, "Render API error: " + e.getMessage());

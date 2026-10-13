@@ -128,7 +128,50 @@ public class AuditService {
 
     @Transactional(readOnly = true)
     public List<AuditLog> getWorkspaceAuditLogs(UUID workspaceId) {
-        return auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        return getWorkspaceAuditLogs(workspaceId, 100);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditLog> getWorkspaceAuditLogs(UUID workspaceId, int limit) {
+        int boundedLimit = Math.max(1, Math.min(500, limit));
+        return auditLogRepository.findByWorkspaceIdOrderByCreatedAtDesc(
+                workspaceId,
+                org.springframework.data.domain.PageRequest.of(0, boundedLimit)
+        ).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<AuditLog> searchAuditLogs(
+            UUID workspaceId,
+            AuditAction action,
+            String outcome,
+            String resourceType,
+            UUID actorId,
+            String search,
+            java.time.Instant from,
+            java.time.Instant to,
+            org.springframework.data.domain.Pageable pageable
+    ) {
+        return auditLogRepository.searchAuditLogs(
+                workspaceId, action, outcome, resourceType, actorId, search, from, to, pageable
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditLog> exportAuditLogs(
+            UUID workspaceId,
+            AuditAction action,
+            String outcome,
+            String resourceType,
+            UUID actorId,
+            String search,
+            java.time.Instant from,
+            java.time.Instant to,
+            int maxLimit
+    ) {
+        return auditLogRepository.exportAuditLogs(
+                workspaceId, action, outcome, resourceType, actorId, search, from, to, maxLimit
+        );
     }
 
     @Transactional(readOnly = true)

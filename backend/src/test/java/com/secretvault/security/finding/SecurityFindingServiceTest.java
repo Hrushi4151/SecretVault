@@ -55,6 +55,9 @@ class SecurityFindingServiceTest {
     @Mock
     private SecurityEventService eventService;
 
+    @Mock
+    private com.secretvault.audit.service.AuditService auditService;
+
     private SecurityFindingService findingService;
 
     private final UUID workspaceId = UUID.randomUUID();
@@ -67,7 +70,8 @@ class SecurityFindingServiceTest {
                 findingRepository,
                 workspaceRepository,
                 effectiveAccessService,
-                eventService
+                eventService,
+                auditService
         );
     }
 
@@ -225,6 +229,17 @@ class SecurityFindingServiceTest {
         assertThat(finding.getResolvedAt()).isNotNull();
         assertThat(finding.getResolutionReason()).isEqualTo("Fixed role assignment");
         assertThat(finding.getResolvedByUserId()).isEqualTo(userId);
+
+        verify(auditService).recordAudit(
+                isNull(), eq(workspaceId), eq(userId), eq("USER"),
+                eq(com.secretvault.audit.entity.AuditAction.FINDING_CONFIRMED),
+                eq("SECURITY_FINDING"), eq(finding.getId()), isNull(), isNull(), eq("SUCCESS")
+        );
+        verify(auditService).recordAudit(
+                isNull(), eq(workspaceId), eq(userId), eq("USER"),
+                eq(com.secretvault.audit.entity.AuditAction.REMEDIATION_COMPLETED),
+                eq("SECURITY_FINDING"), eq(finding.getId()), isNull(), isNull(), eq("SUCCESS")
+        );
     }
 
     @Test
@@ -268,6 +283,11 @@ class SecurityFindingServiceTest {
         verify(effectiveAccessService).checkPermission(
                 eq(workspaceId), isNull(), isNull(), isNull(),
                 eq(AccessPermission.SECURITY_MANAGE), eq(userId)
+        );
+        verify(auditService).recordAudit(
+                isNull(), eq(workspaceId), eq(userId), eq("USER"),
+                eq(com.secretvault.audit.entity.AuditAction.FINDING_CONFIRMED),
+                eq("SECURITY_FINDING"), eq(finding.getId()), isNull(), isNull(), eq("SUCCESS")
         );
     }
 }

@@ -65,6 +65,11 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
     private final MfaService mfaService;
     private final SessionService sessionService;
+    private final com.secretvault.auth.repository.RegistrationVerificationRepository registrationVerificationRepository;
+    private final com.secretvault.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+    private final com.secretvault.common.email.EmailService emailService;
+    private final com.secretvault.audit.service.AuditService auditService;
+    private final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
 
     public AuthService(
             UserRepository userRepository,
@@ -75,7 +80,11 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
             MfaService mfaService,
-            SessionService sessionService) {
+            SessionService sessionService,
+            com.secretvault.auth.repository.RegistrationVerificationRepository registrationVerificationRepository,
+            com.secretvault.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository,
+            com.secretvault.common.email.EmailService emailService,
+            com.secretvault.audit.service.AuditService auditService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.organizationRepository = organizationRepository;
@@ -85,6 +94,149 @@ public class AuthService {
         this.tokenProvider = tokenProvider;
         this.mfaService = mfaService;
         this.sessionService = sessionService;
+        this.registrationVerificationRepository = registrationVerificationRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
+        this.auditService = auditService;
+    }
+
+    public boolean isAllowedEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        return normalized.endsWith("@gmail.com") || normalized.endsWith("@example.com");
+    }
+
+    public com.secretvault.common.email.EmailService.OtpPreview getOtpPreview(String email, String type) {
+        if (email == null || email.isBlank()) {
+            return new com.secretvault.common.email.EmailService.OtpPreview(null, false, emailService.isSmtpConfigured(), "Email required.");
+        }
+        String prefix = (type != null && (type.equalsIgnoreCase("reset") || type.equalsIgnoreCase("pwd"))) ? "pwd:" : "reg:";
+        return emailService.getOtpPreview(prefix + email.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Sends a 6-digit verification code to the user's Gmail to initiate registration.
+     */
+    @Transactional
+    public void sendRegistrationOtp(com.secretvault.auth.dto.SendRegistrationOtpRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Registration is restricted to Google Mail (@gmail.com) accounts only.");
+        }
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw ApiException.conflict("Email address is already registered");
+        }
+
+        if (request.password() == null || request.password().length() < 8) {
+            throw ApiException.badRequest("Password must be at least 8 characters long");
+        }
+
+        String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
+        String otpHash = passwordEncoder.encode(otp);
+        String passwordHash = passwordEncoder.encode(request.password());
+        Instant expiresAt = Instant.now().plusSeconds(600); // 10 minutes
+
+        com.secretvault.auth.entity.RegistrationVerification verification = registrationVerificationRepository.findByEmail(normalizedEmail)
+                .orElseGet(() -> new com.secretvault.auth.entity.RegistrationVerification());
+
+        verification.setEmail(normalizedEmail);
+        verification.setFullName(request.fullName().trim());
+        verification.setOrganizationName(request.organizationName() != null ? request.organizationName().trim() : null);
+        verification.setPasswordHash(passwordHash);
+        verification.setOtpHash(otpHash);
+        verification.setAttempts(0);
+        verification.setExpiresAt(expiresAt);
+        if (verification.getCreatedAt() == null) {
+            verification.setCreatedAt(Instant.now());
+        }
+        registrationVerificationRepository.saveAndFlush(verification);
+
+        emailService.sendRegistrationOtp(normalizedEmail, otp, request.fullName(), 10);
+        log.info("Registration OTP dispatched to [{}]", normalizedEmail);
+    }
+
+    /**
+     * Verifies the registration OTP and creates the user account and default workspace.
+     */
+    @Transactional
+    public AuthResponse verifyRegistrationOtp(com.secretvault.auth.dto.VerifyRegistrationOtpRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Registration is restricted to Google Mail (@gmail.com) accounts only.");
+        }
+
+        com.secretvault.auth.entity.RegistrationVerification verification = registrationVerificationRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> ApiException.badRequest("No pending verification found or code has expired. Please request a new code."));
+
+        if (Instant.now().isAfter(verification.getExpiresAt())) {
+            registrationVerificationRepository.delete(verification);
+            throw ApiException.badRequest("Verification code has expired. Please request a new code.");
+        }
+
+        if (verification.getAttempts() >= 5) {
+            registrationVerificationRepository.delete(verification);
+            throw ApiException.badRequest("Too many failed attempts. Please request a new verification code.");
+        }
+
+        if (!passwordEncoder.matches(request.otp().trim(), verification.getOtpHash())) {
+            verification.setAttempts(verification.getAttempts() + 1);
+            registrationVerificationRepository.save(verification);
+            throw ApiException.badRequest("Invalid verification code. Please check your Gmail and try again.");
+        }
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            registrationVerificationRepository.delete(verification);
+            throw ApiException.conflict("Email address is already registered");
+        }
+
+        // 1. Create and persist User
+        User user = new User(normalizedEmail, verification.getPasswordHash(), verification.getFullName());
+        user = userRepository.save(user);
+
+        // 2. Create Organization
+        String orgName = StringUtils.hasText(verification.getOrganizationName())
+                ? verification.getOrganizationName().trim()
+                : verification.getFullName().trim() + "'s Organization";
+        String baseOrgSlug = generateSlug(orgName);
+        String orgSlug = ensureUniqueOrgSlug(baseOrgSlug);
+
+        Organization organization = new Organization(orgName, orgSlug, "FREE");
+        organization = organizationRepository.save(organization);
+
+        // 3. Create Default Workspace
+        Workspace defaultWorkspace = new Workspace(organization.getId(), "Default Workspace", "default", true);
+        defaultWorkspace = workspaceRepository.save(defaultWorkspace);
+
+        // 4. Assign OWNER Role in Default Workspace
+        WorkspaceMembership membership = new WorkspaceMembership(defaultWorkspace.getId(), user.getId(), WorkspaceRole.OWNER);
+        membershipRepository.save(membership);
+
+        registrationVerificationRepository.delete(verification);
+
+        if (auditService != null) {
+            auditService.recordAudit(
+                    organization.getId(),
+                    defaultWorkspace.getId(),
+                    user.getId(),
+                    "USER",
+                    com.secretvault.audit.entity.AuditAction.USER_REGISTERED,
+                    "USER",
+                    user.getId(),
+                    null,
+                    null,
+                    "SUCCESS"
+            );
+        }
+
+        log.info("Registered and verified user [{}] with organization [{}] and default workspace [{}]",
+                user.getId(), organization.getId(), defaultWorkspace.getId());
+
+        return generateAuthResponse(user, defaultWorkspace, WorkspaceRole.OWNER, AuthMethod.PASSWORD, null);
     }
 
     /**
@@ -94,6 +246,10 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Registration is restricted to Google Mail (@gmail.com) accounts only.");
+        }
 
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw ApiException.conflict("Email address is already registered");
@@ -122,6 +278,21 @@ public class AuthService {
         WorkspaceMembership membership = new WorkspaceMembership(defaultWorkspace.getId(), user.getId(), WorkspaceRole.OWNER);
         membershipRepository.save(membership);
 
+        if (auditService != null) {
+            auditService.recordAudit(
+                    organization.getId(),
+                    defaultWorkspace.getId(),
+                    user.getId(),
+                    "USER",
+                    com.secretvault.audit.entity.AuditAction.USER_REGISTERED,
+                    "USER",
+                    user.getId(),
+                    null,
+                    null,
+                    "SUCCESS"
+            );
+        }
+
         log.info("Registered new user [{}] with organization [{}] and default workspace [{}]",
                 user.getId(), organization.getId(), defaultWorkspace.getId());
 
@@ -136,6 +307,10 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Authentication is restricted to Google Mail (@gmail.com) accounts only.");
+        }
 
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> ApiException.unauthorized("Invalid email or password"));
@@ -164,6 +339,182 @@ public class AuthService {
         log.info("User [{}] authenticated successfully without MFA. Active workspace: [{}]", user.getId(), workspace.getId());
 
         return generateAuthResponse(user, workspace, primaryMembership.getRole(), AuthMethod.PASSWORD, null);
+    }
+
+    /**
+     * Initiates a password reset by sending a 6-digit OTP to the user's registered Gmail.
+     */
+    @Transactional
+    public void requestPasswordReset(com.secretvault.auth.dto.ForgotPasswordRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Password reset is restricted to Google Mail (@gmail.com) accounts only.");
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
+        if (userOpt.isEmpty()) {
+            log.info("Password reset requested for non-existent email [{}]; returning generic success.", normalizedEmail);
+            return;
+        }
+
+        User user = userOpt.get();
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            log.warn("Password reset requested for non-active user [{}].", user.getId());
+            return;
+        }
+
+        com.secretvault.auth.entity.PasswordResetToken token = passwordResetTokenRepository.findByEmail(normalizedEmail)
+                .orElseGet(() -> new com.secretvault.auth.entity.PasswordResetToken());
+
+        token.setUserId(user.getId());
+        token.setEmail(normalizedEmail);
+        token.setOtpHash(otpHash);
+        token.setResetToken(resetToken);
+        token.setMfaRequired(mfaRequired);
+        token.setMfaVerified(!mfaRequired);
+        token.setOtpVerified(false);
+        token.setAttempts(0);
+        token.setExpiresAt(expiresAt);
+        if (token.getCreatedAt() == null) {
+            token.setCreatedAt(Instant.now());
+        }
+        passwordResetTokenRepository.saveAndFlush(token);
+
+        emailService.sendPasswordResetOtp(normalizedEmail, otp, user.getFullName(), 15);
+        log.info("Password reset OTP dispatched to [{}] (MFA required: {})", normalizedEmail, mfaRequired);
+    }
+
+    /**
+     * Verifies the 6-digit OTP code received via email for password reset.
+     */
+    @Transactional
+    public com.secretvault.auth.dto.PasswordResetStatusResponse verifyPasswordResetOtp(com.secretvault.auth.dto.VerifyPasswordResetOtpRequest request) {
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        if (!isAllowedEmail(normalizedEmail)) {
+            throw ApiException.badRequest("Password reset is restricted to Google Mail (@gmail.com) accounts only.");
+        }
+
+        com.secretvault.auth.entity.PasswordResetToken token = passwordResetTokenRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> ApiException.badRequest("No active password reset request found. Please request a new code."));
+
+        if (Instant.now().isAfter(token.getExpiresAt())) {
+            passwordResetTokenRepository.delete(token);
+            throw ApiException.badRequest("Password reset verification code has expired. Please request a new code.");
+        }
+
+        if (token.getAttempts() >= 5) {
+            passwordResetTokenRepository.delete(token);
+            throw ApiException.badRequest("Too many failed attempts. Please request a new reset code.");
+        }
+
+        if (!passwordEncoder.matches(request.otp().trim(), token.getOtpHash())) {
+            token.setAttempts(token.getAttempts() + 1);
+            passwordResetTokenRepository.save(token);
+            throw ApiException.badRequest("Invalid verification code. Please check your Gmail.");
+        }
+
+        token.setOtpVerified(true);
+        passwordResetTokenRepository.save(token);
+
+        return com.secretvault.auth.dto.PasswordResetStatusResponse.otpVerified(token.getResetToken(), token.isMfaRequired());
+    }
+
+    /**
+     * Verifies second-factor MFA (TOTP or recovery code) during password reset if MFA is enabled.
+     */
+    @Transactional
+    public com.secretvault.auth.dto.PasswordResetStatusResponse verifyPasswordResetMfa(com.secretvault.auth.dto.VerifyPasswordResetMfaRequest request) {
+        com.secretvault.auth.entity.PasswordResetToken token = passwordResetTokenRepository.findByResetToken(request.resetToken())
+                .orElseThrow(() -> ApiException.badRequest("Invalid or expired reset session."));
+
+        if (Instant.now().isAfter(token.getExpiresAt()) || !token.isOtpVerified()) {
+            passwordResetTokenRepository.delete(token);
+            throw ApiException.badRequest("Reset session expired or incomplete. Please restart the reset process.");
+        }
+
+        if (!token.isMfaRequired()) {
+            token.setMfaVerified(true);
+            passwordResetTokenRepository.save(token);
+            return com.secretvault.auth.dto.PasswordResetStatusResponse.mfaVerified(token.getResetToken());
+        }
+
+        boolean verified = false;
+        if (StringUtils.hasText(request.code())) {
+            verified = mfaService.verifyTotp(token.getUserId(), request.code().trim());
+        } else if (StringUtils.hasText(request.recoveryCode())) {
+            verified = mfaService.verifyAndConsumeRecoveryCode(token.getUserId(), request.recoveryCode().trim());
+        } else {
+            throw ApiException.badRequest("Please provide your 6-digit TOTP code or an unused recovery code.");
+        }
+
+        if (!verified) {
+            throw ApiException.badRequest("MFA verification failed. Invalid authenticator code or recovery code.");
+        }
+
+        token.setMfaVerified(true);
+        passwordResetTokenRepository.save(token);
+
+        return com.secretvault.auth.dto.PasswordResetStatusResponse.mfaVerified(token.getResetToken());
+    }
+
+    /**
+     * Sets the new password after complete verification and revokes all active sessions & refresh tokens.
+     */
+    @Transactional
+    public com.secretvault.auth.dto.PasswordResetStatusResponse resetPassword(com.secretvault.auth.dto.ResetPasswordRequest request) {
+        com.secretvault.auth.entity.PasswordResetToken token = passwordResetTokenRepository.findByResetToken(request.resetToken())
+                .orElseThrow(() -> ApiException.badRequest("Invalid or expired reset session."));
+
+        if (Instant.now().isAfter(token.getExpiresAt()) || !token.isOtpVerified()) {
+            passwordResetTokenRepository.delete(token);
+            throw ApiException.badRequest("Reset session expired or incomplete. Please restart the reset process.");
+        }
+
+        if (token.isMfaRequired() && !token.isMfaVerified()) {
+            throw ApiException.badRequest("MFA second-factor verification is required before resetting password.");
+        }
+
+        if (request.newPassword() == null || request.newPassword().length() < 8) {
+            throw ApiException.badRequest("New password must be at least 8 characters long.");
+        }
+
+        User user = userRepository.findById(token.getUserId())
+                .orElseThrow(() -> ApiException.notFound("User account not found."));
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw ApiException.badRequest("New password cannot be identical to your current password.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        // Security requirement: Revoke all existing refresh tokens & active sessions
+        refreshTokenRepository.deleteByUserId(user.getId());
+        sessionService.revokeAllSessions(user.getId());
+
+        // Invalidate the reset token
+        passwordResetTokenRepository.delete(token);
+
+        if (auditService != null) {
+            auditService.recordAudit(
+                    null,
+                    null,
+                    user.getId(),
+                    "USER",
+                    com.secretvault.audit.entity.AuditAction.USER_PASSWORD_RESET,
+                    "USER",
+                    user.getId(),
+                    null,
+                    null,
+                    "SUCCESS"
+            );
+        }
+
+        log.info("Password successfully reset for user [{}] ({}); all active sessions revoked.", user.getId(), user.getEmail());
+
+        return com.secretvault.auth.dto.PasswordResetStatusResponse.completed();
     }
 
     /**

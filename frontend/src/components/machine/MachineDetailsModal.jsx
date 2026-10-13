@@ -27,7 +27,11 @@ import {
   HelpCircle,
   Activity,
   UserCheck,
-  Ban
+  Ban,
+  Copy,
+  Check,
+  Terminal,
+  Code2
 } from 'lucide-react';
 
 export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh }) => {
@@ -45,6 +49,15 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
   const [projects, setProjects] = useState([]);
   const [environments, setEnvironments] = useState([]);
 
+  // Token Generation State
+  const [isGenerateTokenOpen, setIsGenerateTokenOpen] = useState(false);
+  const [tokenTtlSeconds, setTokenTtlSeconds] = useState(2592000); // 30 days default
+  const [tokenDescription, setTokenDescription] = useState('Workload API Token');
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [generatedTokenResult, setGeneratedTokenResult] = useState(null);
+  const [isTokenCopied, setIsTokenCopied] = useState(false);
+  const [codeSnippetTab, setCodeSnippetTab] = useState('NODE'); // 'NODE' | 'PYTHON' | 'JAVA' | 'CURL'
+
   // Grant Form State
   const [isAddGrantOpen, setIsAddGrantOpen] = useState(false);
   const [grantFormData, setGrantFormData] = useState({
@@ -60,6 +73,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
   // Trust Policy Form State
   const [isAddPolicyOpen, setIsAddPolicyOpen] = useState(false);
   const [policyFormData, setPolicyFormData] = useState({
+    name: '',
     oidcProviderId: '',
     description: '',
     rules: [
@@ -67,6 +81,33 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       { claimName: 'ref', operator: 'EQUALS', claimValue: 'refs/heads/main' },
     ],
   });
+
+  const unwrapData = (res, fallback = null) => {
+    if (res == null) return fallback;
+    if (Array.isArray(res)) return res;
+    if (typeof res === 'object') {
+      if (Array.isArray(res.data)) return res.data;
+      if (res.data?.data !== undefined) return res.data.data;
+      if (res.data !== undefined) return res.data;
+      return res;
+    }
+    return res;
+  };
+
+  const handleProjectChange = async (projectId) => {
+    setGrantFormData((prev) => ({ ...prev, projectId, environmentId: '' }));
+    if (projectId && workspaceId) {
+      try {
+        const res = await environmentApi.list(workspaceId, projectId);
+        const envList = unwrapData(res, []);
+        setEnvironments(Array.isArray(envList) ? envList : []);
+      } catch (err) {
+        setEnvironments([]);
+      }
+    } else {
+      setEnvironments([]);
+    }
+  };
 
   useEffect(() => {
     if (workspaceId && machineId) {
@@ -88,19 +129,20 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       ]);
 
       if (mRes.status === 'fulfilled') {
-        const mData = mRes.value.data?.data || mRes.value.data;
+        const mData = unwrapData(mRes.value, null);
+        if (!mData) throw new Error('Machine identity profile not found');
         setMachine(mData);
       } else {
         throw new Error('Failed to load machine identity');
       }
 
-      setGrants(gRes.status === 'fulfilled' ? (gRes.value.data?.data || gRes.value.data || []) : []);
-      setTrustPolicies(tRes.status === 'fulfilled' ? (tRes.value.data?.data || tRes.value.data || []) : []);
-      setSessions(sRes.status === 'fulfilled' ? (sRes.value.data?.data || sRes.value.data || []) : []);
-      setProviders(pRes.status === 'fulfilled' ? (pRes.value.data?.data || pRes.value.data || []) : []);
-      setProjects(projRes.status === 'fulfilled' ? (projRes.value.data?.data || projRes.value.data || []) : []);
+      setGrants(gRes.status === 'fulfilled' ? (unwrapData(gRes.value, []) || []) : []);
+      setTrustPolicies(tRes.status === 'fulfilled' ? (unwrapData(tRes.value, []) || []) : []);
+      setSessions(sRes.status === 'fulfilled' ? (unwrapData(sRes.value, []) || []) : []);
+      setProviders(pRes.status === 'fulfilled' ? (unwrapData(pRes.value, []) || []) : []);
+      setProjects(projRes.status === 'fulfilled' ? (unwrapData(projRes.value, []) || []) : []);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to load machine identity details');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to load machine identity details');
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +165,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       loadMachineDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to update status');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to update status');
     }
   };
 
@@ -136,18 +178,16 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
         projectId: grantFormData.projectId || null,
         environmentId: grantFormData.environmentId || null,
         secretId: grantFormData.secretId || null,
-        action: grantFormData.action,
+        permission: grantFormData.action,
         effect: grantFormData.effect,
-        secretRestrictions: grantFormData.secretRestrictions
-          ? grantFormData.secretRestrictions.split(',').map((s) => s.trim()).filter(Boolean)
-          : [],
+        secretPattern: grantFormData.secretRestrictions?.trim() || null,
       };
       await machineApi.createGrant(workspaceId, machineId, payload);
       setSuccessMessage('Granular access grant assigned.');
       setIsAddGrantOpen(false);
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to create grant');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to create grant');
     }
   };
 
@@ -158,7 +198,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       setSuccessMessage('Grant revoked.');
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to revoke grant');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to revoke grant');
     }
   };
 
@@ -170,21 +210,30 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
         setErrorMessage('Please select an OIDC provider');
         return;
       }
-      const validRules = policyFormData.rules.filter((r) => r.claimName && r.claimValue);
+      const validRules = policyFormData.rules
+        .filter((r) => r.claimName && (r.expectedValue || r.claimValue))
+        .map((r) => ({
+          claimName: r.claimName.trim(),
+          operator: r.operator,
+          expectedValue: (r.expectedValue || r.claimValue).trim(),
+        }));
       if (validRules.length === 0) {
         setErrorMessage('At least one claim matching rule is required.');
         return;
       }
       await oidcApi.createTrustPolicy(workspaceId, machineId, {
         oidcProviderId: policyFormData.oidcProviderId,
-        description: policyFormData.description,
-        rules: validRules,
+        name: policyFormData.name?.trim() || `Trust Policy for ${machine?.name || 'Machine'}`,
+        description: policyFormData.description?.trim() || 'CI/CD Workload Trust Policy',
+        enabled: true,
+        priority: 10,
+        claimRules: validRules,
       });
       setSuccessMessage('OIDC Trust Policy registered.');
       setIsAddPolicyOpen(false);
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to create trust policy');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to create trust policy');
     }
   };
 
@@ -195,7 +244,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       setSuccessMessage('Trust policy deleted.');
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to delete policy');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to delete policy');
     }
   };
 
@@ -205,7 +254,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       setSuccessMessage('Session token revoked.');
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to revoke session');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to revoke session');
     }
   };
 
@@ -216,13 +265,43 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
       setSuccessMessage('All machine sessions revoked.');
       loadMachineDetails();
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Failed to revoke all sessions');
+      setErrorMessage(err.payload?.message || err.message || 'Failed to revoke all sessions');
     }
+  };
+
+  const handleGenerateToken = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setIsGeneratingToken(true);
+      setErrorMessage(null);
+      const res = await machineApi.generateToken(workspaceId, machineId, {
+        ttlSeconds: Number(tokenTtlSeconds),
+        description: tokenDescription?.trim() || 'Direct Machine Token',
+      });
+      const data = unwrapData(res, null);
+      if (!data?.token) {
+        throw new Error('Token generation response missing token credentials');
+      }
+      setGeneratedTokenResult(data);
+      setSuccessMessage('Cryptographically secure machine token issued.');
+      loadMachineDetails();
+    } catch (err) {
+      setErrorMessage(err.payload?.message || err.message || 'Failed to generate token');
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  const handleCopyToken = () => {
+    if (!generatedTokenResult?.token) return;
+    navigator.clipboard.writeText(generatedTokenResult.token);
+    setIsTokenCopied(true);
+    setTimeout(() => setIsTokenCopied(false), 2500);
   };
 
   const getNaturalLanguagePolicySummary = (rules) => {
     if (!rules || rules.length === 0) return 'Matches any claim from this provider (Overly Broad).';
-    const parts = rules.map((r) => `${r.claimName} ${r.operator.toLowerCase()} "${r.claimValue}"`);
+    const parts = rules.map((r) => `${r.claimName} ${r.operator?.toLowerCase() || '=='} "${r.expectedValue || r.claimValue || '*'}"`);
     return `Workload token matching ${parts.join(' AND ')} may authenticate as this machine identity.`;
   };
 
@@ -344,7 +423,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                 <div className="p-3 rounded-xl bg-surface-container-high/40 border border-outline-variant space-y-1">
                   <span className="text-[10px] font-mono text-text-tertiary">Active Sessions</span>
                   <div className="text-xs font-mono text-brand-primary font-bold">
-                    {sessions.filter((s) => s.status === 'ACTIVE').length} active
+                    {sessions.filter((s) => s.active === true || s.status === 'ACTIVE').length} active
                   </div>
                 </div>
               </div>
@@ -355,6 +434,19 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                   Lifecycle Controls
                 </h4>
                 <div className="flex flex-wrap items-center gap-2">
+                  {machine?.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => {
+                        setActiveTab('SESSIONS');
+                        setIsGenerateTokenOpen(true);
+                      }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-brand-primary/30 bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 transition-colors flex items-center gap-1.5 font-semibold"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      Generate Token
+                    </button>
+                  )}
+
                   {machine?.status === 'ACTIVE' && (
                     <button
                       onClick={() => handleStatusAction('disable')}
@@ -440,13 +532,15 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                         onChange={(e) => setGrantFormData({ ...grantFormData, action: e.target.value })}
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary font-mono"
                       >
+                        <option value="*">* (All Secret Actions)</option>
                         <option value="secret.read">secret.read (Metadata only)</option>
                         <option value="secret.reveal">secret.reveal (Plaintext access)</option>
                         <option value="secret.create">secret.create</option>
                         <option value="secret.update">secret.update</option>
                         <option value="secret.delete">secret.delete</option>
-                        <option value="provider.sync">provider.sync</option>
-                        <option value="deployment.trigger">deployment.trigger</option>
+                        <option value="secret.rollback">secret.rollback</option>
+                        <option value="secret.branch">secret.branch</option>
+                        <option value="environment.promote">environment.promote</option>
                       </select>
                     </div>
 
@@ -469,7 +563,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                         <label className="text-[11px] text-text-secondary">Target Project</label>
                         <select
                           value={grantFormData.projectId}
-                          onChange={(e) => setGrantFormData({ ...grantFormData, projectId: e.target.value })}
+                          onChange={(e) => handleProjectChange(e.target.value)}
                           className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
                         >
                           <option value="">-- Select Project --</option>
@@ -482,29 +576,42 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                       {grantFormData.scopeType === 'ENVIRONMENT' && (
                         <div className="space-y-1">
                           <label className="text-[11px] text-text-secondary">Target Environment</label>
-                          <input
-                            type="text"
-                            placeholder="Environment Slug (e.g. development, production)"
-                            value={grantFormData.environmentId}
-                            onChange={(e) => setGrantFormData({ ...grantFormData, environmentId: e.target.value })}
-                            className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary font-mono"
-                          />
+                          {environments.length > 0 ? (
+                            <select
+                              value={grantFormData.environmentId}
+                              onChange={(e) => setGrantFormData({ ...grantFormData, environmentId: e.target.value })}
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary font-mono"
+                            >
+                              <option value="">-- Select Environment --</option>
+                              {environments.map((env) => (
+                                <option key={env.id} value={env.id}>{env.name || env.slug} ({env.slug || env.id.slice(0, 8)})</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="Environment UUID or slug"
+                              value={grantFormData.environmentId}
+                              onChange={(e) => setGrantFormData({ ...grantFormData, environmentId: e.target.value })}
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary font-mono"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
                   )}
 
                   <div className="space-y-1">
-                    <label className="text-[11px] text-text-secondary">Secret Name Allowlist / Restrictions (Optional)</label>
+                    <label className="text-[11px] text-text-secondary">Secret Pattern / Restrictions (Optional)</label>
                     <input
                       type="text"
-                      placeholder="e.g. DB_PASSWORD, API_URL (comma-separated)"
+                      placeholder="e.g. DB_*, PROD_*, API_KEY (glob pattern or exact key)"
                       value={grantFormData.secretRestrictions}
                       onChange={(e) => setGrantFormData({ ...grantFormData, secretRestrictions: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
                     />
                     <span className="text-[10px] text-text-tertiary">
-                      If specified, this machine can only access the explicit secret keys listed above.
+                      Leave empty to allow all secrets matching scope, or specify pattern like PROD_* or exact secret name.
                     </span>
                   </div>
 
@@ -538,9 +645,9 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                         <tr key={g.id} className="hover:bg-surface-container-high/30">
                           <td className="p-3 font-mono">
                             <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[10px] mr-1.5">{g.scopeType}</span>
-                            {g.projectId ? `Project: ${g.projectId}` : 'All Projects'}
+                            {g.projectId ? `Project: ${g.projectId.slice ? g.projectId.slice(0, 8) + '...' : g.projectId}` : 'All Projects'}
                           </td>
-                          <td className="p-3 font-mono font-semibold text-brand-primary">{g.action}</td>
+                          <td className="p-3 font-mono font-semibold text-brand-primary">{g.permission || g.action}</td>
                           <td className="p-3 font-mono">
                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                               g.effect === 'ALLOW' ? 'bg-status-success/10 text-status-success' : 'bg-status-error/10 text-status-error'
@@ -549,9 +656,9 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                             </span>
                           </td>
                           <td className="p-3 font-mono text-text-secondary">
-                            {Array.isArray(g.secretRestrictions) && g.secretRestrictions.length > 0
+                            {g.secretPattern || (Array.isArray(g.secretRestrictions) && g.secretRestrictions.length > 0
                               ? g.secretRestrictions.join(', ')
-                              : 'All Secrets in Scope'}
+                              : 'All Secrets in Scope')}
                           </td>
                           <td className="p-3 text-right">
                             <button
@@ -601,19 +708,31 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                     <button type="button" onClick={() => setIsAddPolicyOpen(false)} className="text-xs text-text-tertiary hover:text-text-primary">✕</button>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-text-secondary">Trusted OIDC Provider</label>
-                    <select
-                      required
-                      value={policyFormData.oidcProviderId}
-                      onChange={(e) => setPolicyFormData({ ...policyFormData, oidcProviderId: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
-                    >
-                      <option value="">-- Select OIDC Provider --</option>
-                      {providers.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.issuer})</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-text-secondary">Policy Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. GitHub Actions CI Policy"
+                        value={policyFormData.name}
+                        onChange={(e) => setPolicyFormData({ ...policyFormData, name: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-text-secondary">Trusted OIDC Provider</label>
+                      <select
+                        required
+                        value={policyFormData.oidcProviderId}
+                        onChange={(e) => setPolicyFormData({ ...policyFormData, oidcProviderId: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
+                      >
+                        <option value="">-- Select OIDC Provider --</option>
+                        {providers.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name} ({p.issuer})</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   {/* Conditions List */}
@@ -728,7 +847,7 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                             </span>
                           </div>
                           <p className="text-xs text-text-secondary mt-1">
-                            {tp.naturalLanguageSummary || getNaturalLanguagePolicySummary(tp.rules)}
+                            {tp.naturalLanguageSummary || getNaturalLanguagePolicySummary(tp.claimRules || tp.rules)}
                           </p>
                         </div>
                         <button
@@ -742,9 +861,9 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
 
                       {/* Claim Rules Chips */}
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {Array.isArray(tp.rules) && tp.rules.map((r, i) => (
+                        {(tp.claimRules || tp.rules || []).map((r, i) => (
                           <span key={i} className="px-2 py-0.5 rounded bg-surface-container-lowest text-[11px] font-mono border border-outline-variant/60 text-text-primary">
-                            <span className="text-text-tertiary">{r.claimName}</span> {r.operator} <span className="text-brand-primary font-semibold">"{r.claimValue}"</span>
+                            <span className="text-text-tertiary">{r.claimName}</span> {r.operator} <span className="text-brand-primary font-semibold">"{r.expectedValue || r.claimValue}"</span>
                           </span>
                         ))}
                       </div>
@@ -758,35 +877,224 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
           {/* ======================= SESSIONS TAB ======================= */}
           {activeTab === 'SESSIONS' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-text-primary">Active Machine Sessions</h4>
+                  <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                    <Key className="w-4 h-4 text-brand-primary" />
+                    Machine Tokens & Active Sessions
+                  </h4>
                   <p className="text-xs text-text-secondary">
-                    Cryptographically hashed machine session tokens. SecretVault uses short-lived tokens (5-15 min TTL).
+                    Cryptographically hashed machine session tokens. SecretVault supports direct service tokens and ephemeral OIDC sessions.
                   </p>
                 </div>
-                {sessions.length > 0 && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={handleRevokeAllSessions}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-status-error/30 bg-status-error/10 text-status-error hover:bg-status-error/20 flex items-center gap-1.5"
+                    onClick={() => setIsGenerateTokenOpen(true)}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-brand-primary hover:bg-brand-primary-hover text-surface-container-lowest flex items-center gap-1.5 shadow-sm font-semibold"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Revoke All Sessions
+                    <Plus className="w-3.5 h-3.5" />
+                    Generate New Token
                   </button>
-                )}
+                  {sessions.length > 0 && (
+                    <button
+                      onClick={handleRevokeAllSessions}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-status-error/30 bg-status-error/10 text-status-error hover:bg-status-error/20 flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Revoke All Sessions
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Generate Direct Token Modal */}
+              {isGenerateTokenOpen && (
+                <form onSubmit={handleGenerateToken} className="p-4 rounded-xl bg-surface-container-high/70 border border-brand-primary/30 space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-xs font-semibold text-text-primary flex items-center gap-1.5 font-mono">
+                      <Key className="w-3.5 h-3.5 text-brand-primary" />
+                      Issue Direct Machine Token (Zero Standing Secrets)
+                    </h5>
+                    <button type="button" onClick={() => setIsGenerateTokenOpen(false)} className="text-xs text-text-tertiary hover:text-text-primary">✕</button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-text-secondary">Token Lifespan (TTL)</label>
+                      <select
+                        value={tokenTtlSeconds}
+                        onChange={(e) => setTokenTtlSeconds(Number(e.target.value))}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary font-mono"
+                      >
+                        <option value={3600}>1 Hour (3,600s) — Ephemeral CI/CD</option>
+                        <option value={86400}>24 Hours (86,400s) — Daily Batch Worker</option>
+                        <option value={604800}>7 Days (604,800s) — Weekly Deployment Agent</option>
+                        <option value={2592000}>30 Days (2,592,000s) — Production Service Daemon</option>
+                        <option value={7776000}>90 Days (7,776,000s) — Long-term Service Account</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-text-secondary">Token Description / Consumer</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Production Kubernetes Runner, Node.js Backend"
+                        value={tokenDescription}
+                        onChange={(e) => setTokenDescription(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-outline-variant bg-surface-container-lowest text-text-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] text-text-tertiary font-mono">
+                      Token is cryptographically hashed with SHA-256 before storage.
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setIsGenerateTokenOpen(false)} className="px-3 py-1 text-xs rounded hover:bg-surface-container-highest">
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isGeneratingToken}
+                        className="px-3.5 py-1 text-xs font-medium rounded bg-brand-primary text-surface-container-lowest flex items-center gap-1.5"
+                      >
+                        {isGeneratingToken && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        Issue Token
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Newly Generated Token Reveal Dialog */}
+              {generatedTokenResult && (
+                <div className="p-4 rounded-xl bg-status-success/10 border border-status-success/30 space-y-3 animate-in fade-in">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 text-status-success font-semibold text-xs">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Machine Token Issued Successfully
+                    </div>
+                    <button
+                      onClick={() => setGeneratedTokenResult(null)}
+                      className="text-xs text-text-tertiary hover:text-text-primary"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-text-secondary">
+                    Copy this token immediately. For security, SecretVault will never display the raw token again.
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-2.5 rounded-lg bg-surface-container-lowest font-mono text-xs text-brand-primary border border-outline-variant truncate select-all">
+                      {generatedTokenResult.token}
+                    </div>
+                    <button
+                      onClick={handleCopyToken}
+                      className="px-3 py-2 text-xs font-medium rounded-lg bg-brand-primary hover:bg-brand-primary-hover text-surface-container-lowest flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      {isTokenCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {isTokenCopied ? 'Copied!' : 'Copy Token'}
+                    </button>
+                  </div>
+
+                  {/* SDK Code Snippets Preview */}
+                  <div className="mt-3 pt-3 border-t border-status-success/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1">
+                        <Terminal className="w-3 h-3 text-brand-primary" />
+                        Quick Integration Snippet:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {[
+                          { id: 'NODE', label: 'Node.js SDK' },
+                          { id: 'PYTHON', label: 'Python SDK' },
+                          { id: 'JAVA', label: 'Java SDK' },
+                          { id: 'CURL', label: 'cURL' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setCodeSnippetTab(tab.id)}
+                            className={`px-2 py-0.5 text-[10px] rounded font-mono transition-colors ${
+                              codeSnippetTab === tab.id
+                                ? 'bg-brand-primary text-surface-container-lowest font-bold'
+                                : 'bg-surface-container-lowest text-text-secondary hover:text-text-primary'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <pre className="p-3 rounded-lg bg-surface-container-lowest text-[11px] font-mono text-text-primary overflow-x-auto border border-outline-variant">
+                      {codeSnippetTab === 'NODE' &&
+`import { SecretVaultClient } from '@secretvault/sdk';
+
+const client = new SecretVaultClient({
+  endpoint: '${window.location.origin}',
+  workspaceId: '${workspaceId}',
+  token: '${generatedTokenResult.token}'
+});
+
+// Fetch decrypted secrets matching machine grants
+const secrets = await client.getAllSecrets('${projects[0]?.id || '<PROJECT_ID>'}', '${environments[0]?.id || '<ENVIRONMENT_ID>'}');
+console.log('Loaded secrets:', Object.keys(secrets));`}
+
+                      {codeSnippetTab === 'PYTHON' &&
+`from secretvault import SecretVaultClient
+
+client = SecretVaultClient(
+    endpoint="${window.location.origin}",
+    workspace_id="${workspaceId}",
+    token="${generatedTokenResult.token}"
+)
+
+# Fetch decrypted secrets matching machine grants
+secrets = client.get_all_secrets("${projects[0]?.id || '<PROJECT_ID>'}", "${environments[0]?.id || '<ENVIRONMENT_ID>'}")
+print("Loaded secrets:", secrets)`}
+
+                      {codeSnippetTab === 'JAVA' &&
+`SecretVaultClient client = SecretVaultClient.builder()
+    .baseUrl("${window.location.origin}")
+    .token("${generatedTokenResult.token}")
+    .workspaceId(UUID.fromString("${workspaceId}"))
+    .build();
+
+Map<String, String> secrets = client.getAllSecrets(
+    UUID.fromString("${projects[0]?.id || '<PROJECT_ID>'}"),
+    UUID.fromString("${environments[0]?.id || '<ENVIRONMENT_ID>'}")
+);`}
+
+                      {codeSnippetTab === 'CURL' &&
+`curl -H "Authorization: Bearer ${generatedTokenResult.token}" \\
+  "${window.location.origin}/api/v1/workspaces/${workspaceId}/projects/${projects[0]?.id || '<PROJECT_ID>'}/environments/${environments[0]?.id || '<ENVIRONMENT_ID>'}/secrets"`}
+                    </pre>
+                  </div>
+                </div>
+              )}
 
               {sessions.length === 0 ? (
                 <div className="p-8 text-center rounded-xl bg-surface-container/50 border border-dashed border-outline-variant">
                   <Key className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
                   <p className="text-xs text-text-secondary">No active sessions found for this machine identity.</p>
+                  <button
+                    onClick={() => setIsGenerateTokenOpen(true)}
+                    className="mt-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-brand-primary text-surface-container-lowest inline-flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Issue First Token
+                  </button>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-outline-variant">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-surface-container-high/60 text-text-secondary font-mono uppercase text-[10px] border-b border-outline-variant">
                       <tr>
-                        <th className="p-3">Session ID / Hash</th>
+                        <th className="p-3">Session Token Prefix</th>
                         <th className="p-3">Status</th>
                         <th className="p-3">Issued At</th>
                         <th className="p-3">Expires At</th>
@@ -794,30 +1102,41 @@ export const MachineDetailsModal = ({ workspaceId, machineId, onClose, onRefresh
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant">
-                      {sessions.map((s) => (
-                        <tr key={s.id} className="hover:bg-surface-container-high/30">
-                          <td className="p-3 font-mono text-text-primary">{s.id ? s.id.slice(0, 16) + '...' : '-'}</td>
-                          <td className="p-3 font-mono">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                              s.status === 'ACTIVE' ? 'bg-status-success/10 text-status-success' : 'bg-status-error/10 text-status-error'
-                            }`}>
-                              {s.status}
-                            </span>
-                          </td>
-                          <td className="p-3 font-mono text-text-secondary">{s.createdAt ? new Date(s.createdAt).toLocaleString() : '-'}</td>
-                          <td className="p-3 font-mono text-text-secondary">{s.expiresAt ? new Date(s.expiresAt).toLocaleString() : '-'}</td>
-                          <td className="p-3 text-right">
-                            {s.status === 'ACTIVE' && (
-                              <button
-                                onClick={() => handleRevokeSession(s.id)}
-                                className="px-2 py-1 text-[11px] font-medium rounded border border-status-error/20 bg-status-error/10 text-status-error hover:bg-status-error/20"
-                              >
-                                Revoke
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {sessions.map((s) => {
+                        const isActive = s.active === true || s.status === 'ACTIVE';
+                        const isRevoked = Boolean(s.revokedAt);
+                        const sessionStatus = isActive ? 'ACTIVE' : (isRevoked ? 'REVOKED' : 'EXPIRED');
+                        return (
+                          <tr key={s.id} className="hover:bg-surface-container-high/30">
+                            <td className="p-3 font-mono text-text-primary">
+                              {s.tokenPrefix ? `${s.tokenPrefix}...` : (s.id ? s.id.slice(0, 8) + '...' : '-')}
+                            </td>
+                            <td className="p-3 font-mono">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                sessionStatus === 'ACTIVE'
+                                  ? 'bg-status-success/10 text-status-success border border-status-success/20'
+                                  : sessionStatus === 'REVOKED'
+                                  ? 'bg-status-error/10 text-status-error border border-status-error/20'
+                                  : 'bg-status-warning/10 text-status-warning border border-status-warning/20'
+                              }`}>
+                                {sessionStatus}
+                              </span>
+                            </td>
+                            <td className="p-3 font-mono text-text-secondary">{s.issuedAt ? new Date(s.issuedAt).toLocaleString() : (s.createdAt ? new Date(s.createdAt).toLocaleString() : '-')}</td>
+                            <td className="p-3 font-mono text-text-secondary">{s.expiresAt ? new Date(s.expiresAt).toLocaleString() : '-'}</td>
+                            <td className="p-3 text-right">
+                              {isActive && (
+                                <button
+                                  onClick={() => handleRevokeSession(s.id)}
+                                  className="px-2 py-1 text-[11px] font-medium rounded border border-status-error/20 bg-status-error/10 text-status-error hover:bg-status-error/20"
+                                >
+                                  Revoke
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

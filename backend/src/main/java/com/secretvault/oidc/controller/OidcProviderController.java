@@ -68,7 +68,7 @@ public class OidcProviderController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @PatchMapping("/{id}")
+    @RequestMapping(value = "/{id}", method = {org.springframework.web.bind.annotation.RequestMethod.PATCH, org.springframework.web.bind.annotation.RequestMethod.PUT})
     public ResponseEntity<ApiResponse<OidcDtos.OidcProviderResponse>> updateProvider(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,
@@ -113,7 +113,7 @@ public class OidcProviderController {
         return ResponseEntity.ok(ApiResponse.success(response, "JWKS keys refreshed successfully"));
     }
 
-    @PostMapping("/{id}/test")
+    @PostMapping({"/{id}/test", "/{id}/test-connection"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> testProvider(
             @PathVariable UUID workspaceId,
             @PathVariable UUID id,

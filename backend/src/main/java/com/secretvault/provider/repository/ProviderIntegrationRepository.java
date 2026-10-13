@@ -35,6 +35,7 @@ public interface ProviderIntegrationRepository extends JpaRepository<ProviderInt
           AND (:providerType IS NULL OR p.providerType = :providerType)
           AND (:status IS NULL OR p.status = :status)
           AND (:search IS NULL OR LOWER(p.displayName) LIKE :search)
+          AND p.providerType NOT IN (com.secretvault.provider.model.ProviderType.GITHUB, com.secretvault.provider.model.ProviderType.GITLAB)
     """)
     Page<ProviderIntegration> searchIntegrations(
             @Param("workspaceId") UUID workspaceId,

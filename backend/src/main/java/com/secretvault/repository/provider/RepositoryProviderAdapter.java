@@ -19,7 +19,38 @@ public interface RepositoryProviderAdapter {
             String cloneUrl,
             RepositoryVisibility visibility,
             String description,
-            boolean isPrivate
+            boolean isPrivate,
+            boolean canRead,
+            boolean canAdminHooks,
+            boolean isAlreadyMonitored,
+            String lastScanStatus,
+            java.time.Instant lastScanAt,
+            String permissionWarning,
+            String role
+    ) {
+        public RemoteRepositoryDto(
+                String id,
+                String owner,
+                String name,
+                String defaultBranch,
+                String cloneUrl,
+                RepositoryVisibility visibility,
+                String description,
+                boolean isPrivate
+        ) {
+            this(id, owner, name, defaultBranch, cloneUrl, visibility, description, isPrivate,
+                    true, true, false, null, null, null, "OWNER");
+        }
+    }
+
+    record UserProfileDto(
+            String login,
+            String name,
+            String avatarUrl,
+            String email,
+            List<String> scopes,
+            int publicRepos,
+            int totalPrivateRepos
     ) {}
 
     RepositoryProvider getProvider();
@@ -27,6 +58,10 @@ public interface RepositoryProviderAdapter {
     boolean isAvailable();
 
     boolean validateConnection(String token);
+
+    default UserProfileDto getUserProfile(String token) {
+        return null;
+    }
 
     List<RemoteRepositoryDto> listRepositories(String token);
 

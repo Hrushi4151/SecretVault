@@ -20,6 +20,7 @@ import {
   XCircle,
   KeyRound,
 } from 'lucide-react';
+import { sendPingramEmail } from '../../services/pingramService';
 
 export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
   const { activeWorkspace, user } = useAuth();
@@ -124,8 +125,9 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
     setSuccessMsg(null);
 
     try {
+      const targetEmail = inviteEmail.trim();
       const response = await workspaceApi.createInvitation(activeWorkspace.id, {
-        email: inviteEmail.trim(),
+        email: targetEmail,
         role: inviteRole,
         expiresInDays: Number(expiresInDays),
       });
@@ -133,7 +135,36 @@ export const WorkspaceMembersDialog = ({ isOpen, onClose }) => {
       if (response.rawToken) {
         setCreatedToken(response.rawToken);
       }
-      setSuccessMsg(`Invitation generated successfully for ${inviteEmail}.`);
+
+      // Dispatch invitation email via Pingram
+      await sendPingramEmail({
+        to: targetEmail,
+        subject: `Workspace Invitation: Join ${activeWorkspace?.name || 'SecretVault'} as ${inviteRole}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #1E000A; color: #FFFFFF; padding: 28px; border-radius: 16px; border: 1px solid #FF2D6D33; max-width: 560px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #FF2D6D 0%, #4A001C 100%); padding: 18px 20px; border-radius: 12px; margin-bottom: 20px;">
+              <h2 style="color: #FFFFFF; margin: 0; font-size: 18px;">🛡️ SecretVault Workspace Invitation</h2>
+            </div>
+            <p style="color: #F4B5C8; font-size: 14px; line-height: 1.6;">
+              You have been invited by <strong>${user?.fullName || 'a workspace admin'}</strong> to join the <strong>${activeWorkspace?.name || 'SecretVault'}</strong> enclave with the role of <strong style="color: #FF85A2;">${inviteRole}</strong>.
+            </p>
+            ${response.rawToken ? `
+              <div style="background-color: #30000F; padding: 14px; border-radius: 10px; border: 1px solid #FFB4C820; font-family: monospace; word-break: break-all; margin: 18px 0;">
+                <div style="color: #A26377; font-size: 10px; font-weight: bold; margin-bottom: 4px;">INVITATION SECURITY TOKEN:</div>
+                <div style="color: #FF85A2; font-size: 13px; font-weight: bold;">${response.rawToken}</div>
+              </div>
+            ` : ''}
+            <p style="color: #A26377; font-size: 11px;">This invitation token will automatically expire in ${expiresInDays} days.</p>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="http://localhost:3000" style="display: inline-block; background-color: #FF2D6D; color: #FFFFFF; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                Accept Invitation &amp; Open Enclave →
+              </a>
+            </div>
+          </div>
+        `
+      });
+
+      setSuccessMsg(`Invitation generated and delivered via Pingram email to ${targetEmail}.`);
       setInviteEmail('');
       loadData();
     } catch (err) {

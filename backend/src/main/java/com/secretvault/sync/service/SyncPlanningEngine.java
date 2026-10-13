@@ -113,7 +113,7 @@ public class SyncPlanningEngine {
                     // Secret exists on both provider and SecretVault -> check if identical (NO_OP) or modified (UPDATE)
                     boolean isIdentical = desired.desiredFingerprint() != null
                             && actual.providerFingerprint() != null
-                            && desired.desiredFingerprint().equals(actual.providerFingerprint());
+                            && SecretFingerprintCalculator.secureEquals(desired.desiredFingerprint(), actual.providerFingerprint());
 
                     if (isIdentical) {
                         plannedOperations.add(new SyncOperationPlan(
@@ -129,6 +129,37 @@ public class SyncPlanningEngine {
                                 null,
                                 null
                         ));
+                    } else if (actual.providerFingerprint() == null) {
+                        // Remote provider does not support value fingerprint comparison (UNKNOWN state)
+                        if (effectivePolicy == ReconciliationPolicy.DETECT_ONLY) {
+                            plannedOperations.add(new SyncOperationPlan(
+                                    desired.secretId(),
+                                    desired.secretName(),
+                                    mapping.getId(),
+                                    mapping.getIntegrationId(),
+                                    SyncOperationType.UPDATE,
+                                    SyncOperationStatus.BLOCKED,
+                                    desired.desiredFingerprint(),
+                                    null,
+                                    "Remote secret value is UNKNOWN (unsupported provider fingerprint); DETECT_ONLY policy blocks update",
+                                    null,
+                                    null
+                            ));
+                        } else {
+                            plannedOperations.add(new SyncOperationPlan(
+                                    desired.secretId(),
+                                    desired.secretName(),
+                                    mapping.getId(),
+                                    mapping.getIntegrationId(),
+                                    SyncOperationType.UPDATE,
+                                    SyncOperationStatus.PENDING,
+                                    desired.desiredFingerprint(),
+                                    null,
+                                    "Remote secret value is UNKNOWN; enforcing desired state to ensure consistency",
+                                    null,
+                                    null
+                            ));
+                        }
                     } else if (effectivePolicy == ReconciliationPolicy.DETECT_ONLY) {
                         plannedOperations.add(new SyncOperationPlan(
                                 desired.secretId(),
@@ -142,7 +173,7 @@ public class SyncPlanningEngine {
                                 "Secret value differs on provider; DETECT_ONLY policy blocks update",
                                 null,
                                 null
-                        ));
+                            ));
                     } else {
                         // Secret exists on both and differs -> UPDATE
                         plannedOperations.add(new SyncOperationPlan(
@@ -165,20 +196,36 @@ public class SyncPlanningEngine {
             // 2. Process Extra Remote Secrets on Provider (Conservative Deletion Policy)
             for (ProviderSecretState actual : actualResult.states()) {
                 if (!desiredByName.containsKey(actual.providerSecretName())) {
-                    warnings.add("Remote secret [" + actual.providerSecretName() + "] is unmanaged in SecretVault and will not be automatically deleted.");
-                    plannedOperations.add(new SyncOperationPlan(
-                            null,
-                            actual.providerSecretName(),
-                            mapping.getId(),
-                            mapping.getIntegrationId(),
-                            SyncOperationType.BLOCKED,
-                            SyncOperationStatus.BLOCKED,
-                            null,
-                            actual.providerFingerprint(),
-                            "Conservative deletion: unmanaged remote secrets are never deleted automatically",
-                            "UNMANAGED_PROVIDER_SECRET",
-                            "Unmanaged provider secret cannot be deleted automatically without explicit authorization"
-                    ));
+                    if (effectivePolicy == ReconciliationPolicy.MIRROR_EXACT) {
+                        plannedOperations.add(new SyncOperationPlan(
+                                null,
+                                actual.providerSecretName(),
+                                mapping.getId(),
+                                mapping.getIntegrationId(),
+                                SyncOperationType.DELETE,
+                                SyncOperationStatus.PENDING,
+                                null,
+                                actual.providerFingerprint(),
+                                "Reconciliation policy MIRROR_EXACT deletes extra remote variables",
+                                null,
+                                null
+                        ));
+                    } else {
+                        warnings.add("Remote secret [" + actual.providerSecretName() + "] is unmanaged in SecretVault and will not be automatically deleted.");
+                        plannedOperations.add(new SyncOperationPlan(
+                                null,
+                                actual.providerSecretName(),
+                                mapping.getId(),
+                                mapping.getIntegrationId(),
+                                SyncOperationType.BLOCKED,
+                                SyncOperationStatus.BLOCKED,
+                                null,
+                                actual.providerFingerprint(),
+                                "Conservative deletion: unmanaged remote secrets are never deleted automatically",
+                                "UNMANAGED_PROVIDER_SECRET",
+                                "Unmanaged provider secret cannot be deleted automatically without explicit authorization"
+                        ));
+                    }
                 }
             }
         }

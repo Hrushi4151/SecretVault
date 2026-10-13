@@ -43,7 +43,7 @@ export const RotationWizard = ({
     secretApi
       .list(workspaceId, 'all', 'all', {})
       .then((res) => {
-        const list = res?.data?.content || res?.content || res?.data || [];
+        const list = Array.isArray(res) ? res : (res?.data?.content || res?.content || res?.data || []);
         setSecrets(Array.isArray(list) ? list : []);
         if (!selectedSecretId && list.length > 0) {
           setSelectedSecretId(list[0].id);
@@ -114,10 +114,10 @@ export const RotationWizard = ({
           </div>
           <div>
             <h2 className="text-base font-headline font-bold text-white">
-              Zero-Downtime Rotation Wizard
+              Zero-Downtime Secret Rotation Wizard
             </h2>
             <p className="text-xs text-[#F4B5C8]/70">
-              Guided cryptographic key rollover, staged validation, and zero-downtime cutover.
+              Automated secret-value credential rollover, staged verification, and dual-credential cutover.
             </p>
           </div>
         </div>
@@ -366,7 +366,7 @@ export const RotationWizard = ({
         {/* Step 5: Confirmation Preview */}
         {currentStep === 5 && (
           <div className="space-y-4">
-            <h3 className="text-sm font-headline font-bold text-white">Step 5: Review & Cryptographic Rollover</h3>
+            <h3 className="text-sm font-headline font-bold text-white">Step 5: Review & Secret-Value Rollover</h3>
             <p className="text-xs text-[#F4B5C8]/70">
               Confirm rotation parameters. SecretVault will execute the generation engine in isolated memory with zero plaintext exposure.
             </p>
